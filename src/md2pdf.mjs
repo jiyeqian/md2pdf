@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.7.0';
+const VERSION = '1.7.1';
 
 // Node ≥ 22 有全局 WebSocket；更老的版本退回到内置的极简实现
 let _WS;
@@ -391,7 +391,7 @@ function renderFootnotes(footnotes, bibliography, marked) {
     } else {
       content = marked.parseInline(fn.content, { gfm: true });
     }
-    return '<li id="fn-' + num + '">[' + num + '] ' + content + '</li>';
+    return '<li id="fn-' + num + '"><a href="#fnref-' + num + '" class="fnref-back">[' + num + ']</a> ' + content + '</li>';
   }).join('\n');
   const cls = bibliography ? 'references' : 'footnotes';
   const list = '<ol class="' + cls + '">\n' + items + '\n</ol>';
@@ -538,9 +538,14 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
   const { body, footnotes } = parseFootnotes(rawBody);
   const fnIndex = new Map();
   footnotes.forEach((fn, i) => fnIndex.set(fn.id, i + 1));
+  const fnRefCount = new Map();
   const bodyWithRefs = body.replace(/\[\^([^\]]+)\]/g, (m, id) => {
     const n = fnIndex.get(id);
-    return n === undefined ? m : '<sup class="fnref"><a href="#fn-' + n + '">[' + n + ']</a></sup>';
+    if (n === undefined) return m;
+    const c = (fnRefCount.get(id) || 0) + 1;
+    fnRefCount.set(id, c);
+    const refId = c === 1 ? 'fnref-' + n : 'fnref-' + n + '-' + c;
+    return '<sup class="fnref" id="' + refId + '"><a href="#fn-' + n + '">[' + n + ']</a></sup>';
   });
 
   let html = marked.parse(bodyWithRefs, { gfm: true, breaks: false, async: false });
@@ -572,8 +577,10 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
   }
 
   // 链接 / 图片
-  html = html.replace(/<a\s+href="([^"]*)"([^>]*)>/g, (m, href, rest) =>
-    `<a href="${href}" class="ref"${rest}>`);
+  html = html.replace(/<a\s+href="([^"]*)"([^>]*)>/g, (m, href, rest) => {
+    const cls = /\sclass=/.test(rest) ? '' : ' class="ref"';
+    return `<a href="${href}"${cls}${rest}>`;
+  });
   if (opts.linkUrls) {
     html = html.replace(/<a\s+href="(https?:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/g,
       (m, href, text) => `${m} <span class="link-url">(${esc(href)})</span>`);

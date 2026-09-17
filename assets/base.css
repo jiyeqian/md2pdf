@@ -211,6 +211,7 @@ img { max-width: 100%; height: auto; display: block; margin: 8px auto 14px; }
 /* ---------- 脚注与参考文献 ---------- */
 sup.fnref { font-size: .7em; line-height: 0; }
 sup.fnref a { border-bottom: none; color: var(--accent); }
+a.fnref-back { border-bottom: none; color: var(--accent); font-weight: 600; }
 .references, .footnotes {
   list-style: none; counter-reset: none;
   margin: 4px 0 0; padding-left: 0;

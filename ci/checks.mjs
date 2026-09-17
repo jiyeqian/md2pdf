@@ -144,6 +144,8 @@ if (fs.existsSync(demo)) {
     /\[J\]/.test(html) && /\[M\]/.test(html));
   ok('渲染：脚注引用为可点击上标（fnref → #fn-N）',
     /class="fnref"/.test(html) && /href="#fn-\d+"/.test(html));
+  ok('渲染：脚注编号可反向跳回原文（fnref-back → #fnref-N）',
+    /class="fnref-back"/.test(html) && /href="#fnref-\d+"/.test(html));
 
   // 章节编号：force 模式为 H2 加层次编号（demo 默认「一、二、三」会被覆盖为「1、2、3」）
   const outNum = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'md2pdf-ci-')), 'num.html');
