@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.2.1';
+const VERSION = '1.3.0';
 
 // 联网安装时 install.sh 会写入 .install-meta（记录来源），--upgrade 依赖它
 const INSTALL_META = '.install-meta';
@@ -70,7 +70,8 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --kicker <text>      报头小标题
       --no-meta            不生成元信息条
       --no-lead            首段不作为导语
-  -t, --toc                生成目录（取自二级标题）
+  -t, --toc                在文首插入目录页（取自二级标题，可点击跳转）
+      --no-outline         不生成 PDF 书签（默认生成，阅读器侧边栏按标题成树）
       --link-urls          正文链接后附 URL
       --landscape          横向
       --font-size <pt>     正文字号（默认 10.5）
@@ -111,7 +112,7 @@ function parseArgs(argv) {
     inputs: [], theme: 'elegant', fontSize: 10.5,
     marginTop: 20, marginSide: 18, marginBottom: 18,
     footer: true, footerLeft: '', footerRight: '',
-    meta: true, lead: true, toc: false, linkUrls: false,
+    meta: true, lead: true, toc: false, linkUrls: false, outline: true,
     landscape: false, keepHtml: false, htmlOnly: false, open: false, help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -145,6 +146,8 @@ function parseArgs(argv) {
       case '--upgrade': o.upgrade = true; break;
       case '--no-open': o.open = false; break;
       case '--no-toc': o.toc = false; break;
+      case '--outline': o.outline = true; break;
+      case '--no-outline': o.outline = false; break;
       case '--no-landscape': o.landscape = false; break;
       case '--no-link-urls': o.linkUrls = false; break;
       case '--no-keep-html': o.keepHtml = false; break;
@@ -296,7 +299,7 @@ class Chrome {
     await this.send('Page.navigate', { url: pathToFileURL(htmlPath).href });
     await loaded;
     await new Promise(r => setTimeout(r, 250));
-    const res = await this.send('Page.printToPDF', {
+    const base = {
       printBackground: true,
       preferCSSPageSize: true,
       landscape: !!opts.landscape,
@@ -304,7 +307,17 @@ class Chrome {
       headerTemplate: '<span></span>',
       footerTemplate: opts.footerTemplate || '<span></span>',
       marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0,
-    });
+    };
+    // PDF 书签：Chrome 按 h1–h6 结构写成 /Outlines 树，阅读器侧边栏可点击跳转。
+    // 老版本 Chrome 不认这个参数，出错就退回不带书签的渲染（页脚页码仍保留）。
+    let res;
+    if (opts.outline) {
+      res = await this.send('Page.printToPDF', { ...base, generateDocumentOutline: true });
+      if (res.error) res = await this.send('Page.printToPDF', base);
+    } else {
+      res = await this.send('Page.printToPDF', base);
+    }
+    if (res.error) throw new Error(`渲染失败：${res.error.message}`);
     return Buffer.from(res.data, 'base64');
   }
   async stop() {
@@ -357,14 +370,24 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
     return `<img ${pre}src="${pathToFileURL(abs).href}"${post}>`;
   });
 
-  // 目录
-  let toc = '';
-  if (opts.toc) {
-    const heads = [...html.matchAll(/<h2(?:\s[^>]*)?>([\s\S]*?)<\/h2>/g)].map(m => stripTags(m[1]));
-    if (heads.length > 1) {
-      toc = `<div class="toc"><div class="toc-title">目 录</div><ol>` +
-        heads.map(h => `<li>${esc(h)}</li>`).join('') + `</ol></div>`;
+  // 章节锚点：给二级标题补 id，供目录内链与（Chrome 生成的）PDF 书签定位
+  const secIds = [];
+  html = html.replace(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>/g, (m, attrs = '', inner = '') => {
+    const has = /\sid="/.test(attrs);
+    if (has) {
+      secIds.push({ id: /\sid="([^"]+)"/.exec(attrs)[1], text: stripTags(inner) });
+      return m;
     }
+    const id = `sec-${secIds.length + 1}`;
+    secIds.push({ id, text: stripTags(inner) });
+    return `<h2${attrs} id="${id}">${inner}</h2>`;
+  });
+
+  // 目录：文首一张可点击的目录页（仅当二级标题多于一个才值得排）
+  let toc = '';
+  if (opts.toc && secIds.length > 1) {
+    toc = `<div class="toc"><div class="toc-title">目 录</div><ol>` +
+      secIds.map(s => `<li><a href="#${s.id}">${esc(s.text)}</a></li>`).join('') + `</ol></div>`;
   }
 
   html = sectionize(html);
@@ -414,7 +437,7 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
       <span style="flex:1;text-align:right;">${opts.footerRight || ''}</span>
     </div>`;
 
-  const buf = await chrome.print(htmlPath, { footer: opts.footer, footerTemplate, landscape: opts.landscape });
+  const buf = await chrome.print(htmlPath, { footer: opts.footer, footerTemplate, landscape: opts.landscape, outline: opts.outline });
 
   if (opts.keepHtml) {
     await writeFile(mdPath.replace(/\.md$/i, '.html'), out, 'utf8');

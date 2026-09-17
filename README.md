@@ -85,7 +85,8 @@ md2pdf 文件名.md --theme minimal --toc
 | `--kicker <text>` | 报头小标题；`SKILL.md` 默认显示「技能文档」 |
 | `--no-meta` | 不要 frontmatter 元信息条 |
 | `--no-lead` | 首段不作为导语放大 |
-| `-t, --toc` | 生成目录（取自 H2，需 2 个以上） |
+| `-t, --toc` | 文首插入目录页（取自 H2，需 2 个以上），每项可点击跳转 |
+| `--no-outline` | 不生成 PDF 书签（**默认生成**，见下） |
 | `--link-urls` | 正文链接后附 URL（纸质可读） |
 | `--landscape` | 横向页面 |
 | `--font-size <pt>` | 正文字号，默认 10.5 |
@@ -98,6 +99,26 @@ md2pdf 文件名.md --theme minimal --toc
 | `--open` | 完成后打开 PDF |
 
 布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
+
+### 目录与书签是两件事
+
+| | 是什么 | 在哪看 | 怎么开 |
+| --- | --- | --- | --- |
+| **目录页** | 排在文首的一张目录，条目是**可点击的内链** | 文档第 1 页 | `-t / --toc`（默认关） |
+| **PDF 书签** | PDF 阅读器侧边栏里的**章节大纲树**（可折叠、点击跳转） | 阅读器侧栏 | **默认开**，`--no-outline` 关 |
+
+书签由 Chrome 按 HTML 的 `h1`–`h6` 结构生成（报头标题为根，H2/H3 逐层嵌套），
+所以只要文档用了标准标题层级，就有对应的大纲，不需要额外配置。
+
+需要看侧栏的阅读器操作：macOS 预览需手动展开侧栏（**⌘⌥3**，或右上角侧栏按钮）；
+Acrobat / 福昕 / Chrome 内置阅读器点侧栏图标即可。侧栏是否自动展开由阅读器自身决定，
+本工具不写 `/PageMode`（改这个字段要重写 PDF 目录对象，收益不值那份风险）。
+
+自己验一份 PDF 的书签与内链：
+
+```bash
+node ci/inspect-pdf.mjs out.pdf
+```
 
 ## 排版规则
 
@@ -141,10 +162,14 @@ bash ci/validate.sh        # 本地跑，和 CI 完全同一套检查（约几�
    主题 CSS 里 `var(--x)` 全部有定义；占位符替换必须是全量的
 4. **行为**：`--help`/`--version` 冒烟；`examples/demo.md` 端到端渲染到 HTML，
    断言表格、代码块、引用、嵌套列表、目录、链接 URL、分节都在，且无占位符残留
-   与 `undefined` 泄漏
+   与 `undefined` 泄漏；目录锚点与标题 `id` 一一对应
+5. **接线**：PDF 书签这类"只存在于 PDF 里"的特性，CI 没有浏览器验不了结果，
+   就退一步断言参数真的传进了 `printToPDF`、开关真的从 `main` 接到了渲染 ——
+   光有 `case '--no-outline'` 不等于接到了
 
 最后还有一步**守卫自测**：故意破坏一份副本（塞入未定义的占位符、改错主题变量名、
-改乱版本号），断言校验确实会失败 —— 只会"全绿"的校验等于没有校验。
+改乱版本号、把目录项退回纯文本、关掉书签参数…），断言校验确实会失败 ——
+只会"全绿"的校验等于没有校验。
 
 CNB 云原生构建在 push / PR 时跑同一脚本；打 tag 时额外打包 zip 并发 Release
 （见 `.cnb.yml`）。
@@ -154,10 +179,10 @@ CNB 云原生构建在 push / PR 时跑同一脚本；打 tag 时额外打包 zi
 改完 `src/md2pdf.mjs` 的 `VERSION` 与 `package.json` 的 `version`（校验会检查两者一致），然后：
 
 ```bash
-git tag v1.1.1 && git push origin v1.1.1
+git tag v1.3.0 && git push origin v1.3.0
 ```
 
-流水线会自动：校验 → `git archive` 打包 `md2pdf-v1.1.1.zip` → 创建 Release → 上传附件。
+流水线会自动：校验 → `git archive` 打包 `md2pdf-v1.3.0.zip` → 创建 Release → 上传附件。
 注意 CNB **不允许删除 tag**，打错了只能升版本号再发一版。
 
 ## 目录结构
@@ -171,6 +196,7 @@ vendor/marked.esm.js  内置 Markdown 解析器
 examples/demo.md      示例文档（含表格/代码/引用/嵌套列表）
 ci/validate.sh        校验入口（本地与 CI 同一套）
 ci/checks.mjs         一致性 + 端到端渲染断言
+ci/inspect-pdf.mjs    读出 PDF 的书签树与链接注解（本地验证 outline 用）
 skill/SKILL.md        Agent 技能说明书（install.sh 会装到技能目录）
 install.sh            安装（联网安装 / 仓库内安装 两用）
 uninstall.sh          卸载

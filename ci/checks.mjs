@@ -126,6 +126,13 @@ if (fs.existsSync(demo)) {
   ok('渲染：有序与无序列表都在', /<ol>/.test(html) && /<ul>/.test(html));
   ok('渲染：H2 已分节', /<section>/.test(html));
   ok('渲染：--toc 生效', /class="toc"/.test(html));
+  ok('渲染：目录项是可点击内链', /<li><a href="#sec-\d+">/.test(html));
+  const tocIds = [...html.matchAll(/<a href="#(sec-\d+)"/g)].map(m => m[1]);
+  const h2Ids = [...html.matchAll(/<h2 id="(sec-\d+)"/g)].map(m => m[1]);
+  ok('渲染：目录锚点与标题 id 一一对应',
+    tocIds.length > 1 && tocIds.every(id => h2Ids.includes(id)),
+    `目录 ${tocIds.join(',')} → 标题 ${h2Ids.join(',')}`);
+  ok('渲染：标题 id 不重复', new Set(h2Ids).size === h2Ids.length);
   ok('渲染：--link-urls 生效', /class="link-url"/.test(html));
   ok('渲染：无占位符残留', !/\{\{[A-Z_]+\}\}/.test(html));
   ok('渲染：无 undefined/NaN 泄漏', !/undefined|NaN/.test(html));
@@ -171,6 +178,21 @@ ok('CLI：--upgrade 已接到 main（光有 case 不算）',
   '必须有 opts.upgrade → doUpgrade() 的调用');
 ok('CLI：--upgrade 在非安装目录下会提示 git pull（不静默失败）',
   /git 工作副本/.test(src));
+
+/* ---------- PDF 书签（outline） ---------- */
+// 书签由 Chrome 的 printToPDF 参数生成，CI 里没有浏览器，渲不出 PDF 也就断言不到
+// /Outlines 本身 —— 所以这里只钉"接线"（有开关 ≠ 真的接到 main）。
+ok('书签：printToPDF 传入 generateDocumentOutline',
+  /generateDocumentOutline:\s*true/.test(src));
+ok('书签：默认开启，可 --no-outline 关闭',
+  /outline:\s*true,/.test(src) && /case '--no-outline': o\.outline = false/.test(src));
+ok('书签：开关从 main 传到 chrome.print',
+  /outline:\s*opts\.outline\s*\}/.test(src),
+  '有 --no-outline 分支但没传进渲染，等于没接');
+ok('书签：老版本 Chrome 不认参数时退回无书签渲染',
+  /generateDocumentOutline: true \}\);[\s\S]{0,160}printToPDF', base\)/.test(src),
+  '直接抛错会让老版本 Chrome 上整个转换失败');
+ok('书签：帮助文本写明 --no-outline', /--no-outline\s+不生成 PDF 书签/.test(src));
 
 /* ---------- 7. shell 里「多字节字符紧跟裸变量」的坑 ---------- */
 // 实测：macOS 自带的 bash 3.2（/bin/sh）会把这个字符的首字节并进变量名 ——

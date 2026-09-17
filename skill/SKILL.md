@@ -1,6 +1,6 @@
 ---
 name: md-to-pdf
-description: 把 Markdown 文件排成优雅的中文 A4 PDF（报头＋元信息条＋表格/代码/引用排版＋页脚页码），支持 elegant 与 minimal 两套主题、批量转换与目录。当用户要求"把 md 转成 PDF""导出成 PDF""打印成 PDF""生成优雅的 PDF"时使用。
+description: 把 Markdown 文件排成优雅的中文 A4 PDF（报头＋元信息条＋表格/代码/引用排版＋页脚页码＋PDF 书签大纲），支持 elegant 与 minimal 两套主题、可点击目录与批量转换。当用户要求"把 md 转成 PDF""导出成 PDF""打印成 PDF""生成优雅的 PDF""PDF 要有目录/书签"时使用。
 agent_created: true
 ---
 
@@ -46,7 +46,8 @@ curl -fsSL https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/install.sh | sh
 | `--theme <name>` | `elegant`（默认，墨蓝＋古铜）｜ `minimal`（黑白公文风） |
 | `--title` / `--kicker` | 覆盖标题 / 报头小标题 |
 | `--no-meta` / `--no-lead` | 去掉元信息条 / 首段不作为导语 |
-| `-t, --toc` | 生成目录（取自 H2） |
+| `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
+| `--no-outline` | 不生成 PDF 书签（默认生成） |
 | `--link-urls` | 链接后附 URL |
 | `--landscape` / `--font-size` / `--margin` | 横向 / 字号（默认 10.5pt）/ 页边距（默认 20mm） |
 | `--no-footer` / `--footer-left` / `--footer-right` | 页脚控制 |
@@ -60,8 +61,21 @@ curl -fsSL https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/install.sh | sh
 ## 排版规则（需要解释效果时看这里）
 
 首个 H1 提升为报头大标题、其后首段成为导语；frontmatter 的 name/description 生成元信息条
-（"适用于…""不用于…"自动拆两栏）；H2 自动分节；相对路径图片转 file://；
+（"适用于…""不用于…"自动拆两栏）；H2 自动分节并加 id 锚点；相对路径图片转 file://；
 页脚页码由 CDP `Page.printToPDF` 生成（CLI `--print-to-pdf` 不支持页眉页脚模板）。
+
+**目录页与书签是两件事**，别混：
+- **目录页**（`-t`，默认关）＝ 文首排的一张目录，条目是文档内可点击的内链
+- **PDF 书签**（默认开，`--no-outline` 关）＝ 阅读器侧边栏的章节大纲树
+  由 Chrome 按 HTML 的 h1–h6 结构生成（报头标题为根，H2/H3 嵌套）；阅读器侧栏
+  需用户自己展开（macOS 预览按 ⌘⌥3）。用户问"为什么侧栏是空的"时先确认是不是
+  老版本 Chrome 没生成（参数不被支持时会静默退回无书签渲染）。
+
+验一份 PDF 到底有没有书签：
+
+```bash
+node ci/inspect-pdf.mjs out.pdf   # 打印书签树、内链/外链数量
+```
 
 改样式：`assets/base.css`（骨架）与 `assets/theme-*.css`（配色）。
 用户态改 `~/.local/share/md2pdf/assets/`；开发态（见下）改仓库即时生效。

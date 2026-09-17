@@ -50,7 +50,7 @@ head2 "结构与可执行位"
 REQUIRED="bin/md2pdf src/md2pdf.mjs src/ws.mjs assets/shell.html assets/base.css
 assets/theme-elegant.css assets/theme-minimal.css vendor/marked.esm.js
 examples/demo.md install.sh uninstall.sh package.json README.md LICENSE
-skill/SKILL.md"
+skill/SKILL.md ci/inspect-pdf.mjs"
 missing=""
 for f in $REQUIRED; do [ -f "$TARGET/$f" ] || missing="$missing $f"; done
 if [ -n "$missing" ]; then bad "缺少文件：$missing"; else good "必需文件齐全（$(echo $REQUIRED | wc -w | tr -d ' ') 项）"; fi
@@ -71,7 +71,7 @@ if [ -f "$TARGET/install.sh" ]; then
   sh -n "$TARGET/install.sh" && sh -n "$TARGET/uninstall.sh" && sh -n "$TARGET/bin/md2pdf" \
     && good "sh -n 通过（install/uninstall/bin）" || bad "shell 语法错误"
 fi
-for f in src/md2pdf.mjs src/ws.mjs ci/checks.mjs; do
+for f in src/md2pdf.mjs src/ws.mjs ci/checks.mjs ci/inspect-pdf.mjs; do
   if [ -f "$TARGET/$f" ]; then
     ( cd "$TARGET" && node --check "$f" >/dev/null 2>&1 ) && good "node --check $f" || bad "node --check $f 失败"
   fi
@@ -257,6 +257,29 @@ if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
       bad "技能 frontmatter 被改坏，校验却通过了 —— 技能检查失效"
     else
       good "技能 frontmatter 漂移时校验正确失败"
+    fi
+
+    # 破坏 7：把目录项退回成纯文本（丢掉内链）
+    # 待替换串用变量拼出 —— 直接写双引号里的 ${s.id} 会被本脚本的 shell 当成展开
+    ( cd "$TARGET" && tar cf - --exclude=.git --exclude=node_modules . ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
+    LI_LINK='<li><a href="#${s.id}">${esc(s.text)}</a></li>'
+    LI_PLAIN='<li>${esc(s.text)}</li>'
+    sed -i.bak "s|$LI_LINK|$LI_PLAIN|" "$TMP/proj/src/md2pdf.mjs" 2>/dev/null \
+      || sed -i '' "s|$LI_LINK|$LI_PLAIN|" "$TMP/proj/src/md2pdf.mjs"
+    if ( cd "$TMP/proj" && node ci/checks.mjs "$TMP/proj" >/dev/null 2>&1 ); then
+      bad "目录项退回纯文本，校验却通过了 —— 可点击目录的断言失效"
+    else
+      good "目录项丢失内链时校验正确失败"
+    fi
+
+    # 破坏 8：去掉 PDF 书签参数（书签静默消失，转换仍"成功"）
+    ( cd "$TARGET" && tar cf - --exclude=.git --exclude=node_modules . ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
+    sed -i.bak 's/generateDocumentOutline: true/generateDocumentOutline: false/' "$TMP/proj/src/md2pdf.mjs" 2>/dev/null \
+      || sed -i '' 's/generateDocumentOutline: true/generateDocumentOutline: false/' "$TMP/proj/src/md2pdf.mjs"
+    if ( cd "$TMP/proj" && node ci/checks.mjs "$TMP/proj" >/dev/null 2>&1 ); then
+      bad "书签参数被关掉，校验却通过了 —— 书签断言失效"
+    else
+      good "书签参数缺失时校验正确失败"
     fi
   fi
   rm -rf "$TMP"
