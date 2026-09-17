@@ -133,6 +133,57 @@ if (fs.existsSync(demo)) {
     !/class="pageNumber"/.test(html));
 }
 
+/* ---------- 6. 安装渠道一致 ---------- */
+// 安装入口是唯一的分发路径，改仓库地址/接口时最怕文档漂移 —— 这里做双向对齐。
+const installSh = readIf(path.join(ROOT, 'install.sh'));
+const readme = readIf(path.join(ROOT, 'README.md'));
+
+const repoM = /REPO_URL="\$\{MD2PDF_SRC:-([^}"]+)\}"/.exec(installSh);
+ok('安装：install.sh 声明了仓库基址', !!repoM, '未找到 REPO_URL 定义');
+if (repoM) {
+  const repo = repoM[1];
+  ok('安装：通过归档接口下载（/-/git/archive/）',
+    installSh.includes('$REPO_URL/-/git/archive/'),
+    '注意：网页 /-/raw/ 是 SPA 只返回 HTML 壳，必须用 /-/git/raw/ 或 /-/git/archive/');
+  ok('安装：README 的一行安装命令指向同一仓库',
+    readme.includes(`${repo}/-/git/raw/`), `期望含 ${repo}/-/git/raw/`);
+  ok('安装：README 中的仓库地址与 install.sh 一致',
+    readme.includes(repo), repo);
+}
+ok('安装：远程安装写 .install-meta（--upgrade 的来源记录）',
+  /\.install-meta/.test(installSh));
+ok('安装：有防误删保护', /拒绝安装到/.test(installSh));
+ok('安装：软链不可用时写转发脚本而非复制启动器',
+  /转发脚本/.test(installSh),
+  '复制的启动器会按自身路径反推项目根，指向错误');
+ok('安装：同时支持 curl 与 wget', /curl/.test(installSh) && /wget/.test(installSh));
+
+ok('CLI：帮助文本包含 --upgrade', /--upgrade\s+从安装来源/.test(src));
+ok('CLI：--upgrade 有参数解析分支', /case '--upgrade'/.test(src));
+ok('CLI：--upgrade 已接到 main（光有 case 不算）',
+  /if \(opts\.upgrade\) \{\s*await doUpgrade\(\)/.test(src),
+  '必须有 opts.upgrade → doUpgrade() 的调用');
+ok('CLI：--upgrade 在非安装目录下会提示 git pull（不静默失败）',
+  /git 工作副本/.test(src));
+
+/* ---------- 7. shell 里「多字节字符紧跟裸变量」的坑 ---------- */
+// 实测：macOS 自带的 bash 3.2（/bin/sh）会把这个字符的首字节并进变量名 ——
+//   sh -c 'R=abc; echo "X：$R（y）"'   →   X：<乱码>y）
+// 变量展开成空、还吐出半个字符的字节。相邻处必须写 ${VAR}。
+const SHELL_FILES = ['install.sh', 'uninstall.sh', 'bin/md2pdf', 'ci/validate.sh'];
+const bareThenCjk = /\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]|\$[0-9@*#?!][^\x00-\x7F]/;
+for (const f of SHELL_FILES) {
+  const text = readIf(path.join(ROOT, f));
+  if (!text) continue;
+  const hits = [];
+  text.split('\n').forEach((line, i) => {
+    const m = bareThenCjk.exec(line);
+    if (m) hits.push(`${f}:${i + 1} ${m[0]}`);
+  });
+  ok(`${path.basename(f)}：非 ASCII 字符前的变量用 \${VAR}`, hits.length === 0,
+    hits.join(' | ') + '  → 应写成 ${VAR}');
+}
+
 /* ---------- 汇总 ---------- */
 console.log(`\n结果：${pass} 项通过，${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

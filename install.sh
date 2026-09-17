@@ -1,15 +1,102 @@
 #!/bin/sh
-# md2pdf 安装脚本（macOS / Linux）
+# md2pdf 安装脚本（macOS / Linux）—— 联网一条命令装 / 仓库内装，两用
 #
-#   ./install.sh            安装到 /usr/local/bin（无权限时自动改用 ~/.local/bin）
-#   PREFIX=~/.local ./install.sh
+# ① 联网安装（推荐，不用 clone）：
+#      curl -fsSL https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/install.sh | sh
 #
-# 它只做一件事：把 bin/md2pdf 软链接到 bin 目录。不改动系统其他配置。
+# ② 在仓库里安装（开发用）：
+#      ./install.sh
+#
+# 环境变量：
+#   PREFIX=<dir>         命令落点，默认 /usr/local/bin（无写权限时自动用 ~/.local/bin）
+#   MD2PDF_HOME=<dir>    联网安装时程序本体的落点，默认 ~/.local/share/md2pdf
+#   MD2PDF_REF=<ref>     指定分支或标签，默认 main（如 MD2PDF_REF=v1.2.0）
+#   MD2PDF_SRC=<url>     仓库基址，默认官方地址（自建镜像时覆盖）
+#
+# 它只做两件事：把程序放到落点、把 bin/md2pdf 链接进 PATH。不动系统其他配置。
 
 set -e
 
-ROOT="$(cd -P "$(dirname "$0")" && pwd)"
+REPO_URL="${MD2PDF_SRC:-https://cnb.cool/jiyeqian/md2pdf}"
 
+# ------------------------------------------------------------ 定位安装来源
+# 区分「在仓库里执行」与「curl 管道执行」：
+# 管道执行时 $0 是 sh/bash（不是可读文件路径），且脚本内容来自 stdin。
+ROOT=""
+if [ -f "$0" ]; then
+  _dir="$(cd -P "$(dirname "$0")" 2>/dev/null && pwd)"
+  if [ -f "$_dir/src/md2pdf.mjs" ]; then ROOT="$_dir"; fi
+fi
+
+if [ -n "$ROOT" ]; then
+  echo "来源：本地仓库 $ROOT"
+else
+  # ---------------------------------------------------------- 联网安装
+  if [ -z "$HOME" ]; then
+    echo "md2pdf: 环境变量 HOME 为空，请用 MD2PDF_HOME=<dir> 指定安装目录" >&2
+    exit 1
+  fi
+
+  REF="${MD2PDF_REF:-${MD2PDF_VERSION:-main}}"
+  HOME_DIR="${MD2PDF_HOME:-$HOME/.local/share/md2pdf}"
+
+  # 防手滑：绝不删这些目录
+  case "$HOME_DIR" in
+    ""|"/"|"$HOME"|"$HOME/") echo "md2pdf: 拒绝安装到 $HOME_DIR" >&2; exit 1 ;;
+  esac
+
+  URL="$REPO_URL/-/git/archive/$REF.tar.gz"
+  TMP="$(mktemp -d 2>/dev/null || mktemp -d -t md2pdf)"
+  trap 'rm -rf "$TMP"' EXIT HUP INT TERM
+
+  echo "下载 $URL"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$URL" -o "$TMP/src.tar.gz"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q -O "$TMP/src.tar.gz" "$URL"
+  else
+    echo "md2pdf: 联网安装需要 curl 或 wget" >&2
+    exit 1
+  fi
+
+  mkdir -p "$TMP/x"
+  if ! tar -xzf "$TMP/src.tar.gz" -C "$TMP/x" 2>/dev/null; then
+    echo "md2pdf: 解包失败，$REF 是否存在？" >&2
+    exit 1
+  fi
+
+  # 归档布局有两种，都要认：
+  #   - CNB 的 /-/git/archive/<ref>.tar.gz 解出来直接就是仓库根（无顶层目录）
+  #   - git archive --prefix=xxx/ 打出来的包会多一层 xxx/
+  SRC="$TMP/x"
+  if [ ! -f "$SRC/src/md2pdf.mjs" ]; then
+    SRC=""
+    for d in "$TMP/x"/*/; do
+      if [ -f "$d/src/md2pdf.mjs" ]; then SRC="$d"; break; fi
+    done
+  fi
+  if [ -z "$SRC" ]; then
+    echo "md2pdf: 解包后未找到 src/md2pdf.mjs（归档布局异常）" >&2
+    exit 1
+  fi
+
+  mkdir -p "$(dirname "$HOME_DIR")"
+  rm -rf "$HOME_DIR"
+  mv "$SRC" "$HOME_DIR"
+  ROOT="$HOME_DIR"
+  chmod +x "$ROOT/bin/md2pdf" "$ROOT/install.sh" "$ROOT/uninstall.sh" 2>/dev/null || true
+
+  # 记下来源，供 md2pdf --upgrade 使用
+  {
+    echo "repo=$REPO_URL"
+    echo "ref=$REF"
+  } > "$ROOT/.install-meta"
+
+  echo "已安装程序本体：${ROOT}（${REF}）"
+  REMOTE=1
+fi
+
+# -------------------------------------------------------------- 链接命令
 if [ -n "$PREFIX" ]; then
   BIN_DIR="$PREFIX/bin"
 else
@@ -20,41 +107,49 @@ fi
 mkdir -p "$BIN_DIR"
 # 注意：不用 ln -sf —— BSD 版会先建临时文件再 unlink，在受限环境（沙箱）里会失败
 rm -f "$BIN_DIR/md2pdf"
-if ! ln -s "$ROOT/bin/md2pdf" "$BIN_DIR/md2pdf" 2>/dev/null; then
-  # 软链不可用（例如某些受限目录）时退化为复制启动器
-  cp "$ROOT/bin/md2pdf" "$BIN_DIR/md2pdf"
+if ln -s "$ROOT/bin/md2pdf" "$BIN_DIR/md2pdf" 2>/dev/null; then
+  echo "已链接命令：$BIN_DIR/md2pdf -> $ROOT/bin/md2pdf"
+else
+  # 软链不可用（受限目录等）：写一个转发脚本，而不是复制启动器 ——
+  # 启动器靠自身路径反推项目根，复制过去就找错地方了。
+  cat > "$BIN_DIR/md2pdf" <<EOF
+#!/bin/sh
+# md2pdf 转发脚本（软链不可用时的退化方案）
+exec "$ROOT/bin/md2pdf" "\$@"
+EOF
   chmod +x "$BIN_DIR/md2pdf"
-  echo "（软链不可用，已改为复制启动器；项目更新后需重新运行 install.sh）"
+  echo "已写入转发脚本：$BIN_DIR/md2pdf -> $ROOT/bin/md2pdf"
 fi
 
-echo "md2pdf 已链接：$BIN_DIR/md2pdf -> $ROOT/bin/md2pdf"
-
-# 检查 node
+# ----------------------------------------------------------------- 检查 node
 NODE=""
-for c in "$HOME/.workbuddy/binaries/node/versions/22.22.2-3/bin/node" \
+for c in "$MD2PDF_NODE" \
+         "$HOME/.workbuddy/binaries/node/versions/22.22.2-3/bin/node" \
          "/usr/local/bin/node" "/opt/homebrew/bin/node" "/usr/bin/node" \
          "$(command -v node 2>/dev/null)"; do
-  [ -x "$c" ] && NODE="$c" && break
+  [ -n "$c" ] && [ -x "$c" ] && NODE="$c" && break
 done
 if [ -z "$NODE" ]; then
-  echo "⚠️  未找到 Node.js。请安装 Node >= 22（更老版本也可用，会走内置 WebSocket 实现）。"
+  echo "⚠️  未找到 Node.js。请安装 Node >= 18（建议 22+；更老版本会走内置 WebSocket 实现）。"
 else
+  NODE_VER="$("$NODE" -p 'process.versions.node' 2>/dev/null || echo '?')"
   MAJOR="$("$NODE" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
   if [ "$MAJOR" -lt 22 ] 2>/dev/null; then
-    echo "⚠️  检测到 Node $MAJOR（<$("$NODE" -p 'process.versions.node' 2>/dev/null)）。建议升级到 22+；当前会自动使用内置 WebSocket 实现。"
+    echo "⚠️  检测到 Node ${NODE_VER}（< 22）。建议升级；当前会自动使用内置 WebSocket 实现。"
   else
-    echo "✓ Node $("$NODE" -p 'process.versions.node')"
+    echo "✓ Node $NODE_VER"
   fi
 fi
 
-# 检查 Chrome
+# --------------------------------------------------------------- 检查 Chrome
 CHROME=""
-for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+for c in "$MD2PDF_CHROME" \
+         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
          "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" \
          "/Applications/Chromium.app/Contents/MacOS/Chromium" \
          "/usr/bin/google-chrome" "/usr/bin/chromium" "/usr/bin/chromium-browser" \
          "$(command -v google-chrome 2>/dev/null)" "$(command -v chromium 2>/dev/null)"; do
-  [ -x "$c" ] && CHROME="$c" && break
+  [ -n "$c" ] && [ -x "$c" ] && CHROME="$c" && break
 done
 if [ -z "$CHROME" ]; then
   echo "⚠️  未找到 Chrome/Edge/Chromium。渲染需要它，可用 MD2PDF_CHROME=/path/to/chrome 指定。"
@@ -70,3 +165,7 @@ esac
 
 echo
 echo "试一下： md2pdf \"$ROOT/examples/demo.md\" --open"
+if [ "${REMOTE:-0}" = "1" ]; then
+  echo "升级：   md2pdf --upgrade   （或重跑同一条安装命令）"
+  echo "卸载：   \"$ROOT/uninstall.sh\""
+fi

@@ -40,7 +40,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.1.1';
+const VERSION = '1.2.0';
+
+// 联网安装时 install.sh 会写入 .install-meta（记录来源），--upgrade 依赖它
+const INSTALL_META = '.install-meta';
+const DEFAULT_REPO = 'https://cnb.cool/jiyeqian/md2pdf';
 
 // Node ≥ 22 有全局 WebSocket；更老的版本退回到内置的极简实现
 let _WS;
@@ -77,6 +81,7 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --keep-html          保留中间 HTML
       --html-only          只生成 HTML，不启动浏览器（调试样式 / CI 校验用）
       --open               完成后打开 PDF
+      --upgrade            从安装来源拉取最新版并覆盖本机安装
   -h, --help
 
 示例：
@@ -137,6 +142,7 @@ function parseArgs(argv) {
       case '--html-only': o.htmlOnly = true; break;
       case '--no-html-only': o.htmlOnly = false; break;
       case '--open': o.open = true; break;
+      case '--upgrade': o.upgrade = true; break;
       case '--no-open': o.open = false; break;
       case '--no-toc': o.toc = false; break;
       case '--no-landscape': o.landscape = false; break;
@@ -418,6 +424,45 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
   return { title, buf };
 }
 
+/* ---------------- 升级 ---------------- */
+
+// 从安装来源（install.sh 写下的 .install-meta）重新拉取并覆盖安装。
+// 目标进程正在运行的就是被覆盖的目录 —— 这不是问题：node 启动时已把模块读进内存。
+async function doUpgrade() {
+  const metaPath = path.join(ROOT, INSTALL_META);
+  if (!existsSync(metaPath)) {
+    console.log(`当前是 git 工作副本：${ROOT}`);
+    console.log('升级： git -C "' + ROOT + '" pull');
+    console.log(`或重新联网安装：curl -fsSL ${DEFAULT_REPO}/-/git/raw/main/install.sh | sh`);
+    return;
+  }
+
+  const meta = {};
+  for (const line of (await readFile(metaPath, 'utf8')).split('\n')) {
+    const i = line.indexOf('=');
+    if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+  }
+  const repo = meta.repo || DEFAULT_REPO;
+  const ref = meta.ref || 'main';
+  const url = `${repo}/-/git/raw/${encodeURIComponent(ref)}/install.sh`;
+
+  console.log(`从 ${url} 更新…（当前 ${VERSION}）`);
+  const r = spawnSync('sh', ['-c', 'curl -fsSL "$1" | sh', 'sh', url], {
+    stdio: 'inherit',
+    env: { ...process.env, MD2PDF_HOME: ROOT, MD2PDF_REF: ref, MD2PDF_SRC: repo },
+  });
+  if (r.status !== 0) {
+    console.error(`md2pdf: 更新失败（退出码 ${r.status}）`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const after = spawnSync(path.join(ROOT, 'bin', 'md2pdf'), ['--version'], { encoding: 'utf8' });
+  const now = (after.stdout || '').trim();
+  if (now && now !== VERSION) console.log(`\n已更新： ${VERSION} → ${now}`);
+  else if (now) console.log(`\n已是最新：${now}`);
+}
+
 /* ---------------- main ---------------- */
 
 function isDir(p) {
@@ -438,6 +483,7 @@ async function main() {
   const opts = parseArgs(expandArgs(process.argv.slice(2)));
   if (opts.help) { console.log(HELP); return; }
   if (opts.version) { console.log(VERSION); return; }
+  if (opts.upgrade) { await doUpgrade(); return; }
   if (!opts.inputs.length) { console.log(HELP); process.exitCode = 1; return; }
 
   const { Marked } = await import(pathToFileURL(path.join(ROOT, 'vendor', 'marked.esm.js')).href);

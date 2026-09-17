@@ -9,19 +9,36 @@
 
 ## 安装
 
+**一条命令**（不用 clone）：
+
+```bash
+curl -fsSL https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/install.sh | sh
+```
+
+它会下载最新源码到 `~/.local/share/md2pdf`，把 `md2pdf` 链接进 PATH，并检查 Node 与 Chrome（缺什么会直接告诉你）。
+下载量约 120 KB —— 走流量也没负担。
+
+```bash
+md2pdf ~/.local/share/md2pdf/examples/demo.md --open   # 装完试一下
+```
+
+**更新**：`md2pdf --upgrade`（或重跑上面那条命令） · **卸载**：`~/.local/share/md2pdf/uninstall.sh`
+
+| 变量 | 作用 |
+| --- | --- |
+| `MD2PDF_HOME=<dir>` | 安装位置，默认 `~/.local/share/md2pdf` |
+| `MD2PDF_REF=<ref>` | 装指定分支/标签，默认 `main`（如 `MD2PDF_REF=v1.2.0`） |
+| `PREFIX=<dir>` | 命令落点，默认 `/usr/local/bin`（无写权限自动用 `~/.local/bin`） |
+
+### 在仓库里安装（开发用）
+
 ```bash
 git clone https://cnb.cool/jiyeqian/md2pdf.git
 cd md2pdf
 ./install.sh          # 把 bin/md2pdf 软链到 /usr/local/bin（无权限时自动用 ~/.local/bin）
 ```
 
-装完会检查 Node 与 Chrome，缺什么会直接告诉你。验证：
-
-```bash
-md2pdf examples/demo.md --open
-```
-
-卸载：`./uninstall.sh`（只删软链，项目文件保留）。
+这条路径下程序就是仓库本身，改完立即生效，不需要重装。
 
 ### 依赖
 
@@ -137,10 +154,20 @@ vendor/marked.esm.js  内置 Markdown 解析器
 examples/demo.md      示例文档（含表格/代码/引用/嵌套列表）
 ci/validate.sh        校验入口（本地与 CI 同一套）
 ci/checks.mjs         一致性 + 端到端渲染断言
-install.sh uninstall.sh
+install.sh            安装（联网安装 / 仓库内安装 两用）
+uninstall.sh          卸载
 ```
 
+联网安装时 `install.sh` 会在安装目录额外写一个 `.install-meta`（记录来源仓库与 ref），
+`md2pdf --upgrade` 靠它知道去哪儿拉新版。
+
 ## 常见问题
+
+**装到哪了 / 怎么升级** → 联网安装的程序本体在 `~/.local/share/md2pdf`，命令在 `/usr/local/bin/md2pdf`
+（无写权限时退到 `~/.local/bin`）。升级：`md2pdf --upgrade`。
+
+**网络装不上** → 确认能访问 `cnb.cool`；也可以 `MD2PDF_REF=v1.2.0` 指定版本，
+或直接 clone 仓库后 `./install.sh`。
 
 **找不到 Chrome** → 设 `export MD2PDF_CHROME=/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome`
 

@@ -1,4 +1,7 @@
 .DS_Store
 node_modules/
+dist/
+# 联网安装时写入的来源标记（只存在于安装目录，不进版本库）
+.install-meta
 *.pdf
 !examples/*.pdf

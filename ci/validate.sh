@@ -84,6 +84,49 @@ else
   bad "缺少 ci/checks.mjs"
 fi
 
+# --------------------------------------------------- 联网安装自测（离线模拟）
+# 用 file:// 伪造 CNB 的两条接口，把"一条命令安装"整条链路跑一遍。
+# 关键是归档布局要仿真：CNB 的 /-/git/archive/<ref>.tar.gz 解出来是**扁平**的
+# （没有顶层目录），和 git archive --prefix 打出来的包不一样。
+head2 "联网安装自测（离线模拟）"
+TMPI="$(mktemp -d)"
+mkdir -p "$TMPI/fx/-/git/archive" "$TMPI/fx/-/git/raw/main" "$TMPI/root"
+( cd "$TARGET" && tar cf - --exclude=.git --exclude=dist . ) 2>/dev/null | ( cd "$TMPI/root" && tar xf - ) 2>/dev/null
+tar -czf "$TMPI/fx/-/git/archive/main.tar.gz" -C "$TMPI/root" . 2>/dev/null
+cp "$TARGET/install.sh" "$TMPI/fx/-/git/raw/main/install.sh" 2>/dev/null
+
+if ( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$TMPI/home" \
+     PREFIX="$TMPI/prefix" sh -c "cat '$TARGET/install.sh' | sh" ) >"$TMPI/log" 2>&1; then
+  good "联网安装成功（扁平归档布局）"
+  if [ -x "$TMPI/prefix/bin/md2pdf" ] && "$TMPI/prefix/bin/md2pdf" --version >/dev/null 2>&1; then
+    good "装出来的命令可直接运行（$("$TMPI/prefix/bin/md2pdf" --version)）"
+  else
+    bad "装出来的命令无法运行"
+  fi
+  if [ -f "$TMPI/home/.install-meta" ]; then
+    good "写入 .install-meta（供 --upgrade 用）"
+  else
+    bad "缺少 .install-meta"
+  fi
+  # 装完再"升级"一次：应当成功且不破坏现有安装
+  if ( cd "$TMPI" && "$TMPI/prefix/bin/md2pdf" --upgrade ) >"$TMPI/up.log" 2>&1 \
+     && "$TMPI/prefix/bin/md2pdf" --version >/dev/null 2>&1; then
+    good "md2pdf --upgrade 走通（同一来源覆盖安装）"
+  else
+    bad "md2pdf --upgrade 失败"; sed 's/^/      /' "$TMPI/up.log" | tail -6
+  fi
+  # 防误删：安装目录指到家目录必须被拒绝
+  if ( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$HOME" \
+       PREFIX="$TMPI/prefix" sh -c "cat '$TARGET/install.sh' | sh" ) >/dev/null 2>&1; then
+    bad "MD2PDF_HOME=\$HOME 竟然被接受 —— 防误删保护失效"
+  else
+    good "MD2PDF_HOME=\$HOME 被拒绝（防误删保护生效）"
+  fi
+else
+  bad "联网安装失败"; sed 's/^/      /' "$TMPI/log" | tail -8
+fi
+rm -rf "$TMPI"
+
 # ------------------------------------------------- 反向自测（守卫真的会失败）
 # 只会"全绿"的校验等于没有校验：故意破坏一份副本，确认校验确实报错。
 if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
@@ -121,6 +164,28 @@ if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
       bad "版本号被改乱，校验却通过了 —— 版本检查失效"
     else
       good "版本号不一致时校验正确失败"
+    fi
+
+    # 破坏 4：文档里的一行安装命令与 install.sh 的仓库地址不一致（文档漂移）
+    ( cd "$TARGET" && tar cf - README.md ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
+    sed -i.bak 's|/-/git/raw/|/-/raw/|' "$TMP/proj/README.md" 2>/dev/null \
+      || sed -i '' 's|/-/git/raw/|/-/raw/|' "$TMP/proj/README.md"
+    if ( cd "$TMP/proj" && node ci/checks.mjs "$TMP/proj" >/dev/null 2>&1 ); then
+      bad "README 的安装命令被改坏，校验却通过了 —— 渠道一致性检查失效"
+    else
+      good "README 安装命令漂移时校验正确失败"
+    fi
+
+    # 破坏 5：把 ${VAR} 改回裸 $VAR 并紧跟多字节字符（macOS bash 3.2 会吃掉半字符）
+    # 注意：这里用变量拼出待替换字符串，避免本文件自身触发上面那条"裸变量"检查
+    ( cd "$TARGET" && tar cf - install.sh ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
+    BARE='$ROOT'
+    sed -i.bak "s/\${ROOT}（/${BARE}（/" "$TMP/proj/install.sh" 2>/dev/null \
+      || sed -i '' "s/\${ROOT}（/${BARE}（/" "$TMP/proj/install.sh"
+    if ( cd "$TMP/proj" && node ci/checks.mjs "$TMP/proj" >/dev/null 2>&1 ); then
+      bad "裸变量紧跟中文，校验却通过了 —— 多字节边界检查失效"
+    else
+      good "裸变量紧跟中文时校验正确失败"
     fi
   fi
   rm -rf "$TMP"
