@@ -115,3 +115,5 @@ install.sh uninstall.sh
 ## License
 
 MIT
+
+第三方组件：`vendor/marked.esm.js` 来自 [marked](https://github.com/markedjs/marked)（MIT License），随仓库分发以便零依赖安装。
