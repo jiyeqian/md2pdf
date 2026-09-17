@@ -380,7 +380,7 @@ function formatGB7714(entry) {
 }
 
 // 渲染脚注列表；bibliography=true 时作为「参考文献」章节
-function renderFootnotes(footnotes, bibliography) {
+function renderFootnotes(footnotes, bibliography, marked) {
   if (!footnotes.length) return '';
   const items = footnotes.map((fn, i) => {
     const num = i + 1;
@@ -389,14 +389,13 @@ function renderFootnotes(footnotes, bibliography) {
       const entry = parseBibTeX(fn.content);
       content = entry ? esc(formatGB7714(entry)) : esc(fn.content);
     } else {
-      content = esc(fn.content);
+      content = marked.parseInline(fn.content, { gfm: true });
     }
     return '<li id="fn-' + num + '">[' + num + '] ' + content + '</li>';
   }).join('\n');
   const cls = bibliography ? 'references' : 'footnotes';
   const list = '<ol class="' + cls + '">\n' + items + '\n</ol>';
-  if (bibliography) return '<section><h2 id="sec-refs">参考文献</h2>\n' + list + '</section>';
-  return '<section><h2 id="sec-footnotes">脚注</h2>\n' + list + '</section>';
+  return '<h2>' + (bibliography ? '参考文献' : '脚注') + '</h2>\n' + list;
 }
 
 /* ---------------- Chrome ---------------- */
@@ -546,6 +545,9 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
 
   let html = marked.parse(bodyWithRefs, { gfm: true, breaks: false, async: false });
 
+  // 脚注/参考文献：先追加到正文末尾，再编号，使参考文献章节纳入编号体系
+  html += renderFootnotes(footnotes, opts.bibliography, marked);
+
   // 章节编号：H2 起编号，H1 作为文档标题不动
   html = numberHeadings(html, opts.numbering);
 
@@ -604,9 +606,6 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
   }
 
   html = sectionize(html);
-
-  // 脚注/参考文献：追加到正文末尾
-  html += renderFootnotes(footnotes, opts.bibliography);
 
   // CSS
   const themeFile = path.join(ASSETS, `theme-${opts.theme}.css`);

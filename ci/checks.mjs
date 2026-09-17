@@ -149,8 +149,9 @@ if (fs.existsSync(demo)) {
   const outNum = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'md2pdf-ci-')), 'num.html');
   const rNum = run(['examples/demo.md', '--html-only', '--numbering', 'force', '-o', outNum]);
   const numHtml = readIf(outNum);
-  ok('编号：force 模式为 H2 加层次编号', rNum.status === 0 && /<h2[^>]*>1 /.test(numHtml) && /<h2[^>]*>2 /.test(numHtml) && /<h2[^>]*>3 /.test(numHtml));
-  ok('编号：auto 模式识别到已有编号则不动', /<h2[^>]*>一、总体指标/.test(html));
+  ok('编号：force 模式加层次编号（H2→1/2、H3→2.1）', rNum.status === 0 && /<h2[^>]*>1 总体指标/.test(numHtml) && /<h2[^>]*>2 控制流程/.test(numHtml) && /<h3[^>]*>2\.1 /.test(numHtml));
+  ok('编号：auto 模式自动加编号（demo 无编号）', /<h2[^>]*>1 总体指标/.test(html) && /<h3[^>]*>2\.1 /.test(html));
+  ok('编号：参考文献章节纳入编号体系', /<h2[^>]*>3 脚注/.test(html) || /<h2[^>]*>3 参考文献/.test(html));
 }
 
 /* ---------- PDF 书签（outline） ---------- */
