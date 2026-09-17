@@ -41,7 +41,12 @@ $:
           script: |
             mkdir -p dist
             git config --global --add safe.directory "$PWD" 2>/dev/null || true
-            TAG="${CNB_TAG_NAME:-$(git rev-parse --short HEAD)}"
+            # 注意：实测 ${CNB_TAG_NAME} 在 script 阶段为空（只有 git:release 任务自己拿到 tag），
+            # 所以优先用 git describe 直接问 HEAD 是哪个 tag，最后才退回短 SHA。
+            TAG="${CNB_TAG_NAME:-}"
+            [ -n "$TAG" ] || TAG="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
+            [ -n "$TAG" ] || TAG="$(git rev-parse --short HEAD)"
+            echo "打包 tag：$TAG"
             # git archive 只打包被版本控制的文件，自动排除 .git 与未跟踪文件
             git archive --format=zip --prefix="md2pdf-${TAG}/" -o "dist/md2pdf-${TAG}.zip" HEAD
             ls -lh dist/
