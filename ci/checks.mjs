@@ -144,6 +144,13 @@ if (fs.existsSync(demo)) {
     /\[J\]/.test(html) && /\[M\]/.test(html));
   ok('渲染：脚注引用为可点击上标（fnref → #fn-N）',
     /class="fnref"/.test(html) && /href="#fn-\d+"/.test(html));
+
+  // 章节编号：force 模式为 H2 加层次编号（demo 默认「一、二、三」会被覆盖为「1、2、3」）
+  const outNum = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'md2pdf-ci-')), 'num.html');
+  const rNum = run(['examples/demo.md', '--html-only', '--numbering', 'force', '-o', outNum]);
+  const numHtml = readIf(outNum);
+  ok('编号：force 模式为 H2 加层次编号', rNum.status === 0 && /<h2[^>]*>1 /.test(numHtml) && /<h2[^>]*>2 /.test(numHtml) && /<h2[^>]*>3 /.test(numHtml));
+  ok('编号：auto 模式识别到已有编号则不动', /<h2[^>]*>一、总体指标/.test(html));
 }
 
 /* ---------- PDF 书签（outline） ---------- */

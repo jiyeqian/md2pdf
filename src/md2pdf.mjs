@@ -69,6 +69,7 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
   -t, --toc                在文首插入目录页（取自二级标题，可点击跳转）
       --no-outline         不生成 PDF 书签（默认生成，阅读器侧边栏按标题成树）
       --bibliography       将脚注收集为文末「参考文献」章节（BibTeX 脚注按 GB/T 7714 渲染）
+      --numbering <mode>    章节编号：auto（默认，识别到已有编号则不动）| force（强制）| none（不加）
       --link-urls          正文链接后附 URL
       --landscape          横向
       --font-size <pt>     正文字号（默认 10.5）
@@ -109,6 +110,7 @@ function parseArgs(argv) {
     marginTop: 20, marginSide: 18, marginBottom: 18,
     footer: true, footerLeft: '', footerRight: '',
     meta: true, lead: true, toc: false, linkUrls: false, outline: true, bibliography: false,
+    numbering: 'auto',
     landscape: false, keepHtml: false, htmlOnly: false, open: false, help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -144,6 +146,7 @@ function parseArgs(argv) {
       case '--outline': o.outline = true; break;
       case '--no-outline': o.outline = false; break;
       case '--bibliography': o.bibliography = true; break;
+      case '--numbering': o.numbering = next(); break;
       case '--no-bibliography': o.bibliography = false; break;
       case '--no-landscape': o.landscape = false; break;
       case '--no-link-urls': o.linkUrls = false; break;
@@ -209,6 +212,28 @@ function sectionize(html) {
   return html.split(/(?=<h2[\s>])/)
     .map(p => (p.trim().startsWith('<h2') ? `<section>\n${p}\n</section>` : p))
     .join('\n');
+}
+
+/* ---------------- 章节编号 ---------------- */
+
+// 标题编号前缀识别（阿拉伯/中文/罗马数字、第X章、括号编号等）
+const HEADING_NUM_RE = /^\s*(?:\d+(?:\.\d+)*[、．.)]\s?|[一二三四五六七八九十百]+[、．.]|第[一二三四五六七八九十百\d]+[章节篇]|\([一二三四五六七八九十\d]+\)|[IVX]+[.、])\s*/;
+
+// 章节编号：mode 为 auto（默认，识别到已有编号则不动）/ force（强制编号）/ none（不动）
+function numberHeadings(html, mode) {
+  if (mode === 'none') return html;
+  const re = /<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g;
+  const all = [...html.matchAll(re)];
+  if (!all.length) return html;
+  if (mode !== 'force' && all.some(m => HEADING_NUM_RE.test(stripTags(m[3])))) return html;
+  const counters = [0, 0, 0, 0, 0];
+  return html.replace(re, (m, level, attrs, inner) => {
+    const lvl = parseInt(level, 10) - 2;
+    counters[lvl]++;
+    for (let k = lvl + 1; k < 5; k++) counters[k] = 0;
+    const num = counters.slice(0, lvl + 1).join('.');
+    return '<h' + level + attrs + '>' + num + ' ' + inner.replace(HEADING_NUM_RE, '') + '</h' + level + '>';
+  });
 }
 
 /* ---------------- 脚注与参考文献 ---------------- */
@@ -520,6 +545,9 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
   });
 
   let html = marked.parse(bodyWithRefs, { gfm: true, breaks: false, async: false });
+
+  // 章节编号：H2 起编号，H1 作为文档标题不动
+  html = numberHeadings(html, opts.numbering);
 
   // 标题：正文首个 H1 → 报头
   let title = opts.title || fm.title || '';

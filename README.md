@@ -53,6 +53,7 @@ md2pdf 文件名.md --theme minimal --toc
 | `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
 | `--no-outline` | 不生成 PDF 书签（默认生成） |
 | `--bibliography` | 将脚注收集为文末「参考文献」章节（BibTeX 按 GB/T 7714 渲染） |
+| `--numbering <mode>` | 章节编号：`auto`（默认，识别到已有编号则不动）｜ `force`（强制）｜ `none`（不加） |
 | `--link-urls` | 正文链接后附 URL（纸质可读） |
 | `--landscape` / `--font-size <pt>` / `--margin <mm>` | 横向 / 字号（默认 10.5）/ 页边距（默认 20） |
 | `--no-footer` / `--footer-left` / `--footer-right` | 页脚控制 |
