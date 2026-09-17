@@ -5,10 +5,12 @@
 
 ![themes](docs/themes.png)
 
+仓库：https://cnb.cool/jiyeqian/md2pdf
+
 ## 安装
 
 ```bash
-git clone <你的仓库地址> md2pdf
+git clone https://cnb.cool/jiyeqian/md2pdf.git
 cd md2pdf
 ./install.sh          # 把 bin/md2pdf 软链到 /usr/local/bin（无权限时自动用 ~/.local/bin）
 ```
