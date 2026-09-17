@@ -115,6 +115,17 @@ bash ci/validate.sh        # 本地跑，和 CI 完全同一套检查（约几�
 CNB 云原生构建在 push / PR 时跑同一脚本；打 tag 时额外打包 zip 并发 Release
 （见 `.cnb.yml`）。
 
+### 发版
+
+改完 `src/md2pdf.mjs` 的 `VERSION` 与 `package.json` 的 `version`（校验会检查两者一致），然后：
+
+```bash
+git tag v1.1.1 && git push origin v1.1.1
+```
+
+流水线会自动：校验 → `git archive` 打包 `md2pdf-v1.1.1.zip` → 创建 Release → 上传附件。
+注意 CNB **不允许删除 tag**，打错了只能升版本号再发一版。
+
 ## 目录结构
 
 ```
