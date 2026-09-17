@@ -1,7 +1,6 @@
 # md2pdf
 
-把 Markdown 排成**优雅的中文 A4 PDF**：报头大标题、元信息条、精心排过的表格/代码/引用/列表、页脚页码。
-不是 pandoc 的默认样式 —— 是可以直接拿去打印、发给别人看的版式。
+把 Markdown 排成**优雅的中文 A4 PDF**：报头大标题、元信息条、精心排过的表格/代码/引用/列表、页脚页码，还支持数学公式与参考文献。不是 pandoc 的默认样式——是可以直接拿去打印、发给别人看的版式。
 
 **elegant 主题**（默认，墨蓝 + 古铜）：
 
@@ -13,30 +12,13 @@
 
 仓库：https://cnb.cool/jiyeqian/md2pdf
 
-## 两部分:命令 + 说明书
-
-这个工具是两层结构,各自独立存在、各自分发:
-
-| 层 | 是什么 | 给谁用 | 落在哪 |
-| --- | --- | --- | --- |
-| **命令** `md2pdf` | 真正的程序(Node + 无头 Chrome 渲染) | 你、任何脚本 | npm 全局安装到 `node_modules/@jiyeqian/md2pdf/` |
-| **技能说明书** `skill/SKILL.md` | 告诉 Agent「有 `md2pdf` 这个命令、怎么用」 | WorkBuddy 等 Agent 运行时 | `~/.workbuddy/skills/md-to-pdf/` |
-
-npm 的 `postinstall` 一次装两样:环境里有 WorkBuddy(`~/.workbuddy` 存在)就顺带装说明书,
-没有就只装命令。只要命令用 `MD2PDF_SKILL=0` 跳过。
-
-> 为什么说明书不在程序里?因为「怎么用」是给 Agent 看的,「能转换」是给系统跑的 ——
-> 混在一起会让换机器时多一份要同步的实现。说明书只有一份,就在仓库 `skill/`。
-
 ## 安装
 
-**一条命令**（需要 Node ≥ 18，建议 ≥ 22）：
-
 ```bash
-npm install -g @jiyeqian/md2pdf
+npm install -g @jiyeqian/md2pdf   # 需要 Node ≥ 18（建议 ≥ 22）
 ```
 
-它会装上 `md2pdf` 命令；`postinstall` 顺带把技能说明书装进 `~/.workbuddy`（存在时）。
+装上即可用 `md2pdf` 命令；npm 的 `postinstall` 会把技能说明书装进 `~/.workbuddy`（存在时，供 Agent 使用）。
 
 ```bash
 md2pdf 你的文档.md --open   # 装完试一下
@@ -47,26 +29,9 @@ md2pdf 你的文档.md --open   # 装完试一下
 | 变量 | 作用 |
 | --- | --- |
 | `MD2PDF_SKILL=0` | 安装时不装 Agent 技能说明书 |
-| `MD2PDF_SKILL_DIR=<dir>` | 说明书落点，默认 `~/.workbuddy/skills/md-to-pdf`（`~/.workbuddy` 不存在时默认不装） |
+| `MD2PDF_SKILL_DIR=<dir>` | 说明书落点，默认 `~/.workbuddy/skills/md-to-pdf` |
 
-### 在仓库里开发
-
-```bash
-git clone https://cnb.cool/jiyeqian/md2pdf.git
-cd md2pdf
-npm link             # 把 bin/md2pdf 软链进 PATH，指向仓库本身，改代码立即生效
-```
-
-`npm link` 之后命令就是仓库本身，改完立即生效，不需要重装。
-
-### 依赖
-
-| 依赖 | 要求 | 说明 |
-| --- | --- | --- |
-| Node.js | ≥ 18（建议 ≥ 22） | < 22 时自动启用内置 WebSocket 实现；`MD2PDF_NODE` 可指定 |
-| Chrome / Edge / Chromium | 任一 | 只用来渲染，不联网；`MD2PDF_CHROME` 可指定路径 |
-
-零 npm 依赖 —— Markdown 解析器（marked）已内置在 `vendor/`，装好即用。
+**依赖**：Node.js ≥ 18（建议 ≥ 22），以及 Chrome / Edge / Chromium 任一（只渲染、不联网）。零 npm 运行时依赖——`marked` 与 MathJax 已内置在 `vendor/`。
 
 ## 用法
 
@@ -81,24 +46,18 @@ md2pdf 文件名.md --theme minimal --toc
 
 | 选项 | 作用 |
 | --- | --- |
-| `-o, --output <path>` | 输出路径；多文件或目标是目录时，作为输出目录 |
-| `--theme <name>` | `elegant`（默认，墨蓝＋古铜）｜ `minimal`（黑白公文风） |
-| `--title <text>` | 覆盖标题（默认：正文首个 H1 → frontmatter.title → 文件名） |
-| `--kicker <text>` | 报头小标题；`SKILL.md` 默认显示「技能文档」 |
-| `--no-meta` | 不要 frontmatter 元信息条 |
-| `--no-lead` | 首段不作为导语放大 |
-| `-t, --toc` | 文首插入目录页（取自 H2，需 2 个以上），每项可点击跳转 |
-| `--no-outline` | 不生成 PDF 书签（**默认生成**，见下） |
-| `--bibliography` | 将脚注收集为文末「参考文献」章节（BibTeX 脚注按 GB/T 7714 渲染） |
+| `-o, --output <path>` | 输出路径；多文件或目标是目录时作为输出目录 |
+| `--theme <name>` | `elegant`（默认）｜ `minimal` |
+| `--title <text>` / `--kicker <text>` | 覆盖标题 / 报头小标题 |
+| `--no-meta` / `--no-lead` | 不要元信息条 / 首段不作为导语 |
+| `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
+| `--no-outline` | 不生成 PDF 书签（默认生成） |
+| `--bibliography` | 将脚注收集为文末「参考文献」章节（BibTeX 按 GB/T 7714 渲染） |
 | `--link-urls` | 正文链接后附 URL（纸质可读） |
-| `--landscape` | 横向页面 |
-| `--font-size <pt>` | 正文字号，默认 10.5 |
-| `--margin <mm>` | 页边距，默认 20；可写 `"20,18"`（上下,左右） |
-| `--no-footer` | 不要页脚页码 |
-| `--footer-left / --footer-right <text>` | 页脚左右文字 |
-| `--colophon <text>` | 文末落款（默认：来源文件名） |
-| `--keep-html` | 保留中间 HTML，方便调样式 |
-| `--html-only` | 只生成 HTML，不启动浏览器（调样式 / CI 校验用） |
+| `--landscape` / `--font-size <pt>` / `--margin <mm>` | 横向 / 字号（默认 10.5）/ 页边距（默认 20） |
+| `--no-footer` / `--footer-left` / `--footer-right` | 页脚控制 |
+| `--colophon <text>` | 文末落款 |
+| `--keep-html` / `--html-only` | 留中间 HTML 调样式 / 只出 HTML（CI 校验用） |
 | `--open` | 完成后打开 PDF |
 
 布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
@@ -107,17 +66,10 @@ md2pdf 文件名.md --theme minimal --toc
 
 | | 是什么 | 在哪看 | 怎么开 |
 | --- | --- | --- | --- |
-| **目录页** | 排在文首的一张目录，条目是**可点击的内链** | 文档第 1 页 | `-t / --toc`（默认关） |
-| **PDF 书签** | PDF 阅读器侧边栏里的**章节大纲树**（可折叠、点击跳转） | 阅读器侧栏 | **默认开**，`--no-outline` 关 |
+| **目录页** | 文首一张目录，条目是**可点击内链** | 文档第 1 页 | `-t / --toc`（默认关） |
+| **PDF 书签** | 阅读器侧栏的**章节大纲树** | 阅读器侧栏 | **默认开**，`--no-outline` 关 |
 
-书签由 Chrome 按 HTML 的 `h1`–`h6` 结构生成（报头标题为根，H2/H3 逐层嵌套），
-所以只要文档用了标准标题层级，就有对应的大纲，不需要额外配置。
-
-需要看侧栏的阅读器操作：macOS 预览需手动展开侧栏（**⌘⌥3**，或右上角侧栏按钮）；
-Acrobat / 福昕 / Chrome 内置阅读器点侧栏图标即可。侧栏是否自动展开由阅读器自身决定，
-本工具不写 `/PageMode`（改这个字段要重写 PDF 目录对象，收益不值那份风险）。
-
-自己验一份 PDF 的书签与内链：
+书签由 Chrome 按 `h1`–`h6` 结构生成，无需额外配置。验一份 PDF 的书签与内链：
 
 ```bash
 node ci/inspect-pdf.mjs out.pdf
@@ -125,239 +77,34 @@ node ci/inspect-pdf.mjs out.pdf
 
 ## 排版规则
 
-- 首个 H1 提升为报头大标题，正文不再重复；其后的首段自动成为导语。
-- YAML frontmatter 的 `name` / `description` 生成元信息条；description 里「适用于…」「不用于…」会自动拆成「适用 / 不适用」两栏。
-- H2 自动分节并加色块标记；表格深色表头＋隔行浅底；有序列表用圆形序号。
-- 数学公式：正文里的 `$...# md2pdf
+- 首个 H1 提升为报头大标题；其后的首段自动成为导语。
+- YAML frontmatter 的 `name` / `description` 生成元信息条；「适用于…/不用于…」自动拆两栏。
+- H2 自动分节加色块；表格深色表头＋隔行浅底；有序列表圆形序号。
+- 数学公式：`$...$`（行内）与 `$$...$$`（独立成行）由内置 MathJax 渲染。
+- 脚注：`[^id]` 引用 + `[^id]: 内容` 定义；BibTeX 脚注（`@article{...}` 等）按 GB/T 7714-2025 著录，`--bibliography` 收集为「参考文献」章节。
+- 相对路径图片自动解析进 PDF。
 
-把 Markdown 排成**优雅的中文 A4 PDF**：报头大标题、元信息条、精心排过的表格/代码/引用/列表、页脚页码。
-不是 pandoc 的默认样式 —— 是可以直接拿去打印、发给别人看的版式。
+改样式：`assets/base.css`（骨架）与 `assets/theme-*.css`（配色），改完重跑命令即生效。
 
-**elegant 主题**（默认，墨蓝 + 古铜）：
-
-![elegant 主题效果](docs/theme-elegant.png)
-
-**minimal 主题**（黑白公文风）：
-
-![minimal 主题效果](docs/theme-minimal.png)
-
-仓库：https://cnb.cool/jiyeqian/md2pdf
-
-## 两部分:命令 + 说明书
-
-这个工具是两层结构,各自独立存在、各自分发:
-
-| 层 | 是什么 | 给谁用 | 落在哪 |
-| --- | --- | --- | --- |
-| **命令** `md2pdf` | 真正的程序(Node + 无头 Chrome 渲染) | 你、任何脚本 | npm 全局安装到 `node_modules/@jiyeqian/md2pdf/` |
-| **技能说明书** `skill/SKILL.md` | 告诉 Agent「有 `md2pdf` 这个命令、怎么用」 | WorkBuddy 等 Agent 运行时 | `~/.workbuddy/skills/md-to-pdf/` |
-
-npm 的 `postinstall` 一次装两样:环境里有 WorkBuddy(`~/.workbuddy` 存在)就顺带装说明书,
-没有就只装命令。只要命令用 `MD2PDF_SKILL=0` 跳过。
-
-> 为什么说明书不在程序里?因为「怎么用」是给 Agent 看的,「能转换」是给系统跑的 ——
-> 混在一起会让换机器时多一份要同步的实现。说明书只有一份,就在仓库 `skill/`。
-
-## 安装
-
-**一条命令**（需要 Node ≥ 18，建议 ≥ 22）：
-
-```bash
-npm install -g @jiyeqian/md2pdf
-```
-
-它会装上 `md2pdf` 命令；`postinstall` 顺带把技能说明书装进 `~/.workbuddy`（存在时）。
-
-```bash
-md2pdf 你的文档.md --open   # 装完试一下
-```
-
-**更新**：`npm update -g @jiyeqian/md2pdf` · **卸载**：`npm uninstall -g @jiyeqian/md2pdf`
-
-| 变量 | 作用 |
-| --- | --- |
-| `MD2PDF_SKILL=0` | 安装时不装 Agent 技能说明书 |
-| `MD2PDF_SKILL_DIR=<dir>` | 说明书落点，默认 `~/.workbuddy/skills/md-to-pdf`（`~/.workbuddy` 不存在时默认不装） |
-
-### 在仓库里开发
+## 开发
 
 ```bash
 git clone https://cnb.cool/jiyeqian/md2pdf.git
 cd md2pdf
-npm link             # 把 bin/md2pdf 软链进 PATH，指向仓库本身，改代码立即生效
+npm link              # 命令指向仓库，改代码立即生效
+bash ci/validate.sh   # 本地与 CI 同一套校验（无需浏览器）
 ```
 
-`npm link` 之后命令就是仓库本身，改完立即生效，不需要重装。
-
-### 依赖
-
-| 依赖 | 要求 | 说明 |
-| --- | --- | --- |
-| Node.js | ≥ 18（建议 ≥ 22） | < 22 时自动启用内置 WebSocket 实现；`MD2PDF_NODE` 可指定 |
-| Chrome / Edge / Chromium | 任一 | 只用来渲染，不联网；`MD2PDF_CHROME` 可指定路径 |
-
-零 npm 依赖 —— Markdown 解析器（marked）已内置在 `vendor/`，装好即用。
-
-## 用法
-
-```bash
-md2pdf 文件名.md                    # 同目录输出同名 .pdf
-md2pdf 文件名.md --open             # 转完直接打开
-md2pdf a.md b.md -o 输出目录/       # 批量（共用一个浏览器实例，很快）
-md2pdf 文件名.md --theme minimal --toc
-```
-
-### 选项
-
-| 选项 | 作用 |
-| --- | --- |
-| `-o, --output <path>` | 输出路径；多文件或目标是目录时，作为输出目录 |
-| `--theme <name>` | `elegant`（默认，墨蓝＋古铜）｜ `minimal`（黑白公文风） |
-| `--title <text>` | 覆盖标题（默认：正文首个 H1 → frontmatter.title → 文件名） |
-| `--kicker <text>` | 报头小标题；`SKILL.md` 默认显示「技能文档」 |
-| `--no-meta` | 不要 frontmatter 元信息条 |
-| `--no-lead` | 首段不作为导语放大 |
-| `-t, --toc` | 文首插入目录页（取自 H2，需 2 个以上），每项可点击跳转 |
-| `--no-outline` | 不生成 PDF 书签（**默认生成**，见下） |
-| `--bibliography` | 将脚注收集为文末「参考文献」章节（BibTeX 脚注按 GB/T 7714 渲染） |
-| `--link-urls` | 正文链接后附 URL（纸质可读） |
-| `--landscape` | 横向页面 |
-| `--font-size <pt>` | 正文字号，默认 10.5 |
-| `--margin <mm>` | 页边距，默认 20；可写 `"20,18"`（上下,左右） |
-| `--no-footer` | 不要页脚页码 |
-| `--footer-left / --footer-right <text>` | 页脚左右文字 |
-| `--colophon <text>` | 文末落款（默认：来源文件名） |
-| `--keep-html` | 保留中间 HTML，方便调样式 |
-| `--html-only` | 只生成 HTML，不启动浏览器（调样式 / CI 校验用） |
-| `--open` | 完成后打开 PDF |
-
-布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
-
-### 目录与书签是两件事
-
-| | 是什么 | 在哪看 | 怎么开 |
-| --- | --- | --- | --- |
-| **目录页** | 排在文首的一张目录，条目是**可点击的内链** | 文档第 1 页 | `-t / --toc`（默认关） |
-| **PDF 书签** | PDF 阅读器侧边栏里的**章节大纲树**（可折叠、点击跳转） | 阅读器侧栏 | **默认开**，`--no-outline` 关 |
-
-书签由 Chrome 按 HTML 的 `h1`–`h6` 结构生成（报头标题为根，H2/H3 逐层嵌套），
-所以只要文档用了标准标题层级，就有对应的大纲，不需要额外配置。
-
-需要看侧栏的阅读器操作：macOS 预览需手动展开侧栏（**⌘⌥3**，或右上角侧栏按钮）；
-Acrobat / 福昕 / Chrome 内置阅读器点侧栏图标即可。侧栏是否自动展开由阅读器自身决定，
-本工具不写 `/PageMode`（改这个字段要重写 PDF 目录对象，收益不值那份风险）。
-
-自己验一份 PDF 的书签与内链：
-
-```bash
-node ci/inspect-pdf.mjs out.pdf
-```
-
-## 排版规则
-
-- 首个 H1 提升为报头大标题，正文不再重复；其后的首段自动成为导语。
-- YAML frontmatter 的 `name` / `description` 生成元信息条；description 里「适用于…」「不用于…」会自动拆成「适用 / 不适用」两栏。
-- H2 自动分节并加色块标记；表格深色表头＋隔行浅底；有序列表用圆形序号。
-（行内）与 `$...$`（独立成行）由内置 MathJax 渲染（SVG 输出，零字体依赖）。
-- 脚注：正文 `[^id]` 引用 + 文末 `[^id]: 内容` 定义；`--bibliography` 时收集为「参考文献」章节。
-- BibTeX 脚注（`@article{...}`、`@book{...}` 等）自动按 GB/T 7714-2025 著录格式渲染。
-- 相对路径图片自动解析成绝对地址，能正常进入 PDF。
-
-## 改样式
-
-```
-assets/base.css              骨架（占位符 {{PAGE_SIZE}} {{MARGIN_*}} {{FONT_SIZE}}）
-assets/theme-elegant.css     墨蓝 + 古铜（默认）
-assets/theme-minimal.css     黑白公文
-assets/shell.html            页面骨架
-```
-
-改完直接重跑命令，不用重启任何东西。
-
-## 它是怎么工作的
-
-```
-Markdown ──(marked)──▶ HTML ──(模板+主题 CSS)──▶ 完整 HTML
-        ──▶ 无头 Chrome（CDP Page.printToPDF）──▶ PDF
-```
-
-选 CDP 而不是 `chrome --print-to-pdf` 的原因：命令行版不支持页眉页脚模板，出不了页码。
-`preferCSSPageSize: true` 让页面尺寸/边距完全由 CSS `@page` 控制。
-
-## 校验与 CI
-
-```bash
-bash ci/validate.sh        # 本地跑，和 CI 完全同一套检查（约几秒）
-```
-
-校验分四层，全部不需要浏览器：
-
-1. **结构**：必需文件齐全、`bin/` 与安装脚本有可执行位、关键文件确实被 git 跟踪
-2. **语法**：`sh -n`、`node --check`
-3. **一致性**：版本号（package.json ↔ src）；模板占位符 ↔ 替换逻辑双向闭合；
-   主题 CSS 里 `var(--x)` 全部有定义；占位符替换必须是全量的
-4. **行为**：`--help`/`--version` 冒烟；`examples/demo.md` 端到端渲染到 HTML，
-   断言表格、代码块、引用、嵌套列表、目录、链接 URL、分节都在，且无占位符残留
-   与 `undefined` 泄漏；目录锚点与标题 `id` 一一对应
-5. **接线**：PDF 书签这类"只存在于 PDF 里"的特性，CI 没有浏览器验不了结果，
-   就退一步断言参数真的传进了 `printToPDF`、开关真的从 `main` 接到了渲染 ——
-   光有 `case '--no-outline'` 不等于接到了
-
-最后还有一步**守卫自测**：故意破坏一份副本（塞入未定义的占位符、改错主题变量名、
-改乱版本号、把目录项退回纯文本、关掉书签参数…），断言校验确实会失败 ——
-只会"全绿"的校验等于没有校验。
-
-CNB 云原生构建在 push / PR 时跑同一脚本；打 tag 时发布到 npm
-（见 `.cnb.yml`）。
-
-### 发版
-
-改完 `src/md2pdf.mjs` 的 `VERSION` 与 `package.json` 的 `version`（校验会检查两者一致），然后：
-
-```bash
-git tag v1.4.0 && git push origin v1.4.0
-```
-
-流水线会自动：校验 → `npm publish --access public`（发布到 npm，需在 CNB 项目里配置 `NPM_TOKEN` secret）。
-也可以本地手动 `npm publish`。
-
-注意 CNB **不允许删除 tag**，打错了只能升版本号再发一版。
-
-## 目录结构
-
-```
-bin/md2pdf              启动器（解析软链、挑选 node）
-src/md2pdf.mjs          主程序
-src/ws.mjs              Node < 22 时的极简 WebSocket 客户端
-src/install-skill.mjs   npm postinstall：把技能说明书装进 WorkBuddy
-assets/                 样式与页面骨架
-vendor/marked.esm.js    内置 Markdown 解析器
-examples/demo.md        示例文档（含表格/代码/引用/嵌套列表）
-ci/validate.sh          校验入口（本地与 CI 同一套）
-ci/checks.mjs           一致性 + 端到端渲染断言
-ci/inspect-pdf.mjs      读出 PDF 的书签树与链接注解（本地验证 outline 用）
-skill/SKILL.md          Agent 技能说明书（postinstall 会装到技能目录）
-```
-
-
+发版：同步 `src/md2pdf.mjs` 的 `VERSION` 与 `package.json` 的 `version`，然后 `git tag v1.x.x && git push origin v1.x.x`，CNB 流水线会自动 `npm publish`（需配置 `NPM_TOKEN`）。
 
 ## 常见问题
 
-**装到哪了 / 怎么升级** → npm 全局包在 `npm root -g` 下的 `@jiyeqian/md2pdf`，命令软链进 npm 的 bin 目录。
-升级：`npm update -g @jiyeqian/md2pdf`。
+**找不到 Chrome** → `export MD2PDF_CHROME=/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome`
 
-**npm 装不上** → 确认 npm registry 可达；也可以 clone 仓库后 `npm link` 本地开发。
+**Node 版本老** → 升级到 22+；不升也能用（自动走内置 WebSocket）。
 
-**找不到 Chrome** → 设 `export MD2PDF_CHROME=/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome`
-
-**Node 版本老** → 升级到 22+；不想升也能用（自动走内置 WebSocket），只是没在老版本上充分测试。
-
-**PDF 里目录不能点击** → Chrome 打印不保留内部锚点跳转，目录是纯文本。
-
-**想改默认字号/边距** → 直接改命令行参数；要永久生效就改 `src/md2pdf.mjs` 里 `parseArgs` 的默认值。
+**想改默认字号/边距** → 改命令行参数；永久生效改 `src/md2pdf.mjs` 里 `parseArgs` 的默认值。
 
 ## License
 
-MIT
-
-第三方组件：`vendor/marked.esm.js` 来自 [marked](https://github.com/markedjs/marked)（MIT License）；`vendor/mathjax/tex-svg.js` 来自 [MathJax](https://github.com/mathjax/MathJax)（Apache-2.0 License）。均随仓库分发以便零依赖安装。
+MIT。第三方组件：`vendor/marked.esm.js`（marked，MIT）、`vendor/mathjax/tex-svg.js`（MathJax，Apache-2.0），均随仓库分发以便零依赖安装。
