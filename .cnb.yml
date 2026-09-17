@@ -3,7 +3,7 @@
 # 定位：发布前校验 + 打标签时发布到 npm。
 # 构建节点是 Linux 容器，没有 macOS、也不装 Chrome —— 所以 CI 不打印 PDF，
 # 渲染校验落在 HTML 阶段（--html-only）。真实 PDF 打印属于本机环节。
-# 发布到 npm 需要项目里配置 NPM_TOKEN secret（npmjs 的 automation token）。
+# 发布到 npm：通过 imports 引用密钥仓库 secrets 里的 npm.yml（含 NPM_TOKEN）。
 
 $:
   push:
@@ -34,7 +34,7 @@ $:
     - name: 发布
       env:
         LANG: C.UTF-8
-        NPM_TOKEN: ${NPM_TOKEN}
+      imports: https://cnb.cool/jiyeqian/secrets/-/blob/main/npm.yml
       stages:
         - name: 发布前校验
           script: |
