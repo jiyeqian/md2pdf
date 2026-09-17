@@ -1,0 +1,32 @@
+{
+  "name": "md2pdf",
+  "version": "1.0.0",
+  "description": "把 Markdown 排成优雅的中文 A4 PDF（无头 Chrome 渲染，带报头、表格/代码排版与页脚页码）",
+  "type": "module",
+  "bin": {
+    "md2pdf": "bin/md2pdf"
+  },
+  "files": [
+    "bin",
+    "src",
+    "assets",
+    "vendor",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node src/md2pdf.mjs examples/demo.md -o /tmp/md2pdf-demo.pdf"
+  },
+  "keywords": [
+    "markdown",
+    "pdf",
+    "cli",
+    "chinese",
+    "typography"
+  ],
+  "license": "MIT",
+  "private": true
+}

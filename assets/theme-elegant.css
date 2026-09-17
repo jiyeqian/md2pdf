@@ -1,0 +1,32 @@
+/* 主题：elegant（默认）—— 墨蓝 + 古铜，带底色块 */
+:root {
+  --ink: #1b2a41;
+  --ink-soft: #33465f;
+  --accent: #8a6d3b;
+  --accent-soft: #c9b48f;
+  --paper: #ffffff;
+  --tint: #f6f4ef;
+  --rule: #e4e0d7;
+  --text: #262626;
+  --muted: #8a8578;
+
+  --code-bg: #f8f7f3;
+  --code-fg: #26303d;
+
+  --font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-head: "Songti SC", "Source Han Serif SC", "STSong", serif;
+  --font-mono: "SF Mono", "Menlo", "Consolas", monospace;
+
+  --masthead-border: 2.5px solid var(--ink);
+}
+
+thead th { background: var(--ink); color: #fff; border: none; }
+tbody tr:nth-child(even) { background: #fbfaf7; }
+
+ol li::before {
+  background: var(--tint);
+  border: 1px solid var(--accent-soft);
+  border-radius: 50%;
+  color: var(--accent);
+}
+ul li::before { background: var(--accent-soft); }

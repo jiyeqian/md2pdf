@@ -1,0 +1,49 @@
+#!/bin/sh
+# md2pdf —— Markdown → 优雅 PDF
+# 用法见：md2pdf --help
+#
+# 通过软链接调用也能正确定位项目根目录。
+# 环境变量 MD2PDF_NODE 可强制指定 node 可执行文件。
+
+set -e
+
+# 解析软链接，找到真实脚本所在目录
+SOURCE="$0"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  case "$SOURCE" in
+    /*) ;;
+    *) SOURCE="$DIR/$SOURCE" ;;
+  esac
+done
+ROOT="$(cd -P "$(dirname "$SOURCE")/.." && pwd)"
+
+# 选一个 node：优先 >= 22（有全局 WebSocket）；找不到就用任意可用版本
+node_major() {
+  "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0
+}
+
+pick_node() {
+  if [ -n "$MD2PDF_NODE" ] && [ -x "$MD2PDF_NODE" ]; then echo "$MD2PDF_NODE"; return; fi
+  candidates="$HOME/.workbuddy/binaries/node/versions/22.22.2-3/bin/node
+/usr/local/bin/node
+/opt/homebrew/bin/node
+/usr/bin/node
+$(command -v node 2>/dev/null)"
+  for c in $candidates; do
+    [ -x "$c" ] || continue
+    if [ "$(node_major "$c")" -ge 22 ] 2>/dev/null; then echo "$c"; return; fi
+  done
+  for c in $candidates; do
+    [ -x "$c" ] && { echo "$c"; return; }
+  done
+}
+
+NODE="$(pick_node)"
+if [ -z "$NODE" ]; then
+  echo "md2pdf: 未找到 Node.js（建议 >= 22）。可设置 MD2PDF_NODE=/path/to/node" >&2
+  exit 1
+fi
+
+exec "$NODE" "$ROOT/src/md2pdf.mjs" "$@"

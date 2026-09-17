@@ -1,0 +1,222 @@
+/* md2pdf — 基础排版（与主题无关的骨架）
+   占位符：{{MARGIN_TOP}} {{MARGIN_BOTTOM}} {{MARGIN_SIDE}} {{FONT_SIZE}} */
+
+@page {
+  size: {{PAGE_SIZE}};
+  margin: {{MARGIN_TOP}} {{MARGIN_SIDE}} {{MARGIN_BOTTOM}};
+}
+
+:root {
+  --doc-font-size: {{FONT_SIZE}};
+}
+
+* { box-sizing: border-box; }
+
+html {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--doc-font-size);
+  line-height: 1.9;
+  /* 中文正文不加字间距：否则 PDF 复制/检索时会被拆成单字 */
+  letter-spacing: 0;
+}
+
+/* ---------- 报头 ---------- */
+.masthead {
+  padding-bottom: 14px;
+  border-bottom: var(--masthead-border);
+}
+
+.kicker {
+  font-size: 8pt;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.kicker:empty { display: none; }
+
+h1 {
+  font-family: var(--font-head);
+  font-size: 2.5em;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 12px;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.lead {
+  font-size: 1.05em;
+  color: var(--ink-soft);
+  line-height: 1.95;
+  margin: 0;
+  text-align: justify;
+}
+
+/* ---------- 元信息条 ---------- */
+.meta {
+  display: flex;
+  gap: 0;
+  margin: 16px 0 30px;
+  padding: 12px 16px;
+  background: var(--tint);
+  border-left: 3px solid var(--accent);
+}
+.meta:empty { display: none; }
+.meta-item { flex: 1; padding-right: 16px; }
+.meta-item + .meta-item { border-left: 1px solid var(--rule); padding-left: 16px; }
+.meta-label {
+  display: block;
+  font-size: 7.5pt;
+  letter-spacing: .18em;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.meta-value { font-size: 9pt; color: var(--text); line-height: 1.7; }
+
+/* ---------- 目录 ---------- */
+.toc {
+  margin: 0 0 28px;
+  padding: 14px 18px;
+  background: var(--tint);
+  border: 1px solid var(--rule);
+}
+.toc-title {
+  font-size: 7.5pt; letter-spacing: .2em; color: var(--accent);
+  font-weight: 600; margin-bottom: 8px;
+}
+.toc ol { margin: 0; padding-left: 18px; counter-reset: toc; list-style: none; }
+.toc li { position: relative; margin: 3px 0; font-size: 9.5pt; }
+.toc li::before {
+  counter-increment: toc; content: counter(toc,decimal-leading-zero);
+  color: var(--accent); font-family: var(--font-mono);
+  font-size: 8.5pt; margin-right: 8px;
+}
+.toc a { color: var(--ink); text-decoration: none; border: none; }
+
+/* ---------- 章节 ---------- */
+section { margin-bottom: 26px; }
+section:last-of-type { margin-bottom: 8px; }
+
+h2 {
+  font-family: var(--font-head);
+  font-size: 1.38em;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 14px;
+  padding: 2px 0 8px 14px;
+  border-bottom: 1px solid var(--rule);
+  position: relative;
+  line-height: 1.5;
+}
+h2::before {
+  content: ""; position: absolute; left: 0; top: 6px; bottom: 10px;
+  width: 4px; background: var(--accent);
+}
+
+h3 {
+  font-family: var(--font-head);
+  font-size: 1.12em; font-weight: 700; color: var(--ink);
+  margin: 22px 0 10px; line-height: 1.5;
+}
+h4 {
+  font-size: 1em; font-weight: 700; color: var(--ink-soft);
+  margin: 16px 0 8px;
+}
+
+p { margin: 0 0 12px; text-align: justify; }
+p:last-child { margin-bottom: 0; }
+
+/* ---------- 表格 ---------- */
+table {
+  width: 100%; border-collapse: collapse;
+  margin: 4px 0 16px; font-size: .92em;
+}
+thead th {
+  text-align: left; padding: 8px 10px;
+  font-weight: 600; letter-spacing: .05em; font-size: .95em;
+}
+tbody td {
+  padding: 9px 10px; border-bottom: 1px solid var(--rule);
+  vertical-align: top; line-height: 1.75; text-align: justify;
+}
+tbody td:first-child { font-weight: 600; color: var(--ink); }
+
+/* ---------- 列表 ---------- */
+ol, ul { margin: 0 0 14px; padding-left: 0; }
+ol { list-style: none; counter-reset: step; }
+ol li { position: relative; padding-left: 30px; margin-bottom: 11px; text-align: justify; }
+ol li:last-child { margin-bottom: 0; }
+ol li::before {
+  counter-increment: step; content: counter(step);
+  position: absolute; left: 0; top: .28em;
+  width: 1.55em; height: 1.55em; line-height: 1.55em; text-align: center;
+  font-family: var(--font-mono); font-size: .82em; font-weight: 700;
+}
+ul { list-style: none; }
+ul li { position: relative; padding-left: 18px; margin-bottom: 11px; text-align: justify; }
+ul li:last-child { margin-bottom: 0; }
+ul li::before {
+  content: ""; position: absolute; left: 2px; top: .82em;
+  width: 5px; height: 5px; border-radius: 50%;
+}
+li > ul, li > ol { margin: 8px 0 0; }
+li p { margin-bottom: 6px; }
+
+/* ---------- 行内 ---------- */
+strong { color: var(--ink); font-weight: 600; }
+em { font-style: normal; color: var(--ink-soft); }
+code {
+  font-family: var(--font-mono); font-size: .88em;
+  background: var(--tint); color: var(--ink);
+  padding: 1.5px 5px; border-radius: 3px; border: 1px solid var(--rule);
+}
+a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--accent-soft); }
+a.ref { border-bottom: 1px dotted var(--accent); word-break: break-all; }
+.link-url { font-family: var(--font-mono); font-size: .75em; color: var(--muted); }
+
+/* ---------- 代码块 / 引用 / 分隔线 ---------- */
+pre {
+  background: var(--code-bg); color: var(--code-fg);
+  border: 1px solid var(--rule); border-radius: 4px;
+  padding: 12px 14px; margin: 0 0 14px;
+  overflow: hidden; white-space: pre-wrap; word-break: break-word;
+}
+pre code {
+  background: transparent; border: none; padding: 0;
+  color: inherit; font-size: .85em; line-height: 1.7;
+}
+blockquote {
+  margin: 0 0 14px; padding: 10px 14px;
+  background: var(--tint); border-left: 3px solid var(--accent-soft);
+  color: var(--ink-soft); font-size: .95em; text-align: justify;
+}
+blockquote p:last-child { margin-bottom: 0; }
+hr {
+  border: none; border-top: 1px solid var(--rule);
+  margin: 24px 0;
+}
+img { max-width: 100%; height: auto; display: block; margin: 8px auto 14px; }
+
+/* ---------- 文末 ---------- */
+.colophon {
+  margin-top: 32px; padding-top: 12px; border-top: 1px solid var(--rule);
+  display: flex; justify-content: space-between;
+  font-size: 8pt; color: var(--muted); letter-spacing: .08em;
+}
+.colophon:empty { display: none; }
+
+/* ---------- 分页控制 ---------- */
+h1, h2, h3, h4, thead { break-after: avoid; }
+tr, li, pre, blockquote, img { break-inside: avoid; }
+section { break-inside: auto; }

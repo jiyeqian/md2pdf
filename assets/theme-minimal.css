@@ -1,0 +1,40 @@
+/* 主题：minimal —— 纯黑白灰，无底色块，适合正式公文/报告 */
+:root {
+  --ink: #141414;
+  --ink-soft: #3d3d3d;
+  --accent: #555555;
+  --accent-soft: #b8b8b8;
+  --paper: #ffffff;
+  --tint: #ffffff;
+  --rule: #dcdcdc;
+  --text: #1f1f1f;
+  --muted: #8c8c8c;
+
+  --code-bg: #f6f6f6;
+  --code-fg: #23272e;
+
+  --font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-head: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-mono: "SF Mono", "Menlo", "Consolas", monospace;
+
+  --masthead-border: 1px solid #141414;
+}
+
+.kicker { color: var(--muted); }
+h2::before { width: 3px; background: #141414; }
+
+.meta { border-left: 2px solid #141414; background: #fff; padding-left: 14px; }
+.toc { background: #fff; }
+blockquote { background: #fff; border-left: 2px solid #141414; }
+
+thead th {
+  background: #fff; color: var(--ink);
+  border-top: 1px solid #141414; border-bottom: 1px solid #141414;
+}
+tbody tr:nth-child(even) { background: #fafafa; }
+
+ol li::before {
+  background: #fff; border: 1px solid #b8b8b8; border-radius: 0;
+  color: var(--ink);
+}
+ul li::before { background: #8c8c8c; border-radius: 0; }
