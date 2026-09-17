@@ -30,7 +30,7 @@
  */
 
 import { readFile, writeFile, mkdtemp, rm, mkdir } from 'node:fs/promises';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, statSync, rmdirSync, lstatSync, unlinkSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import http from 'node:http';
@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.3.0';
+const VERSION = '1.3.1';
 
 // 联网安装时 install.sh 会写入 .install-meta（记录来源），--upgrade 依赖它
 const INSTALL_META = '.install-meta';
@@ -451,6 +451,15 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
 
 // 从安装来源（install.sh 写下的 .install-meta）重新拉取并覆盖安装。
 // 目标进程正在运行的就是被覆盖的目录 —— 这不是问题：node 启动时已把模块读进内存。
+// 收敛历史遗留的命令目录：v1.2.1–v1.3.0 把 .install-meta 里的 bin= 当作 PREFIX
+// 回传，而 PREFIX 会被安装脚本再拼一层 /bin，于是每升级一次多一层：
+// /usr/local/bin → …/bin → …/bin/bin。"…/bin/bin" 结尾几乎只可能来自这个 bug。
+function collapseBinSuffix(p) {
+  let q = p;
+  while (/\/bin\/bin$/.test(q)) q = q.slice(0, -4);
+  return q;
+}
+
 async function doUpgrade() {
   const metaPath = path.join(ROOT, INSTALL_META);
   if (!existsSync(metaPath)) {
@@ -468,13 +477,25 @@ async function doUpgrade() {
   const repo = meta.repo || DEFAULT_REPO;
   const ref = meta.ref || 'main';
   const url = `${repo}/-/git/raw/${encodeURIComponent(ref)}/install.sh`;
+  let legacyBin = '';
 
   console.log(`从 ${url} 更新…（当前 ${VERSION}）`);
   const env = { ...process.env, MD2PDF_HOME: ROOT, MD2PDF_REF: ref, MD2PDF_SRC: repo };
   // 命令落点与技能目录都记在 .install-meta 里。升级时环境里通常没有 PREFIX /
   // MD2PDF_SKILL_DIR，不显式传回去，命令会漂到默认目录（旧位置留下悬空软链）、
   // 技能说明书也会装错地方或停在旧版。
-  if (meta.bin) env.PREFIX = meta.bin;
+  //
+  // 注意传的是 MD2PDF_BIN_DIR（精确目录），不是 PREFIX（前缀，脚本会再拼 /bin）。
+  // v1.2.1–v1.3.0 把 bin= 当成 PREFIX 传，每升级一次就多一层 /bin：
+  // /usr/local/bin → …/bin → …/bin/bin。这里顺手把已经写坏的收敛回一层。
+  if (meta.bin) {
+    const fixed = collapseBinSuffix(meta.bin);
+    if (fixed !== meta.bin) {
+      console.log(`（检测到历史遗留的命令目录：${meta.bin}，将收敛为 ${fixed}）`);
+      legacyBin = meta.bin;
+    }
+    env.MD2PDF_BIN_DIR = fixed;
+  }
   if (meta.skill) env.MD2PDF_SKILL_DIR = meta.skill;
   const r = spawnSync('sh', ['-c', 'curl -fsSL "$1" | sh', 'sh', url], {
     stdio: 'inherit',
@@ -486,10 +507,39 @@ async function doUpgrade() {
     return;
   }
 
+  // 安装成功后再清历史遗留目录：里面还留着旧版写的软链，必须先摘掉软链才删得掉。
+  // 放在安装之后，万一清理失败也不影响新安装是否可用。
+  if (legacyBin) removeLegacyBinDirs(legacyBin, collapseBinSuffix(legacyBin));
+
   const after = spawnSync(path.join(ROOT, 'bin', 'md2pdf'), ['--version'], { encoding: 'utf8' });
   const now = (after.stdout || '').trim();
   if (now && now !== VERSION) console.log(`\n已更新： ${VERSION} → ${now}`);
   else if (now) console.log(`\n已是最新：${now}`);
+}
+
+// 删掉旧版叠加出来的目录层（legacyBin 到 stopAt 之间的那几层）。
+// 只删「看起来是我们自己写的」条目：指向 ROOT 的软链，或内容是转发 ROOT 的小脚本。
+// 其余情况一律留手 —— 宁可留下空目录，也不要误删用户目录里的东西。
+function removeLegacyBinDirs(legacyBin, stopAt) {
+  // 路径比较必须走 realpath：macOS 上 /var 与 /private/var 是同一处，
+  // 字符串比会判成不同（CI 里就是这么漏掉清理的）。
+  const canon = (p) => { try { return realpathSync(p); } catch { return p; } };
+  const ownTarget = canon(path.join(ROOT, 'bin', 'md2pdf'));
+  for (let p = legacyBin; p !== stopAt && p !== path.dirname(p); p = path.dirname(p)) {
+    const entry = path.join(p, 'md2pdf');
+    try {
+      const st = lstatSync(entry);
+      if (st.isSymbolicLink()) {
+        if (canon(entry) !== ownTarget) break; // 不是我们的，停手
+        unlinkSync(entry);
+      } else if (st.isFile() && readFileSync(entry, 'utf8').includes(path.join(ROOT, 'bin', 'md2pdf'))) {
+        unlinkSync(entry); // 转发脚本
+      } else break;
+    } catch {
+      // 条目不存在（可能上一轮已清）—— 继续尝试删目录
+    }
+    try { rmdirSync(p); console.log(`已清理历史遗留目录：${p}`); } catch { break; }
+  }
 }
 
 /* ---------------- main ---------------- */

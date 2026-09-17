@@ -154,6 +154,47 @@ if ( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$TMPI/home" \
   else
     good "升级未污染默认命令目录（命令落点从 .install-meta 恢复）"
   fi
+  # 命令落点必须幂等 —— 每升级一次都不能多套一层 /bin。
+  # 曾经的 bug：bin=（精确目录）被当成 PREFIX（前缀）回传，安装脚本再拼一层 /bin，
+  # 于是 /usr/local/bin → …/bin → …/bin/bin 逐次加深（每次升级都没报错）。
+  # 只查"默认目录有没有被污染"抓不到它，必须直接盯 meta 里的落点值。
+  meta_bin() { sed -n 's/^bin=//p' "$TMPI/home/.install-meta" 2>/dev/null | tail -1; }
+  base_bin="$(meta_bin)"
+  if [ "$base_bin" = "$TMPI/prefix/bin" ]; then
+    good "升级后命令落点正确（${base_bin}）"
+  else
+    bad "升级后命令落点漂移：${base_bin}（应为 $TMPI/prefix/bin）"
+  fi
+  # 连续再升一次：落点、meta、可运行性都不许变
+  ( cd "$TMPI" && "$TMPI/prefix/bin/md2pdf" --upgrade ) >"$TMPI/up2.log" 2>&1 || true
+  again_bin="$(meta_bin)"
+  if [ "$again_bin" = "$base_bin" ]; then
+    good "连续升级两次命令落点不变（幂等）"
+  else
+    bad "连续升级导致落点加深：${base_bin} → ${again_bin}"
+  fi
+  if [ -x "$TMPI/prefix/bin/md2pdf" ] && "$TMPI/prefix/bin/md2pdf" --version >/dev/null 2>&1; then
+    good "连续升级后原落点命令仍可用"
+  else
+    bad "连续升级后原落点命令丢失"; sed 's/^/      /' "$TMPI/up2.log" | tail -5
+  fi
+  # 自愈：已经被旧版写坏的 meta（落点含多层 /bin）+ 遗留目录，升级后必须收敛
+  mkdir -p "$TMPI/prefix/bin/bin" 2>/dev/null
+  rm -f "$TMPI/prefix/bin/bin/md2pdf"
+  ln -s "$TMPI/home/bin/md2pdf" "$TMPI/prefix/bin/bin/md2pdf" 2>/dev/null
+  echo "bin=$TMPI/prefix/bin/bin" >> "$TMPI/home/.install-meta"
+  ( cd "$TMPI" && "$TMPI/prefix/bin/md2pdf" --upgrade ) >"$TMPI/up3.log" 2>&1 || true
+  healed="$(meta_bin)"
+  if [ "$healed" = "$TMPI/prefix/bin" ]; then
+    good "历史遗留的多层 /bin 落点被收敛（>${healed}）"
+  else
+    bad "历史遗留落点未收敛：${healed}（应为 $TMPI/prefix/bin）"
+  fi
+  if [ -e "$TMPI/prefix/bin/bin" ]; then
+    bad "遗留目录未被清理：$TMPI/prefix/bin/bin"
+  else
+    good "遗留的命令目录被清理"
+  fi
   # 防误删：安装目录指到家目录必须被拒绝
   if ( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$HOME" \
        MD2PDF_SKILL_DIR="$TMPI/skill" \
@@ -280,6 +321,16 @@ if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
       bad "书签参数被关掉，校验却通过了 —— 书签断言失效"
     else
       good "书签参数缺失时校验正确失败"
+    fi
+
+    # 破坏 9：把升级回传的落点改回 PREFIX（即复现 v1.2.1–v1.3.0 的漂移 bug）
+    ( cd "$TARGET" && tar cf - --exclude=.git --exclude=node_modules . ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
+    sed -i.bak 's/env\.MD2PDF_BIN_DIR = fixed/env.PREFIX = fixed/' "$TMP/proj/src/md2pdf.mjs" 2>/dev/null \
+      || sed -i '' 's/env\.MD2PDF_BIN_DIR = fixed/env.PREFIX = fixed/' "$TMP/proj/src/md2pdf.mjs"
+    if ( cd "$TMP/proj" && node ci/checks.mjs "$TMP/proj" >/dev/null 2>&1 ); then
+      bad "落点被当作 PREFIX 回传（漂移 bug 复现），校验却通过了 —— 落点断言失效"
+    else
+      good "落点语义被写错时校验正确失败"
     fi
   fi
   rm -rf "$TMP"

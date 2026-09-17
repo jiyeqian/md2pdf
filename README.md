@@ -39,11 +39,15 @@ md2pdf ~/.local/share/md2pdf/examples/demo.md --open   # 装完试一下
 
 **更新**：`md2pdf --upgrade`（或重跑上面那条命令） · **卸载**：`~/.local/share/md2pdf/uninstall.sh`
 
+> 若在 v1.2.1–v1.3.0 期间升级过，命令可能落到 `<原目录>/bin/bin`（每次升级多一层）。
+> v1.3.1 起 `--upgrade` 会自动把历史遗留的多层 `/bin` 收敛回原目录，并清掉空目录。
+
 | 变量 | 作用 |
 | --- | --- |
 | `MD2PDF_HOME=<dir>` | 安装位置，默认 `~/.local/share/md2pdf` |
 | `MD2PDF_REF=<ref>` | 装指定分支/标签，默认 `main`（如 `MD2PDF_REF=v1.2.0`） |
-| `PREFIX=<dir>` | 命令落点，默认 `/usr/local/bin`（无写权限自动用 `~/.local/bin`） |
+| `MD2PDF_BIN_DIR=<dir>` | 命令落点目录（**精确**，优先于 `PREFIX`） |
+| `PREFIX=<dir>` | 落点**前缀**，命令装在 `<dir>/bin`，默认 `/usr/local/bin`（无写权限自动用 `~/.local/bin`） |
 | `MD2PDF_SKILL=0` | 不安装 Agent 技能说明书 |
 | `MD2PDF_SKILL_DIR=<dir>` | 说明书落点，默认 `~/.workbuddy/skills/md-to-pdf`（`~/.workbuddy` 不存在时默认不装） |
 

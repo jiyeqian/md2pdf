@@ -100,7 +100,11 @@ else
 fi
 
 # -------------------------------------------------------------- 链接命令
-if [ -n "$PREFIX" ]; then
+# MD2PDF_BIN_DIR 是精确落点（升级时从 .install-meta 回传）；PREFIX 是前缀。
+# 两者别混：把已经带 /bin 的目录当 PREFIX 传，会再拼一层，且每次升级都多一层。
+if [ -n "$MD2PDF_BIN_DIR" ]; then
+  BIN_DIR="$MD2PDF_BIN_DIR"
+elif [ -n "$PREFIX" ]; then
   BIN_DIR="$PREFIX/bin"
 else
   BIN_DIR="/usr/local/bin"

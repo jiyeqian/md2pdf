@@ -166,9 +166,21 @@ ok('安装：软链不可用时写转发脚本而非复制启动器',
 ok('安装：.install-meta 记录命令落点',
   /echo "bin=\$BIN_DIR" >>/.test(installSh),
   '不记的话，升级会重新选目录，用 PREFIX 装的命令就会漂走');
-ok('CLI：--upgrade 会把命令落点传回安装脚本',
-  /env\.PREFIX = meta\.bin/.test(src),
-  '缺这一步，升级会把命令写进默认目录，而旧位置留下悬空软链');
+ok('CLI：--upgrade 把命令落点回传为 MD2PDF_BIN_DIR（精确目录）',
+  /env\.MD2PDF_BIN_DIR = /.test(src),
+  'bin= 记的是精确目录；当 PREFIX 传回去会被再拼一层 /bin，每升级一次多一层');
+ok('CLI：--upgrade 不把 bin= 当 PREFIX 传',
+  !/env\.PREFIX = meta\.bin/.test(src),
+  '这一行是 v1.2.1–v1.3.0 的漂移 bug 根源');
+ok('安装：支持 MD2PDF_BIN_DIR 精确落点（且优先于 PREFIX）',
+  /if \[ -n "\$MD2PDF_BIN_DIR" \]/.test(installSh) && /BIN_DIR="\$MD2PDF_BIN_DIR"/.test(installSh),
+  '没有精确落点的入口，升级只能靠拼前缀，语义必然出错');
+ok('安装：PREFIX 语义是「前缀」（命令装在 <dir>/bin）',
+  /BIN_DIR="\$PREFIX\/bin"/.test(installSh),
+  'PREFIX 不拼 /bin 的话，与 .install-meta 的 bin= 就会混为一谈');
+ok('CLI：历史遗留的多层 /bin 会被收敛',
+  /function collapseBinSuffix/.test(src) && /collapseBinSuffix\(meta\.bin\)/.test(src),
+  '已中招的安装（bin=/usr/local/bin/bin/bin）要能自愈，不能越升越深');
 ok('安装：同时支持 curl 与 wget', /curl/.test(installSh) && /wget/.test(installSh));
 
 ok('CLI：帮助文本包含 --upgrade', /--upgrade\s+从安装来源/.test(src));

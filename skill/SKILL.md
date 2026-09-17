@@ -36,7 +36,8 @@ curl -fsSL https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/install.sh | sh
 **升级**：`md2pdf --upgrade`（读 `.install-meta` 回源覆盖安装） · **卸载**：`~/.local/share/md2pdf/uninstall.sh`
 
 环境变量：`MD2PDF_REF=v1.2.0` 固定版本；`MD2PDF_HOME=<dir>` 改程序本体位置；
-`PREFIX=<dir>` 改命令落点；`MD2PDF_SKILL=0` 不装说明书；`MD2PDF_SKILL_DIR=<dir>` 指定技能目录。
+`MD2PDF_BIN_DIR=<dir>` 精确指定命令目录；`PREFIX=<dir>` 命令装在 `<dir>/bin`；
+`MD2PDF_SKILL=0` 不装说明书；`MD2PDF_SKILL_DIR=<dir>` 指定技能目录。
 
 ## 常用选项
 
