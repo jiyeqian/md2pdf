@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.7.1';
+const VERSION = '1.7.2';
 
 // Node ≥ 22 有全局 WebSocket；更老的版本退回到内置的极简实现
 let _WS;
@@ -68,7 +68,7 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --no-lead            首段不作为导语
   -t, --toc                在文首插入目录页（取自二级标题，可点击跳转）
       --no-outline         不生成 PDF 书签（默认生成，阅读器侧边栏按标题成树）
-      --bibliography       将脚注收集为文末「参考文献」章节（BibTeX 脚注按 GB/T 7714 渲染）
+      --bibliography [footnote|bib]  将脚注收集为「参考文献」章节（默认 footnote；bib 为未来支持）
       --numbering <mode>    章节编号：auto（默认，识别到已有编号则不动）| force（强制）| none（不加）
       --link-urls          正文链接后附 URL
       --landscape          横向
@@ -145,7 +145,12 @@ function parseArgs(argv) {
       case '--no-toc': o.toc = false; break;
       case '--outline': o.outline = true; break;
       case '--no-outline': o.outline = false; break;
-      case '--bibliography': o.bibliography = true; break;
+      case '--bibliography': {
+        const n = argv[i + 1];
+        if (n && ['footnote', 'bib'].includes(n)) { o.bibliography = n; i++; }
+        else o.bibliography = 'footnote';
+        break;
+      }
       case '--numbering': o.numbering = next(); break;
       case '--no-bibliography': o.bibliography = false; break;
       case '--no-landscape': o.landscape = false; break;

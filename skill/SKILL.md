@@ -47,7 +47,7 @@ npm install -g @jiyeqian/md2pdf
 | `--no-meta` / `--no-lead` | 去掉元信息条 / 首段不作为导语 |
 | `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
 | `--no-outline` | 不生成 PDF 书签（默认生成） |
-| `--bibliography` | 将脚注收集为「参考文献」章节（BibTeX 脚注按 GB/T 7714 渲染） |
+| `--bibliography [footnote\|bib]` | 将脚注收集为「参考文献」章节（默认 footnote；bib 为未来支持） |
 | `--numbering <mode>` | 章节编号：auto（默认）｜ force（强制）｜ none（不加） |
 | `--link-urls` | 链接后附 URL |
 | `--landscape` / `--font-size` / `--margin` | 横向 / 字号（默认 10.5pt）/ 页边距（默认 20mm） |
