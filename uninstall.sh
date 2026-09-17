@@ -38,5 +38,13 @@ else
   echo "未发现联网安装的程序目录（${HOME_DIR}），项目文件保留"
 fi
 
+# ------------------------------------------------------ 技能说明书（只提示）
+# 不自动删：那是共享的技能目录，用户可能改过或还想留着。
+SKILL_DIR="${MD2PDF_SKILL_DIR:-$HOME/.workbuddy/skills/md-to-pdf}"
+if [ -f "$SKILL_DIR/SKILL.md" ]; then
+  echo "技能说明书保留：${SKILL_DIR}"
+  echo "  （如不再需要，删除该目录即可）"
+fi
+
 echo
 echo "md2pdf 已卸载。"

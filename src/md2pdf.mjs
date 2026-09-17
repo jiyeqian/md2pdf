@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 
 // 联网安装时 install.sh 会写入 .install-meta（记录来源），--upgrade 依赖它
 const INSTALL_META = '.install-meta';
@@ -447,9 +447,13 @@ async function doUpgrade() {
   const url = `${repo}/-/git/raw/${encodeURIComponent(ref)}/install.sh`;
 
   console.log(`从 ${url} 更新…（当前 ${VERSION}）`);
+  const env = { ...process.env, MD2PDF_HOME: ROOT, MD2PDF_REF: ref, MD2PDF_SRC: repo };
+  // 技能目录位置记在 .install-meta 里。升级时环境里通常没有 MD2PDF_SKILL_DIR，
+  // 不显式传回去，技能说明书就会装到默认位置（或不被更新）。
+  if (meta.skill) env.MD2PDF_SKILL_DIR = meta.skill;
   const r = spawnSync('sh', ['-c', 'curl -fsSL "$1" | sh', 'sh', url], {
     stdio: 'inherit',
-    env: { ...process.env, MD2PDF_HOME: ROOT, MD2PDF_REF: ref, MD2PDF_SRC: repo },
+    env,
   });
   if (r.status !== 0) {
     console.error(`md2pdf: 更新失败（退出码 ${r.status}）`);

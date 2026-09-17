@@ -184,6 +184,35 @@ for (const f of SHELL_FILES) {
     hits.join(' | ') + '  → 应写成 ${VAR}');
 }
 
+/* ---------- 8. 技能说明书（Agent 那一层的分发） ---------- */
+// 技能包只是"说明书"，实现是 CLI —— 两层各自分发。说明书必须随仓库走，
+// 否则换了机器装好命令，Agent 仍然不认识它。
+const skillMd = readIf(path.join(ROOT, 'skill', 'SKILL.md'));
+ok('技能：skill/SKILL.md 存在（说明书随仓库分发）', skillMd.length > 0);
+if (skillMd) {
+  const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(skillMd);
+  ok('技能：有 YAML frontmatter', !!fm);
+  const fmName = fm ? (/^name:\s*(\S+)\s*$/m.exec(fm[1]) || [])[1] : undefined;
+  ok('技能：frontmatter name 为 md-to-pdf（与技能目录名一致）',
+    fmName === 'md-to-pdf', `name=${fmName}`);
+  ok('技能：frontmatter 有 description',
+    !!(fm && /^description:\s*\S/m.test(fm[1])));
+  ok('技能：install.sh 会把它装进技能目录',
+    /skill\/SKILL\.md/.test(installSh) && /skills\/md-to-pdf/.test(installSh),
+    '期望 install.sh 同时引用 skill/SKILL.md 与 skills/md-to-pdf');
+  ok('技能：install.sh 提供 MD2PDF_SKILL 开关与 MD2PDF_SKILL_DIR 落点',
+    /\$\{MD2PDF_SKILL:-/.test(installSh) && /MD2PDF_SKILL_DIR/.test(installSh));
+  ok('技能：说明书里的一行安装命令指向同一仓库',
+    repoM ? skillMd.includes(`${repoM[1]}/-/git/raw/`) : false,
+    repoM ? `期望含 ${repoM[1]}/-/git/raw/` : '');
+  ok('技能：install.sh 把技能目录写进 .install-meta',
+    /echo "skill=\$SKILL_DIR" >>/.test(installSh),
+    '不记下来的话 --upgrade 不知道技能该更新到哪');
+  ok('技能：--upgrade 会把技能目录传回安装脚本',
+    /env\.MD2PDF_SKILL_DIR = meta\.skill/.test(src),
+    '缺这一步，升级后技能会停在旧版（或被装到默认位置）');
+}
+
 /* ---------- 汇总 ---------- */
 console.log(`\n结果：${pass} 项通过，${fail} 项失败`);
 process.exit(fail === 0 ? 0 : 1);

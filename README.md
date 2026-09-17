@@ -7,6 +7,21 @@
 
 仓库：https://cnb.cool/jiyeqian/md2pdf
 
+## 两部分:命令 + 说明书
+
+这个工具是两层结构,各自独立存在、各自分发:
+
+| 层 | 是什么 | 给谁用 | 落在哪 |
+| --- | --- | --- | --- |
+| **命令** `md2pdf` | 真正的程序(Node + 无头 Chrome 渲染) | 你、任何脚本 | `~/.local/share/md2pdf/`,命令软链进 PATH |
+| **技能说明书** `skill/SKILL.md` | 告诉 Agent「有 `md2pdf` 这个命令、怎么用」 | WorkBuddy 等 Agent 运行时 | `~/.workbuddy/skills/md-to-pdf/` |
+
+`install.sh` 一次装两样:环境里有 WorkBuddy(`~/.workbuddy` 存在)就顺带装说明书,
+没有就只装命令。只要命令用 `MD2PDF_SKILL=0` 跳过。
+
+> 为什么说明书不在程序里?因为「怎么用」是给 Agent 看的,「能转换」是给系统跑的 ——
+> 混在一起会让换机器时多一份要同步的实现。说明书只有一份,就在仓库 `skill/`。
+
 ## 安装
 
 **一条命令**（不用 clone）：
@@ -29,6 +44,8 @@ md2pdf ~/.local/share/md2pdf/examples/demo.md --open   # 装完试一下
 | `MD2PDF_HOME=<dir>` | 安装位置，默认 `~/.local/share/md2pdf` |
 | `MD2PDF_REF=<ref>` | 装指定分支/标签，默认 `main`（如 `MD2PDF_REF=v1.2.0`） |
 | `PREFIX=<dir>` | 命令落点，默认 `/usr/local/bin`（无写权限自动用 `~/.local/bin`） |
+| `MD2PDF_SKILL=0` | 不安装 Agent 技能说明书 |
+| `MD2PDF_SKILL_DIR=<dir>` | 说明书落点，默认 `~/.workbuddy/skills/md-to-pdf`（`~/.workbuddy` 不存在时默认不装） |
 
 ### 在仓库里安装（开发用）
 
@@ -154,6 +171,7 @@ vendor/marked.esm.js  内置 Markdown 解析器
 examples/demo.md      示例文档（含表格/代码/引用/嵌套列表）
 ci/validate.sh        校验入口（本地与 CI 同一套）
 ci/checks.mjs         一致性 + 端到端渲染断言
+skill/SKILL.md        Agent 技能说明书（install.sh 会装到技能目录）
 install.sh            安装（联网安装 / 仓库内安装 两用）
 uninstall.sh          卸载
 ```

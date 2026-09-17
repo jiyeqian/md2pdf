@@ -49,7 +49,8 @@ good "node $(node -v)"
 head2 "结构与可执行位"
 REQUIRED="bin/md2pdf src/md2pdf.mjs src/ws.mjs assets/shell.html assets/base.css
 assets/theme-elegant.css assets/theme-minimal.css vendor/marked.esm.js
-examples/demo.md install.sh uninstall.sh package.json README.md LICENSE"
+examples/demo.md install.sh uninstall.sh package.json README.md LICENSE
+skill/SKILL.md"
 missing=""
 for f in $REQUIRED; do [ -f "$TARGET/$f" ] || missing="$missing $f"; done
 if [ -n "$missing" ]; then bad "缺少文件：$missing"; else good "必需文件齐全（$(echo $REQUIRED | wc -w | tr -d ' ') 项）"; fi
@@ -60,7 +61,7 @@ done
 
 # 分发渠道是 git：必须真的被版本控制跟踪（防止文件只在本地存在）
 if command -v git >/dev/null 2>&1 && git -C "$TARGET" rev-parse --git-dir >/dev/null 2>&1; then
-  untracked="$(git -C "$TARGET" ls-files --error-unmatch bin/md2pdf src/md2pdf.mjs ci/validate.sh ci/checks.mjs >/dev/null 2>&1; echo $?)"
+  untracked="$(git -C "$TARGET" ls-files --error-unmatch bin/md2pdf src/md2pdf.mjs ci/validate.sh ci/checks.mjs skill/SKILL.md >/dev/null 2>&1; echo $?)"
   [ "$untracked" = "0" ] && good "关键文件已被 git 跟踪" || bad "关键文件未被 git 跟踪"
 fi
 
@@ -96,6 +97,7 @@ tar -czf "$TMPI/fx/-/git/archive/main.tar.gz" -C "$TMPI/root" . 2>/dev/null
 cp "$TARGET/install.sh" "$TMPI/fx/-/git/raw/main/install.sh" 2>/dev/null
 
 if ( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$TMPI/home" \
+     MD2PDF_SKILL_DIR="$TMPI/skill" \
      PREFIX="$TMPI/prefix" sh -c "cat '$TARGET/install.sh' | sh" ) >"$TMPI/log" 2>&1; then
   good "联网安装成功（扁平归档布局）"
   if [ -x "$TMPI/prefix/bin/md2pdf" ] && "$TMPI/prefix/bin/md2pdf" --version >/dev/null 2>&1; then
@@ -108,15 +110,39 @@ if ( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$TMPI/home" \
   else
     bad "缺少 .install-meta"
   fi
-  # 装完再"升级"一次：应当成功且不破坏现有安装
+  # 技能说明书：随命令一起装，内容必须与仓库里的一致
+  # （注意 MD2PDF_SKILL_DIR 指到临时目录，否则会写进真实的技能目录）
+  if [ -f "$TMPI/skill/SKILL.md" ]; then
+    if diff -q "$TARGET/skill/SKILL.md" "$TMPI/skill/SKILL.md" >/dev/null 2>&1; then
+      good "技能说明书随命令一起安装（内容与仓库一致）"
+    else
+      bad "技能说明书内容与仓库不一致"
+    fi
+  else
+    bad "技能说明书未安装"
+  fi
+  # .install-meta 要记下技能目录，否则 --upgrade 不知道该更新哪里
+  if grep -q '^skill=' "$TMPI/home/.install-meta" 2>/dev/null; then
+    good ".install-meta 记录了技能目录（--upgrade 才知道更新哪里）"
+  else
+    bad ".install-meta 未记录技能目录"
+  fi
+  # 装完再"升级"一次：应当成功、不破坏现有安装，且把技能说明书一并更新
+  echo "stale" > "$TMPI/skill/SKILL.md"
   if ( cd "$TMPI" && "$TMPI/prefix/bin/md2pdf" --upgrade ) >"$TMPI/up.log" 2>&1 \
      && "$TMPI/prefix/bin/md2pdf" --version >/dev/null 2>&1; then
     good "md2pdf --upgrade 走通（同一来源覆盖安装）"
+    if diff -q "$TARGET/skill/SKILL.md" "$TMPI/skill/SKILL.md" >/dev/null 2>&1; then
+      good "升级同时更新了技能说明书"
+    else
+      bad "升级未更新技能说明书"
+    fi
   else
     bad "md2pdf --upgrade 失败"; sed 's/^/      /' "$TMPI/up.log" | tail -6
   fi
   # 防误删：安装目录指到家目录必须被拒绝
   if ( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$HOME" \
+       MD2PDF_SKILL_DIR="$TMPI/skill" \
        PREFIX="$TMPI/prefix" sh -c "cat '$TARGET/install.sh' | sh" ) >/dev/null 2>&1; then
     bad "MD2PDF_HOME=\$HOME 竟然被接受 —— 防误删保护失效"
   else
@@ -124,6 +150,26 @@ if ( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$TMPI/home" \
   fi
 else
   bad "联网安装失败"; sed 's/^/      /' "$TMPI/log" | tail -8
+fi
+
+# 技能说明书的两条"不该装"路径
+( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$TMPI/home-off" \
+  MD2PDF_SKILL_DIR="$TMPI/skill-off" MD2PDF_SKILL=0 \
+  PREFIX="$TMPI/prefix-off" sh -c "cat '$TARGET/install.sh' | sh" ) >/dev/null 2>&1
+if [ -f "$TMPI/skill-off/SKILL.md" ]; then
+  bad "MD2PDF_SKILL=0 却仍安装了技能说明书"
+else
+  good "MD2PDF_SKILL=0 时跳过技能说明书"
+fi
+
+mkdir -p "$TMPI/plainhome"
+( cd "$TMPI" && HOME="$TMPI/plainhome" MD2PDF_SRC="file://$TMPI/fx" \
+  MD2PDF_HOME="$TMPI/home-plain" PREFIX="$TMPI/prefix-plain" \
+  sh -c "cat '$TARGET/install.sh' | sh" ) >/dev/null 2>&1
+if [ -f "$TMPI/plainhome/.workbuddy/skills/md-to-pdf/SKILL.md" ]; then
+  bad "没有 WorkBuddy 环境却安装了技能说明书"
+else
+  good "无 WorkBuddy 环境时自动跳过技能说明书"
 fi
 rm -rf "$TMPI"
 
@@ -186,6 +232,17 @@ if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
       bad "裸变量紧跟中文，校验却通过了 —— 多字节边界检查失效"
     else
       good "裸变量紧跟中文时校验正确失败"
+    fi
+
+    # 破坏 6：技能说明书的 frontmatter name 与技能目录名漂移
+    # （先把副本恢复干净 —— 前面几步已把 install.sh / README.md 弄坏，否则会假阳性）
+    ( cd "$TARGET" && tar cf - --exclude=.git --exclude=node_modules . ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
+    sed -i.bak 's/^name: md-to-pdf$/name: md-to-pdff/' "$TMP/proj/skill/SKILL.md" 2>/dev/null \
+      || sed -i '' 's/^name: md-to-pdf$/name: md-to-pdff/' "$TMP/proj/skill/SKILL.md"
+    if ( cd "$TMP/proj" && node ci/checks.mjs "$TMP/proj" >/dev/null 2>&1 ); then
+      bad "技能 frontmatter 被改坏，校验却通过了 —— 技能检查失效"
+    else
+      good "技能 frontmatter 漂移时校验正确失败"
     fi
   fi
   rm -rf "$TMP"

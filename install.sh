@@ -12,8 +12,11 @@
 #   MD2PDF_HOME=<dir>    联网安装时程序本体的落点，默认 ~/.local/share/md2pdf
 #   MD2PDF_REF=<ref>     指定分支或标签，默认 main（如 MD2PDF_REF=v1.2.0）
 #   MD2PDF_SRC=<url>     仓库基址，默认官方地址（自建镜像时覆盖）
+#   MD2PDF_SKILL=0       不安装 Agent 技能说明书（只在 WorkBuddy 环境里装）
+#   MD2PDF_SKILL_DIR=<d> 技能说明书落点，默认 ~/.workbuddy/skills/md-to-pdf
 #
-# 它只做两件事：把程序放到落点、把 bin/md2pdf 链接进 PATH。不动系统其他配置。
+# 它做三件事：把程序放到落点、把 bin/md2pdf 链接进 PATH、把技能说明书放进技能目录。
+# 不动系统其他配置。
 
 set -e
 
@@ -162,6 +165,27 @@ case ":$PATH:" in
   *) echo "⚠️  $BIN_DIR 不在 PATH 中，请加入："
      echo "    echo 'export PATH=\"$BIN_DIR:\$PATH\"' >> ~/.zshrc && source ~/.zshrc" ;;
 esac
+
+# ---------------------------------------------------------- 安装技能说明书
+# 让 Agent 认识 md2pdf：把仓库里的 skill/SKILL.md 放进 WorkBuddy 技能目录。
+# 没有 WorkBuddy 的环境不需要它（可用 MD2PDF_SKILL_DIR 强制指定落点）。
+SKILL_SRC="$ROOT/skill/SKILL.md"
+if [ "${MD2PDF_SKILL:-1}" != "0" ]; then
+  SKILL_DIR="${MD2PDF_SKILL_DIR:-}"
+  if [ -z "$SKILL_DIR" ] && [ -n "$HOME" ] && [ -d "$HOME/.workbuddy" ]; then
+    SKILL_DIR="$HOME/.workbuddy/skills/md-to-pdf"
+  fi
+  if [ -n "$SKILL_DIR" ] && [ -f "$SKILL_SRC" ]; then
+    mkdir -p "$SKILL_DIR"
+    cp "$SKILL_SRC" "$SKILL_DIR/SKILL.md"
+    echo "✓ 已安装技能说明书：${SKILL_DIR}/SKILL.md"
+    # 记进 .install-meta：md2pdf --upgrade 时环境里未必有 MD2PDF_SKILL_DIR，
+    # 不记下来就会装到默认位置（或干脆不装），技能永远停在旧版。
+    if [ -f "$ROOT/.install-meta" ]; then
+      echo "skill=$SKILL_DIR" >> "$ROOT/.install-meta"
+    fi
+  fi
+fi
 
 echo
 echo "试一下： md2pdf \"$ROOT/examples/demo.md\" --open"
