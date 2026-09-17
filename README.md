@@ -89,6 +89,7 @@ md2pdf 文件名.md --theme minimal --toc
 | `--no-lead` | 首段不作为导语放大 |
 | `-t, --toc` | 文首插入目录页（取自 H2，需 2 个以上），每项可点击跳转 |
 | `--no-outline` | 不生成 PDF 书签（**默认生成**，见下） |
+| `--bibliography` | 将脚注收集为文末「参考文献」章节（BibTeX 脚注按 GB/T 7714 渲染） |
 | `--link-urls` | 正文链接后附 URL（纸质可读） |
 | `--landscape` | 横向页面 |
 | `--font-size <pt>` | 正文字号，默认 10.5 |
@@ -127,7 +128,139 @@ node ci/inspect-pdf.mjs out.pdf
 - 首个 H1 提升为报头大标题，正文不再重复；其后的首段自动成为导语。
 - YAML frontmatter 的 `name` / `description` 生成元信息条；description 里「适用于…」「不用于…」会自动拆成「适用 / 不适用」两栏。
 - H2 自动分节并加色块标记；表格深色表头＋隔行浅底；有序列表用圆形序号。
-- 数学公式：正文里的 `$...$`（行内）与 `$$...$$`（独立成行）由内置 MathJax 渲染（SVG 输出，零字体依赖）。
+- 数学公式：正文里的 `$...# md2pdf
+
+把 Markdown 排成**优雅的中文 A4 PDF**：报头大标题、元信息条、精心排过的表格/代码/引用/列表、页脚页码。
+不是 pandoc 的默认样式 —— 是可以直接拿去打印、发给别人看的版式。
+
+**elegant 主题**（默认，墨蓝 + 古铜）：
+
+![elegant 主题效果](docs/theme-elegant.png)
+
+**minimal 主题**（黑白公文风）：
+
+![minimal 主题效果](docs/theme-minimal.png)
+
+仓库：https://cnb.cool/jiyeqian/md2pdf
+
+## 两部分:命令 + 说明书
+
+这个工具是两层结构,各自独立存在、各自分发:
+
+| 层 | 是什么 | 给谁用 | 落在哪 |
+| --- | --- | --- | --- |
+| **命令** `md2pdf` | 真正的程序(Node + 无头 Chrome 渲染) | 你、任何脚本 | npm 全局安装到 `node_modules/@jiyeqian/md2pdf/` |
+| **技能说明书** `skill/SKILL.md` | 告诉 Agent「有 `md2pdf` 这个命令、怎么用」 | WorkBuddy 等 Agent 运行时 | `~/.workbuddy/skills/md-to-pdf/` |
+
+npm 的 `postinstall` 一次装两样:环境里有 WorkBuddy(`~/.workbuddy` 存在)就顺带装说明书,
+没有就只装命令。只要命令用 `MD2PDF_SKILL=0` 跳过。
+
+> 为什么说明书不在程序里?因为「怎么用」是给 Agent 看的,「能转换」是给系统跑的 ——
+> 混在一起会让换机器时多一份要同步的实现。说明书只有一份,就在仓库 `skill/`。
+
+## 安装
+
+**一条命令**（需要 Node ≥ 18，建议 ≥ 22）：
+
+```bash
+npm install -g @jiyeqian/md2pdf
+```
+
+它会装上 `md2pdf` 命令；`postinstall` 顺带把技能说明书装进 `~/.workbuddy`（存在时）。
+
+```bash
+md2pdf 你的文档.md --open   # 装完试一下
+```
+
+**更新**：`npm update -g @jiyeqian/md2pdf` · **卸载**：`npm uninstall -g @jiyeqian/md2pdf`
+
+| 变量 | 作用 |
+| --- | --- |
+| `MD2PDF_SKILL=0` | 安装时不装 Agent 技能说明书 |
+| `MD2PDF_SKILL_DIR=<dir>` | 说明书落点，默认 `~/.workbuddy/skills/md-to-pdf`（`~/.workbuddy` 不存在时默认不装） |
+
+### 在仓库里开发
+
+```bash
+git clone https://cnb.cool/jiyeqian/md2pdf.git
+cd md2pdf
+npm link             # 把 bin/md2pdf 软链进 PATH，指向仓库本身，改代码立即生效
+```
+
+`npm link` 之后命令就是仓库本身，改完立即生效，不需要重装。
+
+### 依赖
+
+| 依赖 | 要求 | 说明 |
+| --- | --- | --- |
+| Node.js | ≥ 18（建议 ≥ 22） | < 22 时自动启用内置 WebSocket 实现；`MD2PDF_NODE` 可指定 |
+| Chrome / Edge / Chromium | 任一 | 只用来渲染，不联网；`MD2PDF_CHROME` 可指定路径 |
+
+零 npm 依赖 —— Markdown 解析器（marked）已内置在 `vendor/`，装好即用。
+
+## 用法
+
+```bash
+md2pdf 文件名.md                    # 同目录输出同名 .pdf
+md2pdf 文件名.md --open             # 转完直接打开
+md2pdf a.md b.md -o 输出目录/       # 批量（共用一个浏览器实例，很快）
+md2pdf 文件名.md --theme minimal --toc
+```
+
+### 选项
+
+| 选项 | 作用 |
+| --- | --- |
+| `-o, --output <path>` | 输出路径；多文件或目标是目录时，作为输出目录 |
+| `--theme <name>` | `elegant`（默认，墨蓝＋古铜）｜ `minimal`（黑白公文风） |
+| `--title <text>` | 覆盖标题（默认：正文首个 H1 → frontmatter.title → 文件名） |
+| `--kicker <text>` | 报头小标题；`SKILL.md` 默认显示「技能文档」 |
+| `--no-meta` | 不要 frontmatter 元信息条 |
+| `--no-lead` | 首段不作为导语放大 |
+| `-t, --toc` | 文首插入目录页（取自 H2，需 2 个以上），每项可点击跳转 |
+| `--no-outline` | 不生成 PDF 书签（**默认生成**，见下） |
+| `--bibliography` | 将脚注收集为文末「参考文献」章节（BibTeX 脚注按 GB/T 7714 渲染） |
+| `--link-urls` | 正文链接后附 URL（纸质可读） |
+| `--landscape` | 横向页面 |
+| `--font-size <pt>` | 正文字号，默认 10.5 |
+| `--margin <mm>` | 页边距，默认 20；可写 `"20,18"`（上下,左右） |
+| `--no-footer` | 不要页脚页码 |
+| `--footer-left / --footer-right <text>` | 页脚左右文字 |
+| `--colophon <text>` | 文末落款（默认：来源文件名） |
+| `--keep-html` | 保留中间 HTML，方便调样式 |
+| `--html-only` | 只生成 HTML，不启动浏览器（调样式 / CI 校验用） |
+| `--open` | 完成后打开 PDF |
+
+布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
+
+### 目录与书签是两件事
+
+| | 是什么 | 在哪看 | 怎么开 |
+| --- | --- | --- | --- |
+| **目录页** | 排在文首的一张目录，条目是**可点击的内链** | 文档第 1 页 | `-t / --toc`（默认关） |
+| **PDF 书签** | PDF 阅读器侧边栏里的**章节大纲树**（可折叠、点击跳转） | 阅读器侧栏 | **默认开**，`--no-outline` 关 |
+
+书签由 Chrome 按 HTML 的 `h1`–`h6` 结构生成（报头标题为根，H2/H3 逐层嵌套），
+所以只要文档用了标准标题层级，就有对应的大纲，不需要额外配置。
+
+需要看侧栏的阅读器操作：macOS 预览需手动展开侧栏（**⌘⌥3**，或右上角侧栏按钮）；
+Acrobat / 福昕 / Chrome 内置阅读器点侧栏图标即可。侧栏是否自动展开由阅读器自身决定，
+本工具不写 `/PageMode`（改这个字段要重写 PDF 目录对象，收益不值那份风险）。
+
+自己验一份 PDF 的书签与内链：
+
+```bash
+node ci/inspect-pdf.mjs out.pdf
+```
+
+## 排版规则
+
+- 首个 H1 提升为报头大标题，正文不再重复；其后的首段自动成为导语。
+- YAML frontmatter 的 `name` / `description` 生成元信息条；description 里「适用于…」「不用于…」会自动拆成「适用 / 不适用」两栏。
+- H2 自动分节并加色块标记；表格深色表头＋隔行浅底；有序列表用圆形序号。
+（行内）与 `$...$`（独立成行）由内置 MathJax 渲染（SVG 输出，零字体依赖）。
+- 脚注：正文 `[^id]` 引用 + 文末 `[^id]: 内容` 定义；`--bibliography` 时收集为「参考文献」章节。
+- BibTeX 脚注（`@article{...}`、`@book{...}` 等）自动按 GB/T 7714-2025 著录格式渲染。
 - 相对路径图片自动解析成绝对地址，能正常进入 PDF。
 
 ## 改样式

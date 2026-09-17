@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 
 // Node ≥ 22 有全局 WebSocket；更老的版本退回到内置的极简实现
 let _WS;
@@ -68,6 +68,7 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --no-lead            首段不作为导语
   -t, --toc                在文首插入目录页（取自二级标题，可点击跳转）
       --no-outline         不生成 PDF 书签（默认生成，阅读器侧边栏按标题成树）
+      --bibliography       将脚注收集为文末「参考文献」章节（BibTeX 脚注按 GB/T 7714 渲染）
       --link-urls          正文链接后附 URL
       --landscape          横向
       --font-size <pt>     正文字号（默认 10.5）
@@ -107,7 +108,7 @@ function parseArgs(argv) {
     inputs: [], theme: 'elegant', fontSize: 10.5,
     marginTop: 20, marginSide: 18, marginBottom: 18,
     footer: true, footerLeft: '', footerRight: '',
-    meta: true, lead: true, toc: false, linkUrls: false, outline: true,
+    meta: true, lead: true, toc: false, linkUrls: false, outline: true, bibliography: false,
     landscape: false, keepHtml: false, htmlOnly: false, open: false, help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -142,6 +143,8 @@ function parseArgs(argv) {
       case '--no-toc': o.toc = false; break;
       case '--outline': o.outline = true; break;
       case '--no-outline': o.outline = false; break;
+      case '--bibliography': o.bibliography = true; break;
+      case '--no-bibliography': o.bibliography = false; break;
       case '--no-landscape': o.landscape = false; break;
       case '--no-link-urls': o.linkUrls = false; break;
       case '--no-keep-html': o.keepHtml = false; break;
@@ -206,6 +209,169 @@ function sectionize(html) {
   return html.split(/(?=<h2[\s>])/)
     .map(p => (p.trim().startsWith('<h2') ? `<section>\n${p}\n</section>` : p))
     .join('\n');
+}
+
+/* ---------------- 脚注与参考文献 ---------------- */
+
+// 解析 markdown 脚注：[^id]: 定义（后续缩进行为内容）与正文 [^id] 引用
+function parseFootnotes(body) {
+  const footnotes = [];
+  const lines = body.split('\n');
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^\[\^([^\]]+)\]:[ \t]*(.*)$/.exec(lines[i]);
+    if (!m) { out.push(lines[i]); continue; }
+    const id = m[1];
+    let content = m[2];
+    while (i + 1 < lines.length && /^[ \t]+\S/.test(lines[i + 1])) {
+      content += '\n' + lines[i + 1].trim();
+      i++;
+    }
+    footnotes.push({ id, content });
+  }
+  return { body: out.join('\n'), footnotes };
+}
+
+// 脚注内容是否为 BibTeX（@type{...}）
+function isBibTeX(content) {
+  return /^\s*@[A-Za-z]+\s*\{/.test(content);
+}
+
+// 解析 BibTeX 条目（支持嵌套花括号、双引号与无引号数值）
+function parseBibTeX(content) {
+  const t = content.trim();
+  const m = /^@([A-Za-z]+)\s*\{\s*([^,]*),\s*([\s\S]*)\}\s*$/.exec(t);
+  if (!m) return null;
+  const type = m[1].toLowerCase();
+  const key = m[2].trim();
+  const body = m[3];
+  const fields = {};
+  let i = 0;
+  const n = body.length;
+  while (i < n) {
+    while (i < n && /[\s,]/.test(body[i])) i++;
+    const nm = /^[A-Za-z][A-Za-z0-9_-]*/.exec(body.slice(i));
+    if (!nm) break;
+    const name = nm[0].toLowerCase();
+    i += nm[0].length;
+    while (i < n && /\s/.test(body[i])) i++;
+    if (body[i] !== '=') break;
+    i++;
+    while (i < n && /\s/.test(body[i])) i++;
+    let value = '';
+    if (body[i] === '{') {
+      let depth = 0, j = i;
+      while (j < n) {
+        if (body[j] === '{') depth++;
+        else if (body[j] === '}') { depth--; if (depth === 0) { j++; break; } }
+        j++;
+      }
+      value = body.slice(i + 1, j - 1);
+      i = j;
+    } else if (body[i] === '"') {
+      const j = body.indexOf('"', i + 1);
+      if (j < 0) break;
+      value = body.slice(i + 1, j);
+      i = j + 1;
+    } else {
+      const vm = /^[^,\s}]+/.exec(body.slice(i));
+      value = vm ? vm[0] : '';
+      i += value.length;
+    }
+    fields[name] = value.trim();
+  }
+  return { type, key, fields };
+}
+
+// 单个作者 → GB/T 7714 姓名格式（中文照写，西文「姓 名缩写.」）
+function formatOneAuthor(a) {
+  const name = a.trim();
+  if (!name) return '';
+  if (/[\u4e00-\u9fa5]/.test(name)) return name;
+  const initials = g => g.split(/\s+/).map(w => (w[0] ? w[0].toUpperCase() + '.' : '')).join('');
+  if (name.includes(',')) {
+    const parts = name.split(',').map(s => s.trim());
+    return parts[1] ? parts[0].toUpperCase() + ' ' + initials(parts[1]) : parts[0].toUpperCase();
+  }
+  const words = name.split(/\s+/);
+  const last = words.pop();
+  return last.toUpperCase() + ' ' + initials(words.join(' '));
+}
+
+// 作者列表 → GB/T 7714（≤3 全列，>3 前 3 + 等/et al.）
+function formatAuthors(authorStr) {
+  if (!authorStr) return '';
+  const authors = authorStr.split(/\s+and\s+/i).map(s => s.trim()).filter(Boolean);
+  if (!authors.length) return '';
+  const isCjk = /[\u4e00-\u9fa5]/.test(authors[0]);
+  if (authors.length <= 3) return authors.map(formatOneAuthor).join(', ');
+  return authors.slice(0, 3).map(formatOneAuthor).join(', ') + (isCjk ? ', 等' : ', et al.');
+}
+
+// BibTeX 条目 → GB/T 7714-2025 著录字符串
+function formatGB7714(entry) {
+  const f = entry.fields;
+  const authors = formatAuthors(f.author);
+  const title = f.title || '';
+  const year = f.year || '';
+  switch (entry.type) {
+    case 'article': {
+      const vol = f.volume || '';
+      const num = f.number || '';
+      const volIssue = vol ? (num ? vol + '(' + num + ')' : vol) : (num ? '(' + num + ')' : '');
+      const pages = f.pages ? ': ' + f.pages : '';
+      let s = (authors ? authors + ' ' : '') + title + '[J]. ' + (f.journal || '') + ', ' + year + (volIssue ? ', ' + volIssue : '') + pages;
+      if (f.doi) s += '. DOI: ' + f.doi;
+      s += '.';
+      return s;
+    }
+    case 'inproceedings':
+    case 'conference': {
+      const pages = f.pages ? ': ' + f.pages : '';
+      return (authors ? authors + ' ' : '') + title + '[C]//' + (f.booktitle || '') + '. ' + (f.address || '') + ', ' + year + pages + '.';
+    }
+    case 'phdthesis':
+    case 'mastersthesis': {
+      return (authors ? authors + ' ' : '') + title + '[D]. ' + (f.address || '') + ': ' + (f.school || '') + ', ' + year + '.';
+    }
+    case 'book': {
+      let s = (authors ? authors + ' ' : '') + title + '[M]. ';
+      if (f.edition) s += f.edition + '. ';
+      const pub = f.address && f.publisher ? f.address + ': ' + f.publisher : (f.address || f.publisher || '');
+      s += pub + (pub ? ', ' : '') + year + '.';
+      return s;
+    }
+    case 'techreport': {
+      return (authors ? authors + ' ' : '') + title + '[R]. ' + (f.institution || '') + ', ' + year + '.';
+    }
+    default: {
+      let s = (authors ? authors + ' ' : '') + title + '[EB/OL]. ';
+      if (f.urldate) s += '(' + f.urldate + ')';
+      if (f.url) s += f.url;
+      s += '.';
+      return s;
+    }
+  }
+}
+
+// 渲染脚注列表；bibliography=true 时作为「参考文献」章节
+function renderFootnotes(footnotes, bibliography) {
+  if (!footnotes.length) return '';
+  const items = footnotes.map((fn, i) => {
+    const num = i + 1;
+    let content;
+    if (isBibTeX(fn.content)) {
+      const entry = parseBibTeX(fn.content);
+      content = entry ? esc(formatGB7714(entry)) : esc(fn.content);
+    } else {
+      content = esc(fn.content);
+    }
+    return '<li id="fn-' + num + '">[' + num + '] ' + content + '</li>';
+  }).join('\n');
+  const cls = bibliography ? 'references' : 'footnotes';
+  const list = '<ol class="' + cls + '">\n' + items + '\n</ol>';
+  if (bibliography) return '<section><h2 id="sec-refs">参考文献</h2>\n' + list + '</section>';
+  return '<section><h2 id="sec-footnotes">脚注</h2>\n' + list + '</section>';
 }
 
 /* ---------------- Chrome ---------------- */
@@ -338,13 +504,22 @@ class Chrome {
 
 async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
   const src = await readFile(mdPath, 'utf8');
-  const { fm, body } = splitFrontmatter(src);
+  const { fm, body: rawBody } = splitFrontmatter(src);
   const isSkill = path.basename(mdPath) === 'SKILL.md' || !!fm.name;
 
   // 数学公式：检测 $...$ 或 $...$，命中则注入 MathJax（SVG 输出，零字体依赖）
-  const hasMath = /\$\$|\$[^$\n]+\$/.test(body);
+  const hasMath = /\$\$|\$[^$\n]+\$/.test(rawBody);
 
-  let html = marked.parse(body, { gfm: true, breaks: false, async: false });
+  // 脚注：提取 [^id]: 定义，正文 [^id] 引用替换为编号上标
+  const { body, footnotes } = parseFootnotes(rawBody);
+  const fnIndex = new Map();
+  footnotes.forEach((fn, i) => fnIndex.set(fn.id, i + 1));
+  const bodyWithRefs = body.replace(/\[\^([^\]]+)\]/g, (m, id) => {
+    const n = fnIndex.get(id);
+    return n === undefined ? m : '<sup class="fnref"><a href="#fn-' + n + '">[' + n + ']</a></sup>';
+  });
+
+  let html = marked.parse(bodyWithRefs, { gfm: true, breaks: false, async: false });
 
   // 标题：正文首个 H1 → 报头
   let title = opts.title || fm.title || '';
@@ -401,6 +576,9 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
   }
 
   html = sectionize(html);
+
+  // 脚注/参考文献：追加到正文末尾
+  html += renderFootnotes(footnotes, opts.bibliography);
 
   // CSS
   const themeFile = path.join(ASSETS, `theme-${opts.theme}.css`);

@@ -140,6 +140,10 @@ if (fs.existsSync(demo)) {
     !/class="pageNumber"/.test(html));
   ok('渲染：数学公式注入 MathJax（demo 含公式）',
     /MathJax/.test(html) && /tex-svg\.js/.test(html));
+  ok('渲染：BibTeX 脚注按 GB/T 7714 渲染（含 [J]/[M]）',
+    /\[J\]/.test(html) && /\[M\]/.test(html));
+  ok('渲染：脚注引用为可点击上标（fnref → #fn-N）',
+    /class="fnref"/.test(html) && /href="#fn-\d+"/.test(html));
 }
 
 /* ---------- PDF 书签（outline） ---------- */
