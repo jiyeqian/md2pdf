@@ -1,0 +1,59 @@
+# CNB 云原生构建（cnb.cool）
+#
+# 定位：这是发布前校验 + 打标签时打包发版。
+# 构建节点是 Linux 容器，没有 macOS、也不装 Chrome —— 所以 CI 不打印 PDF，
+# 渲染校验落在 HTML 阶段（--html-only）。真实 PDF 打印属于本机环节。
+
+$:
+  push:
+    - name: 校验
+      env:
+        LANG: C.UTF-8
+      stages:
+        - name: 环境信息
+          script: |
+            grep PRETTY_NAME /etc/os-release || true
+            echo "bash: $(command -v bash || echo 缺失)"
+            echo "git : $(git --version 2>/dev/null || echo 缺失)"
+            echo "node: $(node -v 2>/dev/null || echo '未预装，校验脚本会自动安装')"
+        - name: 运行校验
+          script: |
+            bash ci/validate.sh
+
+  pull_request:
+    - name: 校验
+      env:
+        LANG: C.UTF-8
+      stages:
+        - name: 运行校验
+          script: |
+            bash ci/validate.sh
+
+  tag_push:
+    - name: 发布
+      env:
+        LANG: C.UTF-8
+      stages:
+        - name: 发布前校验
+          script: |
+            bash ci/validate.sh
+        - name: 打包
+          script: |
+            mkdir -p dist
+            git config --global --add safe.directory "$PWD" 2>/dev/null || true
+            TAG="${CNB_TAG_NAME:-$(git rev-parse --short HEAD)}"
+            # git archive 只打包被版本控制的文件，自动排除 .git 与未跟踪文件
+            git archive --format=zip --prefix="md2pdf-${TAG}/" -o "dist/md2pdf-${TAG}.zip" HEAD
+            ls -lh dist/
+        - name: 创建 Release
+          type: git:release
+          options:
+            title: ${CNB_TAG_NAME}
+            descriptionFromFile: README.md
+            latest: true
+        - name: 上传附件
+          # 附件是插件而非内置任务；且要在 Release 存在之后才能上传
+          image: cnbcool/attachments:latest
+          settings:
+            attachments:
+              - ./dist/*.zip

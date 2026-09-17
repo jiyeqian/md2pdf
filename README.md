@@ -60,6 +60,7 @@ md2pdf 文件名.md --theme minimal --toc
 | `--footer-left / --footer-right <text>` | 页脚左右文字 |
 | `--colophon <text>` | 文末落款（默认：来源文件名） |
 | `--keep-html` | 保留中间 HTML，方便调样式 |
+| `--html-only` | 只生成 HTML，不启动浏览器（调样式 / CI 校验用） |
 | `--open` | 完成后打开 PDF |
 
 布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
@@ -92,6 +93,28 @@ Markdown ──(marked)──▶ HTML ──(模板+主题 CSS)──▶ 完整 
 选 CDP 而不是 `chrome --print-to-pdf` 的原因：命令行版不支持页眉页脚模板，出不了页码。
 `preferCSSPageSize: true` 让页面尺寸/边距完全由 CSS `@page` 控制。
 
+## 校验与 CI
+
+```bash
+bash ci/validate.sh        # 本地跑，和 CI 完全同一套检查（约几秒）
+```
+
+校验分四层，全部不需要浏览器：
+
+1. **结构**：必需文件齐全、`bin/` 与安装脚本有可执行位、关键文件确实被 git 跟踪
+2. **语法**：`sh -n`、`node --check`
+3. **一致性**：版本号（package.json ↔ src）；模板占位符 ↔ 替换逻辑双向闭合；
+   主题 CSS 里 `var(--x)` 全部有定义；占位符替换必须是全量的
+4. **行为**：`--help`/`--version` 冒烟；`examples/demo.md` 端到端渲染到 HTML，
+   断言表格、代码块、引用、嵌套列表、目录、链接 URL、分节都在，且无占位符残留
+   与 `undefined` 泄漏
+
+最后还有一步**守卫自测**：故意破坏一份副本（塞入未定义的占位符、改错主题变量名、
+改乱版本号），断言校验确实会失败 —— 只会"全绿"的校验等于没有校验。
+
+CNB 云原生构建在 push / PR 时跑同一脚本；打 tag 时额外打包 zip 并发 Release
+（见 `.cnb.yml`）。
+
 ## 目录结构
 
 ```
@@ -101,6 +124,8 @@ src/ws.mjs            Node < 22 时的极简 WebSocket 客户端
 assets/               样式与页面骨架
 vendor/marked.esm.js  内置 Markdown 解析器
 examples/demo.md      示例文档（含表格/代码/引用/嵌套列表）
+ci/validate.sh        校验入口（本地与 CI 同一套）
+ci/checks.mjs         一致性 + 端到端渲染断言
 install.sh uninstall.sh
 ```
 

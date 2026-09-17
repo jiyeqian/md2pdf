@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 // Node ≥ 22 有全局 WebSocket；更老的版本退回到内置的极简实现
 let _WS;
@@ -75,6 +75,7 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --footer-left/--footer-right <text>
       --colophon <text>    文末落款
       --keep-html          保留中间 HTML
+      --html-only          只生成 HTML，不启动浏览器（调试样式 / CI 校验用）
       --open               完成后打开 PDF
   -h, --help
 
@@ -106,7 +107,7 @@ function parseArgs(argv) {
     marginTop: 20, marginSide: 18, marginBottom: 18,
     footer: true, footerLeft: '', footerRight: '',
     meta: true, lead: true, toc: false, linkUrls: false,
-    landscape: false, keepHtml: false, open: false, help: false,
+    landscape: false, keepHtml: false, htmlOnly: false, open: false, help: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -133,6 +134,8 @@ function parseArgs(argv) {
       case '--footer-right': o.footerRight = next(); break;
       case '--colophon': o.colophon = next(); break;
       case '--keep-html': o.keepHtml = true; break;
+      case '--html-only': o.htmlOnly = true; break;
+      case '--no-html-only': o.htmlOnly = false; break;
       case '--open': o.open = true; break;
       case '--no-open': o.open = false; break;
       case '--no-toc': o.toc = false; break;
@@ -393,6 +396,8 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
     '{{COLOPHON_RIGHT}}': esc(colophonRight),
   });
 
+  if (opts.htmlOnly) return { title, html: out };
+
   const tmpDir = await mkdtemp(path.join(tmpRoot, 'doc-'));
   const htmlPath = path.join(tmpDir, 'index.html');
   await writeFile(htmlPath, out, 'utf8');
@@ -420,10 +425,11 @@ function isDir(p) {
 }
 
 function resolveOutput(mdPath, opts) {
-  if (!opts.output) return mdPath.replace(/\.md$/i, '.pdf');
+  const ext = opts.htmlOnly ? '.html' : '.pdf';
+  if (!opts.output) return mdPath.replace(/\.md$/i, ext);
   const o = path.resolve(opts.output);
   if (opts.inputs.length > 1 || isDir(o) || o.endsWith(path.sep)) {
-    return path.join(o, path.basename(mdPath, path.extname(mdPath)) + '.pdf');
+    return path.join(o, path.basename(mdPath, path.extname(mdPath)) + ext);
   }
   return o;
 }
@@ -438,17 +444,24 @@ async function main() {
   const marked = new Marked({ gfm: true });
 
   const tmpRoot = await mkdtemp(path.join(os.tmpdir(), 'md2pdf-'));
-  const chrome = new Chrome(findChrome(), tmpRoot);
+  // --html-only 不需要浏览器（CI / 调样式时用）
+  const chrome = opts.htmlOnly ? null : new Chrome(findChrome(), tmpRoot);
   let failed = false;
   try {
-    await chrome.start();
+    if (chrome) await chrome.start();
     for (const input of opts.inputs) {
       const mdPath = path.resolve(input);
       if (!existsSync(mdPath)) { console.error(`✗ 找不到文件：${input}`); failed = true; continue; }
       try {
-        const { buf } = await renderOne(mdPath, opts, chrome, marked, tmpRoot);
+        const res = await renderOne(mdPath, opts, chrome, marked, tmpRoot);
         const out = resolveOutput(mdPath, opts);
         await mkdir(path.dirname(out), { recursive: true });
+        if (opts.htmlOnly) {
+          await writeFile(out, res.html, 'utf8');
+          console.log(`✓ ${path.basename(out)}  (HTML ${(res.html.length / 1024).toFixed(0)} KB)`);
+          continue;
+        }
+        const buf = res.buf;
         await writeFile(out, buf);
         let pages = '';
         const info = spawnSync('pdfinfo', [out], { encoding: 'utf8' });
@@ -467,7 +480,7 @@ async function main() {
       }
     }
   } finally {
-    await chrome.stop();
+    if (chrome) await chrome.stop();
     await rm(tmpRoot, { recursive: true, force: true }).catch(() => {});
   }
   if (failed) process.exitCode = 1;
