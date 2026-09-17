@@ -448,8 +448,10 @@ async function doUpgrade() {
 
   console.log(`从 ${url} 更新…（当前 ${VERSION}）`);
   const env = { ...process.env, MD2PDF_HOME: ROOT, MD2PDF_REF: ref, MD2PDF_SRC: repo };
-  // 技能目录位置记在 .install-meta 里。升级时环境里通常没有 MD2PDF_SKILL_DIR，
-  // 不显式传回去，技能说明书就会装到默认位置（或不被更新）。
+  // 命令落点与技能目录都记在 .install-meta 里。升级时环境里通常没有 PREFIX /
+  // MD2PDF_SKILL_DIR，不显式传回去，命令会漂到默认目录（旧位置留下悬空软链）、
+  // 技能说明书也会装错地方或停在旧版。
+  if (meta.bin) env.PREFIX = meta.bin;
   if (meta.skill) env.MD2PDF_SKILL_DIR = meta.skill;
   const r = spawnSync('sh', ['-c', 'curl -fsSL "$1" | sh', 'sh', url], {
     stdio: 'inherit',

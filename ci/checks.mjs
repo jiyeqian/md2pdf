@@ -156,6 +156,12 @@ ok('安装：有防误删保护', /拒绝安装到/.test(installSh));
 ok('安装：软链不可用时写转发脚本而非复制启动器',
   /转发脚本/.test(installSh),
   '复制的启动器会按自身路径反推项目根，指向错误');
+ok('安装：.install-meta 记录命令落点',
+  /echo "bin=\$BIN_DIR" >>/.test(installSh),
+  '不记的话，升级会重新选目录，用 PREFIX 装的命令就会漂走');
+ok('CLI：--upgrade 会把命令落点传回安装脚本',
+  /env\.PREFIX = meta\.bin/.test(src),
+  '缺这一步，升级会把命令写进默认目录，而旧位置留下悬空软链');
 ok('安装：同时支持 curl 与 wget', /curl/.test(installSh) && /wget/.test(installSh));
 
 ok('CLI：帮助文本包含 --upgrade', /--upgrade\s+从安装来源/.test(src));

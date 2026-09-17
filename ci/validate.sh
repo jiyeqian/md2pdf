@@ -140,6 +140,20 @@ if ( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$TMPI/home" \
   else
     bad "md2pdf --upgrade 失败"; sed 's/^/      /' "$TMPI/up.log" | tail -6
   fi
+  # 升级不得把命令漂到默认目录 —— PREFIX 必须从 .install-meta 恢复。
+  # 曾经的 bug：doUpgrade 不传 PREFIX，安装脚本回落到 /usr/local/bin，
+  # 把真实命令覆盖成指向临时目录的悬空软链。
+  drifted=""
+  for d in /usr/local/bin "$HOME/.local/bin"; do
+    if [ -L "$d/md2pdf" ] && [ "$(readlink "$d/md2pdf" 2>/dev/null)" = "$TMPI/home/bin/md2pdf" ]; then
+      drifted="$drifted $d"
+    fi
+  done
+  if [ -n "$drifted" ]; then
+    bad "升级把命令写进了默认目录：${drifted}（PREFIX 未从 .install-meta 恢复）"
+  else
+    good "升级未污染默认命令目录（命令落点从 .install-meta 恢复）"
+  fi
   # 防误删：安装目录指到家目录必须被拒绝
   if ( cd "$TMPI" && MD2PDF_SRC="file://$TMPI/fx" MD2PDF_HOME="$HOME" \
        MD2PDF_SKILL_DIR="$TMPI/skill" \

@@ -124,6 +124,13 @@ EOF
   echo "已写入转发脚本：$BIN_DIR/md2pdf -> $ROOT/bin/md2pdf"
 fi
 
+# 记下命令落点，供 md2pdf --upgrade 使用 —— 不记的话，升级时会重新走一遍
+# "默认 /usr/local/bin，不可写就退 ~/.local/bin"的选择，当初用 PREFIX 装的
+# 就会把命令漂到别处（老位置留下悬空的软链）。
+if [ -f "$ROOT/.install-meta" ]; then
+  echo "bin=$BIN_DIR" >> "$ROOT/.install-meta"
+fi
+
 # ----------------------------------------------------------------- 检查 node
 NODE=""
 for c in "$MD2PDF_NODE" \
