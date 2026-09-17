@@ -4,7 +4,7 @@ This file provides guidance to CodeBuddy Code when working with code in this rep
 
 ## What this is
 
-`md2pdf` is a CLI that converts Markdown into styled Chinese A4 PDFs. It renders via headless Chrome (CDP `Page.printToPDF`) with a bundled Markdown parser. **Zero npm runtime dependencies** — `marked` is vendored at `vendor/marked.esm.js`. `package.json` has `"type": "module"` (pure ESM, no build step). Published to public npm as `@jiyeqian/md2pdf`.
+`md2pdf` is a CLI that converts Markdown into styled Chinese A4 PDFs. It renders via headless Chrome (CDP `Page.printToPDF`) with a bundled Markdown parser. **Zero npm runtime dependencies** — `marked` is vendored at `vendor/marked.esm.js`, MathJax (LaTeX math) at `vendor/mathjax/tex-svg.js`. `package.json` has `"type": "module"` (pure ESM, no build step). Published to public npm as `@jiyeqian/md2pdf`.
 
 ## Commands
 
@@ -33,7 +33,7 @@ There is no unit-test framework. Tests are the assertion scripts under `ci/`, dr
 Pipeline: `Markdown --(marked)--> HTML --(shell.html + base.css + theme-*.css)--> full HTML --(headless Chrome, CDP)--> PDF`.
 
 - **`bin/md2pdf`** — POSIX sh launcher. Resolves symlinks to find the package root, then picks a Node binary preferring ≥22 (global `WebSocket`); falls back to any Node. Env `MD2PDF_NODE` overrides. Execs `src/md2pdf.mjs`. This symlink resolution is what lets the same launcher work both from a repo checkout (`npm link`) and from `node_modules/@jiyeqian/md2pdf` (global install).
-- **`src/md2pdf.mjs`** — the whole program in one file. Sections are clearly delimited: arg parsing (`parseArgs`/`expandArgs`), frontmatter (`splitFrontmatter`/`buildMeta`), HTML post-processing (`sectionize`, heading id injection, TOC), Chrome driver (`Chrome` class: spawns headless Chrome, talks CDP over WebSocket, `print` uses `preferCSSPageSize: true` so CSS `@page` controls size/margins), and `main`.
+- **`src/md2pdf.mjs`** — the whole program in one file. Sections are clearly delimited: arg parsing (`parseArgs`/`expandArgs`), frontmatter (`splitFrontmatter`/`buildMeta`), HTML post-processing (`sectionize`, heading id injection, TOC, math detection), Chrome driver (`Chrome` class: spawns headless Chrome, talks CDP over WebSocket, `print` uses `preferCSSPageSize: true` so CSS `@page` controls size/margins), and `main`. When the body contains `$...$` / `$$...$$`, it injects a vendored MathJax (`tex-svg`) script and `print` polls `window.__md2pdfMathReady` before `Page.printToPDF`.
 - **`src/ws.mjs`** — `MiniWebSocket` fallback for Node < 22 (used when `WebSocket` is undefined or `MD2PDF_WS=mini`).
 - **`src/install-skill.mjs`** — npm `postinstall` hook. Copies `skill/SKILL.md` into `~/.workbuddy/skills/md-to-pdf` (only when `~/.workbuddy` exists). `MD2PDF_SKILL=0` skips, `MD2PDF_SKILL_DIR` overrides the destination. Never fails the install.
 - **`assets/`** — `shell.html` (page skeleton with `{{PLACEHOLDER}}` slots), `base.css` (skeleton with `{{PAGE_SIZE}}`/margin/font-size placeholders), `theme-elegant.css` (default), `theme-minimal.css`.

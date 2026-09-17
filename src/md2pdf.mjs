@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 
 // Node ≥ 22 有全局 WebSocket；更老的版本退回到内置的极简实现
 let _WS;
@@ -293,6 +293,19 @@ class Chrome {
     await this.send('Page.navigate', { url: pathToFileURL(htmlPath).href });
     await loaded;
     await new Promise(r => setTimeout(r, 250));
+    // MathJax 排版：正文含公式时，轮询等待 typeset 完成再打印（否则公式是空白）
+    if (opts.waitMath) {
+      const t0 = Date.now();
+      while (Date.now() - t0 < 10000) {
+        let done = false;
+        try {
+          const r = await this.send('Runtime.evaluate', { expression: 'window.__md2pdfMathReady === true', returnByValue: true });
+          done = !!(r && r.result && r.result.value);
+        } catch { /* 忽略运行时异常，继续等待 */ }
+        if (done) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
+    }
     const base = {
       printBackground: true,
       preferCSSPageSize: true,
@@ -327,6 +340,9 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
   const src = await readFile(mdPath, 'utf8');
   const { fm, body } = splitFrontmatter(src);
   const isSkill = path.basename(mdPath) === 'SKILL.md' || !!fm.name;
+
+  // 数学公式：检测 $...$ 或 $...$，命中则注入 MathJax（SVG 输出，零字体依赖）
+  const hasMath = /\$\$|\$[^$\n]+\$/.test(body);
 
   let html = marked.parse(body, { gfm: true, breaks: false, async: false });
 
@@ -406,6 +422,24 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
   const fill = (tpl, map) => Object.entries(map).reduce(
     (s, [k, v]) => s.split(k).join(v), tpl);
 
+  const mathUrl = pathToFileURL(path.join(ROOT, 'vendor', 'mathjax', 'tex-svg.js')).href;
+  const mathScript = hasMath ? [
+    '<script>',
+    'window.__md2pdfMathReady = false;',
+    'window.MathJax = {',
+    '  tex: { inlineMath: [["$", "$"]] },',
+    '  svg: { fontCache: "none" },',
+    '  startup: {',
+    '    ready: function () {',
+    '      MathJax.startup.defaultReady();',
+    '      MathJax.startup.promise.then(function () { window.__md2pdfMathReady = true; });',
+    '    }',
+    '  }',
+    '};',
+    '</script>',
+    '<script src="' + mathUrl + '" id="MathJax-script"></script>',
+  ].join('\n') : '';
+
   const shell = await readFile(path.join(ASSETS, 'shell.html'), 'utf8');
   const out = fill(shell, {
     '{{TITLE}}': esc(title),
@@ -417,6 +451,7 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
     '{{BODY}}': html,
     '{{COLOPHON_LEFT}}': esc(colophonLeft),
     '{{COLOPHON_RIGHT}}': esc(colophonRight),
+    '{{MATHJAX}}': mathScript,
   });
 
   if (opts.htmlOnly) return { title, html: out };
@@ -431,7 +466,7 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
       <span style="flex:1;text-align:right;">${opts.footerRight || ''}</span>
     </div>`;
 
-  const buf = await chrome.print(htmlPath, { footer: opts.footer, footerTemplate, landscape: opts.landscape, outline: opts.outline });
+  const buf = await chrome.print(htmlPath, { footer: opts.footer, footerTemplate, landscape: opts.landscape, outline: opts.outline, waitMath: hasMath });
 
   if (opts.keepHtml) {
     await writeFile(mdPath.replace(/\.md$/i, '.html'), out, 'utf8');

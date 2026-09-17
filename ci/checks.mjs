@@ -138,6 +138,8 @@ if (fs.existsSync(demo)) {
   ok('渲染：无 undefined/NaN 泄漏', !/undefined|NaN/.test(html));
   ok('渲染：页脚页码模板交给浏览器而非 HTML',
     !/class="pageNumber"/.test(html));
+  ok('渲染：数学公式注入 MathJax（demo 含公式）',
+    /MathJax/.test(html) && /tex-svg\.js/.test(html));
 }
 
 /* ---------- PDF 书签（outline） ---------- */
@@ -148,7 +150,7 @@ ok('书签：printToPDF 传入 generateDocumentOutline',
 ok('书签：默认开启，可 --no-outline 关闭',
   /outline:\s*true,/.test(src) && /case '--no-outline': o\.outline = false/.test(src));
 ok('书签：开关从 main 传到 chrome.print',
-  /outline:\s*opts\.outline\s*\}/.test(src),
+  /outline:\s*opts\.outline\s*[,}]/.test(src),
   '有 --no-outline 分支但没传进渲染，等于没接');
 ok('书签：老版本 Chrome 不认参数时退回无书签渲染',
   /generateDocumentOutline: true \}\);[\s\S]{0,160}printToPDF', base\)/.test(src),

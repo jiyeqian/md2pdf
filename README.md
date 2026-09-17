@@ -3,7 +3,13 @@
 把 Markdown 排成**优雅的中文 A4 PDF**：报头大标题、元信息条、精心排过的表格/代码/引用/列表、页脚页码。
 不是 pandoc 的默认样式 —— 是可以直接拿去打印、发给别人看的版式。
 
-![themes](docs/themes.png)
+**elegant 主题**（默认，墨蓝 + 古铜）：
+
+![elegant 主题效果](docs/theme-elegant.png)
+
+**minimal 主题**（黑白公文风）：
+
+![minimal 主题效果](docs/theme-minimal.png)
 
 仓库：https://cnb.cool/jiyeqian/md2pdf
 
@@ -121,6 +127,7 @@ node ci/inspect-pdf.mjs out.pdf
 - 首个 H1 提升为报头大标题，正文不再重复；其后的首段自动成为导语。
 - YAML frontmatter 的 `name` / `description` 生成元信息条；description 里「适用于…」「不用于…」会自动拆成「适用 / 不适用」两栏。
 - H2 自动分节并加色块标记；表格深色表头＋隔行浅底；有序列表用圆形序号。
+- 数学公式：正文里的 `$...$`（行内）与 `$$...$$`（独立成行）由内置 MathJax 渲染（SVG 输出，零字体依赖）。
 - 相对路径图片自动解析成绝对地址，能正常进入 PDF。
 
 ## 改样式
@@ -220,4 +227,4 @@ skill/SKILL.md          Agent 技能说明书（postinstall 会装到技能目�
 
 MIT
 
-第三方组件：`vendor/marked.esm.js` 来自 [marked](https://github.com/markedjs/marked)（MIT License），随仓库分发以便零依赖安装。
+第三方组件：`vendor/marked.esm.js` 来自 [marked](https://github.com/markedjs/marked)（MIT License）；`vendor/mathjax/tex-svg.js` 来自 [MathJax](https://github.com/mathjax/MathJax)（Apache-2.0 License）。均随仓库分发以便零依赖安装。
