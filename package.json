@@ -1,6 +1,6 @@
 {
-  "name": "md2pdf",
-  "version": "1.3.1",
+  "name": "@jiyeqian/md2pdf",
+  "version": "1.4.0",
   "description": "把 Markdown 排成优雅的中文 A4 PDF（无头 Chrome 渲染，带报头、表格/代码排版与页脚页码）",
   "type": "module",
   "bin": {
@@ -11,6 +11,7 @@
     "src",
     "assets",
     "vendor",
+    "skill",
     "README.md",
     "LICENSE"
   ],
@@ -18,9 +19,13 @@
     "node": ">=18"
   },
   "scripts": {
+    "postinstall": "node src/install-skill.mjs",
     "validate": "bash ci/validate.sh",
     "test": "bash ci/validate.sh",
     "demo:pdf": "node src/md2pdf.mjs examples/demo.md -o /tmp/md2pdf-demo.pdf"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "markdown",
@@ -29,6 +34,5 @@
     "chinese",
     "typography"
   ],
-  "license": "MIT",
-  "private": true
+  "license": "MIT"
 }

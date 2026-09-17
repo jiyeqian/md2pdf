@@ -13,10 +13,10 @@
 
 | 层 | 是什么 | 给谁用 | 落在哪 |
 | --- | --- | --- | --- |
-| **命令** `md2pdf` | 真正的程序(Node + 无头 Chrome 渲染) | 你、任何脚本 | `~/.local/share/md2pdf/`,命令软链进 PATH |
+| **命令** `md2pdf` | 真正的程序(Node + 无头 Chrome 渲染) | 你、任何脚本 | npm 全局安装到 `node_modules/@jiyeqian/md2pdf/` |
 | **技能说明书** `skill/SKILL.md` | 告诉 Agent「有 `md2pdf` 这个命令、怎么用」 | WorkBuddy 等 Agent 运行时 | `~/.workbuddy/skills/md-to-pdf/` |
 
-`install.sh` 一次装两样:环境里有 WorkBuddy(`~/.workbuddy` 存在)就顺带装说明书,
+npm 的 `postinstall` 一次装两样:环境里有 WorkBuddy(`~/.workbuddy` 存在)就顺带装说明书,
 没有就只装命令。只要命令用 `MD2PDF_SKILL=0` 跳过。
 
 > 为什么说明书不在程序里?因为「怎么用」是给 Agent 看的,「能转换」是给系统跑的 ——
@@ -24,42 +24,34 @@
 
 ## 安装
 
-**一条命令**（不用 clone）：
+**一条命令**（需要 Node ≥ 18，建议 ≥ 22）：
 
 ```bash
-curl -fsSL https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/install.sh | sh
+npm install -g @jiyeqian/md2pdf
 ```
 
-它会下载最新源码到 `~/.local/share/md2pdf`，把 `md2pdf` 链接进 PATH，并检查 Node 与 Chrome（缺什么会直接告诉你）。
-下载量约 120 KB —— 走流量也没负担。
+它会装上 `md2pdf` 命令；`postinstall` 顺带把技能说明书装进 `~/.workbuddy`（存在时）。
 
 ```bash
-md2pdf ~/.local/share/md2pdf/examples/demo.md --open   # 装完试一下
+md2pdf 你的文档.md --open   # 装完试一下
 ```
 
-**更新**：`md2pdf --upgrade`（或重跑上面那条命令） · **卸载**：`~/.local/share/md2pdf/uninstall.sh`
-
-> 若在 v1.2.1–v1.3.0 期间升级过，命令可能落到 `<原目录>/bin/bin`（每次升级多一层）。
-> v1.3.1 起 `--upgrade` 会自动把历史遗留的多层 `/bin` 收敛回原目录，并清掉空目录。
+**更新**：`npm update -g @jiyeqian/md2pdf` · **卸载**：`npm uninstall -g @jiyeqian/md2pdf`
 
 | 变量 | 作用 |
 | --- | --- |
-| `MD2PDF_HOME=<dir>` | 安装位置，默认 `~/.local/share/md2pdf` |
-| `MD2PDF_REF=<ref>` | 装指定分支/标签，默认 `main`（如 `MD2PDF_REF=v1.2.0`） |
-| `MD2PDF_BIN_DIR=<dir>` | 命令落点目录（**精确**，优先于 `PREFIX`） |
-| `PREFIX=<dir>` | 落点**前缀**，命令装在 `<dir>/bin`，默认 `/usr/local/bin`（无写权限自动用 `~/.local/bin`） |
-| `MD2PDF_SKILL=0` | 不安装 Agent 技能说明书 |
+| `MD2PDF_SKILL=0` | 安装时不装 Agent 技能说明书 |
 | `MD2PDF_SKILL_DIR=<dir>` | 说明书落点，默认 `~/.workbuddy/skills/md-to-pdf`（`~/.workbuddy` 不存在时默认不装） |
 
-### 在仓库里安装（开发用）
+### 在仓库里开发
 
 ```bash
 git clone https://cnb.cool/jiyeqian/md2pdf.git
 cd md2pdf
-./install.sh          # 把 bin/md2pdf 软链到 /usr/local/bin（无权限时自动用 ~/.local/bin）
+npm link             # 把 bin/md2pdf 软链进 PATH，指向仓库本身，改代码立即生效
 ```
 
-这条路径下程序就是仓库本身，改完立即生效，不需要重装。
+`npm link` 之后命令就是仓库本身，改完立即生效，不需要重装。
 
 ### 依赖
 
@@ -175,7 +167,7 @@ bash ci/validate.sh        # 本地跑，和 CI 完全同一套检查（约几�
 改乱版本号、把目录项退回纯文本、关掉书签参数…），断言校验确实会失败 ——
 只会"全绿"的校验等于没有校验。
 
-CNB 云原生构建在 push / PR 时跑同一脚本；打 tag 时额外打包 zip 并发 Release
+CNB 云原生构建在 push / PR 时跑同一脚本；打 tag 时发布到 npm
 （见 `.cnb.yml`）。
 
 ### 发版
@@ -183,39 +175,38 @@ CNB 云原生构建在 push / PR 时跑同一脚本；打 tag 时额外打包 zi
 改完 `src/md2pdf.mjs` 的 `VERSION` 与 `package.json` 的 `version`（校验会检查两者一致），然后：
 
 ```bash
-git tag v1.3.0 && git push origin v1.3.0
+git tag v1.4.0 && git push origin v1.4.0
 ```
 
-流水线会自动：校验 → `git archive` 打包 `md2pdf-v1.3.0.zip` → 创建 Release → 上传附件。
+流水线会自动：校验 → `npm publish --access public`（发布到 npm，需在 CNB 项目里配置 `NPM_TOKEN` secret）。
+也可以本地手动 `npm publish`。
+
 注意 CNB **不允许删除 tag**，打错了只能升版本号再发一版。
 
 ## 目录结构
 
 ```
-bin/md2pdf            启动器（解析软链、挑选 node）
-src/md2pdf.mjs        主程序
-src/ws.mjs            Node < 22 时的极简 WebSocket 客户端
-assets/               样式与页面骨架
-vendor/marked.esm.js  内置 Markdown 解析器
-examples/demo.md      示例文档（含表格/代码/引用/嵌套列表）
-ci/validate.sh        校验入口（本地与 CI 同一套）
-ci/checks.mjs         一致性 + 端到端渲染断言
-ci/inspect-pdf.mjs    读出 PDF 的书签树与链接注解（本地验证 outline 用）
-skill/SKILL.md        Agent 技能说明书（install.sh 会装到技能目录）
-install.sh            安装（联网安装 / 仓库内安装 两用）
-uninstall.sh          卸载
+bin/md2pdf              启动器（解析软链、挑选 node）
+src/md2pdf.mjs          主程序
+src/ws.mjs              Node < 22 时的极简 WebSocket 客户端
+src/install-skill.mjs   npm postinstall：把技能说明书装进 WorkBuddy
+assets/                 样式与页面骨架
+vendor/marked.esm.js    内置 Markdown 解析器
+examples/demo.md        示例文档（含表格/代码/引用/嵌套列表）
+ci/validate.sh          校验入口（本地与 CI 同一套）
+ci/checks.mjs           一致性 + 端到端渲染断言
+ci/inspect-pdf.mjs      读出 PDF 的书签树与链接注解（本地验证 outline 用）
+skill/SKILL.md          Agent 技能说明书（postinstall 会装到技能目录）
 ```
 
-联网安装时 `install.sh` 会在安装目录额外写一个 `.install-meta`（记录来源仓库与 ref），
-`md2pdf --upgrade` 靠它知道去哪儿拉新版。
+
 
 ## 常见问题
 
-**装到哪了 / 怎么升级** → 联网安装的程序本体在 `~/.local/share/md2pdf`，命令在 `/usr/local/bin/md2pdf`
-（无写权限时退到 `~/.local/bin`）。升级：`md2pdf --upgrade`。
+**装到哪了 / 怎么升级** → npm 全局包在 `npm root -g` 下的 `@jiyeqian/md2pdf`，命令软链进 npm 的 bin 目录。
+升级：`npm update -g @jiyeqian/md2pdf`。
 
-**网络装不上** → 确认能访问 `cnb.cool`；也可以 `MD2PDF_REF=v1.2.0` 指定版本，
-或直接 clone 仓库后 `./install.sh`。
+**npm 装不上** → 确认 npm registry 可达；也可以 clone 仓库后 `npm link` 本地开发。
 
 **找不到 Chrome** → 设 `export MD2PDF_CHROME=/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome`
 

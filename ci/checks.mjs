@@ -140,57 +140,6 @@ if (fs.existsSync(demo)) {
     !/class="pageNumber"/.test(html));
 }
 
-/* ---------- 6. 安装渠道一致 ---------- */
-// 安装入口是唯一的分发路径，改仓库地址/接口时最怕文档漂移 —— 这里做双向对齐。
-const installSh = readIf(path.join(ROOT, 'install.sh'));
-const readme = readIf(path.join(ROOT, 'README.md'));
-
-const repoM = /REPO_URL="\$\{MD2PDF_SRC:-([^}"]+)\}"/.exec(installSh);
-ok('安装：install.sh 声明了仓库基址', !!repoM, '未找到 REPO_URL 定义');
-if (repoM) {
-  const repo = repoM[1];
-  ok('安装：通过归档接口下载（/-/git/archive/）',
-    installSh.includes('$REPO_URL/-/git/archive/'),
-    '注意：网页 /-/raw/ 是 SPA 只返回 HTML 壳，必须用 /-/git/raw/ 或 /-/git/archive/');
-  ok('安装：README 的一行安装命令指向同一仓库',
-    readme.includes(`${repo}/-/git/raw/`), `期望含 ${repo}/-/git/raw/`);
-  ok('安装：README 中的仓库地址与 install.sh 一致',
-    readme.includes(repo), repo);
-}
-ok('安装：远程安装写 .install-meta（--upgrade 的来源记录）',
-  /\.install-meta/.test(installSh));
-ok('安装：有防误删保护', /拒绝安装到/.test(installSh));
-ok('安装：软链不可用时写转发脚本而非复制启动器',
-  /转发脚本/.test(installSh),
-  '复制的启动器会按自身路径反推项目根，指向错误');
-ok('安装：.install-meta 记录命令落点',
-  /echo "bin=\$BIN_DIR" >>/.test(installSh),
-  '不记的话，升级会重新选目录，用 PREFIX 装的命令就会漂走');
-ok('CLI：--upgrade 把命令落点回传为 MD2PDF_BIN_DIR（精确目录）',
-  /env\.MD2PDF_BIN_DIR = /.test(src),
-  'bin= 记的是精确目录；当 PREFIX 传回去会被再拼一层 /bin，每升级一次多一层');
-ok('CLI：--upgrade 不把 bin= 当 PREFIX 传',
-  !/env\.PREFIX = meta\.bin/.test(src),
-  '这一行是 v1.2.1–v1.3.0 的漂移 bug 根源');
-ok('安装：支持 MD2PDF_BIN_DIR 精确落点（且优先于 PREFIX）',
-  /if \[ -n "\$MD2PDF_BIN_DIR" \]/.test(installSh) && /BIN_DIR="\$MD2PDF_BIN_DIR"/.test(installSh),
-  '没有精确落点的入口，升级只能靠拼前缀，语义必然出错');
-ok('安装：PREFIX 语义是「前缀」（命令装在 <dir>/bin）',
-  /BIN_DIR="\$PREFIX\/bin"/.test(installSh),
-  'PREFIX 不拼 /bin 的话，与 .install-meta 的 bin= 就会混为一谈');
-ok('CLI：历史遗留的多层 /bin 会被收敛',
-  /function collapseBinSuffix/.test(src) && /collapseBinSuffix\(meta\.bin\)/.test(src),
-  '已中招的安装（bin=/usr/local/bin/bin/bin）要能自愈，不能越升越深');
-ok('安装：同时支持 curl 与 wget', /curl/.test(installSh) && /wget/.test(installSh));
-
-ok('CLI：帮助文本包含 --upgrade', /--upgrade\s+从安装来源/.test(src));
-ok('CLI：--upgrade 有参数解析分支', /case '--upgrade'/.test(src));
-ok('CLI：--upgrade 已接到 main（光有 case 不算）',
-  /if \(opts\.upgrade\) \{\s*await doUpgrade\(\)/.test(src),
-  '必须有 opts.upgrade → doUpgrade() 的调用');
-ok('CLI：--upgrade 在非安装目录下会提示 git pull（不静默失败）',
-  /git 工作副本/.test(src));
-
 /* ---------- PDF 书签（outline） ---------- */
 // 书签由 Chrome 的 printToPDF 参数生成，CI 里没有浏览器，渲不出 PDF 也就断言不到
 // /Outlines 本身 —— 所以这里只钉"接线"（有开关 ≠ 真的接到 main）。
@@ -210,7 +159,7 @@ ok('书签：帮助文本写明 --no-outline', /--no-outline\s+不生成 PDF 书
 // 实测：macOS 自带的 bash 3.2（/bin/sh）会把这个字符的首字节并进变量名 ——
 //   sh -c 'R=abc; echo "X：$R（y）"'   →   X：<乱码>y）
 // 变量展开成空、还吐出半个字符的字节。相邻处必须写 ${VAR}。
-const SHELL_FILES = ['install.sh', 'uninstall.sh', 'bin/md2pdf', 'ci/validate.sh'];
+const SHELL_FILES = ['bin/md2pdf', 'ci/validate.sh'];
 const bareThenCjk = /\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]|\$[0-9@*#?!][^\x00-\x7F]/;
 for (const f of SHELL_FILES) {
   const text = readIf(path.join(ROOT, f));
@@ -228,6 +177,7 @@ for (const f of SHELL_FILES) {
 // 技能包只是"说明书"，实现是 CLI —— 两层各自分发。说明书必须随仓库走，
 // 否则换了机器装好命令，Agent 仍然不认识它。
 const skillMd = readIf(path.join(ROOT, 'skill', 'SKILL.md'));
+const installSkill = readIf(path.join(ROOT, 'src', 'install-skill.mjs'));
 ok('技能：skill/SKILL.md 存在（说明书随仓库分发）', skillMd.length > 0);
 if (skillMd) {
   const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(skillMd);
@@ -237,21 +187,18 @@ if (skillMd) {
     fmName === 'md-to-pdf', `name=${fmName}`);
   ok('技能：frontmatter 有 description',
     !!(fm && /^description:\s*\S/m.test(fm[1])));
-  ok('技能：install.sh 会把它装进技能目录',
-    /skill\/SKILL\.md/.test(installSh) && /skills\/md-to-pdf/.test(installSh),
-    '期望 install.sh 同时引用 skill/SKILL.md 与 skills/md-to-pdf');
-  ok('技能：install.sh 提供 MD2PDF_SKILL 开关与 MD2PDF_SKILL_DIR 落点',
-    /\$\{MD2PDF_SKILL:-/.test(installSh) && /MD2PDF_SKILL_DIR/.test(installSh));
-  ok('技能：说明书里的一行安装命令指向同一仓库',
-    repoM ? skillMd.includes(`${repoM[1]}/-/git/raw/`) : false,
-    repoM ? `期望含 ${repoM[1]}/-/git/raw/` : '');
-  ok('技能：install.sh 把技能目录写进 .install-meta',
-    /echo "skill=\$SKILL_DIR" >>/.test(installSh),
-    '不记下来的话 --upgrade 不知道技能该更新到哪');
-  ok('技能：--upgrade 会把技能目录传回安装脚本',
-    /env\.MD2PDF_SKILL_DIR = meta\.skill/.test(src),
-    '缺这一步，升级后技能会停在旧版（或被装到默认位置）');
 }
+ok('技能：npm postinstall 由 src/install-skill.mjs 负责安装',
+  installSkill.length > 0 && /install-skill\.mjs/.test(pkg.scripts?.postinstall || ''),
+  'npm 没有原生技能安装钩子，必须走 postinstall');
+ok('技能：postinstall 会复制 skill/SKILL.md 到技能目录',
+  /skill\/SKILL\.md/.test(installSkill) && /skills\/md-to-pdf/.test(installSkill),
+  '期望 install-skill.mjs 同时引用 skill/SKILL.md 与 skills/md-to-pdf');
+ok('技能：postinstall 提供 MD2PDF_SKILL 开关与 MD2PDF_SKILL_DIR 落点',
+  /MD2PDF_SKILL/.test(installSkill) && /MD2PDF_SKILL_DIR/.test(installSkill));
+ok('技能：npm 包会把 skill/ 一并发布（files 含 skill）',
+  Array.isArray(pkg.files) && pkg.files.includes('skill'),
+  'files 不含 skill 的话，装出来的包里没有 SKILL.md，postinstall 无源可复制');
 
 /* ---------- 汇总 ---------- */
 console.log(`\n结果：${pass} 项通过，${fail} 项失败`);

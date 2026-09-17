@@ -19,25 +19,23 @@ md2pdf 文件名.md --theme minimal --toc
 
 ## 程序在哪
 
-- **命令入口**：`/usr/local/bin/md2pdf`（无写权限时退到 `~/.local/bin/md2pdf`）
-- **程序本体**：`~/.local/share/md2pdf/`（含 `.install-meta`，记录来源仓库与 ref）
+- **命令入口**：npm 全局 bin 目录里的 `md2pdf`
+- **程序本体**：npm 全局包 `@jiyeqian/md2pdf`（`node_modules/@jiyeqian/md2pdf/`）
 - **源码仓库**：https://cnb.cool/jiyeqian/md2pdf （Public，唯一实现的源头）
-- **本说明书**：仓库里的 `skill/SKILL.md`，安装时由 `install.sh` 复制到技能目录
+- **本说明书**：仓库里的 `skill/SKILL.md`，安装时由 npm `postinstall` 复制到技能目录
   （WorkBuddy 下即 `~/.workbuddy/skills/md-to-pdf/SKILL.md`）
 
-**没装过 / 换了机器** —— 一条命令（约 120 KB，命令与说明书一起装好）：
+**没装过 / 换了机器** —— 一条命令（命令与说明书一起装好）：
 
 ```bash
-curl -fsSL https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/install.sh | sh
+npm install -g @jiyeqian/md2pdf
 ```
 
 若 `command -v md2pdf` 为空，就是没装，跑上面这条即可。
 
-**升级**：`md2pdf --upgrade`（读 `.install-meta` 回源覆盖安装） · **卸载**：`~/.local/share/md2pdf/uninstall.sh`
+**升级**：`npm update -g @jiyeqian/md2pdf` · **卸载**：`npm uninstall -g @jiyeqian/md2pdf`
 
-环境变量：`MD2PDF_REF=v1.2.0` 固定版本；`MD2PDF_HOME=<dir>` 改程序本体位置；
-`MD2PDF_BIN_DIR=<dir>` 精确指定命令目录；`PREFIX=<dir>` 命令装在 `<dir>/bin`；
-`MD2PDF_SKILL=0` 不装说明书；`MD2PDF_SKILL_DIR=<dir>` 指定技能目录。
+环境变量：`MD2PDF_SKILL=0` 不装说明书；`MD2PDF_SKILL_DIR=<dir>` 指定技能目录。
 
 ## 常用选项
 
@@ -54,7 +52,6 @@ curl -fsSL https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/install.sh | sh
 | `--no-footer` / `--footer-left` / `--footer-right` | 页脚控制 |
 | `--keep-html` / `--open` | 留中间 HTML 调样式 / 转完打开 |
 | `--html-only` | 只出 HTML 不启动浏览器（调样式、CI 校验用） |
-| `--upgrade` | 回源拉最新版覆盖本机安装 |
 
 布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
 完整列表见 `md2pdf --help` 或项目 README。
@@ -79,7 +76,7 @@ node ci/inspect-pdf.mjs out.pdf   # 打印书签树、内链/外链数量
 ```
 
 改样式：`assets/base.css`（骨架）与 `assets/theme-*.css`（配色）。
-用户态改 `~/.local/share/md2pdf/assets/`；开发态（见下）改仓库即时生效。
+用户态改 npm 全局包里的 `assets/`；开发态（见下）改仓库即时生效。
 
 ## 开发这个工具
 
@@ -87,10 +84,9 @@ node ci/inspect-pdf.mjs out.pdf   # 打印书签树、内链/外链数量
 
 ```bash
 git clone https://cnb.cool/jiyeqian/md2pdf.git
-cd md2pdf && ./install.sh        # 切到开发态：命令指回仓库，改代码立即生效
+cd md2pdf && npm link           # 切到开发态：命令指回仓库，改代码立即生效
 ```
 
-联网安装则是用户态（命令指向 `~/.local/share/md2pdf`）；两种模式跑各自的 `install.sh` 即可切换。
 
 改完代码跑校验（几秒钟、无需浏览器）：
 
@@ -98,5 +94,5 @@ cd md2pdf && ./install.sh        # 切到开发态：命令指回仓库，改代
 bash ci/validate.sh              # 本地与 CNB 云原生构建跑的是同一套
 ```
 
-推送后 CNB 自动跑同一套校验；打 tag 则自动打包发 Release，用户 `md2pdf --upgrade` 即可拿到新版。
+推送后 CNB 自动跑同一套校验；打 tag 则自动 `npm publish` 发新版，用户 `npm update -g` 即可拿到。
 发版前记得同步 `src/md2pdf.mjs` 的 `VERSION` 与 `package.json` 的 `version`（校验会检查一致）。

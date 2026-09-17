@@ -1,8 +1,9 @@
 # CNB 云原生构建（cnb.cool）
 #
-# 定位：这是发布前校验 + 打标签时打包发版。
+# 定位：发布前校验 + 打标签时发布到 npm。
 # 构建节点是 Linux 容器，没有 macOS、也不装 Chrome —— 所以 CI 不打印 PDF，
 # 渲染校验落在 HTML 阶段（--html-only）。真实 PDF 打印属于本机环节。
+# 发布到 npm 需要项目里配置 NPM_TOKEN secret（npmjs 的 automation token）。
 
 $:
   push:
@@ -33,33 +34,12 @@ $:
     - name: 发布
       env:
         LANG: C.UTF-8
+        NPM_TOKEN: ${NPM_TOKEN}
       stages:
         - name: 发布前校验
           script: |
             bash ci/validate.sh
-        - name: 打包
+        - name: 发布到 npm
           script: |
-            mkdir -p dist
-            git config --global --add safe.directory "$PWD" 2>/dev/null || true
-            # 实测 ${CNB_TAG_NAME} 不在 CNB 默认环境变量表里（在 script 阶段取到空值），
-            # 所以先直接问 git HEAD 是哪个 tag，再退回 ${CNB_BRANCH}（tag 事件下即标签名），
-            # 最后才用短 SHA。
-            TAG="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
-            [ -n "$TAG" ] || TAG="${CNB_BRANCH:-}"
-            [ -n "$TAG" ] || TAG="$(git rev-parse --short HEAD)"
-            echo "打包 tag：$TAG"
-            # git archive 只打包被版本控制的文件，自动排除 .git 与未跟踪文件
-            git archive --format=zip --prefix="md2pdf-${TAG}/" -o "dist/md2pdf-${TAG}.zip" HEAD
-            ls -lh dist/
-        - name: 创建 Release
-          type: git:release
-          options:
-            title: ${CNB_TAG_NAME}
-            descriptionFromFile: README.md
-            latest: true
-        - name: 上传附件
-          # 附件是插件而非内置任务；且要在 Release 存在之后才能上传
-          image: cnbcool/attachments:latest
-          settings:
-            attachments:
-              - ./dist/*.zip
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+            npm publish --access public
