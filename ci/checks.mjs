@@ -141,6 +141,9 @@ if (fs.existsSync(demo)) {
     !/class="pageNumber"/.test(html));
   ok('渲染：数学公式注入 MathJax（demo 含公式）',
     /MathJax/.test(html) && /tex-svg\.js/.test(html));
+  ok('数学：MathJax 启用公式编号与引用（tags: all）', /tags:\s*["']all["']/.test(src));
+  ok('数学：demo 含公式编号与引用（\\label / \\eqref）',
+    /\\label\{eq:/.test(readIf(demo)) && /\\eqref\{eq:/.test(readIf(demo)));
   ok('渲染：BibTeX 脚注按 GB/T 7714 渲染（含 [J]/[M]）',
     /\[J\]/.test(html) && /\[M\]/.test(html));
   ok('渲染：脚注引用为可点击上标（fnref → #fn-N）',

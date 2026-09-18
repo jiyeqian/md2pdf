@@ -681,7 +681,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '<script>',
     'window.__md2pdfMathReady = false;',
     'window.MathJax = {',
-    '  tex: { inlineMath: [["$", "$"]] },',
+    '  tex: { inlineMath: [["$", "$"]], tags: "all" },',
     '  svg: { fontCache: "none" },',
     '  startup: {',
     '    ready: function () {',
