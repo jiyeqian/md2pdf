@@ -2,13 +2,9 @@
 
 把 Markdown 排成**优雅的中文 A4 PDF**：报头大标题、元信息条、精心排过的表格/代码/引用/列表、页脚页码，还支持数学公式与参考文献。不是 pandoc 的默认样式——是可以直接拿去打印、发给别人看的版式。
 
-**elegant 主题**（默认，墨蓝 + 古铜）：
-
-![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)
-
-**minimal 主题**（黑白公文风）：
-
-![minimal 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-minimal.png)
+| elegant（默认，墨蓝 + 古铜） | minimal（黑白公文风） |
+| :---: | :---: |
+| [![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/demo-elegant.pdf) | [![minimal 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-minimal.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/demo-minimal.pdf) |
 
 仓库：https://cnb.cool/jiyeqian/md2pdf
 
