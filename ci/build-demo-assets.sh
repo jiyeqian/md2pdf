@@ -23,4 +23,10 @@ for t in $THEMES; do
   mv "docs/theme-$t-1.png" "docs/theme-$t.png"
 done
 
-echo "✓ 已更新 examples/demo-*.pdf 与 docs/theme-*.png"
+# 各文档类型的示例（skill / paper / readme）：md 与 PDF 必须同步
+# 注意：这些样例不展示在 README 中，仅作类型演示
+node src/md2pdf.mjs examples/skill-sample.md -o examples/skill-sample.pdf
+node src/md2pdf.mjs examples/paper-sample.md -o examples/paper-sample.pdf
+node src/md2pdf.mjs examples/readme-sample/README.md -o examples/readme-sample.pdf
+
+echo "✓ 已更新 examples/demo-*.pdf、examples/*-sample.pdf 与 docs/theme-*.png"
