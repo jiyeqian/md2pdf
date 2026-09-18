@@ -4,11 +4,11 @@
 
 **elegant 主题**（默认，墨蓝 + 古铜）：
 
-![elegant 主题效果](docs/theme-elegant.png)
+![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)
 
 **minimal 主题**（黑白公文风）：
 
-![minimal 主题效果](docs/theme-minimal.png)
+![minimal 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-minimal.png)
 
 仓库：https://cnb.cool/jiyeqian/md2pdf
 
