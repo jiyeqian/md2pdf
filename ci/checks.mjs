@@ -122,6 +122,7 @@ if (fs.existsSync(demo)) {
   ok('渲染：导语被标记', /class="lead"/.test(html));
   ok('渲染：表格已生成', /<table>/.test(html));
   ok('渲染：代码块已生成', /<pre><code/.test(html));
+  ok('渲染：代码块高亮（hljs）', /class="hljs/.test(html) && /hljs-keyword/.test(html));
   ok('渲染：引用块已生成', /<blockquote>/.test(html));
   ok('渲染：有序与无序列表都在', /<ol>/.test(html) && /<ul>/.test(html));
   ok('渲染：H2 已分节', /<section>/.test(html));

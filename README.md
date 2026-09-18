@@ -78,6 +78,7 @@ node ci/inspect-pdf.mjs out.pdf
 - 首个 H1 提升为报头大标题；其后的首段自动成为导语。
 - YAML frontmatter 的 `name` / `description` 生成元信息条；「适用于…/不用于…」自动拆两栏。
 - H2 自动分节加色块；表格深色表头＋隔行浅底；有序列表圆形序号。
+- 代码块按语言自动语法高亮（内置 highlight.js，支持 Python/JS/Bash 等常见语言）。
 - 数学公式：`$...$`（行内）与 `$$...$$`（独立成行）由内置 MathJax 渲染。
 - 脚注：`[^id]` 引用 + `[^id]: 内容` 定义；BibTeX 脚注（`@article{...}` 等）按 GB/T 7714-2025 著录，默认收集为「参考文献」章节（`--no-bibliography` 关闭）。
 - 相对路径图片自动解析进 PDF。

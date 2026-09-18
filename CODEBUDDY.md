@@ -24,6 +24,9 @@ node src/md2pdf.mjs examples/demo.md --html-only --keep-html
 
 # Inspect a generated PDF's bookmark tree and internal link annotations
 node ci/inspect-pdf.mjs out.pdf
+
+# Regenerate demo PDFs (examples/) + README theme images (docs/) — keep both in sync
+bash ci/build-demo-assets.sh
 ```
 
 There is no unit-test framework. Tests are the assertion scripts under `ci/`, driven by `ci/validate.sh`. To run a single test layer, invoke `node ci/checks.mjs <root>` directly (it covers version consistency, placeholder/theme-variable closure, and end-to-end HTML rendering assertions). A trailing "guard self-test" in `ci/validate.sh` deliberately corrupts copies of the repo and asserts validation *fails* — keep that pattern: a check that only ever passes is considered broken.
@@ -44,6 +47,7 @@ Pipeline: `Markdown --(marked)--> HTML --(shell.html + base.css + theme-*.css)--
 - **Version is declared twice and must match**: the `VERSION` const in `src/md2pdf.mjs` and `"version"` in `package.json`. Update both when releasing. `npm publish` requires a version not already published.
 - **The npm tarball must be self-contained**: `package.json` `files` whitelists `bin/src/assets/vendor/skill`. Anything the installed command or `postinstall` needs at runtime must be listed there (e.g. `skill/` for the postinstall copy).
 - Placeholders in `assets/shell.html` and `assets/base.css` must be in 1:1 correspondence with the replacement logic in `src/md2pdf.mjs` (the `fill`/CSS `.replace` calls). Every `var(--x)` referenced in theme CSS must be defined.
+- **README theme images (`docs/theme-*.png`) and demo PDFs (`examples/demo-*.pdf`) must stay in sync** — both are committed artifacts of the same render. After changing `examples/demo.md`, the CSS/themes, or layout logic, run `ci/build-demo-assets.sh` (renders both themes to `examples/demo-<theme>.pdf`, then derives `docs/theme-<theme>.png` from each PDF's first page via `pdftoppm`) and commit both. The README links the images to the PDFs and shows them in a 2-column table.
 - Markdown/HTML processing that CI asserts on: H1 promoted to header + first paragraph becomes lead; H2 sections get `id="sec-N"` and are wrapped in `<section>`; TOC entries must be clickable `<a href="#...">` links (not plain text); the `generateDocumentOutline: true` param must reach `Page.printToPDF` (drives PDF bookmarks from h1–h6).
 
 ## Release process

@@ -36,11 +36,12 @@ import os from 'node:os';
 import http from 'node:http';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.7.6';
+const VERSION = '1.7.7';
 
 // Node ≥ 22 有全局 WebSocket；更老的版本退回到内置的极简实现
 let _WS;
@@ -217,6 +218,32 @@ function sectionize(html) {
   return html.split(/(?=<h2[\s>])/)
     .map(p => (p.trim().startsWith('<h2') ? `<section>\n${p}\n</section>` : p))
     .join('\n');
+}
+
+/* ---------------- 代码高亮 ---------------- */
+
+// 反转 marked 输出的 HTML 实体（highlight.js 需要原始代码再自行转义）
+function decodeEntities(s) {
+  return s.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+}
+
+// 对 <pre><code> 块调用 highlight.js；带语言标记用对应语法，否则自动识别
+function highlightCode(html, hljs) {
+  if (!hljs) return html;
+  return html.replace(/<pre><code([^>]*)>([\s\S]*?)<\/code><\/pre>/g, (m, attrs, code) => {
+    const lm = /(?:language|lang)-([\w-]+)/.exec(attrs);
+    const lang = lm ? lm[1] : '';
+    const text = decodeEntities(code);
+    let out;
+    try {
+      out = (lang && hljs.getLanguage(lang))
+        ? hljs.highlight(text, { language: lang }).value
+        : hljs.highlightAuto(text).value;
+    } catch { return m; }
+    const cls = 'hljs' + (lang ? ' language-' + lang : '');
+    return '<pre><code class="' + cls + '">' + out + '</code></pre>';
+  });
 }
 
 /* ---------------- 章节编号 ---------------- */
@@ -531,7 +558,7 @@ class Chrome {
 
 /* ---------------- 渲染 ---------------- */
 
-async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
+async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   const src = await readFile(mdPath, 'utf8');
   const { fm, body: rawBody } = splitFrontmatter(src);
   const isSkill = path.basename(mdPath) === 'SKILL.md' || !!fm.name;
@@ -554,6 +581,9 @@ async function renderOne(mdPath, opts, chrome, marked, tmpRoot) {
   });
 
   let html = marked.parse(bodyWithRefs, { gfm: true, breaks: false, async: false });
+
+  // 代码高亮：对带语言标记的代码块做 highlight.js 着色
+  html = highlightCode(html, hljs);
 
   // 脚注/参考文献：先追加到正文末尾，再编号，使参考文献章节纳入编号体系
   html += renderFootnotes(footnotes, opts.bibliography, marked);
@@ -717,6 +747,8 @@ async function main() {
 
   const { Marked } = await import(pathToFileURL(path.join(ROOT, 'vendor', 'marked.esm.js')).href);
   const marked = new Marked({ gfm: true });
+  const require = createRequire(import.meta.url);
+  const hljs = require(path.join(ROOT, 'vendor', 'highlight', 'highlight.cjs'));
 
   const tmpRoot = await mkdtemp(path.join(os.tmpdir(), 'md2pdf-'));
   // --html-only 不需要浏览器（CI / 调样式时用）
@@ -728,7 +760,7 @@ async function main() {
       const mdPath = path.resolve(input);
       if (!existsSync(mdPath)) { console.error(`✗ 找不到文件：${input}`); failed = true; continue; }
       try {
-        const res = await renderOne(mdPath, opts, chrome, marked, tmpRoot);
+        const res = await renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot);
         const out = resolveOutput(mdPath, opts);
         await mkdir(path.dirname(out), { recursive: true });
         if (opts.htmlOnly) {

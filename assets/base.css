@@ -197,6 +197,21 @@ pre code {
   background: transparent; border: none; padding: 0;
   color: inherit; font-size: .85em; line-height: 1.7;
 }
+
+/* ---------- 代码高亮（highlight.js，浅色底） ---------- */
+.hljs-comment, .hljs-quote { color: #6a737d; font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-doctag, .hljs-formula { color: #d73a49; }
+.hljs-title, .hljs-title.function_, .hljs-title.class_ { color: #6f42c1; }
+.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-number, .hljs-variable,
+.hljs-template-variable, .hljs-selector-id, .hljs-selector-class,
+.hljs-selector-attr, .hljs-selector-pseudo, .hljs-meta { color: #005cc5; }
+.hljs-string, .hljs-regexp, .hljs-meta .hljs-string { color: #032f62; }
+.hljs-built_in, .hljs-symbol, .hljs-bullet { color: #e36209; }
+.hljs-name, .hljs-section, .hljs-tag { color: #22863a; }
+.hljs-type, .hljs-class, .hljs-params { color: #24292e; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
+.hljs-link { color: #005cc5; text-decoration: underline; }
 blockquote {
   margin: 0 0 14px; padding: 10px 14px;
   background: var(--tint); border-left: 3px solid var(--accent-soft);
