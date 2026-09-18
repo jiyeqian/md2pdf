@@ -802,6 +802,9 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '  mermaid.initialize({',
     '    startOnLoad: false,',
     '    theme: "base",',
+    // 确定性 id：避免每次渲染因随机 id 产生无意义字节差异
+    '    deterministicIds: true,',
+    '    deterministicIDSeed: "md2pdf",',
     '    themeVariables: {',
     '      fontFamily: v("--font-body") || "sans-serif",',
     '      fontSize: "15px",',
