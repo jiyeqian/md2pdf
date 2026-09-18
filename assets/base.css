@@ -212,6 +212,10 @@ pre code {
 .hljs-emphasis { font-style: italic; }
 .hljs-strong { font-weight: 700; }
 .hljs-link { color: #005cc5; text-decoration: underline; }
+
+/* ---------- MathJax 公式引用（\eqref）链接 ---------- */
+/* 覆盖 MathJax 注入的默认蓝色（mjx-container[jax="SVG"] > svg a { fill: blue }），改用主题强调色 */
+mjx-container[jax="SVG"] > svg a { fill: var(--accent) !important; stroke: var(--accent) !important; }
 blockquote {
   margin: 0 0 14px; padding: 10px 14px;
   background: var(--tint); border-left: 3px solid var(--accent-soft);

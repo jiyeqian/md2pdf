@@ -587,7 +587,18 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   footnotes.forEach(fn => { if (!fnIndex.has(fn.id)) fnIndex.set(fn.id, fnIndex.size + 1); });
   const orderedFootnotes = footnotes.slice().sort((a, b) => fnIndex.get(a.id) - fnIndex.get(b.id));
 
-  let html = marked.parse(bodyWithRefs, { gfm: true, breaks: false, async: false });
+  // 保护数学公式：markdown 的转义处理会把 \, 变 ,、\\ 变 \，破坏 LaTeX（多行公式会塌成一行）
+  const mathStore = [];
+  const bodyProtected = bodyWithRefs.replace(/\$\$[\s\S]*?\$\$|\$[^$\n]+\$/g, (m) => {
+    const i = mathStore.length;
+    mathStore.push(m);
+    return '\u0001MATH' + i + '\u0001';
+  });
+
+  let html = marked.parse(bodyProtected, { gfm: true, breaks: false, async: false });
+
+  // 还原数学公式（原样交回 MathJax 渲染）
+  html = html.replace(/\u0001MATH(\d+)\u0001/g, (m, i) => mathStore[+i] ?? m);
 
   // 代码高亮：对带语言标记的代码块做 highlight.js 着色
   html = highlightCode(html, hljs);
