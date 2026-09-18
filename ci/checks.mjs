@@ -148,11 +148,15 @@ if (fs.existsSync(demo)) {
   ok('渲染：脚注编号可反向跳回原文（fnref-back → #fnref-N）',
     /class="fnref-back"/.test(html) && /href="#fnref-\d+"/.test(html));
 
-  // 参考文献按正文「首次引用顺序」自动编号（类 LaTeX）：demo 中 Åström 先被引，故排在 Smith 前
+  // 参考文献按正文「首次引用顺序」自动编号（类 LaTeX）：demo 中 Hogan 最先被引，故排在 Åström 前；
+  // 且 md2pdf 在 md 里定义在最前，却因最后才被引而排在末尾。
   const refsBlock = html.slice(html.indexOf('参考文献</h2>'));
-  const astromPos = refsBlock.indexOf('ÅSTRÖM');
-  const smithPos = refsBlock.indexOf('SMITH');
-  ok('参考文献：按正文首次引用顺序编号', astromPos >= 0 && smithPos >= 0 && astromPos < smithPos);
+  const hoganPos = refsBlock.indexOf('Impedance Control');
+  const astromPos = refsBlock.indexOf('Feedback Systems');
+  ok('参考文献：按正文首次引用顺序编号（Hogan 先于 Åström）',
+    hoganPos >= 0 && astromPos >= 0 && hoganPos < astromPos);
+  ok('参考文献：定义顺序不影响展示（md2pdf 定义在前、展示在末）',
+    refsBlock.indexOf('md2pdf:') > refsBlock.indexOf('机械工程学报'));
 
   // 章节编号：force 模式为 H2 加层次编号（demo 默认「一、二、三」会被覆盖为「1、2、3」）
   const outNum = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'md2pdf-ci-')), 'num.html');
@@ -160,7 +164,7 @@ if (fs.existsSync(demo)) {
   const numHtml = readIf(outNum);
   ok('编号：force 模式加层次编号（H2→1/2、H3→2.1）', rNum.status === 0 && /<h2[^>]*>1 总体指标/.test(numHtml) && /<h2[^>]*>2 控制流程/.test(numHtml) && /<h3[^>]*>2\.1 /.test(numHtml));
   ok('编号：auto 模式自动加编号（demo 无编号）', /<h2[^>]*>1 总体指标/.test(html) && /<h3[^>]*>2\.1 /.test(html));
-  ok('编号：参考文献章节纳入编号体系', /<h2[^>]*>3 脚注/.test(html) || /<h2[^>]*>3 参考文献/.test(html));
+  ok('编号：参考文献章节纳入编号体系', /<h2[^>]*>\d+ 参考文献/.test(html));
 }
 
 /* ---------- PDF 书签（outline） ---------- */
