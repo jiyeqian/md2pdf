@@ -29,11 +29,26 @@
 
 > 注意：阻抗参数在更换指尖材料后必须重新标定，否则会出现持续振荡。
 
-阻抗控制最早由 Hogan 提出，目的是让机械臂在接触环境中表现出期望的“质量—阻尼—刚度”特性[^hogan1985]，其稳定性分析依赖反馈系统理论[^astrom2008]。目标动力学可写为：
+阻抗控制最早由 Hogan 提出，目的是让机械臂在接触环境中表现出期望的“质量—阻尼—刚度”特性[^hogan1985]，其稳定性分析依赖反馈系统理论[^astrom2008]。
 
-$$ \tau = K_p\,(\theta_d - \theta) + K_d\,(\dot{\theta}_d - \dot{\theta}) $$
+机械手的关节动力学与阻抗控制律可合并写成如下方程组：
 
-其中 $K_p$ 为刚度系数，$K_d$ 为阻尼系数，$\tau$ 为关节力矩。参数整定方法参见文献[^astrom2008]，国内在仿生抓取控制方面的研究进展见文献[^wang2021]，基于学习的灵巧抓取策略见会议论文[^liu2020]。
+$$
+\begin{aligned}
+M(\theta)\,\ddot{\theta} + C(\theta,\dot{\theta})\,\dot{\theta} + G(\theta) &= \tau, \\
+\tau &= K_p\,(\theta_d - \theta) + K_d\,(\dot{\theta}_d - \dot{\theta}),
+\end{aligned}
+\label{eq:ctrl}
+$$
+
+其中 $M$ 为惯性矩阵，$C$ 为科氏—离心项，$G$ 为重力项，$K_p$、$K_d$ 分别为刚度与阻尼系数。将式 $\eqref{eq:ctrl}$ 的控制律代入动力学，令误差 $e = \theta - \theta_d$，可得闭环误差方程：
+
+$$
+M(\theta)\,\ddot{e} + \bigl[\,C(\theta,\dot{\theta}) + K_d\,\bigr]\,\dot{e} + K_p\,e = 0
+\label{eq:err}
+$$
+
+由式 $\eqref{eq:err}$ 可见，当 $K_p$、$K_d$ 正定时误差渐进收敛[^astrom2008]。参数整定方法参见文献[^astrom2008]，国内在仿生抓取控制方面的研究进展见文献[^wang2021]，基于学习的灵巧抓取策略见会议论文[^liu2020]。
 
 核心逻辑如下：
 
