@@ -215,7 +215,7 @@ pre code {
 
 /* ---------- MathJax 公式引用（\eqref）链接 ---------- */
 /* 覆盖 MathJax 注入的默认蓝色（mjx-container[jax="SVG"] > svg a { fill: blue }），改用主题强调色 */
-mjx-container[jax="SVG"] > svg a { fill: var(--accent) !important; stroke: var(--accent) !important; }
+mjx-container[jax="SVG"] > svg a { fill: var(--ink) !important; stroke: var(--ink) !important; }
 blockquote {
   margin: 0 0 14px; padding: 10px 14px;
   background: var(--tint); border-left: 3px solid var(--accent-soft);
@@ -240,8 +240,8 @@ table caption { caption-side: top; padding: 2px 0 8px; }
 
 /* ---------- 脚注与参考文献 ---------- */
 sup.fnref { font-size: .7em; line-height: 0; }
-sup.fnref a { border-bottom: none; color: var(--accent); }
-a.fnref-back { border-bottom: none; color: var(--accent); font-weight: 600; }
+sup.fnref a { border-bottom: 1px dotted var(--accent); }
+a.fnref-back { border-bottom: 1px dotted var(--accent); }
 .references, .footnotes {
   list-style: none; counter-reset: none;
   margin: 4px 0 0; padding-left: 0;
