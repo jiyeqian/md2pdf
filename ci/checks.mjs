@@ -193,6 +193,26 @@ if (fs.existsSync(demo)) {
   ok('编号：force 模式加层次编号（H2→1/2、H3→2.1）', rNum.status === 0 && /<h2[^>]*>1 总体指标/.test(numHtml) && /<h2[^>]*>2 控制流程/.test(numHtml) && /<h3[^>]*>2\.1 /.test(numHtml));
   ok('编号：auto 模式自动加编号（demo 无编号）', /<h2[^>]*>1 总体指标/.test(html) && /<h3[^>]*>2\.1 /.test(html));
   ok('编号：参考文献章节纳入编号体系', /<h2[^>]*>\d+ 参考文献/.test(html));
+
+  // 编号方案（--number-scheme）：arabic / gb / cjk / chapter
+  const outSch = (n) => path.join(os.tmpdir(), 'md2pdf-ci-sch-' + n + '.html');
+  const rCjk = run(['examples/demo.md', '--html-only', '--numbering', 'force', '--number-scheme', 'cjk', '-o', outSch('cjk')]);
+  const cjkHtml = readIf(outSch('cjk'));
+  ok('编号：scheme=cjk → 一、/（一）',
+    rCjk.status === 0 && /<h2[^>]*>一、总体指标/.test(cjkHtml) && /<h3[^>]*>（一）/.test(cjkHtml),
+    `status=${rCjk.status}`);
+  const rCh = run(['examples/demo.md', '--html-only', '--numbering', 'force', '--number-scheme', 'chapter', '-o', outSch('chapter')]);
+  ok('编号：scheme=chapter → 第1章',
+    rCh.status === 0 && /<h2[^>]*>第1章 总体指标/.test(readIf(outSch('chapter'))),
+    `status=${rCh.status}`);
+  const rGb = run(['examples/demo.md', '--html-only', '--numbering', 'force', '--number-scheme', 'gb', '-o', outSch('gb')]);
+  ok('编号：scheme=gb → 章条点分（与 arabic 同形）',
+    rGb.status === 0 && /<h2[^>]*>1 总体指标/.test(readIf(outSch('gb'))),
+    `status=${rGb.status}`);
+  const rBadSch = run(['examples/demo.md', '--html-only', '--numbering', 'force', '--number-scheme', 'nope', '-o', outSch('bad')]);
+  ok('编号：未知 --number-scheme 报错且退出非 0',
+    rBadSch.status !== 0 && /未知编号方案/.test(rBadSch.stderr || ''),
+    `status=${rBadSch.status}`);
 }
 
 /* ---------- PDF 书签（outline） ---------- */

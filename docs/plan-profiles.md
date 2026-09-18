@@ -112,7 +112,8 @@ GB/T 1.1-2020 结构：
 
 | scheme | 形式 | 适用 |
 | --- | --- | --- |
-| `arabic` | 1 / 1.1 / 1.1.1 | 通用（现状） |
+| `arabic` | 1 / 1.1 / 1.1.1 | 通用（默认） |
+| `gb` | 章条制（与 arabic 同形；附录字母化与前言豁免属 P3） | GB |
 | `gb` | 章条制 + 附录字母 | GB（P3） |
 | `cjk` | 一、/（一）/ 1./（1） | 公文、论文 |
 | `chapter` | 第 1 章 / 1.1 | 书籍、手册 |
@@ -123,7 +124,7 @@ GB/T 1.1-2020 结构：
 | --- | --- | --- |
 | **P0** | Profile 骨架 + `--type` + 自动探测；`isSkill` 收编进 `skill` profile | **已完成** |
 | P1 | Jekyll profile（仅 frontmatter 报头，不含 Liquid） | 待办 |
-| P2 | 编号方案抽象（arabic / gb / cjk / chapter） | 待办 |
+| P2 | 编号方案抽象（arabic / gb / cjk / chapter） | **已完成** |
 | P3 | GB 专项（封面、章条编号、规范性引用文件、术语、附录） | 待办（已决策延后） |
 | P4 | 文档站扩展语法（admonition / callout / wikilink） | 待办（已决策延后） |
 | P5 | 论文 / 简历 / 书籍等更多 profile | 待办 |
@@ -146,6 +147,7 @@ GB/T 1.1-2020 结构：
 - [x] 自动探测（显式 > 文件名 > frontmatter 键 > general）
 - [x] `isSkill` 迁移进 `skill` profile，行为保持不变
 - [x] 输出行打印命中类型
+- [x] P2：`--number-scheme`（arabic / gb / cjk / chapter）与 `src/numbering.mjs` 抽象；CI 断言覆盖四种方案
 - [x] CI 断言（显式 / 自动 / 未知类型）
 - [x] README / CODEBUDDY 说明
 

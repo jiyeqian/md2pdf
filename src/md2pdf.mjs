@@ -38,6 +38,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import { PROFILE_NAMES, detectProfile } from './profiles.mjs';
+import { SCHEME_NAMES, resolveNumberScheme } from './numbering.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
@@ -73,6 +74,7 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --no-outline         不生成 PDF 书签（默认生成，阅读器侧边栏按标题成树）
       --bibliography [footnote|bib]  将脚注收集为「参考文献」章节（默认 footnote；bib 为未来支持）
       --numbering <mode>    章节编号：auto（默认，识别到已有编号则不动）| force（强制）| none（不加）
+      --number-scheme <n>  编号方案：${SCHEME_NAMES.join('|')}（默认 arabic）；配合 --numbering force 使用
       --link-urls          正文链接后附 URL
       --landscape          横向
       --font-size <pt>     正文字号（默认 10.5）
@@ -114,6 +116,7 @@ function parseArgs(argv) {
     footer: true, footerLeft: '', footerRight: '',
     meta: true, lead: true, toc: false, linkUrls: false, outline: true, bibliography: 'footnote',
     numbering: 'auto',
+    numberScheme: 'arabic',
     type: '',
     landscape: false, keepHtml: false, htmlOnly: false, open: false, help: false,
   };
@@ -157,6 +160,7 @@ function parseArgs(argv) {
         break;
       }
       case '--numbering': o.numbering = next(); break;
+      case '--number-scheme': o.numberScheme = next(); break;
       case '--no-bibliography': o.bibliography = false; break;
       case '--no-landscape': o.landscape = false; break;
       case '--no-link-urls': o.linkUrls = false; break;
@@ -305,19 +309,20 @@ function numberFloats(html) {
 const HEADING_NUM_RE = /^\s*(?:\d+(?:\.\d+)*[、．.)]\s?|[一二三四五六七八九十百]+[、．.]|第[一二三四五六七八九十百\d]+[章节篇]|\([一二三四五六七八九十\d]+\)|[IVX]+[.、])\s*/;
 
 // 章节编号：mode 为 auto（默认，识别到已有编号则不动）/ force（强制编号）/ none（不动）
-function numberHeadings(html, mode) {
+function numberHeadings(html, mode, scheme) {
   if (mode === 'none') return html;
   const re = /<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g;
   const all = [...html.matchAll(re)];
   if (!all.length) return html;
   if (mode !== 'force' && all.some(m => HEADING_NUM_RE.test(stripTags(m[3])))) return html;
+  const fmt = resolveNumberScheme(scheme || 'arabic');
   const counters = [0, 0, 0, 0, 0];
   return html.replace(re, (m, level, attrs, inner) => {
     const lvl = parseInt(level, 10) - 2;
     counters[lvl]++;
     for (let k = lvl + 1; k < 5; k++) counters[k] = 0;
-    const num = counters.slice(0, lvl + 1).join('.');
-    return '<h' + level + attrs + '>' + num + ' ' + inner.replace(HEADING_NUM_RE, '') + '</h' + level + '>';
+    const num = fmt({ counters, lvl });
+    return '<h' + level + attrs + '>' + num + inner.replace(HEADING_NUM_RE, '') + '</h' + level + '>';
   });
 }
 
@@ -683,7 +688,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   html += renderFootnotes(orderedFootnotes, opts.bibliography, marked);
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
-  html = numberHeadings(html, opts.numbering);
+  html = numberHeadings(html, opts.numbering, opts.numberScheme);
 
   // 标题：正文首个 H1 → 报头
   let title = opts.title || fm.title || '';
