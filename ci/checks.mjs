@@ -152,6 +152,8 @@ if (fs.existsSync(demo)) {
   ok('图表：正文引用为指向图/表的超链接',
     /<a href="#fig-\d+"[^>]*>\d+<\/a>/.test(html) && /<a href="#tab-\d+"[^>]*>\d+<\/a>/.test(html));
   ok('图表：mermaid 代码块转为图并注入 Mermaid', /<pre class="mermaid">/.test(html) && /mermaid\.min\.js/.test(html));
+  ok('图表：mermaid 用主题变量（theme: base + themeVariables）',
+    /theme:\s*"base"/.test(src) && /themeVariables/.test(src) && /--font-body/.test(src));
   ok('图表：mermaid / 图片 / 矢量图统一编号（≥3 个图）', (html.match(/<figure class="fig"/g) || []).length >= 3);
   ok('图表：矢量图（.svg）纳入编号', /<figure class="fig" id="fig-\d+"><img[^>]*\.svg/.test(html));
   ok('渲染：BibTeX 脚注按 GB/T 7714 渲染（含 [J]/[M]）',

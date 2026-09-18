@@ -230,7 +230,10 @@ img { max-width: 100%; height: auto; display: block; margin: 8px auto 14px; }
 
 /* ---------- 图 / 表编号与题注 ---------- */
 figure.fig { margin: 10px 0 18px; break-inside: avoid; }
-figure.fig img { margin: 0 auto 8px; }
+figure.fig img, figure.fig svg { display: block; margin: 0 auto 8px; max-width: 100%; height: auto; }
+/* mermaid 图线宽对齐手绘图（默认 1px → 2px） */
+figure.fig svg .node rect, figure.fig svg .node polygon, figure.fig svg .node path,
+figure.fig svg .node circle, figure.fig svg .node ellipse { stroke-width: 2 !important; }
 /* 图题与表题样式统一（字号/字重/颜色/居中） */
 figcaption, table caption {
   font-size: .85em; font-weight: 400; color: var(--muted);
