@@ -254,20 +254,33 @@ function numberFloats(html) {
   const refs = new Map();
   let figN = 0, tabN = 0;
 
-  html = html.replace(/<p>\s*(<img\b[^>]*>)\s*<\/p>/g, (m, tag) => {
-    const altM = /\balt="([^"]*)"/.exec(tag);
-    let alt = altM ? altM[1] : '';
-    let label = '';
-    const labM = /\s*\{#(fig:[\w.-]+)\}\s*/.exec(alt);
-    if (labM) {
-      label = labM[1];
-      alt = alt.replace(labM[0], ' ').replace(/\s+/g, ' ').trim();
-      tag = tag.replace(/\balt="[^"]*"/, 'alt="' + alt + '"');
+  // 图：(a) 图片/SVG（alt 里带 {#fig:x}）或 (b) 「图：题注」+ mermaid 代码块；统一编号
+  const figRe = /(<p>\s*<img\b[^>]*>\s*<\/p>)|(<p>\s*图\s*[：:]\s*[\s\S]*?<\/p>\s*<pre><code class="language-mermaid">[\s\S]*?<\/code><\/pre>)/g;
+  html = html.replace(figRe, (m) => {
+    let caption = '', label = '', body = '';
+    if (m.indexOf('<img') >= 0) {
+      let tag = /<img\b[^>]*>/.exec(m)[0];
+      const altM = /\balt="([^"]*)"/.exec(tag);
+      caption = altM ? altM[1] : '';
+      const labM = /\s*\{#(fig:[\w.-]+)\}\s*/.exec(caption);
+      if (labM) {
+        label = labM[1];
+        caption = caption.replace(labM[0], ' ').replace(/\s+/g, ' ').trim();
+        tag = tag.replace(/\balt="[^"]*"/, 'alt="' + caption + '"');
+      }
+      body = tag;
+    } else {
+      const capM = /<p>\s*图\s*[：:]\s*([\s\S]*?)<\/p>/.exec(m);
+      caption = capM ? capM[1] : '';
+      const labM = /\s*\{#(fig:[\w.-]+)\}\s*/.exec(caption);
+      if (labM) { label = labM[1]; caption = caption.replace(labM[0], ' ').trim(); }
+      const codeM = /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/.exec(m);
+      body = '<pre class="mermaid">' + (codeM ? codeM[1] : '') + '</pre>';
     }
     figN++;
     if (label) refs.set(label, { num: figN, id: 'fig-' + figN });
-    return '<figure class="fig" id="fig-' + figN + '">' + tag +
-      '<figcaption>图 ' + figN + '：' + alt + '</figcaption></figure>';
+    return '<figure class="fig" id="fig-' + figN + '">' + body +
+      '<figcaption>图 ' + figN + '：' + caption + '</figcaption></figure>';
   });
 
   html = html.replace(/<p>\s*表\s*[：:]\s*([\s\S]*?)<\/p>\s*<table>/g, (m, cap) => {
@@ -553,13 +566,17 @@ class Chrome {
     await this.send('Page.navigate', { url: pathToFileURL(htmlPath).href });
     await loaded;
     await new Promise(r => setTimeout(r, 250));
-    // MathJax 排版：正文含公式时，轮询等待 typeset 完成再打印（否则公式是空白）
-    if (opts.waitMath) {
+    // MathJax / Mermaid 异步渲染：轮询等待完成再打印（否则公式/图表是空白）
+    const waits = [];
+    if (opts.waitMath) waits.push('window.__md2pdfMathReady === true');
+    if (opts.waitMermaid) waits.push('window.__md2pdfMermaidReady === true');
+    if (waits.length) {
+      const expr = waits.join(' && ');
       const t0 = Date.now();
-      while (Date.now() - t0 < 10000) {
+      while (Date.now() - t0 < 20000) {
         let done = false;
         try {
-          const r = await this.send('Runtime.evaluate', { expression: 'window.__md2pdfMathReady === true', returnByValue: true });
+          const r = await this.send('Runtime.evaluate', { expression: expr, returnByValue: true });
           done = !!(r && r.result && r.result.value);
         } catch { /* 忽略运行时异常，继续等待 */ }
         if (done) break;
@@ -603,6 +620,8 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
 
   // 数学公式：检测 $...$ 或 $...$，命中则注入 MathJax（SVG 输出，零字体依赖）
   const hasMath = /\$\$|\$[^$\n]+\$/.test(rawBody);
+  // Mermaid 图：检测 \`\`\`mermaid 代码块，命中则注入 Mermaid 浏览器端渲染
+  const hasMermaid = /^[ \t]*\`\`\`mermaid\b/m.test(rawBody);
 
   // 脚注：提取 [^id]: 定义，正文 [^id] 引用替换为编号上标
   const { body, footnotes } = parseFootnotes(rawBody);
@@ -740,6 +759,19 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   const fill = (tpl, map) => Object.entries(map).reduce(
     (s, [k, v]) => s.split(k).join(v), tpl);
 
+  const mermaidUrl = pathToFileURL(path.join(ROOT, 'vendor', 'mermaid', 'mermaid.min.js')).href;
+  const mermaidScript = hasMermaid ? [
+    '<script src="' + mermaidUrl + '"></script>',
+    '<script>',
+    'window.__md2pdfMermaidReady = false;',
+    'try {',
+    '  mermaid.initialize({ startOnLoad: false });',
+    '  mermaid.run().then(function () { window.__md2pdfMermaidReady = true; })',
+    '    .catch(function () { window.__md2pdfMermaidReady = true; });',
+    '} catch (e) { window.__md2pdfMermaidReady = true; }',
+    '</script>',
+  ].join('\n') : '';
+
   const mathUrl = pathToFileURL(path.join(ROOT, 'vendor', 'mathjax', 'tex-svg.js')).href;
   const mathScript = hasMath ? [
     '<script>',
@@ -770,6 +802,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '{{COLOPHON_LEFT}}': esc(colophonLeft),
     '{{COLOPHON_RIGHT}}': esc(colophonRight),
     '{{MATHJAX}}': mathScript,
+    '{{MERMAID}}': mermaidScript,
   });
 
   if (opts.htmlOnly) return { title, html: out };
@@ -784,7 +817,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
       <span style="flex:1;text-align:right;">${opts.footerRight || ''}</span>
     </div>`;
 
-  const buf = await chrome.print(htmlPath, { footer: opts.footer, footerTemplate, landscape: opts.landscape, outline: opts.outline, waitMath: hasMath });
+  const buf = await chrome.print(htmlPath, { footer: opts.footer, footerTemplate, landscape: opts.landscape, outline: opts.outline, waitMath: hasMath, waitMermaid: hasMermaid });
 
   if (opts.keepHtml) {
     await writeFile(mdPath.replace(/\.md$/i, '.html'), out, 'utf8');
