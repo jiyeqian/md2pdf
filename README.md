@@ -2,6 +2,14 @@
 
 把 Markdown 排成**优雅的中文 A4 PDF**：报头大标题、元信息条、精心排过的表格/代码/引用/列表、页脚页码，还支持数学公式与参考文献。不是 pandoc 的默认样式——是可以直接拿去打印、发给别人看的版式。
 
+## 特色功能
+
+- **BibTeX 脚注 → GB/T 7714—2025 参考文献**：脚注内容写成 BibTeX（`@article{...}`、`@book{...}` 等），自动按国标《信息与文献 参考文献著录规则》著录，并汇总为文末「参考文献」章节。
+- **参考文献双向链接**：正文引用编号可跳到参考文献，参考文献编号也可跳回正文原文位置（PDF 内链）。
+- **渲染 LaTeX 公式**：内置 MathJax，`$...$` 行内公式与 `$$...$$` 独立公式原样渲染（SVG 输出，零字体依赖）。
+- **代码语法高亮**：代码块按语言自动着色（内置 highlight.js，支持 Python、JavaScript、Bash 等常见语言）。
+- **相对路径图片自动解析**：Markdown 里的相对路径图片自动转成绝对地址，正常嵌入 PDF。
+
 | elegant（默认，墨蓝 + 古铜） | minimal（黑白公文风） |
 | :---: | :---: |
 | [![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/demo-elegant.pdf) | [![minimal 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-minimal.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/demo-minimal.pdf) |
