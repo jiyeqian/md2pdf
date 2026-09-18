@@ -769,6 +769,20 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     .replace(/\{\{FONT_SIZE\}\}/g, `${opts.fontSize}pt`);
 
   const kicker = opts.kicker || fm.kicker || fm.category || (profile.kicker ?? '');
+
+  // 学术论文：报头三件套（作者行 + 「摘要」块 + 「关键词」行）
+  const authorsHtml = profile.paperHeader && (fm.author || fm.affiliation)
+    ? '<p class="authors">' +
+      (fm.author ? '<span class="author">' + esc(fm.author) + '</span>' : '') +
+      (fm.affiliation ? '<span class="affil">' + esc(fm.affiliation) + '</span>' : '') +
+      '</p>'
+    : '';
+  const paperHtml = profile.paperHeader
+    ? [
+        fm.abstract ? '<div class="abstract"><span class="paper-label">摘要</span><span>' + esc(fm.abstract) + '</span></div>' : '',
+        fm.keywords ? '<div class="keywords"><span class="paper-label">关键词</span><span>' + esc(fm.keywords) + '</span></div>' : '',
+      ].filter(Boolean).join('\n')
+    : '';
   const colophonLeft = opts.colophon ?? (profile.skillMeta && fm.name ? `SKILL · ${fm.name}` : path.basename(mdPath));
   const colophonRight = opts.colophon ? '' : title;
 
@@ -836,6 +850,8 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '{{BODY}}': html,
     '{{COLOPHON_LEFT}}': esc(colophonLeft),
     '{{COLOPHON_RIGHT}}': esc(colophonRight),
+    '{{AUTHORS}}': authorsHtml,
+    '{{PAPER}}': paperHtml,
     '{{MATHJAX}}': mathScript,
     '{{MERMAID}}': mermaidScript,
   });

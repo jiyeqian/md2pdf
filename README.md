@@ -54,7 +54,7 @@ md2pdf 文件名.md --theme minimal --toc
 | --- | --- |
 | `-o, --output <path>` | 输出路径；多文件或目标是目录时作为输出目录 |
 | `--theme <name>` | `elegant`（默认）｜ `minimal` |
-| `--type <name>` | 文档类型：`general`｜`skill`｜`readme`；**默认自动探测**，`--type` 可显式覆盖 |
+| `--type <name>` | 文档类型：`general`｜`skill`｜`readme`｜`paper`；**默认自动探测**，`--type` 可显式覆盖 |
 | `--title <text>` / `--kicker <text>` | 覆盖标题 / 报头小标题 |
 | `--no-meta` / `--no-lead` | 不要元信息条 / 首段不作为导语 |
 | `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
@@ -70,7 +70,7 @@ md2pdf 文件名.md --theme minimal --toc
 | `--keep-html` / `--html-only` | 留中间 HTML 调样式 / 只出 HTML（CI 校验用） |
 | `--open` | 完成后打开 PDF |
 
-文档类型默认**自动探测**，优先级：`--type` 显式指定 > 文件名 `SKILL.md`（`skill`）／`README.md`（`readme`）> frontmatter 含 `name`（`skill`）> 兜底 `general`。`readme` 默认加目录，且顶部徽章（shields.io 等）不参与图表编号。
+文档类型默认**自动探测**，优先级：`--type` 显式指定 > 文件名 `SKILL.md`（`skill`）／`README.md`（`readme`）> frontmatter 含 `name`（`skill`）> 兜底 `general`。`readme` 默认加目录，且顶部徽章（shields.io 等）不参与图表编号；frontmatter 含 `abstract` 或 `keywords` 判为 `paper`，渲染作者行 +「摘要」块 +「关键词」行。
 
 布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
 

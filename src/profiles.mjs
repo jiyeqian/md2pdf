@@ -47,6 +47,18 @@ export const PROFILES = {
     skipBadges: false,
     defaults: {},
   },
+
+  paper: {
+    name: 'paper',
+    // 论文 md：frontmatter 含 abstract 或 keywords
+    detect: ({ fm }) => !!(fm.abstract || fm.keywords),
+    kicker: null,
+    skillMeta: false,
+    skipBadges: false,
+    // 报头三件套：作者行 + 「摘要」块 + 「关键词」行
+    paperHeader: true,
+    defaults: {},
+  },
 };
 
 export const PROFILE_NAMES = Object.keys(PROFILES);
