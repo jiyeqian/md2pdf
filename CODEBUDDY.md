@@ -55,6 +55,11 @@ Pipeline: `Markdown --(marked)--> HTML --(shell.html + base.css + theme-*.css)--
 
 `origin` is `https://cnb.cool/jiyeqian/md2pdf`. Authentication uses a CNB access token (username `cnb`, **not** SSH — CNB does not support SSH) stored in the macOS keychain via `credential.helper=osxkeychain`. Push with plain `git push origin main`; the tracking ref updates automatically.
 
+## Known issues / TODO
+
+- **Regenerated PDFs are never byte-identical.** `examples/*.pdf` are committed artifacts, but Chrome `Page.printToPDF` embeds a creation timestamp (`/CreationDate`, `/ModDate`, and possibly `/ID`), so rebuilding via `ci/build-demo-assets.sh` always produces different bytes — the visual content is identical. Mermaid ids are already deterministic (`deterministicIds: true` in the mermaid init), so the timestamp is the remaining source of churn. Possible future fix (not done, small risk): post-process each PDF to normalize `/CreationDate` / `/ModDate`.
+
+
 ## Release process
 
 Bump `VERSION` and `package.json` version together, then tag and push — CNB CI publishes to npm on tag_push:
