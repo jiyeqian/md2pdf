@@ -148,6 +148,12 @@ if (fs.existsSync(demo)) {
   ok('渲染：脚注编号可反向跳回原文（fnref-back → #fnref-N）',
     /class="fnref-back"/.test(html) && /href="#fnref-\d+"/.test(html));
 
+  // 参考文献按正文「首次引用顺序」自动编号（类 LaTeX）：demo 中 Åström 先被引，故排在 Smith 前
+  const refsBlock = html.slice(html.indexOf('参考文献</h2>'));
+  const astromPos = refsBlock.indexOf('ÅSTRÖM');
+  const smithPos = refsBlock.indexOf('SMITH');
+  ok('参考文献：按正文首次引用顺序编号', astromPos >= 0 && smithPos >= 0 && astromPos < smithPos);
+
   // 章节编号：force 模式为 H2 加层次编号（demo 默认「一、二、三」会被覆盖为「1、2、3」）
   const outNum = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'md2pdf-ci-')), 'num.html');
   const rNum = run(['examples/demo.md', '--html-only', '--numbering', 'force', '-o', outNum]);

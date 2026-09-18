@@ -41,7 +41,7 @@ import { createRequire } from 'node:module';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.7.8';
+const VERSION = '1.7.9';
 
 // Node ≥ 22 有全局 WebSocket；更老的版本退回到内置的极简实现
 let _WS;
@@ -568,17 +568,22 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
 
   // 脚注：提取 [^id]: 定义，正文 [^id] 引用替换为编号上标
   const { body, footnotes } = parseFootnotes(rawBody);
+  // 编号按正文「首次引用顺序」自动排序（类 LaTeX）；md 里的定义顺序保持不变
+  const defIds = new Set(footnotes.map(fn => fn.id));
   const fnIndex = new Map();
-  footnotes.forEach((fn, i) => fnIndex.set(fn.id, i + 1));
   const fnRefCount = new Map();
   const bodyWithRefs = body.replace(/\[\^([^\]]+)\]/g, (m, id) => {
+    if (!defIds.has(id)) return m;
+    if (!fnIndex.has(id)) fnIndex.set(id, fnIndex.size + 1);
     const n = fnIndex.get(id);
-    if (n === undefined) return m;
     const c = (fnRefCount.get(id) || 0) + 1;
     fnRefCount.set(id, c);
     const refId = c === 1 ? 'fnref-' + n : 'fnref-' + n + '-' + c;
     return '<sup class="fnref" id="' + refId + '"><a href="#fn-' + n + '">[' + n + ']</a></sup>';
   });
+  // 未被正文引用的脚注：按定义顺序补到末尾
+  footnotes.forEach(fn => { if (!fnIndex.has(fn.id)) fnIndex.set(fn.id, fnIndex.size + 1); });
+  const orderedFootnotes = footnotes.slice().sort((a, b) => fnIndex.get(a.id) - fnIndex.get(b.id));
 
   let html = marked.parse(bodyWithRefs, { gfm: true, breaks: false, async: false });
 
@@ -586,7 +591,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   html = highlightCode(html, hljs);
 
   // 脚注/参考文献：先追加到正文末尾，再编号，使参考文献章节纳入编号体系
-  html += renderFootnotes(footnotes, opts.bibliography, marked);
+  html += renderFootnotes(orderedFootnotes, opts.bibliography, marked);
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
   html = numberHeadings(html, opts.numbering);
