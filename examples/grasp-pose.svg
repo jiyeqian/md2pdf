@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="300" viewBox="0 0 620 300">
+  <style>
+    .body { fill: #f6f4ef; stroke: #8a6d3b; stroke-width: 2; }
+    .obj  { fill: #e9e5db; stroke: #1b2a41; stroke-width: 2; }
+    .ln   { stroke: #1b2a41; stroke-width: 1.6; fill: none; }
+    .ar   { stroke: #8a6d3b; stroke-width: 2.2; fill: none; marker-end: url(#mk); }
+    .tx   { font-family: "PingFang SC", sans-serif; font-size: 15px; fill: #1b2a41; }
+    .ts   { font-family: "PingFang SC", sans-serif; font-size: 12px; fill: #8a8578; }
+  </style>
+  <defs>
+    <marker id="mk" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#8a6d3b"/>
+    </marker>
+  </defs>
+  <rect class="body" x="60" y="200" width="200" height="56" rx="8"/>
+  <text class="tx" x="160" y="234" text-anchor="middle">掌部</text>
+  <rect class="body" x="78" y="86" width="42" height="120" rx="6"/>
+  <rect class="body" x="200" y="86" width="42" height="120" rx="6"/>
+  <text class="ts" x="99" y="76" text-anchor="middle">指</text>
+  <text class="ts" x="221" y="76" text-anchor="middle">指</text>
+  <rect class="obj" x="300" y="92" width="110" height="130" rx="10"/>
+  <text class="tx" x="355" y="164" text-anchor="middle">目标物</text>
+  <line class="ar" x1="120" y1="146" x2="296" y2="146"/>
+  <line class="ar" x1="252" y1="168" x2="76" y2="168"/>
+  <text class="ts" x="208" y="136" text-anchor="middle">接触力 F</text>
+  <text class="tx" x="470" y="150">阻抗参数</text>
+  <text class="ts" x="470" y="172">刚度 Kp / 阻尼 Kd</text>
+</svg>
