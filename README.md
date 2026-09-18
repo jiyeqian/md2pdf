@@ -54,6 +54,7 @@ md2pdf 文件名.md --theme minimal --toc
 | --- | --- |
 | `-o, --output <path>` | 输出路径；多文件或目标是目录时作为输出目录 |
 | `--theme <name>` | `elegant`（默认）｜ `minimal` |
+| `--type <name>` | 文档类型：`general`｜`skill`；**默认自动探测**，`--type` 可显式覆盖 |
 | `--title <text>` / `--kicker <text>` | 覆盖标题 / 报头小标题 |
 | `--no-meta` / `--no-lead` | 不要元信息条 / 首段不作为导语 |
 | `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
@@ -67,6 +68,8 @@ md2pdf 文件名.md --theme minimal --toc
 | `--colophon <text>` | 文末落款 |
 | `--keep-html` / `--html-only` | 留中间 HTML 调样式 / 只出 HTML（CI 校验用） |
 | `--open` | 完成后打开 PDF |
+
+文档类型默认**自动探测**，优先级：`--type` 显式指定 > 文件名 `SKILL.md` > frontmatter 含 `name`（判为 `skill`）> 兜底 `general`。
 
 布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
 

@@ -37,6 +37,7 @@ import http from 'node:http';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
+import { PROFILE_NAMES, detectProfile } from './profiles.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
@@ -63,6 +64,7 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
 选项：
   -o, --output <path>      输出路径（默认与输入同目录同名 .pdf）
       --theme <name>       elegant（默认，墨蓝+古铜）| minimal（黑白公文）
+      --type <name>       文档类型（默认自动探测）：${PROFILE_NAMES.join('|')}
       --title <text>       覆盖标题
       --kicker <text>      报头小标题
       --no-meta            不生成元信息条
@@ -112,6 +114,7 @@ function parseArgs(argv) {
     footer: true, footerLeft: '', footerRight: '',
     meta: true, lead: true, toc: false, linkUrls: false, outline: true, bibliography: 'footnote',
     numbering: 'auto',
+    type: '',
     landscape: false, keepHtml: false, htmlOnly: false, open: false, help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -121,6 +124,7 @@ function parseArgs(argv) {
       case '-h': case '--help': o.help = true; break;
       case '-o': case '--output': o.output = next(); break;
       case '--theme': o.theme = next(); break;
+      case '--type': o.type = next(); break;
       case '--title': o.title = next(); break;
       case '--kicker': o.kicker = next(); break;
       case '--no-meta': o.meta = false; break;
@@ -188,11 +192,11 @@ function splitFrontmatter(src) {
   return { fm, body: src.slice(m[0].length) };
 }
 
-function buildMeta(fm, isSkill) {
+function buildMeta(fm, skillMeta) {
   if (!fm.name && !fm.description) return '';
   const items = [];
   if (fm.name) {
-    items.push([isSkill ? 'SKILL NAME' : 'NAME', `<code>${esc(fm.name)}</code>`]);
+    items.push([skillMeta ? 'SKILL NAME' : 'NAME', `<code>${esc(fm.name)}</code>`]);
   }
   if (fm.description) {
     const d = fm.description;
@@ -616,7 +620,7 @@ class Chrome {
 async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   const src = await readFile(mdPath, 'utf8');
   const { fm, body: rawBody } = splitFrontmatter(src);
-  const isSkill = path.basename(mdPath) === 'SKILL.md' || !!fm.name;
+  const profile = detectProfile({ basename: path.basename(mdPath), fm, explicit: opts.type });
 
   // 数学公式：检测 $...$ 或 $...$，命中则注入 MathJax（SVG 输出，零字体依赖）
   const hasMath = /\$\$|\$[^$\n]+\$/.test(rawBody);
@@ -751,8 +755,8 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     .replace(/\{\{MARGIN_SIDE\}\}/g, `${opts.marginSide}mm`)
     .replace(/\{\{FONT_SIZE\}\}/g, `${opts.fontSize}pt`);
 
-  const kicker = opts.kicker || fm.kicker || fm.category || (isSkill ? '技能文档' : '');
-  const colophonLeft = opts.colophon ?? (isSkill && fm.name ? `SKILL · ${fm.name}` : path.basename(mdPath));
+  const kicker = opts.kicker || fm.kicker || fm.category || (profile.kicker ?? '');
+  const colophonLeft = opts.colophon ?? (profile.skillMeta && fm.name ? `SKILL · ${fm.name}` : path.basename(mdPath));
   const colophonRight = opts.colophon ? '' : title;
 
   // 用函数形式替换：既支持多处占位符，也避免用户文本里的 $& 被当作替换模式
@@ -814,7 +818,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '{{CSS}}': css,
     '{{KICKER}}': esc(kicker),
     '{{LEAD}}': lead,
-    '{{META}}': opts.meta ? buildMeta(fm, isSkill) : '',
+    '{{META}}': opts.meta ? buildMeta(fm, profile.skillMeta) : '',
     '{{TOC}}': toc,
     '{{BODY}}': html,
     '{{COLOPHON_LEFT}}': esc(colophonLeft),
@@ -823,7 +827,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '{{MERMAID}}': mermaidScript,
   });
 
-  if (opts.htmlOnly) return { title, html: out };
+  if (opts.htmlOnly) return { title, html: out, type: profile.name };
 
   const tmpDir = await mkdtemp(path.join(tmpRoot, 'doc-'));
   const htmlPath = path.join(tmpDir, 'index.html');
@@ -842,7 +846,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   } else {
     await rm(tmpDir, { recursive: true, force: true });
   }
-  return { title, buf };
+  return { title, buf, type: profile.name };
 }
 
 /* ---------------- main ---------------- */
@@ -887,7 +891,7 @@ async function main() {
         await mkdir(path.dirname(out), { recursive: true });
         if (opts.htmlOnly) {
           await writeFile(out, res.html, 'utf8');
-          console.log(`✓ ${path.basename(out)}  (HTML ${(res.html.length / 1024).toFixed(0)} KB)`);
+          console.log(`✓ ${path.basename(out)}  (HTML ${(res.html.length / 1024).toFixed(0)} KB，type=${res.type})`);
           continue;
         }
         const buf = res.buf;
@@ -898,7 +902,7 @@ async function main() {
           const m = /Pages:\s+(\d+)/.exec(info.stdout);
           if (m) pages = `，${m[1]} 页`;
         }
-        console.log(`✓ ${path.basename(out)}  (${(buf.length / 1024).toFixed(0)} KB${pages})`);
+        console.log(`✓ ${path.basename(out)}  (${(buf.length / 1024).toFixed(0)} KB${pages}，type=${res.type})`);
         if (opts.open) {
           const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
           spawn(cmd, [out], { stdio: 'ignore' });

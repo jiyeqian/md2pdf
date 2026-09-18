@@ -105,6 +105,18 @@ const ver = run(['--version']);
 ok('CLI：--version 输出与 package.json 一致', ver.stdout.trim() === pkg.version,
   `输出=${ver.stdout.trim()} package.json=${pkg.version}`);
 
+/* ---------- 4b. 文档类型 Profile ---------- */
+const tmpOut = (n) => path.join(os.tmpdir(), 'md2pdf-ci-' + n + '.html');
+const rSkill = run(['skill/SKILL.md', '--html-only', '-o', tmpOut('skill')]);
+ok('profile：SKILL.md 自动探测为 skill', rSkill.status === 0 && /<div class="kicker">技能文档<\/div>/.test(readIf(tmpOut('skill'))),
+  `status=${rSkill.status}`);
+const rForce = run(['examples/demo.md', '--html-only', '--type', 'skill', '-o', tmpOut('force')]);
+ok('profile：--type skill 强制生效', rForce.status === 0 && /<div class="kicker">技能文档<\/div>/.test(readIf(tmpOut('force'))),
+  `status=${rForce.status}`);
+const rBad = run(['examples/demo.md', '--html-only', '--type', 'nope', '-o', tmpOut('bad')]);
+ok('profile：未知 --type 报错且退出非 0', rBad.status !== 0 && /未知文档类型/.test(rBad.stderr || ''),
+  `status=${rBad.status}`);
+
 /* ---------- 5. 端到端渲染（HTML 阶段） ---------- */
 const demo = path.join(ROOT, 'examples', 'demo.md');
 ok('示例文档存在', fs.existsSync(demo) && readIf(demo).length > 100);
@@ -115,6 +127,7 @@ if (fs.existsSync(demo)) {
   ok('渲染：--html-only 执行成功', r.status === 0, (r.stderr || '').trim());
   const html = readIf(outHtml);
   ok('渲染：产出非空 HTML', html.length > 2000, `${html.length} 字节`);
+  ok('profile：demo.md 自动探测为 general（无技能 kicker）', !/技能文档/.test(html));
 
   const h1 = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(html);
   ok('渲染：首行 H1 提升为报头标题', !!h1 && h1[1].includes('仿生机械手控制方案'),
