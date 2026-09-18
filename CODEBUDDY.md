@@ -50,6 +50,10 @@ Pipeline: `Markdown --(marked)--> HTML --(shell.html + base.css + theme-*.css)--
 - **README theme images (`docs/theme-*.png`) and demo PDFs (`examples/demo-*.pdf`) must stay in sync** — both are committed artifacts of the same render. After changing `examples/demo.md`, the CSS/themes, or layout logic, run `ci/build-demo-assets.sh` (renders both themes to `examples/demo-<theme>.pdf`, then derives `docs/theme-<theme>.png` from each PDF's first page via `pdftoppm`) and commit both. The README links the images to the PDFs and shows them in a 2-column table.
 - Markdown/HTML processing that CI asserts on: H1 promoted to header + first paragraph becomes lead; H2 sections get `id="sec-N"` and are wrapped in `<section>`; TOC entries must be clickable `<a href="#...">` links (not plain text); the `generateDocumentOutline: true` param must reach `Page.printToPDF` (drives PDF bookmarks from h1–h6).
 
+## Git remote
+
+`origin` is `https://cnb.cool/jiyeqian/md2pdf`. Authentication uses a CNB access token (username `cnb`, **not** SSH — CNB does not support SSH) stored in the macOS keychain via `credential.helper=osxkeychain`. Push with plain `git push origin main`; the tracking ref updates automatically.
+
 ## Release process
 
 Bump `VERSION` and `package.json` version together, then tag and push — CNB CI publishes to npm on tag_push:
