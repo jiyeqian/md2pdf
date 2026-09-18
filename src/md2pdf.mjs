@@ -246,6 +246,42 @@ function highlightCode(html, hljs) {
   });
 }
 
+/* ---------------- 图表编号 ---------------- */
+
+// 图：<p><img></p> → <figure> + 题注「图 N：…」；表格前的「表：…」段 → <caption>「表 N：…」
+// 题注里可带 {#fig:x} / {#tab:x} 标签，供 \ref{} 引用
+function numberFloats(html) {
+  const refs = new Map();
+  let figN = 0, tabN = 0;
+
+  html = html.replace(/<p>\s*(<img\b[^>]*>)\s*<\/p>/g, (m, tag) => {
+    const altM = /\balt="([^"]*)"/.exec(tag);
+    let alt = altM ? altM[1] : '';
+    let label = '';
+    const labM = /\s*\{#(fig:[\w.-]+)\}\s*/.exec(alt);
+    if (labM) {
+      label = labM[1];
+      alt = alt.replace(labM[0], ' ').replace(/\s+/g, ' ').trim();
+      tag = tag.replace(/\balt="[^"]*"/, 'alt="' + alt + '"');
+    }
+    figN++;
+    if (label) refs.set(label, figN);
+    return '<figure class="fig" id="fig-' + figN + '">' + tag +
+      '<figcaption>图 ' + figN + '：' + alt + '</figcaption></figure>';
+  });
+
+  html = html.replace(/<p>\s*表\s*[：:]\s*([\s\S]*?)<\/p>\s*<table>/g, (m, cap) => {
+    let label = '';
+    const labM = /\s*\{#(tab:[\w.-]+)\}\s*/.exec(cap);
+    if (labM) { label = labM[1]; cap = cap.replace(labM[0], ' ').trim(); }
+    tabN++;
+    if (label) refs.set(label, tabN);
+    return '<table class="tbl" id="tab-' + tabN + '">\n<caption>表 ' + tabN + '：' + cap + '</caption>';
+  });
+
+  return { html, refs };
+}
+
 /* ---------------- 章节编号 ---------------- */
 
 // 标题编号前缀识别（阿拉伯/中文/罗马数字、第X章、括号编号等）
@@ -587,15 +623,32 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   footnotes.forEach(fn => { if (!fnIndex.has(fn.id)) fnIndex.set(fn.id, fnIndex.size + 1); });
   const orderedFootnotes = footnotes.slice().sort((a, b) => fnIndex.get(a.id) - fnIndex.get(b.id));
 
-  // 保护数学公式：markdown 的转义处理会把 \, 变 ,、\\ 变 \，破坏 LaTeX（多行公式会塌成一行）
+  // 保护数学公式与图表引用：markdown 的转义处理会破坏 \, \\ 与 \ref（多行公式塌行、引用失效）
   const mathStore = [];
-  const bodyProtected = bodyWithRefs.replace(/\$\$[\s\S]*?\$\$|\$[^$\n]+\$/g, (m) => {
-    const i = mathStore.length;
-    mathStore.push(m);
-    return '\u0001MATH' + i + '\u0001';
-  });
+  const refStore = [];
+  const bodyProtected = bodyWithRefs
+    .replace(/\$\$[\s\S]*?\$\$|\$[^$\n]+\$/g, (m) => {
+      const i = mathStore.length;
+      mathStore.push(m);
+      return '\u0001MATH' + i + '\u0001';
+    })
+    .replace(/\\ref\{([\w:.-]+)\}/g, (m, label) => {
+      const i = refStore.length;
+      refStore.push(label);
+      return '\u0002REF' + i + '\u0002';
+    });
 
   let html = marked.parse(bodyProtected, { gfm: true, breaks: false, async: false });
+
+  // 图/表自动编号与题注（收集标签）
+  const floats = numberFloats(html);
+  html = floats.html;
+
+  // 还原 \ref{} 为对应编号
+  html = html.replace(/\u0002REF(\d+)\u0002/g, (m, i) => {
+    const n = floats.refs.get(refStore[+i]);
+    return n === undefined ? '?' : String(n);
+  });
 
   // 还原数学公式（原样交回 MathJax 渲染）
   html = html.replace(/\u0001MATH(\d+)\u0001/g, (m, i) => mathStore[+i] ?? m);
