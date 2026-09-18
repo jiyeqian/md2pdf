@@ -1,6 +1,6 @@
 {
   "name": "@jiyeqian/md2pdf",
-  "version": "1.7.14",
+  "version": "1.7.15",
   "description": "把 Markdown 排成优雅的中文 A4 PDF（无头 Chrome 渲染，带报头、表格/代码排版与页脚页码）",
   "type": "module",
   "bin": {
