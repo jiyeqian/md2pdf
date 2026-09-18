@@ -117,6 +117,26 @@ const rBad = run(['examples/demo.md', '--html-only', '--type', 'nope', '-o', tmp
 ok('profile：未知 --type 报错且退出非 0', rBad.status !== 0 && /未知文档类型/.test(rBad.stderr || ''),
   `status=${rBad.status}`);
 
+// readme profile：默认加目录 + 徽章不编号（真实插图仍编号）
+const rmDir = path.join(os.tmpdir(), 'md2pdf-ci-readme');
+fs.mkdirSync(rmDir, { recursive: true });
+const realImg = 'file://' + path.join(ROOT, 'examples', 'control-loop.png');
+fs.writeFileSync(path.join(rmDir, 'README.md'), [
+  '# 示例项目', '',
+  '![build](https://img.shields.io/badge/build-passing-green)', '',
+  '## 安装', '',
+  '## 用法', '',
+  '![架构图](' + realImg + ')', ''
+].join('\n'));
+const rReadme = run([path.join(rmDir, 'README.md'), '--html-only', '-o', path.join(rmDir, 'out.html')]);
+const readmeHtml = readIf(path.join(rmDir, 'out.html'));
+ok('profile：README.md 自动探测为 readme（默认加目录）',
+  rReadme.status === 0 && /class="toc"/.test(readmeHtml), `status=${rReadme.status}`);
+ok('profile：readme 徽章不编号（不包 figure）',
+  /<img[^>]*shields\.io/.test(readmeHtml) && !/<figure[^>]*><img[^>]*shields\.io/.test(readmeHtml));
+ok('profile：readme 真实插图仍编号（图 N）',
+  /<figcaption>图 \d+：架构图<\/figcaption>/.test(readmeHtml));
+
 /* ---------- 5. 端到端渲染（HTML 阶段） ---------- */
 const demo = path.join(ROOT, 'examples', 'demo.md');
 ok('示例文档存在', fs.existsSync(demo) && readIf(demo).length > 100);

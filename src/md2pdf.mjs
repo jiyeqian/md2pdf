@@ -114,7 +114,7 @@ function parseArgs(argv) {
     inputs: [], theme: 'elegant', fontSize: 10.5,
     marginTop: 20, marginSide: 18, marginBottom: 18,
     footer: true, footerLeft: '', footerRight: '',
-    meta: true, lead: true, toc: false, linkUrls: false, outline: true, bibliography: 'footnote',
+    meta: true, lead: true, toc: undefined, linkUrls: false, outline: true, bibliography: 'footnote',
     numbering: 'auto',
     numberScheme: 'arabic',
     type: '',
@@ -258,7 +258,10 @@ function highlightCode(html, hljs) {
 
 // 图：<p><img></p> → <figure> + 题注「图 N：…」；表格前的「表：…」段 → <caption>「表 N：…」
 // 题注里可带 {#fig:x} / {#tab:x} 标签，供 \ref{} 引用
-function numberFloats(html) {
+const BADGE_HOSTS = ['shields.io', 'badgen.net', 'badge.fury.io', 'travis-ci.org', 'travis-ci.com', 'codecov.io', 'coveralls.io', 'appveyor.com', 'codacy.com', 'sonarcloud.io', 'buildkite.com', 'badge.svg'];
+const isBadgeUrl = (src) => BADGE_HOSTS.some(h => src.includes(h));
+
+function numberFloats(html, o = {}) {
   const refs = new Map();
   let figN = 0, tabN = 0;
 
@@ -268,6 +271,9 @@ function numberFloats(html) {
     let caption = '', label = '', body = '';
     if (m.indexOf('<img') >= 0) {
       let tag = /<img\b[^>]*>/.exec(m)[0];
+      const srcM = /\bsrc="([^"]*)"/.exec(tag);
+      // 徽章图（shields.io 等）不编号、不包 figure（README 顶部常见）
+      if (o.skipBadges && srcM && isBadgeUrl(srcM[1])) return m;
       const altM = /\balt="([^"]*)"/.exec(tag);
       caption = altM ? altM[1] : '';
       const labM = /\s*\{#(fig:[\w.-]+)\}\s*/.exec(caption);
@@ -669,7 +675,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   let html = marked.parse(bodyProtected, { gfm: true, breaks: false, async: false });
 
   // 图/表自动编号与题注（收集标签）
-  const floats = numberFloats(html);
+  const floats = numberFloats(html, { skipBadges: profile.skipBadges });
   html = floats.html;
 
   // 还原 \ref{} 为对应编号
@@ -740,8 +746,10 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   });
 
   // 目录：文首一张可点击的目录页（仅当二级标题多于一个才值得排）
+  // toc 为三态：CLI 显式指定优先，否则用 profile 默认（readme 默认开），最后兜底 false
+  const useToc = opts.toc ?? profile.defaults.toc ?? false;
   let toc = '';
-  if (opts.toc && secIds.length > 1) {
+  if (useToc && secIds.length > 1) {
     toc = `<div class="toc"><div class="toc-title">目 录</div><ol>` +
       secIds.map(s => `<li><a href="#${s.id}">${esc(s.text)}</a></li>`).join('') + `</ol></div>`;
   }

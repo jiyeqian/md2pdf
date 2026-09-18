@@ -19,8 +19,22 @@ export const PROFILES = {
     kicker: null,
     // 元信息条不按技能文档样式渲染
     skillMeta: false,
+    // 不跳过徽章图
+    skipBadges: false,
     // 不覆盖全局默认选项
     defaults: {},
+  },
+
+  readme: {
+    name: 'readme',
+    // 文件名 README.md（大小写不敏感）
+    detect: ({ basename }) => /^readme\.md$/i.test(basename),
+    kicker: null,
+    skillMeta: false,
+    // README 顶部的徽章（shields.io 等）不编号、不包图
+    skipBadges: true,
+    // README 章节多，默认加文首目录
+    defaults: { toc: true },
   },
 
   skill: {
@@ -30,6 +44,7 @@ export const PROFILES = {
     detect: ({ basename, fm }) => basename === 'SKILL.md' || !!fm.name,
     kicker: '技能文档',
     skillMeta: true,
+    skipBadges: false,
     defaults: {},
   },
 };
