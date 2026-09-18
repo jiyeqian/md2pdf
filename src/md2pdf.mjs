@@ -369,6 +369,8 @@ function formatAuthors(authorStr) {
 function formatGB7714(entry) {
   const f = entry.fields;
   const authors = formatAuthors(f.author);
+  // 作者与题名之间用「. 」分隔：西文末位缩写已带句点则只留空格，中文作者需补句点
+  const ap = authors ? (authors.endsWith('.') ? authors + ' ' : authors + '. ') : '';
   const title = f.title || '';
   const year = f.year || '';
   switch (entry.type) {
@@ -377,7 +379,7 @@ function formatGB7714(entry) {
       const num = f.number || '';
       const volIssue = vol ? (num ? vol + '(' + num + ')' : vol) : (num ? '(' + num + ')' : '');
       const pages = f.pages ? ': ' + f.pages : '';
-      let s = (authors ? authors + ' ' : '') + title + '[J]. ' + (f.journal || '') + ', ' + year + (volIssue ? ', ' + volIssue : '') + pages;
+      let s = ap + title + '[J]. ' + (f.journal || '') + ', ' + year + (volIssue ? ', ' + volIssue : '') + pages;
       if (f.doi) s += '. DOI: ' + f.doi;
       s += '.';
       return s;
@@ -385,24 +387,24 @@ function formatGB7714(entry) {
     case 'inproceedings':
     case 'conference': {
       const pages = f.pages ? ': ' + f.pages : '';
-      return (authors ? authors + ' ' : '') + title + '[C]//' + (f.booktitle || '') + '. ' + (f.address || '') + ', ' + year + pages + '.';
+      return ap + title + '[C]//' + (f.booktitle || '') + '. ' + (f.address || '') + ', ' + year + pages + '.';
     }
     case 'phdthesis':
     case 'mastersthesis': {
-      return (authors ? authors + ' ' : '') + title + '[D]. ' + (f.address || '') + ': ' + (f.school || '') + ', ' + year + '.';
+      return ap + title + '[D]. ' + (f.address || '') + ': ' + (f.school || '') + ', ' + year + '.';
     }
     case 'book': {
-      let s = (authors ? authors + ' ' : '') + title + '[M]. ';
+      let s = ap + title + '[M]. ';
       if (f.edition) s += f.edition + '. ';
       const pub = f.address && f.publisher ? f.address + ': ' + f.publisher : (f.address || f.publisher || '');
       s += pub + (pub ? ', ' : '') + year + '.';
       return s;
     }
     case 'techreport': {
-      return (authors ? authors + ' ' : '') + title + '[R]. ' + (f.institution || '') + ', ' + year + '.';
+      return ap + title + '[R]. ' + (f.institution || '') + ', ' + year + '.';
     }
     default: {
-      let s = (authors ? authors + ' ' : '') + title + '[EB/OL]. ';
+      let s = ap + title + '[EB/OL]. ';
       if (f.urldate) s += '(' + f.urldate + ')';
       if (f.url) s += f.url;
       s += '.';
