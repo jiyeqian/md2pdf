@@ -52,7 +52,8 @@ md2pdf 文件名.md --theme minimal --toc
 | `--no-meta` / `--no-lead` | 不要元信息条 / 首段不作为导语 |
 | `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
 | `--no-outline` | 不生成 PDF 书签（默认生成） |
-| `--bibliography [footnote\|bib]` | 将脚注收集为「参考文献」章节（默认 `footnote`；`bib` 为未来支持） |
+| `--bibliography [footnote\|bib]` | 参考文献模式，**默认启用**（`footnote`，不加参数也生效）；`bib` 为未来支持 |
+| `--no-bibliography` | 关闭参考文献模式（脚注作为普通脚注） |
 | `--numbering <mode>` | 章节编号：`auto`（默认，识别到已有编号则不动）｜ `force`（强制）｜ `none`（不加） |
 | `--link-urls` | 正文链接后附 URL（纸质可读） |
 | `--landscape` / `--font-size <pt>` / `--margin <mm>` | 横向 / 字号（默认 10.5）/ 页边距（默认 20） |
@@ -82,7 +83,7 @@ node ci/inspect-pdf.mjs out.pdf
 - YAML frontmatter 的 `name` / `description` 生成元信息条；「适用于…/不用于…」自动拆两栏。
 - H2 自动分节加色块；表格深色表头＋隔行浅底；有序列表圆形序号。
 - 数学公式：`$...$`（行内）与 `$$...$$`（独立成行）由内置 MathJax 渲染。
-- 脚注：`[^id]` 引用 + `[^id]: 内容` 定义；BibTeX 脚注（`@article{...}` 等）按 GB/T 7714-2025 著录，`--bibliography` 收集为「参考文献」章节。
+- 脚注：`[^id]` 引用 + `[^id]: 内容` 定义；BibTeX 脚注（`@article{...}` 等）按 GB/T 7714-2025 著录，默认收集为「参考文献」章节（`--no-bibliography` 关闭）。
 - 相对路径图片自动解析进 PDF。
 
 改样式：`assets/base.css`（骨架）与 `assets/theme-*.css`（配色），改完重跑命令即生效。

@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
 
-const VERSION = '1.7.3';
+const VERSION = '1.7.4';
 
 // Node ≥ 22 有全局 WebSocket；更老的版本退回到内置的极简实现
 let _WS;
@@ -109,7 +109,7 @@ function parseArgs(argv) {
     inputs: [], theme: 'elegant', fontSize: 10.5,
     marginTop: 20, marginSide: 18, marginBottom: 18,
     footer: true, footerLeft: '', footerRight: '',
-    meta: true, lead: true, toc: false, linkUrls: false, outline: true, bibliography: false,
+    meta: true, lead: true, toc: false, linkUrls: false, outline: true, bibliography: 'footnote',
     numbering: 'auto',
     landscape: false, keepHtml: false, htmlOnly: false, open: false, help: false,
   };

@@ -52,6 +52,7 @@ h1 {
   margin: 0 0 12px;
   line-height: 1.25;
   letter-spacing: 0;
+  text-align: center;
 }
 
 .lead {
@@ -155,18 +156,18 @@ tbody td:first-child { font-weight: 600; color: var(--ink); }
 /* ---------- 列表 ---------- */
 ol, ul { margin: 0 0 14px; padding-left: 0; }
 ol { list-style: none; counter-reset: step; }
-ol li { position: relative; padding-left: 30px; margin-bottom: 11px; text-align: justify; }
-ol li:last-child { margin-bottom: 0; }
-ol li::before {
+ol > li { position: relative; padding-left: 30px; margin-bottom: 11px; text-align: justify; }
+ol > li:last-child { margin-bottom: 0; }
+ol > li::before {
   counter-increment: step; content: counter(step);
   position: absolute; left: 0; top: .28em;
   width: 1.55em; height: 1.55em; line-height: 1.55em; text-align: center;
   font-family: var(--font-mono); font-size: .82em; font-weight: 700;
 }
 ul { list-style: none; }
-ul li { position: relative; padding-left: 18px; margin-bottom: 11px; text-align: justify; }
-ul li:last-child { margin-bottom: 0; }
-ul li::before {
+ul > li { position: relative; padding-left: 18px; margin-bottom: 11px; text-align: justify; }
+ul > li:last-child { margin-bottom: 0; }
+ul > li::before {
   content: ""; position: absolute; left: 2px; top: .82em;
   width: 5px; height: 5px; border-radius: 50%;
 }
