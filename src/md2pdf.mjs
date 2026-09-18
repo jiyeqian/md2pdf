@@ -265,7 +265,7 @@ function numberFloats(html) {
       tag = tag.replace(/\balt="[^"]*"/, 'alt="' + alt + '"');
     }
     figN++;
-    if (label) refs.set(label, figN);
+    if (label) refs.set(label, { num: figN, id: 'fig-' + figN });
     return '<figure class="fig" id="fig-' + figN + '">' + tag +
       '<figcaption>图 ' + figN + '：' + alt + '</figcaption></figure>';
   });
@@ -275,7 +275,7 @@ function numberFloats(html) {
     const labM = /\s*\{#(tab:[\w.-]+)\}\s*/.exec(cap);
     if (labM) { label = labM[1]; cap = cap.replace(labM[0], ' ').trim(); }
     tabN++;
-    if (label) refs.set(label, tabN);
+    if (label) refs.set(label, { num: tabN, id: 'tab-' + tabN });
     return '<table class="tbl" id="tab-' + tabN + '">\n<caption>表 ' + tabN + '：' + cap + '</caption>';
   });
 
@@ -646,8 +646,8 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
 
   // 还原 \ref{} 为对应编号
   html = html.replace(/\u0002REF(\d+)\u0002/g, (m, i) => {
-    const n = floats.refs.get(refStore[+i]);
-    return n === undefined ? '?' : String(n);
+    const info = floats.refs.get(refStore[+i]);
+    return info ? '<a href="#' + info.id + '" class="ref">' + info.num + '</a>' : '?';
   });
 
   // 还原数学公式（原样交回 MathJax 渲染）

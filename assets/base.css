@@ -231,11 +231,12 @@ img { max-width: 100%; height: auto; display: block; margin: 8px auto 14px; }
 /* ---------- 图 / 表编号与题注 ---------- */
 figure.fig { margin: 10px 0 18px; break-inside: avoid; }
 figure.fig img { margin: 0 auto 8px; }
-figcaption { font-size: .85em; color: var(--muted); text-align: center; line-height: 1.6; }
-table caption {
-  caption-side: top; text-align: left; padding: 2px 0 8px;
-  font-size: .9em; font-weight: 600; color: var(--ink-soft);
+/* 图题与表题样式统一（字号/字重/颜色/居中） */
+figcaption, table caption {
+  font-size: .85em; font-weight: 400; color: var(--muted);
+  text-align: center; line-height: 1.6;
 }
+table caption { caption-side: top; padding: 2px 0 8px; }
 
 /* ---------- 脚注与参考文献 ---------- */
 sup.fnref { font-size: .7em; line-height: 0; }

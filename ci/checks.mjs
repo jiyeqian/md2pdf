@@ -149,6 +149,8 @@ if (fs.existsSync(demo)) {
   ok('图表：图片自动编号为题注（图 N：…）', /<figcaption>图 \d+：/.test(html));
   ok('图表：表格自动编号为题注（表 N：…）', /<caption>表 \d+：/.test(html));
   ok('图表：\\ref{} 引用解析为编号（无残留命令）', !/\\ref\{/.test(html));
+  ok('图表：正文引用为指向图/表的超链接',
+    /<a href="#fig-\d+"[^>]*>\d+<\/a>/.test(html) && /<a href="#tab-\d+"[^>]*>\d+<\/a>/.test(html));
   ok('渲染：BibTeX 脚注按 GB/T 7714 渲染（含 [J]/[M]）',
     /\[J\]/.test(html) && /\[M\]/.test(html));
   ok('渲染：脚注引用为可点击上标（fnref → #fn-N）',
