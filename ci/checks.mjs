@@ -34,7 +34,9 @@ const readIf = p => (fs.existsSync(p) ? read(p) : '');
 const srcFile = path.join(ROOT, 'src', 'md2pdf.mjs');
 const shellFile = path.join(ROOT, 'assets', 'shell.html');
 const baseCssFile = path.join(ROOT, 'assets', 'base.css');
-const themes = ['elegant', 'minimal'].map(t => path.join(ROOT, 'assets', `theme-${t}.css`));
+const themeDir = path.join(ROOT, 'assets');
+const themes = fs.readdirSync(themeDir).filter(f => /^theme-.+\.css$/.test(f)).sort()
+  .map(f => path.join(themeDir, f));
 
 console.log(`校验目标：${ROOT}`);
 
@@ -151,6 +153,26 @@ ok('profile：frontmatter 含 abstract → paper（作者行）',
   rPaper.status === 0 && /<p class="authors">[\s\S]*张三/.test(paperHtml), `status=${rPaper.status}`);
 ok('profile：paper 摘要块', /<div class="abstract">[\s\S]*摘要[\s\S]*<\/div>/.test(paperHtml));
 ok('profile：paper 关键词行', /<div class="keywords">[\s\S]*关键词[\s\S]*<\/div>/.test(paperHtml));
+
+// gb profile：frontmatter 标准号 → gb（封面 / 章条 / 附录字母 / 前言豁免 / 目次标题）
+const gbDir = path.join(os.tmpdir(), 'md2pdf-ci-gb');
+fs.mkdirSync(gbDir, { recursive: true });
+fs.writeFileSync(path.join(gbDir, 'gb.md'), [
+  '---', '标准号: GB/T 99999—2026', 'title: 测试标准', '发布日期: 2026-01-01', '实施日期: 2026-07-01', '---', '',
+  '## 前言', '', '前言内容。', '',
+  '## 范围', '', '本文件规定了……', '',
+  '## 附录 A（规范性）测试方法', '', '### 测试条件', '', '环境温度 25 ℃。', '',
+  '## 参考文献', '', '结束。', ''
+].join('\n'));
+const rGb = run([path.join(gbDir, 'gb.md'), '--html-only', '-o', path.join(gbDir, 'out.html')]);
+const gbHtml = readIf(path.join(gbDir, 'out.html'));
+ok('profile：frontmatter 标准号 → gb（含封面）',
+  rGb.status === 0 && /<section class="cover">/.test(gbHtml) && /GB\/T 99999/.test(gbHtml), `status=${rGb.status}`);
+ok('gb：前言不编号，范围从 1 起',
+  /<h2[^>]*>前言<\/h2>/.test(gbHtml) && /<h2[^>]*>1 范围<\/h2>/.test(gbHtml));
+ok('gb：附录用字母（附录 A 下为 A.1）',
+  /<h3[^>]*>A\.1 /.test(gbHtml) && /<h2[^>]*>参考文献<\/h2>/.test(gbHtml));
+ok('gb：目次标题为「目次」', /<div class="toc-title">目次<\/div>/.test(gbHtml));
 
 /* ---------- 5. 端到端渲染（HTML 阶段） ---------- */
 const demo = path.join(ROOT, 'examples', 'demo.md');

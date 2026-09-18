@@ -1,0 +1,57 @@
+/* 主题：gb —— 仿 GB/T 1.1-2020 国标版式（封面 + 章条 + 附录） */
+:root {
+  --ink: #000000;
+  --ink-soft: #222222;
+  --accent: #000000;
+  --accent-soft: #999999;
+  --paper: #ffffff;
+  --tint: #ffffff;
+  --rule: #000000;
+  --text: #000000;
+  --muted: #444444;
+
+  --code-bg: #f6f6f6;
+  --code-fg: #23272e;
+
+  /* 优先标准字体（方正），缺失时回退系统字体 */
+  --font-body: "方正书宋_GBK", "方正书宋", "Songti SC", "STSong", serif;
+  --font-head: "方正黑体_GBK", "方正黑体", "Heiti SC", "STHeiti", sans-serif;
+  --font-mono: "SF Mono", "Menlo", "Consolas", monospace;
+
+  --masthead-border: none;
+}
+
+/* GB 标题在封面，正文不重复报头 */
+.masthead { display: none; }
+
+/* ---------- 封面（独立一页） ---------- */
+.cover { break-after: page; position: relative; height: 240mm; text-align: center; }
+.cover-top { display: flex; justify-content: space-between; align-items: flex-start; font-size: 11pt; line-height: 1.6; }
+.cover-ics { text-align: left; }
+.cover-stdno { font-family: var(--font-head); font-size: 20pt; font-weight: 700; letter-spacing: 1px; }
+.cover-main { margin-top: 72mm; }
+.cover-cn { font-family: var(--font-head); font-size: 25pt; font-weight: 700; line-height: 1.55; }
+.cover-en { font-family: var(--font-head); font-size: 14pt; margin-top: 12px; line-height: 1.6; }
+.cover-foot { position: absolute; left: 0; right: 0; bottom: 0; font-size: 12pt; line-height: 1.9; }
+.cover-sup { font-size: 10.5pt; margin-bottom: 6px; }
+.cover-dates { letter-spacing: 2px; }
+.cover-org { font-family: var(--font-head); font-size: 14pt; margin-top: 6px; letter-spacing: 2px; }
+
+/* ---------- 章 / 条（黑体） ---------- */
+h2 { font-family: var(--font-head); font-size: 1.15em; border-bottom: none; padding: 0; margin: 20px 0 12px; }
+h2::before { display: none; }
+h3 { font-family: var(--font-head); font-size: 1.02em; margin: 16px 0 8px; }
+h4 { font-family: var(--font-head); font-size: 1em; }
+
+/* ---------- 表格：三线表 ---------- */
+thead th { background: transparent; color: var(--ink); border: none; border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--ink); }
+table { border-bottom: 1.5px solid var(--ink); }
+tbody td { border-bottom: none; }
+tbody tr:nth-child(even) { background: transparent; }
+
+/* ---------- 列表：GB 正文不用圆点/序号标记 ---------- */
+ol li::before, ul li::before { display: none; content: none; }
+ol li, ul li { padding-left: 0; }
+
+/* 目次 */
+.toc { background: transparent; border: none; padding: 0; }

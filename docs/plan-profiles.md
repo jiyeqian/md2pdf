@@ -40,7 +40,7 @@ Agent 技能文档、国家标准、博客文章、README、论文……它们�
 - **落款**：`SKILL · <name>`。
 - **后续可增强（非 P0）**：代码块突出、`allowed-tools` 渲染为工具列表、默认不编号。
 
-### 3.3 GB 国标 md（`gb`）— 暂缓（P3）
+### 3.3 GB 国标 md（`gb`）— 已支持（P3 完成）
 
 GB/T 1.1-2020 结构：
 
@@ -126,7 +126,7 @@ GB/T 1.1-2020 结构：
 | P1 | Jekyll profile（仅 frontmatter 报头，不含 Liquid） | 待办 |
 | P1′ | **`readme` profile**（文件名识别 + 默认目录 + 徽章不编号） | **已完成** |
 | P2 | 编号方案抽象（arabic / gb / cjk / chapter） | **已完成** |
-| P3 | GB 专项（封面、章条编号、规范性引用文件、术语、附录） | 待办（已决策延后） |
+| P3 | GB 专项（封面、章条编号、规范性引用文件、术语、附录） | **已完成**（`gb` profile + `theme-gb.css` + `docs/gb-template.md`） |
 | P4 | 文档站扩展语法（admonition / callout / wikilink） | 待办（已决策延后） |
 | P5 | 论文 / 简历 / 书籍等更多 profile | 部分完成（**论文 `paper` 已做**；简历/书籍待办） |
 

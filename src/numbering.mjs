@@ -28,8 +28,26 @@ export const NUMBER_SCHEMES = {
   // 1 / 1.1 / 1.1.1
   arabic: ({ counters, lvl }) => counters.slice(0, lvl + 1).join('.') + ' ',
 
-  // 章条制（GB/T 1.1）：与 arabic 同形；附录字母化见 P3
-  gb: ({ counters, lvl }) => counters.slice(0, lvl + 1).join('.') + ' ',
+  // 章条制（GB/T 1.1-2020）：章 1、条 1.1；前言/引言/目次/参考文献不编号；
+  // 附录标题（「附录 A…」字母写在标题里）不自动编号，其下条用 A.1 / A.1.1。
+  // 对象形态：skip(text) 决定「不编号且不占号」，fmt(...) 返回 null 表示「不加号」（保留原样）。
+  gb: {
+    skip: (t) => /^(前言|引言|目次|参考文献)\s*$/.test(t.trim()),
+    fmt: ({ counters, lvl, text, state }) => {
+      const t = text.trim();
+      if (lvl === 0 && /^附录/.test(t)) {
+        // 字母已写在标题里；记录之，供其下条使用
+        const m = /附录\s*([A-Za-z])/.exec(t);
+        state.appendixCount = (state.appendixCount || 0) + 1;
+        state.appendix = m ? m[1].toUpperCase() : String.fromCharCode(64 + state.appendixCount);
+        return null;
+      }
+      if (state.appendix) {
+        return state.appendix + '.' + counters.slice(1, lvl + 1).join('.') + ' ';
+      }
+      return counters.slice(0, lvl + 1).join('.') + ' ';
+    },
+  },
 
   // 一、/（一）/ 1. /（1）
   cjk: ({ counters, lvl }) => {

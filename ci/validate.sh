@@ -48,8 +48,9 @@ good "node $(node -v)"
 # ------------------------------------------------------- 结构与可执行位
 head2 "结构与可执行位"
 REQUIRED="bin/md2pdf src/md2pdf.mjs src/profiles.mjs src/ws.mjs src/install-skill.mjs assets/shell.html assets/base.css
-assets/theme-elegant.css assets/theme-minimal.css vendor/marked.esm.js vendor/mathjax/tex-svg.js vendor/highlight/highlight.cjs vendor/mermaid/mermaid.min.js
-examples/demo.md examples/skill-sample.md examples/paper-sample.md examples/readme-sample/README.md package.json README.md LICENSE
+assets/theme-elegant.css assets/theme-minimal.css assets/theme-gb.css vendor/marked.esm.js vendor/mathjax/tex-svg.js vendor/highlight/highlight.cjs vendor/mermaid/mermaid.min.js
+examples/demo.md examples/skill-sample.md examples/paper-sample.md examples/readme-sample/README.md examples/gb-sample.md
+docs/gb-template.md package.json README.md LICENSE
 skill/SKILL.md ci/inspect-pdf.mjs"
 missing=""
 for f in $REQUIRED; do [ -f "$TARGET/$f" ] || missing="$missing $f"; done

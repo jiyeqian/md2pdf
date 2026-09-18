@@ -30,7 +30,7 @@
  */
 
 import { readFile, writeFile, mkdtemp, rm, mkdir } from 'node:fs/promises';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, statSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import http from 'node:http';
@@ -42,6 +42,13 @@ import { SCHEME_NAMES, resolveNumberScheme } from './numbering.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'assets');
+
+// 主题列表从 assets/theme-*.css 动态枚举，避免硬编码漂移
+function listThemes() {
+  try {
+    return readdirSync(ASSETS).filter(f => /^theme-.+\.css$/.test(f)).map(f => f.slice(6, -4)).sort();
+  } catch { return []; }
+}
 
 const VERSION = '1.7.22';
 
@@ -111,12 +118,12 @@ function expandArgs(argv) {
 
 function parseArgs(argv) {
   const o = {
-    inputs: [], theme: 'elegant', fontSize: 10.5,
+    inputs: [], theme: undefined, fontSize: 10.5,
     marginTop: 20, marginSide: 18, marginBottom: 18,
     footer: true, footerLeft: '', footerRight: '',
-    meta: true, lead: true, toc: undefined, linkUrls: false, outline: true, bibliography: 'footnote',
-    numbering: 'auto',
-    numberScheme: 'arabic',
+    meta: true, lead: undefined, toc: undefined, linkUrls: false, outline: true, bibliography: 'footnote',
+    numbering: undefined,
+    numberScheme: undefined,
     type: '',
     landscape: false, keepHtml: false, htmlOnly: false, open: false, help: false,
   };
@@ -184,7 +191,8 @@ function splitFrontmatter(src) {
   if (!m) return { fm: {}, body: src };
   const fm = {};
   for (const line of m[1].split(/\r?\n/)) {
-    const kv = /^([A-Za-z_][\w-]*)[ \t]*:[ \t]*(.*)$/.exec(line);
+    // 键名允许中文（GB 用「标准号/发布日期」等中文键）
+    const kv = /^([A-Za-z_\u4e00-\u9fff][\w\u4e00-\u9fff-]*)[ \t]*:[ \t]*(.*)$/.exec(line);
     if (kv) {
       let v = kv[2].trim().replace(/^["']|["']$/g, '');
       fm[kv[1]] = v;
@@ -321,14 +329,22 @@ function numberHeadings(html, mode, scheme) {
   const all = [...html.matchAll(re)];
   if (!all.length) return html;
   if (mode !== 'force' && all.some(m => HEADING_NUM_RE.test(stripTags(m[3])))) return html;
-  const fmt = resolveNumberScheme(scheme || 'arabic');
+  const raw = resolveNumberScheme(scheme || 'arabic');
+  // scheme 既可为函数，也可为 { skip, fmt } 对象（GB 需要 skip 与有状态 fmt）
+  const skipFn = typeof raw === 'function' ? null : raw.skip;
+  const fmt = typeof raw === 'function' ? raw : raw.fmt;
   const counters = [0, 0, 0, 0, 0];
+  const state = {};   // 单次渲染的可变状态（如 GB 的当前附录字母）
   return html.replace(re, (m, level, attrs, inner) => {
     const lvl = parseInt(level, 10) - 2;
+    const text = stripTags(inner);
+    const clean = inner.replace(HEADING_NUM_RE, '');
+    // 跳过：不编号、且不占号（如 GB 的前言/引言/目次/参考文献）
+    if (skipFn && skipFn(text)) return '<h' + level + attrs + '>' + clean + '</h' + level + '>';
     counters[lvl]++;
     for (let k = lvl + 1; k < 5; k++) counters[k] = 0;
-    const num = fmt({ counters, lvl });
-    return '<h' + level + attrs + '>' + num + inner.replace(HEADING_NUM_RE, '') + '</h' + level + '>';
+    const num = fmt({ counters, lvl, text, state });
+    return '<h' + level + attrs + '>' + (num == null ? clean : num + clean) + '</h' + level + '>';
   });
 }
 
@@ -602,8 +618,8 @@ class Chrome {
       printBackground: true,
       preferCSSPageSize: true,
       landscape: !!opts.landscape,
-      displayHeaderFooter: !!opts.footer,
-      headerTemplate: '<span></span>',
+      displayHeaderFooter: !!(opts.footer || opts.header),
+      headerTemplate: opts.headerTemplate || '<span></span>',
       footerTemplate: opts.footerTemplate || '<span></span>',
       marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0,
     };
@@ -628,10 +644,47 @@ class Chrome {
 
 /* ---------------- 渲染 ---------------- */
 
+// GB 封面（仅 gb profile）：标准号 / 中英文名称 / ICS·CCS / 发布·实施日期 / 发布机构
+function buildCover(fm, title) {
+  const stdno = fm['标准号'] || fm.standard || '';
+  const cn = title || fm.title || '';
+  const en = fm['英文名称'] || fm.title_en || '';
+  const ics = fm.ICS || fm.ics || '';
+  const ccs = fm.CCS || fm.ccs || '';
+  const issued = fm['发布日期'] || fm.date || '';
+  const impl = fm['实施日期'] || '';
+  const sup = fm['代替标准'] || '';
+  const org = fm['发布机构'] || '国家市场监督管理总局 国家标准化管理委员会';
+  const top = [
+    '<div class="cover-top">',
+    '  <div class="cover-ics">' + (ics ? 'ICS ' + esc(ics) : '') +
+      (ccs ? '<br>CCS ' + esc(ccs) : '') + '</div>',
+    '  <div class="cover-stdno">' + esc(stdno) + '</div>',
+    '</div>',
+  ].join('\n');
+  const main = '<div class="cover-main"><div class="cover-cn">' + esc(cn) +
+    '</div>' + (en ? '<div class="cover-en">' + esc(en) + '</div>' : '') + '</div>';
+  const foot = [
+    '<div class="cover-foot">',
+    sup ? '  <div class="cover-sup">代替 ' + esc(sup) + '</div>' : '',
+    '  <div class="cover-dates">' + esc(issued) + (issued && impl ? ' 发布' : '') +
+      (impl ? '　' + esc(impl) + ' 实施' : '') + '</div>',
+    '  <div class="cover-org">' + esc(org) + '</div>',
+    '</div>',
+  ].filter(Boolean).join('\n');
+  return '<section class="cover">\n' + top + '\n' + main + '\n' + foot + '\n</section>';
+}
+
 async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   const src = await readFile(mdPath, 'utf8');
   const { fm, body: rawBody } = splitFrontmatter(src);
   const profile = detectProfile({ basename: path.basename(mdPath), fm, explicit: opts.type });
+  // 生效选项：CLI 显式 > profile 默认 > 内置兜底（三态，见 parseArgs）
+  const effTheme = opts.theme ?? profile.defaults.theme ?? 'elegant';
+  const effLead = opts.lead ?? profile.defaults.lead ?? true;
+  const effNumbering = opts.numbering ?? profile.defaults.numbering ?? 'auto';
+  const effScheme = opts.numberScheme ?? profile.defaults.numberScheme ?? 'arabic';
+  const useToc = opts.toc ?? profile.defaults.toc ?? false;
 
   // 数学公式：检测 $...$ 或 $...$，命中则注入 MathJax（SVG 输出，零字体依赖）
   const hasMath = /\$\$|\$[^$\n]+\$/.test(rawBody);
@@ -694,7 +747,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   html += renderFootnotes(orderedFootnotes, opts.bibliography, marked);
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
-  html = numberHeadings(html, opts.numbering, opts.numberScheme);
+  html = numberHeadings(html, effNumbering, effScheme);
 
   // 标题：正文首个 H1 → 报头
   let title = opts.title || fm.title || '';
@@ -708,7 +761,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
 
   // 导语：移除 H1 后的第一段
   let lead = '';
-  if (opts.lead) {
+  if (effLead) {
     const p = /<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/.exec(html);
     if (p && stripTags(p[1]).length > 12 && p.index < 2000) {
       lead = p[1];
@@ -747,18 +800,17 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
 
   // 目录：文首一张可点击的目录页（仅当二级标题多于一个才值得排）
   // toc 为三态：CLI 显式指定优先，否则用 profile 默认（readme 默认开），最后兜底 false
-  const useToc = opts.toc ?? profile.defaults.toc ?? false;
   let toc = '';
   if (useToc && secIds.length > 1) {
-    toc = `<div class="toc"><div class="toc-title">目 录</div><ol>` +
+    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目 录'}</div><ol>` +
       secIds.map(s => `<li><a href="#${s.id}">${esc(s.text)}</a></li>`).join('') + `</ol></div>`;
   }
 
   html = sectionize(html);
 
   // CSS
-  const themeFile = path.join(ASSETS, `theme-${opts.theme}.css`);
-  if (!existsSync(themeFile)) throw new Error(`未知主题：${opts.theme}（可用：elegant, minimal）`);
+  const themeFile = path.join(ASSETS, `theme-${effTheme}.css`);
+  if (!existsSync(themeFile)) throw new Error(`未知主题：${effTheme}（可用：${listThemes().join(', ')}）`);
   const base = await readFile(path.join(ASSETS, 'base.css'), 'utf8');
   const theme = await readFile(themeFile, 'utf8');
   const css = (base + '\n' + theme)
@@ -777,6 +829,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
       (fm.affiliation ? '<span class="affil">' + esc(fm.affiliation) + '</span>' : '') +
       '</p>'
     : '';
+  const coverHtml = profile.gbDoc ? buildCover(fm, title) : '';
   const paperHtml = profile.paperHeader
     ? [
         fm.abstract ? '<div class="abstract"><span class="paper-label">摘要</span><span>' + esc(fm.abstract) + '</span></div>' : '',
@@ -853,6 +906,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '{{BODY}}': html,
     '{{COLOPHON_LEFT}}': esc(colophonLeft),
     '{{COLOPHON_RIGHT}}': esc(colophonRight),
+    '{{COVER}}': coverHtml,
     '{{AUTHORS}}': authorsHtml,
     '{{PAPER}}': paperHtml,
     '{{MATHJAX}}': mathScript,
@@ -871,7 +925,13 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
       <span style="flex:1;text-align:right;">${opts.footerRight || ''}</span>
     </div>`;
 
-  const buf = await chrome.print(htmlPath, { footer: opts.footer, footerTemplate, landscape: opts.landscape, outline: opts.outline, waitMath: hasMath, waitMermaid: hasMermaid });
+  // GB 正文页眉：标准号（左）。注意 Chrome 的页眉/页脚按页绘制，封面页也会带上。
+  const stdnoForHeader = fm['标准号'] || fm.standard || '';
+  const headerTemplate = profile.gbDoc && stdnoForHeader
+    ? '<div style="width:100%;font-size:8px;color:#8a8578;font-family:-apple-system,\'PingFang SC\',sans-serif;letter-spacing:.5px;padding:0 12mm;">' + esc(stdnoForHeader) + '</div>'
+    : '<span></span>';
+
+  const buf = await chrome.print(htmlPath, { footer: opts.footer, footerTemplate, header: !!(profile.gbDoc && stdnoForHeader), headerTemplate, landscape: opts.landscape, outline: opts.outline, waitMath: hasMath, waitMermaid: hasMermaid });
 
   if (opts.keepHtml) {
     await writeFile(mdPath.replace(/\.md$/i, '.html'), out, 'utf8');

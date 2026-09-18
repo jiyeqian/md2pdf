@@ -59,6 +59,25 @@ export const PROFILES = {
     paperHeader: true,
     defaults: {},
   },
+
+  gb: {
+    name: 'gb',
+    // GB 国标：frontmatter 含「标准号」或 standard
+    detect: ({ fm }) => !!(fm['标准号'] || fm.standard),
+    kicker: null,
+    skillMeta: false,
+    skipBadges: false,
+    // 启用封面 + 页眉 + GB 专用编号
+    gbDoc: true,
+    tocTitle: '目次',
+    defaults: {
+      theme: 'gb',
+      numberScheme: 'gb',
+      numbering: 'force',
+      lead: false,     // GB 正文不用导语
+      toc: true,       // GB 通常有目次
+    },
+  },
 };
 
 export const PROFILE_NAMES = Object.keys(PROFILES);

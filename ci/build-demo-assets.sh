@@ -28,5 +28,6 @@ done
 node src/md2pdf.mjs examples/skill-sample.md -o examples/skill-sample.pdf
 node src/md2pdf.mjs examples/paper-sample.md -o examples/paper-sample.pdf
 node src/md2pdf.mjs examples/readme-sample/README.md -o examples/readme-sample.pdf
+node src/md2pdf.mjs examples/gb-sample.md -o examples/gb-sample.pdf
 
 echo "✓ 已更新 examples/demo-*.pdf、examples/*-sample.pdf 与 docs/theme-*.png"
