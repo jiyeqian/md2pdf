@@ -727,13 +727,13 @@ function buildCover(fm, title) {
   const stdno = fm['标准号'] || fm.standard || '';
   const cn = fm['中文名称'] || title || fm.title || '';
   const en = fm['英文名称'] || fm.title_en || '';
-  // 采标信息：仿官方封面排在英文名称下方，格式 (国际标准号, 采标中文名称, 程度)
+  // 采标信息：仿官方封面排在英文名称下方，格式 (国际标准号, 采标英文名称, 程度)
   const iso = fmStr(fm['采标国际标准']);
-  const isoCn = fmStr(fm['采标中文名称']);
+  const isoEn = fmStr(fm['采标英文名称']);
   const isoDeg = fmStr(fm['采标程度']);
   const isoHtml = iso
     ? '<div class="cover-iso">(' + esc(iso) +
-      (isoCn ? ', ' + esc(isoCn) : '') +
+      (isoEn ? ', ' + esc(isoEn) : '') +
       (isoDeg ? ', ' + esc(isoDeg) : '') + ')</div>'
     : '';
   const ics = fmStr(fm['国际标准分类号'] || fm.ICS || fm.ics);
@@ -1057,7 +1057,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   const GB_COVER_KEYS = new Set(['标准号', 'standard', 'title', '中文名称', '标准名称', '英文名称', 'title_en',
     '国际标准分类号', 'ICS', 'ics', '中国标准分类号', 'CCS', 'ccs',
     '发布日期', 'date', '实施日期', '全部代替标准', '代替标准',
-    '采标国际标准', '采标中文名称', '采标程度',
+    '采标国际标准', '采标英文名称', '采标中文名称', '采标程度',
     '发布单位', '发布机构', '发布机构2', '文件类别', 'kicker', 'category', 'author']);
   const headMeta = profile.gbDoc
     ? Object.entries(fm)
