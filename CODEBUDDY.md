@@ -59,6 +59,10 @@ Pipeline: `Markdown --(marked)--> HTML --(shell.html + base.css + theme-*.css)--
 
 - **Regenerated PDFs are never byte-identical.** `examples/*.pdf` are committed artifacts, but Chrome `Page.printToPDF` embeds a creation timestamp (`/CreationDate`, `/ModDate`, and possibly `/ID`), so rebuilding via `ci/build-demo-assets.sh` always produces different bytes — the visual content is identical. Mermaid ids are already deterministic (`deterministicIds: true` in the mermaid init), so the timestamp is the remaining source of churn. Possible future fix (not done, small risk): post-process each PDF to normalize `/CreationDate` / `/ModDate`.
 
+- **Sample artifacts are only rebuilt when their inputs change**（项目策略，2026-09-19 确认）. `ci/build-demo-assets.sh` rebuilds everything today; incremental skip by input mtime/hash is a possible future improvement. Unrelated samples must not be re-rendered just to churn bytes.
+
+- **GB cover font fidelity depends on 方正 fonts being installed**（小标宋/黑体/书宋），most machines fall back to system fonts — documented with remaining sub-3mm layout deviations and Paged.js quirks in `docs/gb-template.md` §已知边界（含：named-page bottom margin 的 Paged.js 疑似失效已绕过、强制分页末行 justify 拉伸的覆盖规则、GB logo 为官方提取位图未矢量化）。
+
 
 ## Release process
 
