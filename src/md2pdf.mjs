@@ -722,12 +722,15 @@ function buildCover(fm, title) {
       '</div>'
     : '';
   const supHtml = sup ? '<div class="cover-sup">代替 ' + esc(sup) + '</div>' : '';
+  const logoUrl = pathToFileURL(path.join(ASSETS, 'gb-logo.png')).href;
   return [
     '<section class="cover">',
     icsHtml,
+    '<img class="cover-logo" src="' + logoUrl + '" alt="GB">',
     '  <div class="cover-head">' + head + '</div>',
     '  <div class="cover-stdno">' + esc(stdno) + '</div>',
     supHtml,
+    '  <div class="cover-rule"></div>',
     '  <div class="cover-main"><div class="cover-cn">' + esc(cn) + '</div>' +
       (en ? '<div class="cover-en">' + esc(en) + '</div>' : '') + '</div>',
     '  <div class="cover-foot">',

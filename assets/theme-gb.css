@@ -28,6 +28,9 @@
   --font-mono: "SF Mono", "Menlo", "Consolas", monospace;
 
   --masthead-border: none;
+
+  /* 封面标准名称：官方封面嵌入字体为方正小标宋（FZXBSK），缺失时回退华文中宋/宋体 */
+  --font-title: "方正小标宋_GBK", "方正小标宋", "STZhongsong", "Songti SC", serif;
 }
 
 /* GB 标题在封面，正文不重复报头 */
@@ -44,8 +47,8 @@ body { line-height: 1.62; text-align: justify; }
 
 /* ---------- 封面（独立一页，无页眉页脚；版式实测自正式发布版） ---------- */
 /* 封面页边距独立：ICS 顶到 ≈10mm（正文页上边距 25mm 装不下） */
-@page gb-cover { margin: 9mm 19mm 16mm 25mm; }
-.cover { break-after: page; page: gb-cover; text-align: center; }
+@page gb-cover { margin: 9mm 19mm 12mm 25mm; }
+.cover { break-after: page; page: gb-cover; position: relative; text-align: center; }
 .cover-ics { text-align: left; font-size: 11pt; line-height: 1.6; }
 /* 「中华人民共和国国家标准」：黑体，按字均分撑满两边距 */
 .cover-head { display: flex; justify-content: space-between; margin-top: 18mm; font-family: var(--font-head); font-weight: 700; font-size: 26pt; line-height: 1.3; }
@@ -53,14 +56,19 @@ body { line-height: 1.62; text-align: justify; }
 /* 标准号：右对齐；代替标准紧随其下 */
 .cover-stdno { margin-top: 6mm; text-align: right; font-family: var(--font-head); font-weight: 700; font-size: 17pt; letter-spacing: .5px; }
 .cover-sup { text-align: right; font-size: 11.5pt; line-height: 1.3; margin-top: 0.5mm; }
+/* 右上角 GB 标志（600dpi 位图，提取自官方封面） */
+.cover-logo { position: absolute; top: 1mm; right: 8mm; width: 40mm; }
+/* 全宽横线：标准号块下方一根、日期行与机构块之间一根（官方 1pt） */
+.cover-rule { height: 1pt; background: var(--ink); margin-top: 1.5mm; }
 /* 中英文名称 */
-.cover-main { margin-top: 38.5mm; }
-.cover-cn { font-family: var(--font-head); font-size: 28pt; font-weight: 700; line-height: 1.55; }
-.cover-en { font-family: var(--font-head); font-size: 15pt; margin-top: 6.5mm; line-height: 1.6; }
+.cover-main { margin-top: 37.5mm; }
+.cover-cn { font-family: var(--font-title); font-size: 28pt; font-weight: 700; line-height: 1.55; }
+.cover-en { font-family: "Times New Roman", Times, "Tinos", serif; font-size: 15pt; margin-top: 6.5mm; line-height: 1.6; }
 /* 日期 + 机构：定值下推到页底（封面元素均定高，锚点可预算） */
-.cover-foot { margin-top: 98mm; }
-.cover-dates { display: flex; justify-content: space-between; font-size: 14pt; }
-.cover-org { width: fit-content; margin: 4mm auto 0; text-align: left; font-size: 15pt; line-height: 1.2; }
+.cover-foot { margin-top: 103mm; }
+.cover-dates { display: flex; justify-content: space-between; font-size: 14pt; padding-bottom: 2mm; border-bottom: 1pt solid var(--ink); }
+
+.cover-org { width: fit-content; margin: 6.5mm auto 0; text-align: left; font-size: 15pt; line-height: 1.2; }
 .cover-org-pub { text-align: right; margin-right: -1em; }
 
 /* 命名页：封面（无页码）/ 前置（罗马页码）/ 正文（阿拉伯页码）。

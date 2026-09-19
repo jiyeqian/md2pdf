@@ -47,7 +47,7 @@ good "node $(node -v)"
 
 # ------------------------------------------------------- 结构与可执行位
 head2 "结构与可执行位"
-REQUIRED="bin/md2pdf src/md2pdf.mjs src/profiles.mjs src/ws.mjs src/install-skill.mjs assets/shell.html assets/base.css
+REQUIRED="bin/md2pdf src/md2pdf.mjs src/profiles.mjs src/ws.mjs src/install-skill.mjs assets/shell.html assets/base.css assets/gb-logo.png
 assets/theme-elegant.css assets/theme-minimal.css assets/theme-gb.css vendor/marked.esm.js vendor/mathjax/tex-svg.js vendor/highlight/highlight.cjs vendor/mermaid/mermaid.min.js vendor/pagedjs/paged.polyfill.min.js
 examples/demo.md examples/skill-sample.md examples/paper-sample.md examples/readme-sample/README.md examples/gb-sample.md
 docs/gb-template.md package.json README.md LICENSE
