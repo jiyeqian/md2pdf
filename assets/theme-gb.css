@@ -68,8 +68,10 @@ body { line-height: 1.62; text-align: justify; }
 .cover-foot { margin-top: 103mm; }
 .cover-dates { display: flex; justify-content: space-between; font-size: 14pt; padding-bottom: 2mm; border-bottom: 1pt solid var(--ink); }
 
-.cover-org { width: fit-content; margin: 6.5mm auto 0; text-align: left; font-size: 15pt; line-height: 1.2; }
-.cover-org-pub { text-align: right; margin-right: -1em; }
+/* 官方实测：名称字号 ≈18pt、两行 top-to-top 行距 18pt；「发布」不占行位，
+   垂直中心恰在两行名称的分界线上，水平距名称右缘 ≈1em（整体居中时把悬挂宽度计入 padding） */
+.cover-org { position: relative; width: fit-content; margin: 6.5mm auto 0; padding-right: 3.4em; text-align: left; font-size: 17pt; line-height: 18pt; }
+.cover-org-pub { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 1em; font-size: 14pt; white-space: nowrap; }
 
 /* 命名页：封面（无页码）/ 前置（罗马页码）/ 正文（阿拉伯页码）。
    注意：不要在 main 上写 gb-body——否则「目次(gb-front) → main → 前置节(gb-front)」

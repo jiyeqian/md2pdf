@@ -722,7 +722,7 @@ function buildCover(fm, title) {
       '</div>'
     : '';
   const supHtml = sup ? '<div class="cover-sup">代替 ' + esc(sup) + '</div>' : '';
-  const logoUrl = pathToFileURL(path.join(ASSETS, 'gb-logo.png')).href;
+  const logoUrl = pathToFileURL(path.join(ASSETS, 'gb-logo.svg')).href;
   return [
     '<section class="cover">',
     icsHtml,
@@ -736,7 +736,7 @@ function buildCover(fm, title) {
     '  <div class="cover-foot">',
     datesHtml,
     '  <div class="cover-org"><div class="cover-org-name">' + esc(orgA) + '</div>' +
-      '<div class="cover-org-pub">发布</div>' +
+      '<div class="cover-org-pub">发 布</div>' +
       '<div class="cover-org-name">' + esc(orgB) + '</div></div>',
     '  </div>',
     '</section>',

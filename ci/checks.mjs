@@ -188,7 +188,8 @@ ok('Paged：边距为四值语法（左宽右窄，gb 默认 25/19/20/25）',
   /margin: 25mm 19mm 20mm 25mm/.test(gbHtml));
 
 // 封面版式（P3.1b）：GB 标志、横线、小标宋名称字体
-ok('封面：gb 引用内置 GB 标志（gb-logo.png）', /gb-logo\.png/.test(gbHtml));
+ok('封面：gb 引用内置 GB 标志（gb-logo.svg，描迹矢量）', /gb-logo\.svg/.test(gbHtml) && !/gb-logo\.png/.test(gbHtml));
+ok('封面：机构块「发布」为独立小字并悬挂于两行名称分界（cover-org-pub）', /cover-org-pub/.test(gbHtml) && /发 布/.test(gbHtml));
 ok('封面：标准块下方与机构块上方各有一根横线（cover-rule ×1 + 日期行下边线）',
   (gbHtml.match(/cover-rule/g) || []).length >= 2 && /border-bottom:\s*1pt solid/.test(gbHtml));
 ok('封面：标准名称用小标宋（--font-title）', /--font-title/.test(gbHtml) && /var\(--font-title\)/.test(gbHtml));
@@ -226,7 +227,7 @@ if (fs.existsSync(demo)) {
   ok('渲染：--link-urls 生效', /class="link-url"/.test(html));
   ok('渲染：无占位符残留', !/\{\{[A-Z_]+\}\}/.test(html));
   ok('渲染：非 gb 类型不注入 Paged.js（行为零回归）', !/pagedjs/.test(html));
-  ok('封面：非 gb 类型不引用 GB 标志', !/gb-logo\.png/.test(html));
+  ok('封面：非 gb 类型不引用 GB 标志', !/gb-logo\./.test(html));
   ok('渲染：无 undefined/NaN 泄漏', !/undefined|NaN/.test(html));
   ok('渲染：页脚页码模板交给浏览器而非 HTML',
     !/class="pageNumber"/.test(html));
