@@ -64,13 +64,13 @@ md2pdf 文件名.md --theme minimal --toc
 | `--numbering <mode>` | 章节编号：`auto`（默认，识别到已有编号则不动）｜ `force`（强制）｜ `none`（不加） |
 | `--number-scheme <n>` | 编号方案：`arabic`（默认，`1` / `1.1`）｜ `gb`（章条制）｜ `cjk`（`一、` / `（一）`）｜ `chapter`（`第1章`）
 | `--link-urls` | 正文链接后附 URL（纸质可读） |
-| `--landscape` / `--font-size <pt>` / `--margin <mm>` | 横向 / 字号（默认 10.5）/ 页边距（默认 20） |
+| `--landscape` / `--font-size <pt>` / `--margin <mm>` | 横向 / 字号（默认 10.5）/ 页边距（默认 20；可写 "20,18" = 上下,左右） |
 | `--no-footer` / `--footer-left` / `--footer-right` | 页脚控制 |
 | `--colophon <text>` | 文末落款 |
 | `--keep-html` / `--html-only` | 留中间 HTML 调样式 / 只出 HTML（CI 校验用） |
 | `--open` | 完成后打开 PDF |
 
-文档类型默认**自动探测**，优先级：`--type` 显式指定 > 文件名 `SKILL.md`（`skill`）／`README.md`（`readme`）> frontmatter 含 `name`（`skill`）> 兜底 `general`。`readme` 默认加目录，且顶部徽章（shields.io 等）不参与图表编号；frontmatter 含 `abstract` 或 `keywords` 判为 `paper`（作者行 +「摘要」块 +「关键词」行）；含 `标准号`/`standard` 判为 `gb`（国标版式：封面 + 页眉 + 章条/附录编号）。详见 `docs/gb-template.md`。
+文档类型默认**自动探测**，优先级：`--type` 显式指定 > 文件名 `SKILL.md`（`skill`）／`README.md`（`readme`）> frontmatter 含 `name`（`skill`）> 兜底 `general`。`readme` 默认加目录，且顶部徽章（shields.io 等）不参与图表编号；frontmatter 含 `abstract` 或 `keywords` 判为 `paper`（作者行 +「摘要」块 +「关键词」行）；含 `标准号`/`standard` 判为 `gb`（国标版式：封面 + 奇偶页眉 + 章条/附录编号 + 目次真实页码，由内置 Paged.js 接管分页，仅 gb 启用）。详见 `docs/gb-template.md`。
 
 布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
 

@@ -174,6 +174,19 @@ ok('gb：附录用字母（附录 A 下为 A.1）',
   /<h3[^>]*>A\.1 /.test(gbHtml) && /<h2[^>]*>参考文献<\/h2>/.test(gbHtml));
 ok('gb：目次标题为「目次」', /<div class="toc-title">目次<\/div>/.test(gbHtml));
 
+// Paged.js（P3.1，GB 专用分页）：接管分页后才有奇偶页眉 / 分节页码 / 目次真实页码
+ok('Paged：gb 渲染注入 Paged.js（仅 gb）', /pagedjs\/paged\.polyfill\.min\.js/.test(gbHtml), 'status=' + rGb.status);
+ok('Paged：gb 分页完成标志接线（__md2pdfPagedReady）', /__md2pdfPagedReady/.test(gbHtml) && /__md2pdfPagedReady === true/.test(src));
+ok('Paged：gb 目次条目带点线填充（toc-dots）', /class="toc-dots"/.test(gbHtml));
+ok('Paged：目次页码用 target-counter 真实填入', /target-counter\(attr\(href\),\s*page/.test(gbHtml));
+ok('Paged：前置部分条目用罗马页码（toc-front）', /class="toc-front"/.test(gbHtml));
+ok('Paged：前言/引言标记 unnumbered front（各自起新页）', /<h2[^>]*class="[^"]*unnumbered front/.test(gbHtml));
+ok('Paged：正文首章标记 body-start（阿拉伯页码重新计数）', /class="[^"]*body-start/.test(gbHtml));
+ok('Paged：页眉标准号奇偶分侧（@page :left margin box）', /@page gb-body:left/.test(gbHtml) && /@page gb-front:left/.test(gbHtml));
+ok('Paged：gb 不输出文末落款（干扰命名页分页）', !/class="colophon"/.test(gbHtml));
+ok('Paged：边距为四值语法（左宽右窄，gb 默认 25/19/20/25）',
+  /margin: 25mm 19mm 20mm 25mm/.test(gbHtml));
+
 /* ---------- 5. 端到端渲染（HTML 阶段） ---------- */
 const demo = path.join(ROOT, 'examples', 'demo.md');
 ok('示例文档存在', fs.existsSync(demo) && readIf(demo).length > 100);
@@ -206,6 +219,7 @@ if (fs.existsSync(demo)) {
   ok('渲染：标题 id 不重复', new Set(h2Ids).size === h2Ids.length);
   ok('渲染：--link-urls 生效', /class="link-url"/.test(html));
   ok('渲染：无占位符残留', !/\{\{[A-Z_]+\}\}/.test(html));
+  ok('渲染：非 gb 类型不注入 Paged.js（行为零回归）', !/pagedjs/.test(html));
   ok('渲染：无 undefined/NaN 泄漏', !/undefined|NaN/.test(html));
   ok('渲染：页脚页码模板交给浏览器而非 HTML',
     !/class="pageNumber"/.test(html));

@@ -1,9 +1,10 @@
 /* md2pdf — 基础排版（与主题无关的骨架）
-   占位符：{{MARGIN_TOP}} {{MARGIN_BOTTOM}} {{MARGIN_SIDE}} {{FONT_SIZE}} */
+   占位符：{{MARGIN_TOP}} {{MARGIN_RIGHT}} {{MARGIN_BOTTOM}} {{MARGIN_LEFT}} {{FONT_SIZE}} */
 
 @page {
   size: {{PAGE_SIZE}};
-  margin: {{MARGIN_TOP}} {{MARGIN_SIDE}} {{MARGIN_BOTTOM}};
+  /* 四值语法：上 右 下 左（GB 装订边左宽右窄） */
+  margin: {{MARGIN_TOP}} {{MARGIN_RIGHT}} {{MARGIN_BOTTOM}} {{MARGIN_LEFT}};
 }
 
 :root {

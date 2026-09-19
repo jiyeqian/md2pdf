@@ -48,7 +48,7 @@ good "node $(node -v)"
 # ------------------------------------------------------- 结构与可执行位
 head2 "结构与可执行位"
 REQUIRED="bin/md2pdf src/md2pdf.mjs src/profiles.mjs src/ws.mjs src/install-skill.mjs assets/shell.html assets/base.css
-assets/theme-elegant.css assets/theme-minimal.css assets/theme-gb.css vendor/marked.esm.js vendor/mathjax/tex-svg.js vendor/highlight/highlight.cjs vendor/mermaid/mermaid.min.js
+assets/theme-elegant.css assets/theme-minimal.css assets/theme-gb.css vendor/marked.esm.js vendor/mathjax/tex-svg.js vendor/highlight/highlight.cjs vendor/mermaid/mermaid.min.js vendor/pagedjs/paged.polyfill.min.js
 examples/demo.md examples/skill-sample.md examples/paper-sample.md examples/readme-sample/README.md examples/gb-sample.md
 docs/gb-template.md package.json README.md LICENSE
 skill/SKILL.md ci/inspect-pdf.mjs"
@@ -98,8 +98,8 @@ if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
     bad "副本准备失败，跳过了守卫自测"
   else
     # 破坏 1：模板里塞一个没有替换逻辑的占位符
-    sed -i.bak 's/{{COLOPHON_RIGHT}}/{{COLOPHON_RIGH}}/' "$TMP/proj/assets/shell.html" 2>/dev/null \
-      || sed -i '' 's/{{COLOPHON_RIGHT}}/{{COLOPHON_RIGH}}/' "$TMP/proj/assets/shell.html"
+    sed -i.bak 's/{{COLOPHON}}/{{COLOPHN}}/' "$TMP/proj/assets/shell.html" 2>/dev/null \
+      || sed -i '' 's/{{COLOPHON}}/{{COLOPHN}}/' "$TMP/proj/assets/shell.html"
     if ( cd "$TMP/proj" && node ci/checks.mjs "$TMP/proj" >/dev/null 2>&1 ); then
       bad "模板占位符被破坏，校验却通过了 —— 占位符检查失效"
     else

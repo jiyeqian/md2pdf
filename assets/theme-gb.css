@@ -1,4 +1,12 @@
-/* 主题：gb —— 仿 GB/T 1.1-2020 国标版式（封面 + 章条 + 附录） */
+/* 主题：gb —— 仿 GB/T 1.1-2020 国标版式（封面 + 目次 + 章条 + 附录）
+ *
+ * 版式依据：正式发布版 GB 标准（A4，正文 5 号≈10.5pt）
+ *   页边距   左 25 / 右 19 / 上 25 / 下 20 mm（装订边左宽）—— 见 src/profiles.mjs 的 gb defaults
+ *   页眉     标准号：奇数页（右页）靠右、偶数页（左页）靠左
+ *   页码     前置部分（前言/引言）罗马数字，正文阿拉伯数字，封面无页码
+ *   标题     章标题黑体左对齐；前言/引言/目次/附录标题居中且各自起新页
+ *   分页     由 Paged.js 接管（Chrome 原生 @page 做不到奇偶页眉与 target-counter）
+ */
 :root {
   --ink: #000000;
   --ink-soft: #222222;
@@ -24,34 +32,90 @@
 /* GB 标题在封面，正文不重复报头 */
 .masthead { display: none; }
 
-/* ---------- 封面（独立一页） ---------- */
-.cover { break-after: page; position: relative; height: 240mm; text-align: center; }
+/* 正文行距比通用主题紧（国标正文排得密） */
+body { line-height: 1.62; text-align: justify; }
+
+/* ---------- 封面（独立一页，无页眉页脚） ---------- */
+.cover { break-after: page; page: gb-cover; position: relative; height: 235mm; text-align: center; }
 .cover-top { display: flex; justify-content: space-between; align-items: flex-start; font-size: 11pt; line-height: 1.6; }
-.cover-ics { text-align: left; }
+.cover-ics { text-align: left; font-family: var(--font-body); }
 .cover-stdno { font-family: var(--font-head); font-size: 20pt; font-weight: 700; letter-spacing: 1px; }
-.cover-main { margin-top: 72mm; }
-.cover-cn { font-family: var(--font-head); font-size: 25pt; font-weight: 700; line-height: 1.55; }
-.cover-en { font-family: var(--font-head); font-size: 14pt; margin-top: 12px; line-height: 1.6; }
+.cover-main { margin-top: 70mm; }
+.cover-cn { font-family: var(--font-head); font-size: 28pt; font-weight: 700; line-height: 1.5; }
+.cover-en { font-family: var(--font-head); font-size: 18pt; margin-top: 14px; line-height: 1.6; }
 .cover-foot { position: absolute; left: 0; right: 0; bottom: 0; font-size: 12pt; line-height: 1.9; }
 .cover-sup { font-size: 10.5pt; margin-bottom: 6px; }
 .cover-dates { letter-spacing: 2px; }
 .cover-org { font-family: var(--font-head); font-size: 14pt; margin-top: 6px; letter-spacing: 2px; }
 
+
+/* 命名页：封面（无页码）/ 前置（罗马页码）/ 正文（阿拉伯页码）。
+   注意：不要在 main 上写 page——否则「目次(gb-front) → main(gb-body) → 前置节(gb-front)」
+   的命名页切换会被 Paged.js 当成两次分页，中间多出一张空白页。 */
+.toc { page: gb-front; counter-reset: page 1; }
+main { page: gb-front; }
+main { page: gb-front; }
+main > section { page: gb-body; }
+main > section:has(> h2.front) { page: gb-front; break-before: page; }
+main > section:has(> h2.appendix) { break-before: page; }
+main > section:has(> h2.back) { break-before: page; }
+/* 正文页码从第一个带号的章重新计数（前置部分用罗马数字） */
+main > section:has(> h2.body-start) { counter-reset: page 1; }
+
+@page gb-cover { @top-left { content: none; } @top-right { content: none; } @bottom-center { content: none; } }
+@page gb-front { @bottom-center { content: counter(page, upper-roman); } }
+@page gb-body { @bottom-center { content: counter(page); } }
+
+/* 页眉/页码在 margin box 里的字号与字体（页眉内容由渲染器按标准号生成） */
+@page gb-front { @top-left { font: 9pt/1 var(--font-head); } @top-right { font: 9pt/1 var(--font-head); } }
+@page gb-body { @top-left { font: 9pt/1 var(--font-head); } @top-right { font: 9pt/1 var(--font-head); } }
+
 /* ---------- 章 / 条（黑体） ---------- */
-h2 { font-family: var(--font-head); font-size: 1.15em; border-bottom: none; padding: 0; margin: 20px 0 12px; }
+h2 { font-family: var(--font-head); font-size: 1.15em; border-bottom: none; padding: 0; margin: 18px 0 10px; text-align: left; }
 h2::before { display: none; }
-h3 { font-family: var(--font-head); font-size: 1.02em; margin: 16px 0 8px; }
-h4 { font-family: var(--font-head); font-size: 1em; }
+h3 { font-family: var(--font-head); font-size: 1.02em; margin: 14px 0 8px; }
+h4 { font-family: var(--font-head); font-size: 1em; margin: 12px 0 6px; }
+
+/* 前言 / 引言：标题居中、各自起新页 */
+h2.front { text-align: center; font-size: 1.3em; margin: 0 0 18px; letter-spacing: .25em; }
+/* 附录标题居中起新页 */
+h2.appendix { text-align: center; font-size: 1.3em; margin: 0 0 16px; letter-spacing: .1em; }
+/* 参考文献标题：左对齐（页码仍属正文阿拉伯序列） */
+h2.back { font-size: 1.15em; }
+
+/* ---------- 目次（点线 + 真实页码，页码由 Paged.js target-counter 填入） ---------- */
+.toc { background: transparent; border: none; padding: 0; }
+.toc-title {
+  text-align: center; font-family: var(--font-head);
+  font-size: 1.3em; font-weight: 700; letter-spacing: .5em;
+  color: var(--ink); margin: 0 0 18px;
+}
+.toc ol { padding-left: 0; margin: 0; }
+.toc li { font-size: .95em; margin: 3px 0; }
+.toc li::before { content: none; }
+.toc li a { display: flex; align-items: baseline; color: var(--ink); text-decoration: none; border: none; }
+.toc li a .toc-text { flex: 0 1 auto; }
+.toc li a .toc-dots {
+  flex: 1 1 auto; margin: 0 .4em; position: relative; top: -.28em;
+  border-bottom: 1px dotted var(--ink); min-width: 1em;
+}
+.toc li a::after {
+  content: target-counter(attr(href), page);
+  margin-left: .3em; font-family: var(--font-mono); font-size: .9em; white-space: nowrap;
+}
+/* 前置部分（前言/引言）的目次页码用大写罗马数字 */
+.toc li a.toc-front::after { content: target-counter(attr(href), page, upper-roman); }
 
 /* ---------- 表格：三线表 ---------- */
 thead th { background: transparent; color: var(--ink); border: none; border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--ink); }
 table { border-bottom: 1.5px solid var(--ink); }
 tbody td { border-bottom: none; }
 tbody tr:nth-child(even) { background: transparent; }
+table caption { font-family: var(--font-head); }
 
 /* ---------- 列表：GB 正文不用圆点/序号标记 ---------- */
 ol li::before, ul li::before { display: none; content: none; }
 ol li, ul li { padding-left: 0; }
 
-/* 目次 */
-.toc { background: transparent; border: none; padding: 0; }
+/* ---------- 图 / 表题注统一（黑体小号、居中） ---------- */
+figcaption, table caption { font-family: var(--font-head); color: var(--ink); }

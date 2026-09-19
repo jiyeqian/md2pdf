@@ -4,7 +4,7 @@ This file provides guidance to CodeBuddy Code when working with code in this rep
 
 ## What this is
 
-`md2pdf` is a CLI that converts Markdown into styled Chinese A4 PDFs. It renders via headless Chrome (CDP `Page.printToPDF`) with a bundled Markdown parser. **Zero npm runtime dependencies** — `marked` is vendored at `vendor/marked.esm.js`, MathJax (LaTeX math) at `vendor/mathjax/tex-svg.js`. `package.json` has `"type": "module"` (pure ESM, no build step). Published to public npm as `@jiyeqian/md2pdf`.
+`md2pdf` is a CLI that converts Markdown into styled Chinese A4 PDFs. It renders via headless Chrome (CDP `Page.printToPDF`) with a bundled Markdown parser. **Zero npm runtime dependencies** — `marked` is vendored at `vendor/marked.esm.js`, MathJax (LaTeX math) at `vendor/mathjax/tex-svg.js`, Paged.js (GB-only paging: odd/even headers, per-section page numbers, TOC `target-counter`) at `vendor/pagedjs/paged.polyfill.min.js`. `package.json` has `"type": "module"` (pure ESM, no build step). Published to public npm as `@jiyeqian/md2pdf`.
 
 ## Commands
 
@@ -40,7 +40,7 @@ Pipeline: `Markdown --(marked)--> HTML --(shell.html + base.css + theme-*.css)--
 - **`src/profiles.mjs`** — document-type presets (`P0` skeleton): the `PROFILES` registry (`general`, `skill`) plus `detectProfile({ basename, fm, explicit })`. Detection order: explicit `--type` (unknown value throws, same style as `--theme`) > filename `SKILL.md` > frontmatter has `name` (→ `skill`) > fallback `general`. A profile carries `kicker`, `skillMeta` (drives the `SKILL NAME` meta label and the `SKILL · <name>` colophon), `skipBadges` (skip figure-numbering for badge images, used by `readme`), `paperHeader`, `gbDoc` (cover page + `标准号` page header + GB chapter/clause & appendix-letter numbering, used by `gb`), `tocTitle` and a `defaults` slot merged under explicit CLI flags (e.g. `readme.defaults.toc = true` turns on the TOC by default; `opts.toc` is tri-state `undefined|true|false` so an explicit `--no-toc` still wins). See `docs/plan-profiles.md` for the roadmap (P1 jekyll, P2 numbering schemes, P3 GB, P4 extension syntax).
 - **`src/ws.mjs`** — `MiniWebSocket` fallback for Node < 22 (used when `WebSocket` is undefined or `MD2PDF_WS=mini`).
 - **`src/install-skill.mjs`** — npm `postinstall` hook. Copies `skill/SKILL.md` into `~/.workbuddy/skills/md-to-pdf` (only when `~/.workbuddy` exists). `MD2PDF_SKILL=0` skips, `MD2PDF_SKILL_DIR` overrides the destination. Never fails the install.
-- **`assets/`** — `shell.html` (page skeleton with `{{PLACEHOLDER}}` slots), `base.css` (skeleton with `{{PAGE_SIZE}}`/margin/font-size placeholders), `theme-elegant.css` (default), `theme-minimal.css`.
+- **`assets/`** — `shell.html` (page skeleton with `{{PLACEHOLDER}}` slots), `base.css` (skeleton with `{{PAGE_SIZE}}`/four-value margin/font-size placeholders), `theme-elegant.css` (default), `theme-minimal.css`, `theme-gb.css` (GB layout on top of Paged.js named pages).
 - **`ci/checks.mjs`** — consistency + end-to-end HTML assertions (no browser). **`ci/inspect-pdf.mjs`** — reads PDF bookmarks/links for local verification only. **`ci/validate.sh`** — orchestrates: structure, syntax (`sh -n`/`node --check`), consistency, behavior, and the guard self-test.
 
 ## Key invariants (enforced by validation)

@@ -85,7 +85,7 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --link-urls          正文链接后附 URL
       --landscape          横向
       --font-size <pt>     正文字号（默认 10.5）
-      --margin <mm>        页边距（默认 20；可写 "20,18" = 上下,左右）
+      --margin <mm>        页边距（默认 20；可写 "20,18" = 上下,左右；gb 类型默认 25/20/25/19）
       --no-footer          不要页脚页码
       --footer-left/--footer-right <text>
       --colophon <text>    文末落款
@@ -119,7 +119,9 @@ function expandArgs(argv) {
 function parseArgs(argv) {
   const o = {
     inputs: [], theme: undefined, fontSize: 10.5,
-    marginTop: 20, marginSide: 18, marginBottom: 18,
+    // 页边距三态：undefined 时回落到 profile 默认，再回落到内置（20/18/18/18）
+    marginTop: undefined, marginBottom: undefined,
+    marginSide: undefined, marginLeft: undefined, marginRight: undefined,
     footer: true, footerLeft: '', footerRight: '',
     meta: true, lead: undefined, toc: undefined, linkUrls: false, outline: true, bibliography: 'footnote',
     numbering: undefined,
@@ -144,8 +146,11 @@ function parseArgs(argv) {
       case '--landscape': o.landscape = true; break;
       case '--font-size': o.fontSize = parseFloat(next()); break;
       case '--margin': {
+        // "上下" 或 "上下,左右"；左右同值（分侧边距只在 profile / 内部使用）
         const v = next(); const m = String(v).split(',').map(s => parseFloat(s.trim()));
-        o.marginTop = m[0]; o.marginBottom = m[0]; o.marginSide = m[1] ?? m[0];
+        o.marginTop = m[0]; o.marginBottom = m[0];
+        o.marginSide = m[1] ?? m[0];
+        o.marginLeft = undefined; o.marginRight = undefined;
         break;
       }
       case '--no-footer': o.footer = false; break;
@@ -185,6 +190,10 @@ function parseArgs(argv) {
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const stripTags = s => String(s).replace(/<[^>]+>/g, '').trim();
+// 给标签属性串追加 class（属性串可能已有 class="…"，也可能为空）
+const addClass = (attrs, cls) => /\sclass="/.test(attrs)
+  ? attrs.replace(/\sclass="([^"]*)"/, (m, c) => ` class="${c} ${cls}"`)
+  : `${attrs} class="${cls}"`;
 
 function splitFrontmatter(src) {
   const m = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(src);
@@ -333,18 +342,34 @@ function numberHeadings(html, mode, scheme) {
   // scheme 既可为函数，也可为 { skip, fmt } 对象（GB 需要 skip 与有状态 fmt）
   const skipFn = typeof raw === 'function' ? null : raw.skip;
   const fmt = typeof raw === 'function' ? raw : raw.fmt;
+  // 对象型 scheme（gb）额外产出语义 class，供主题做版式（命名页 / 前置部分）。
+  // 其他 scheme 输出与旧版逐字节一致，避免回归。
+  const isGb = typeof raw !== 'function';
   const counters = [0, 0, 0, 0, 0];
   const state = {};   // 单次渲染的可变状态（如 GB 的当前附录字母）
+  let markedBodyStart = false;
   return html.replace(re, (m, level, attrs, inner) => {
     const lvl = parseInt(level, 10) - 2;
     const text = stripTags(inner);
     const clean = inner.replace(HEADING_NUM_RE, '');
     // 跳过：不编号、且不占号（如 GB 的前言/引言/目次/参考文献）
-    if (skipFn && skipFn(text)) return '<h' + level + attrs + '>' + clean + '</h' + level + '>';
+    if (skipFn && skipFn(text)) {
+      if (!isGb) return '<h' + level + attrs + '>' + clean + '</h' + level + '>';
+      // 前言/引言属「前置部分」（罗马页码、各自起新页）；参考文献只在版式上独立起页
+      const cls = /^(前言|引言)\s*$/.test(text.trim()) ? 'front' : 'back';
+      return '<h' + level + addClass(attrs, 'unnumbered ' + cls) + '>' + clean + '</h' + level + '>';
+    }
     counters[lvl]++;
     for (let k = lvl + 1; k < 5; k++) counters[k] = 0;
     const num = fmt({ counters, lvl, text, state });
-    return '<h' + level + attrs + '>' + (num == null ? clean : num + clean) + '</h' + level + '>';
+    let extra = '';
+    if (isGb) {
+      if (num == null && /^附录/.test(text.trim())) extra = 'appendix';
+      // 正文（阿拉伯页码）从第一个带号的章开始，页码计数器在此归零
+      else if (num != null && !markedBodyStart && lvl === 0) { extra = 'body-start'; markedBodyStart = true; }
+    }
+    const outAttrs = extra ? addClass(attrs, extra) : attrs;
+    return '<h' + level + outAttrs + '>' + (num == null ? clean : num + clean) + '</h' + level + '>';
   });
 }
 
@@ -601,6 +626,8 @@ class Chrome {
     const waits = [];
     if (opts.waitMath) waits.push('window.__md2pdfMathReady === true');
     if (opts.waitMermaid) waits.push('window.__md2pdfMermaidReady === true');
+    // Paged.js 分页完成（GB 专用）：必须在公式/图表之后，否则页框尺寸不对
+    if (opts.waitPaged) waits.push('window.__md2pdfPagedReady === true');
     if (waits.length) {
       const expr = waits.join(' && ');
       const t0 = Date.now();
@@ -644,6 +671,27 @@ class Chrome {
 
 /* ---------------- 渲染 ---------------- */
 
+// CSS 字符串字面量转义（标准号里可能有引号）
+const cssString = s => '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+
+// GB 页眉：命名页 gb-front / gb-body 的 margin box 里放标准号，
+// 奇数页（:right）靠右、偶数页（:left）靠左。空标准号则不生成（页面无页眉）。
+function gbHeaderCss(stdno) {
+  if (!stdno) return '';
+  const t = cssString(stdno);
+  const tr = '@top-right { content: ' + t + '; }';
+  const tl = '@top-left { content: ' + t + '; }';
+  const trNone = '@top-right { content: none; }';
+  return [
+    // 奇数页（右页）：标准号靠右
+    '@page gb-front { ' + tr + ' }',
+    '@page gb-body { ' + tr + ' }',
+    // 偶数页（左页）：标准号靠左
+    '@page gb-front:left { ' + trNone + ' ' + tl + ' }',
+    '@page gb-body:left { ' + trNone + ' ' + tl + ' }',
+  ].join('\n');
+}
+
 // GB 封面（仅 gb profile）：标准号 / 中英文名称 / ICS·CCS / 发布·实施日期 / 发布机构
 function buildCover(fm, title) {
   const stdno = fm['标准号'] || fm.standard || '';
@@ -685,6 +733,13 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   const effNumbering = opts.numbering ?? profile.defaults.numbering ?? 'auto';
   const effScheme = opts.numberScheme ?? profile.defaults.numberScheme ?? 'arabic';
   const useToc = opts.toc ?? profile.defaults.toc ?? false;
+  // 页边距：CLI 显式 > profile 默认 > 内置兜底（左右各自取值，gb 为左宽右窄）
+  const effMarginTop = opts.marginTop ?? profile.defaults.marginTop ?? 20;
+  const effMarginBottom = opts.marginBottom ?? profile.defaults.marginBottom ?? 18;
+  const effMarginLeft = opts.marginLeft ?? profile.defaults.marginLeft
+    ?? opts.marginSide ?? profile.defaults.marginSide ?? 18;
+  const effMarginRight = opts.marginRight ?? profile.defaults.marginRight
+    ?? opts.marginSide ?? profile.defaults.marginSide ?? 18;
 
   // 数学公式：检测 $...$ 或 $...$，命中则注入 MathJax（SVG 输出，零字体依赖）
   const hasMath = /\$\$|\$[^$\n]+\$/.test(rawBody);
@@ -788,13 +843,15 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   // 章节锚点：给二级标题补 id，供目录内链与（Chrome 生成的）PDF 书签定位
   const secIds = [];
   html = html.replace(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>/g, (m, attrs = '', inner = '') => {
+    // front：GB 前置部分（前言/引言），目次里显示罗马页码
+    const front = /\bclass="[^"]*\bfront\b/.test(attrs);
     const has = /\sid="/.test(attrs);
     if (has) {
-      secIds.push({ id: /\sid="([^"]+)"/.exec(attrs)[1], text: stripTags(inner) });
+      secIds.push({ id: /\sid="([^"]+)"/.exec(attrs)[1], text: stripTags(inner), front });
       return m;
     }
     const id = `sec-${secIds.length + 1}`;
-    secIds.push({ id, text: stripTags(inner) });
+    secIds.push({ id, text: stripTags(inner), front });
     return `<h2${attrs} id="${id}">${inner}</h2>`;
   });
 
@@ -802,8 +859,13 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   // toc 为三态：CLI 显式指定优先，否则用 profile 默认（readme 默认开），最后兜底 false
   let toc = '';
   if (useToc && secIds.length > 1) {
+    // GB 目次：条目「标题 + 点线 + 右对齐页码」。页码由 Paged.js 的
+    // target-counter(attr(href), page) 在分页后填入，所以这里只放结构。
+    const tocItem = profile.gbDoc
+      ? s => `<li><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
+      : s => `<li><a href="#${s.id}">${esc(s.text)}</a></li>`;
     toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目 录'}</div><ol>` +
-      secIds.map(s => `<li><a href="#${s.id}">${esc(s.text)}</a></li>`).join('') + `</ol></div>`;
+      secIds.map(tocItem).join('') + `</ol></div>`;
   }
 
   html = sectionize(html);
@@ -815,10 +877,17 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   const theme = await readFile(themeFile, 'utf8');
   const css = (base + '\n' + theme)
     .replace(/\{\{PAGE_SIZE\}\}/g, opts.landscape ? 'A4 landscape' : 'A4')
-    .replace(/\{\{MARGIN_TOP\}\}/g, `${opts.marginTop}mm`)
-    .replace(/\{\{MARGIN_BOTTOM\}\}/g, `${opts.marginBottom}mm`)
-    .replace(/\{\{MARGIN_SIDE\}\}/g, `${opts.marginSide}mm`)
+    .replace(/\{\{MARGIN_TOP\}\}/g, `${effMarginTop}mm`)
+    .replace(/\{\{MARGIN_BOTTOM\}\}/g, `${effMarginBottom}mm`)
+    .replace(/\{\{MARGIN_LEFT\}\}/g, `${effMarginLeft}mm`)
+    .replace(/\{\{MARGIN_RIGHT\}\}/g, `${effMarginRight}mm`)
     .replace(/\{\{FONT_SIZE\}\}/g, `${opts.fontSize}pt`);
+
+  // GB 页眉标准号：奇数页靠右、偶数页靠左。Chrome 原生 headerTemplate 只有单一模板，
+  // 做不到奇偶差异，改由 Paged.js 的命名页 margin box 绘制（故标准号在这里动态成 CSS）。
+  const stdno = fm['标准号'] || fm.standard || '';
+  const pageCss = profile.gbDoc ? gbHeaderCss(stdno) : '';
+  const finalCss = pageCss ? css + '\n' + pageCss : css;
 
   const kicker = opts.kicker || fm.kicker || fm.category || (profile.kicker ?? '');
 
@@ -838,6 +907,9 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     : '';
   const colophonLeft = opts.colophon ?? (profile.skillMeta && fm.name ? `SKILL · ${fm.name}` : path.basename(mdPath));
   const colophonRight = opts.colophon ? '' : title;
+  // GB 标准没有文末落款；且落款元素会干扰 Paged.js 的命名页分页（多出空白页），故整体不输出
+  const colophonHtml = profile.gbDoc ? '' :
+    `<div class="colophon">\n  <span>${esc(colophonLeft)}</span>\n  <span>${esc(colophonRight)}</span>\n</div>`;
 
   // 用函数形式替换：既支持多处占位符，也避免用户文本里的 $& 被当作替换模式
   const fill = (tpl, map) => Object.entries(map).reduce(
@@ -895,22 +967,48 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '<script src="' + mathUrl + '" id="MathJax-script"></script>',
   ].join('\n') : '';
 
+  // Paged.js：仅 GB 类型启用。接管分页后可用 @page 命名页 / 奇偶页眉 / target-counter，
+  // 这些是 Chrome 原生 headerTemplate 与 @page 做不到的（见 docs/gb-template.md）。
+  // 时序：必须等 MathJax / Mermaid 渲染完成再分页，否则按错误尺寸切页。
+  const pagedUrl = pathToFileURL(path.join(ROOT, 'vendor', 'pagedjs', 'paged.polyfill.min.js')).href;
+  const pagedScript = profile.gbDoc ? [
+    '<script>window.PagedConfig = { auto: false };</script>',
+    '<script src="' + pagedUrl + '"></script>',
+    '<script>',
+    'window.__md2pdfPagedReady = false;',
+    '(function () {',
+    '  function depsReady() {',
+    '    return window.__md2pdfMathReady !== false && window.__md2pdfMermaidReady !== false;',
+    '  }',
+    '  function run() {',
+    '    if (!depsReady()) { setTimeout(run, 50); return; }',
+    '    try {',
+    '      window.PagedPolyfill.preview()',
+    '        .then(function () { window.__md2pdfPagedReady = true; })',
+    '        .catch(function () { window.__md2pdfPagedReady = true; });',
+    '    } catch (e) { window.__md2pdfPagedReady = true; }',
+    '  }',
+    '  if (document.readyState === "complete") run(); else window.addEventListener("load", run);',
+    '})();',
+    '</script>',
+  ].join('\n') : '';
+
   const shell = await readFile(path.join(ASSETS, 'shell.html'), 'utf8');
   const out = fill(shell, {
     '{{TITLE}}': esc(title),
-    '{{CSS}}': css,
+    '{{CSS}}': finalCss,
     '{{KICKER}}': esc(kicker),
     '{{LEAD}}': lead,
     '{{META}}': opts.meta ? buildMeta(fm, profile.skillMeta) : '',
     '{{TOC}}': toc,
     '{{BODY}}': html,
-    '{{COLOPHON_LEFT}}': esc(colophonLeft),
-    '{{COLOPHON_RIGHT}}': esc(colophonRight),
+    '{{COLOPHON}}': colophonHtml,
     '{{COVER}}': coverHtml,
     '{{AUTHORS}}': authorsHtml,
     '{{PAPER}}': paperHtml,
     '{{MATHJAX}}': mathScript,
     '{{MERMAID}}': mermaidScript,
+    '{{PAGEDJS}}': pagedScript,
   });
 
   if (opts.htmlOnly) return { title, html: out, type: profile.name };
@@ -925,13 +1023,17 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
       <span style="flex:1;text-align:right;">${opts.footerRight || ''}</span>
     </div>`;
 
-  // GB 正文页眉：标准号（左）。注意 Chrome 的页眉/页脚按页绘制，封面页也会带上。
-  const stdnoForHeader = fm['标准号'] || fm.standard || '';
-  const headerTemplate = profile.gbDoc && stdnoForHeader
-    ? '<div style="width:100%;font-size:8px;color:#8a8578;font-family:-apple-system,\'PingFang SC\',sans-serif;letter-spacing:.5px;padding:0 12mm;">' + esc(stdnoForHeader) + '</div>'
-    : '<span></span>';
+  // GB：页眉/页码改由 Paged.js 的 @page margin box 绘制（奇偶页位置不同、前置罗马/正文阿拉伯），
+  // 必须关掉 Chrome 原生的 headerTemplate/footerTemplate，否则同页会出现两套页码。
+  const usePaged = !!profile.gbDoc;
+  const headerTemplate = '<span></span>';
 
-  const buf = await chrome.print(htmlPath, { footer: opts.footer, footerTemplate, header: !!(profile.gbDoc && stdnoForHeader), headerTemplate, landscape: opts.landscape, outline: opts.outline, waitMath: hasMath, waitMermaid: hasMermaid });
+  const buf = await chrome.print(htmlPath, {
+    footer: usePaged ? false : opts.footer, footerTemplate,
+    header: false, headerTemplate,
+    landscape: opts.landscape, outline: opts.outline,
+    waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged,
+  });
 
   if (opts.keepHtml) {
     await writeFile(mdPath.replace(/\.md$/i, '.html'), out, 'utf8');
