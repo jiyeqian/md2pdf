@@ -727,14 +727,13 @@ function buildCover(fm, title) {
   const stdno = fm['标准号'] || fm.standard || '';
   const cn = fm['中文名称'] || title || fm.title || '';
   const en = fm['英文名称'] || fm.title_en || '';
-  // 采标信息：仿官方封面排在英文名称下方，格式 (国际标准号, 采标英文名称, 程度码)。
-  // 程度用官方拉丁码（等同 IDT / 修改 MOD / 非等效 NEQ），封面不出现中文。
+  // 采标信息：仿官方封面排在英文名称下方，格式 (国际标准号, 采标英文名称, 程度)。
+  // 数据一致性：括号内全部取 frontmatter 原值、原样显示；如需封面用拉丁码（IDT/MOD/NEQ），
+  // frontmatter 的 采标程度 直接存码 —— 不做任何存储值到显示值的转换。
   const iso = fmStr(fm['采标国际标准']);
   const isoEn = fmStr(fm['采标英文名称']);
   const isoCn = fmStr(fm['采标中文名称']);
-  const DEG_CODE = { 等同: 'IDT', 修改: 'MOD', 非等效: 'NEQ' };
-  const degRaw = fmStr(fm['采标程度']);
-  const isoDeg = DEG_CODE[degRaw] || degRaw;
+  const isoDeg = fmStr(fm['采标程度']);
   const isoHtml = iso
     ? '<div class="cover-iso">(' + esc(iso) +
       (isoEn ? ', ' + esc(isoEn) : '') +
