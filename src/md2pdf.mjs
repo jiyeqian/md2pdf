@@ -727,15 +727,30 @@ function buildCover(fm, title) {
   const stdno = fm['标准号'] || fm.standard || '';
   const cn = fm['中文名称'] || title || fm.title || '';
   const en = fm['英文名称'] || fm.title_en || '';
-  // 采标信息：仿官方封面排在英文名称下方，格式 (国际标准号, 采标英文名称, 程度)
+  // 采标信息：仿官方封面排在英文名称下方，格式 (国际标准号, 采标英文名称, 程度码)。
+  // 程度用官方拉丁码（等同 IDT / 修改 MOD / 非等效 NEQ），封面不出现中文。
   const iso = fmStr(fm['采标国际标准']);
   const isoEn = fmStr(fm['采标英文名称']);
-  const isoDeg = fmStr(fm['采标程度']);
+  const isoCn = fmStr(fm['采标中文名称']);
+  const DEG_CODE = { 等同: 'IDT', 修改: 'MOD', 非等效: 'NEQ' };
+  const degRaw = fmStr(fm['采标程度']);
+  const isoDeg = DEG_CODE[degRaw] || degRaw;
   const isoHtml = iso
     ? '<div class="cover-iso">(' + esc(iso) +
       (isoEn ? ', ' + esc(isoEn) : '') +
       (isoDeg ? ', ' + esc(isoDeg) : '') + ')</div>'
     : '';
+  // 自适应脚注间距：中/英文名称与采标行的行数多于基线（中文名称 1 行、英文名称 2 行、采标 2 行）时，
+  // 按多出的行高压缩 foot 的 margin-top，避免封面拆页。估宽：CJK 1em、其他 0.55em。
+  const emW = (s) => [...s].reduce((n, ch) => n + (/[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch) ? 1 : 0.55), 0);
+  const nLines = (text, pt, maxMm) => text ? Math.max(1, Math.ceil(emW(text) * (pt / 72 * 25.4) / maxMm)) : 0;
+  const cnLines = Math.max(1, nLines(cn, 28, 166));
+  const enLines = en ? Math.max(1, nLines(en, 15, 136)) : 0;
+  const isoLines = iso ? Math.max(1, nLines('(' + iso + ', ' + isoCn + ', ' + isoDeg + ')', 11, 136)) : 0;
+  const extraMm = Math.max(0, cnLines - 1) * 15.3
+    + Math.max(0, enLines - 2) * 8.5
+    + Math.max(0, isoLines - 2) * 6.2;
+  const footTop = Math.round(Math.max(40, 93 - extraMm));
   const ics = fmStr(fm['国际标准分类号'] || fm.ICS || fm.ics);
   const ccs = fmStr(fm['中国标准分类号'] || fm.CCS || fm.ccs);
   const issued = fm['发布日期'] || fm.date || '';
@@ -772,7 +787,7 @@ function buildCover(fm, title) {
     '  <div class="cover-main"><div class="cover-cn">' + esc(cn) + '</div>' +
       (en ? '<div class="cover-en">' + esc(en) + '</div>' : '') +
       isoHtml + '</div>',
-    '  <div class="cover-foot">',
+    '  <div class="cover-foot" style="margin-top:' + footTop + 'mm;">',
     datesHtml,
     '  <div class="cover-org"><div class="cover-org-name">' + esc(orgA) + '</div>' +
       '<div class="cover-org-pub">发 布</div>' +
