@@ -199,19 +199,45 @@ function splitFrontmatter(src) {
   const m = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(src);
   if (!m) return { fm: {}, body: src };
   const fm = {};
+  // 值的形态：标量字符串，或 YAML 块式数组 / 行内 [a, b] 数组（Obsidian 风格）。
+  // 约定：留空的键不解析（等同未写）；# 注释行与 <!-- --> 说明行忽略。
+  const toValue = (raw) => {
+    let v = raw.trim().replace(/^["']|["']$/g, '');
+    if (/^\[.*\]$/.test(v)) {
+      const items = v.slice(1, -1).split(/[,，]/).map(s => s.trim()).filter(Boolean);
+      return items.length ? items : undefined;
+    }
+    return v === '' ? undefined : v;
+  };
   for (const line of m[1].split(/\r?\n/)) {
-    // 键名允许中文（GB 用「标准号/发布日期」等中文键）
+    if (/^\s*(#|<)/.test(line)) continue;  // 注释/说明行
+    // 列表项：上级键的块式数组（- 项）
+    const li = /^\s+-\s+(.*)$/.exec(line);
+    if (li) {
+      const k = Object.keys(fm).at(-1);
+      if (k != null && !li[1].trim()) continue;
+      if (k != null) {
+        if (!Array.isArray(fm[k])) fm[k] = fm[k] ? [fm[k]] : [];
+        fm[k].push(li[1].trim());
+      }
+      continue;
+    }
+    // 键名允许中文（GB 用「标准号/全部代替标准」等中文键）
     const kv = /^([A-Za-z_\u4e00-\u9fff][\w\u4e00-\u9fff-]*)[ \t]*:[ \t]*(.*)$/.exec(line);
     if (kv) {
-      let v = kv[2].trim().replace(/^["']|["']$/g, '');
-      fm[kv[1]] = v;
+      const v = toValue(kv[2]);
+      if (v !== undefined) fm[kv[1]] = v;
+      else if (kv[2].trim() === '') fm[kv[1]] = '';  // 显式留空：占位但不计内容（消费方按空值跳过）
     } else if (/^\s+/.test(line) && Object.keys(fm).length) {
       const k = Object.keys(fm).at(-1);
-      fm[k] = (fm[k] + ' ' + line.trim()).trim();
+      if (typeof fm[k] === 'string' && fm[k] !== '') fm[k] = (fm[k] + ' ' + line.trim()).trim();
     }
   }
   return { fm, body: src.slice(m[0].length) };
 }
+
+// frontmatter 值统一成字符串（数组以顿号连接），供渲染/meta 使用
+const fmStr = (v) => Array.isArray(v) ? v.join('、') : (v == null ? '' : String(v));
 
 function buildMeta(fm, skillMeta) {
   if (!fm.name && !fm.description) return '';
@@ -701,14 +727,17 @@ function buildCover(fm, title) {
   const stdno = fm['标准号'] || fm.standard || '';
   const cn = title || fm.title || '';
   const en = fm['英文名称'] || fm.title_en || '';
-  const ics = fm.ICS || fm.ics || '';
-  const ccs = fm.CCS || fm.ccs || '';
+  const ics = fmStr(fm['国际标准分类号'] || fm.ICS || fm.ics);
+  const ccs = fmStr(fm['中国标准分类号'] || fm.CCS || fm.ccs);
   const issued = fm['发布日期'] || fm.date || '';
   const impl = fm['实施日期'] || '';
-  const sup = fm['代替标准'] || '';
+  const sup = fmStr(fm['全部代替标准'] || fm['代替标准']);
   // 机构两行 + 居间「发布」；发布机构可覆盖第一行
-  const orgA = fm['发布机构'] || '国家市场监督管理总局';
-  const orgB = fm['发布机构2'] || '国家标准化管理委员会';
+  // 发布机构：标量或数组（数组即机构块各行，如 [总局, 管理委员会]）
+  const orgs = Array.isArray(fm['发布机构']) ? fm['发布机构']
+    : (fm['发布机构'] ? [fmStr(fm['发布机构'])] : []);
+  const orgA = orgs[0] || fm['发布机构2'] || '国家市场监督管理总局';
+  const orgB = orgs[1] || (Array.isArray(fm['发布机构']) ? '国家标准化管理委员会' : (fm['发布机构2'] || '国家标准化管理委员会'));
   // 「中华人民共和国国家标准」按字均分撑满两边距，短语间留一个双倍空位
   const head = (fm['文件类别'] || '中华人民共和国国家标准')
     .split('').map(c => '<span>' + esc(c) + '</span>').join('<i class="cover-head-gap"></i>');
@@ -1015,12 +1044,13 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
 
   // GB 结构化元数据透传：封面渲染键以外的 frontmatter 以 <meta name="gb:键"> 进 <head>，
   // 使 gb 文档的结构化信息可被其他项目直接消费（--html-only / keep-html 同样包含）。
-  const GB_COVER_KEYS = new Set(['标准号', 'standard', 'title', '英文名称', 'title_en', 'ICS', 'ics', 'CCS', 'ccs',
-    '发布日期', 'date', '实施日期', '代替标准', '发布机构', '发布机构2', '文件类别', 'kicker', 'category', 'author']);
+  const GB_COVER_KEYS = new Set(['标准号', 'standard', 'title', '标准名称', '英文名称', 'title_en',
+    '国际标准分类号', 'ICS', 'ics', '中国标准分类号', 'CCS', 'ccs',
+    '发布日期', 'date', '实施日期', '全部代替标准', '代替标准', '发布机构', '发布机构2', '文件类别', 'kicker', 'category', 'author']);
   const headMeta = profile.gbDoc
     ? Object.entries(fm)
-        .filter(([k, v]) => v != null && String(v).trim() && !GB_COVER_KEYS.has(k))
-        .map(([k, v]) => '<meta name="gb:' + esc(k) + '" content="' + esc(v) + '">')
+        .filter(([k, v]) => fmStr(v).trim() && !GB_COVER_KEYS.has(k))
+        .map(([k, v]) => '<meta name="gb:' + esc(k) + '" content="' + esc(fmStr(v)) + '">')
         .join('\n')
     : '';
 

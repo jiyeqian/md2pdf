@@ -126,9 +126,12 @@ ok('对应关系：examples/README.md 介绍全部五类示例',
   ['general.md', 'skill.md', 'paper.md', 'gb.md', 'templates'].every(k => exReadme.includes(k)));
 
 // gb 结构化元数据（对齐 SAMR 平台字段）：模板收录 + HTML meta 透传
-const SAMR_KEYS = ['标准状态', '标准性质', '标准类别', '计划号', '技术委员会', '归口单位', '执行单位', '主管部门', '采标程度', '起草单位', '起草人'];
-ok('gb 元数据：模板 frontmatter 收录 SAMR 关键字段',
-  SAMR_KEYS.every(k => readIf(path.join(ROOT, 'templates', 'gb.md')).includes(k)));
+const SAMR_KEYS = ['标准状态', '标准性质', '标准类别', '标准计划', '国际标准分类号', '中国标准分类号', '全部代替标准', '归口单位', '执行单位', '主管部门', '采标情况', '起草单位', '起草人'];
+const gbTplFm = readIf(path.join(ROOT, 'templates', 'gb.md')).match(/(^|\n)---\n[\s\S]*?\n---/) || [''];
+ok('gb 元数据：模板 frontmatter 收录 SAMR 全部字段（键名与平台一致）',
+  SAMR_KEYS.every(k => gbTplFm[0].includes(k + ':')));
+ok('gb 元数据：模板字段不采用注释形式（留空即可）',
+  !/^#\s*[^:\n]+:\s*\S/m.test(gbTplFm[0]));
 const tmpOut = (n) => path.join(os.tmpdir(), 'md2pdf-ci-' + n + '.html');
 const rSkill = run(['skill/SKILL.md', '--html-only', '-o', tmpOut('skill')]);
 ok('profile：SKILL.md 自动探测为 skill', rSkill.status === 0 && /<div class="kicker">技能文档<\/div>/.test(readIf(tmpOut('skill'))),
@@ -180,7 +183,7 @@ const gbDir = path.join(os.tmpdir(), 'md2pdf-ci-gb');
 fs.mkdirSync(gbDir, { recursive: true });
 fs.writeFileSync(path.join(gbDir, 'gb.md'), [
   '---', '标准号: GB/T 99999—2026', 'title: 测试标准', '发布日期: 2026-01-01', '实施日期: 2026-07-01',
-  '标准状态: 现行', '归口单位: 全国×××标准化技术委员会', '---', '',
+  '标准状态: 现行', '中国标准分类号: J 28', '全部代替标准: GB/T 99999-2015', '归口单位: 全国×××标准化技术委员会', '---', '',
   '## 前言', '', '前言内容。', '',
   '## 范围', '', '本文件规定了……', '',
   '## 附录 A（规范性）测试方法', '', '### 测试条件', '', '环境温度 25 ℃。', '',
