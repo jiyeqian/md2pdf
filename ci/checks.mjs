@@ -220,7 +220,7 @@ ok('页码：gb 页码分侧（奇数页 @bottom-right / 偶数页 @bottom-left�
   !/@bottom-center\s*\{\s*content:\s*counter/.test(gbHtml));
 
 /* ---------- --paged-html：分页 HTML ---------- */
-const rPaged = run(['examples/general.md', '--paged-html', path.join(os.tmpdir(), 'md2pdf-ci-paged.html')]);
+const rPaged = run(['examples/general.md', '--paged-html', path.join(os.tmpdir(), 'md2pdf-ci-paged.html'), '-o', path.join(os.tmpdir(), 'md2pdf-ci-paged.pdf')]);
 const pagedHtml = readIf(path.join(os.tmpdir(), 'md2pdf-ci-paged.html'));
 ok('paged-html：产出含 Paged.js 与页码/总页数的分页 HTML',
   rPaged.status === 0 && /paged\.polyfill\.min\.js/.test(pagedHtml) && /counter\(pages\)/.test(pagedHtml),
@@ -228,7 +228,7 @@ ok('paged-html：产出含 Paged.js 与页码/总页数的分页 HTML',
 ok('paged-html：gb 样例同样注入 Paged.js',
   (() => {
     const o = path.join(os.tmpdir(), 'md2pdf-ci-paged-gb.html');
-    const r = run(['examples/gb.md', '--paged-html', o]);
+    const r = run(['examples/gb.md', '--paged-html', o, '-o', path.join(os.tmpdir(), 'md2pdf-ci-paged-gb.pdf')]);
     return r.status === 0 && /paged\.polyfill\.min\.js/.test(readIf(o));
   })());
 

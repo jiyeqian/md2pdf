@@ -50,7 +50,7 @@ function listThemes() {
   } catch { return []; }
 }
 
-const VERSION = '1.10.1';
+const VERSION = '1.10.2';
 
 // Node ≥ 22 有全局 WebSocket；更老的版本退回到内置的极简实现
 let _WS;
