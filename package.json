@@ -13,7 +13,8 @@
     "vendor",
     "skill",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "templates"
   ],
   "engines": {
     "node": ">=18"
@@ -22,7 +23,7 @@
     "postinstall": "node src/install-skill.mjs",
     "validate": "bash ci/validate.sh",
     "test": "bash ci/validate.sh",
-    "demo:pdf": "node src/md2pdf.mjs examples/demo.md -o /tmp/md2pdf-demo.pdf"
+    "demo:pdf": "node src/md2pdf.mjs examples/general.md -o /tmp/md2pdf-general.pdf"
   },
   "publishConfig": {
     "access": "public"

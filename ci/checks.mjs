@@ -108,14 +108,30 @@ ok('CLI：--version 输出与 package.json 一致', ver.stdout.trim() === pkg.ve
   `输出=${ver.stdout.trim()} package.json=${pkg.version}`);
 
 /* ---------- 4b. 文档类型 Profile ---------- */
+// type ↔ template ↔ example 一一对应（重构约定：每类文档 templates/ 有骨架、examples/ 有完整样例）
+const TYPE_FILES = {
+  general: ['templates/general.md', 'examples/general.md'],
+  skill: ['templates/skill.md', 'examples/skill.md'],
+  readme: ['templates/readme.md', 'examples/README.md'],
+  paper: ['templates/paper.md', 'examples/paper.md'],
+  gb: ['templates/gb.md', 'examples/gb.md'],
+};
+for (const [t, [tpl, ex]] of Object.entries(TYPE_FILES)) {
+  ok(`对应关系：${t} → ${tpl} + ${ex}`,
+    fs.existsSync(path.join(ROOT, tpl)) && fs.existsSync(path.join(ROOT, ex)));
+}
+// readme 样例自身就是 examples 导览：应同时覆盖五个类型的介绍
+const exReadme = readIf(path.join(ROOT, 'examples', 'README.md'));
+ok('对应关系：examples/README.md 介绍全部五类示例',
+  ['general.md', 'skill.md', 'paper.md', 'gb.md', 'templates'].every(k => exReadme.includes(k)));
 const tmpOut = (n) => path.join(os.tmpdir(), 'md2pdf-ci-' + n + '.html');
 const rSkill = run(['skill/SKILL.md', '--html-only', '-o', tmpOut('skill')]);
 ok('profile：SKILL.md 自动探测为 skill', rSkill.status === 0 && /<div class="kicker">技能文档<\/div>/.test(readIf(tmpOut('skill'))),
   `status=${rSkill.status}`);
-const rForce = run(['examples/demo.md', '--html-only', '--type', 'skill', '-o', tmpOut('force')]);
+const rForce = run(['examples/general.md', '--html-only', '--type', 'skill', '-o', tmpOut('force')]);
 ok('profile：--type skill 强制生效', rForce.status === 0 && /<div class="kicker">技能文档<\/div>/.test(readIf(tmpOut('force'))),
   `status=${rForce.status}`);
-const rBad = run(['examples/demo.md', '--html-only', '--type', 'nope', '-o', tmpOut('bad')]);
+const rBad = run(['examples/general.md', '--html-only', '--type', 'nope', '-o', tmpOut('bad')]);
 ok('profile：未知 --type 报错且退出非 0', rBad.status !== 0 && /未知文档类型/.test(rBad.stderr || ''),
   `status=${rBad.status}`);
 
@@ -195,16 +211,16 @@ ok('封面：标准块下方与机构块上方各有一根横线（cover-rule ×
 ok('封面：标准名称用小标宋（--font-title）', /--font-title/.test(gbHtml) && /var\(--font-title\)/.test(gbHtml));
 
 /* ---------- 5. 端到端渲染（HTML 阶段） ---------- */
-const demo = path.join(ROOT, 'examples', 'demo.md');
+const demo = path.join(ROOT, 'examples', 'general.md');
 ok('示例文档存在', fs.existsSync(demo) && readIf(demo).length > 100);
 
 if (fs.existsSync(demo)) {
   const outHtml = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'md2pdf-ci-')), 'out.html');
-  const r = run(['examples/demo.md', '--html-only', '--toc', '--link-urls', '-o', outHtml]);
+  const r = run(['examples/general.md', '--html-only', '--toc', '--link-urls', '-o', outHtml]);
   ok('渲染：--html-only 执行成功', r.status === 0, (r.stderr || '').trim());
   const html = readIf(outHtml);
   ok('渲染：产出非空 HTML', html.length > 2000, `${html.length} 字节`);
-  ok('profile：demo.md 自动探测为 general（无技能 kicker）', !/技能文档/.test(html));
+  ok('profile：general.md 自动探测为 general（无技能 kicker）', !/技能文档/.test(html));
 
   const h1 = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(html);
   ok('渲染：首行 H1 提升为报头标题', !!h1 && h1[1].includes('仿生机械手控制方案'),
@@ -267,7 +283,7 @@ if (fs.existsSync(demo)) {
 
   // 章节编号：force 模式为 H2 加层次编号（demo 默认「一、二、三」会被覆盖为「1、2、3」）
   const outNum = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'md2pdf-ci-')), 'num.html');
-  const rNum = run(['examples/demo.md', '--html-only', '--numbering', 'force', '-o', outNum]);
+  const rNum = run(['examples/general.md', '--html-only', '--numbering', 'force', '-o', outNum]);
   const numHtml = readIf(outNum);
   ok('编号：force 模式加层次编号（H2→1/2、H3→2.1）', rNum.status === 0 && /<h2[^>]*>1 总体指标/.test(numHtml) && /<h2[^>]*>2 控制流程/.test(numHtml) && /<h3[^>]*>2\.1 /.test(numHtml));
   ok('编号：auto 模式自动加编号（demo 无编号）', /<h2[^>]*>1 总体指标/.test(html) && /<h3[^>]*>2\.1 /.test(html));
@@ -275,20 +291,20 @@ if (fs.existsSync(demo)) {
 
   // 编号方案（--number-scheme）：arabic / gb / cjk / chapter
   const outSch = (n) => path.join(os.tmpdir(), 'md2pdf-ci-sch-' + n + '.html');
-  const rCjk = run(['examples/demo.md', '--html-only', '--numbering', 'force', '--number-scheme', 'cjk', '-o', outSch('cjk')]);
+  const rCjk = run(['examples/general.md', '--html-only', '--numbering', 'force', '--number-scheme', 'cjk', '-o', outSch('cjk')]);
   const cjkHtml = readIf(outSch('cjk'));
   ok('编号：scheme=cjk → 一、/（一）',
     rCjk.status === 0 && /<h2[^>]*>一、总体指标/.test(cjkHtml) && /<h3[^>]*>（一）/.test(cjkHtml),
     `status=${rCjk.status}`);
-  const rCh = run(['examples/demo.md', '--html-only', '--numbering', 'force', '--number-scheme', 'chapter', '-o', outSch('chapter')]);
+  const rCh = run(['examples/general.md', '--html-only', '--numbering', 'force', '--number-scheme', 'chapter', '-o', outSch('chapter')]);
   ok('编号：scheme=chapter → 第1章',
     rCh.status === 0 && /<h2[^>]*>第1章 总体指标/.test(readIf(outSch('chapter'))),
     `status=${rCh.status}`);
-  const rGb = run(['examples/demo.md', '--html-only', '--numbering', 'force', '--number-scheme', 'gb', '-o', outSch('gb')]);
+  const rGb = run(['examples/general.md', '--html-only', '--numbering', 'force', '--number-scheme', 'gb', '-o', outSch('gb')]);
   ok('编号：scheme=gb → 章条点分（与 arabic 同形）',
     rGb.status === 0 && /<h2[^>]*>1 总体指标/.test(readIf(outSch('gb'))),
     `status=${rGb.status}`);
-  const rBadSch = run(['examples/demo.md', '--html-only', '--numbering', 'force', '--number-scheme', 'nope', '-o', outSch('bad')]);
+  const rBadSch = run(['examples/general.md', '--html-only', '--numbering', 'force', '--number-scheme', 'nope', '-o', outSch('bad')]);
   ok('编号：未知 --number-scheme 报错且退出非 0',
     rBadSch.status !== 0 && /未知编号方案/.test(rBadSch.stderr || ''),
     `status=${rBadSch.status}`);

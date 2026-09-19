@@ -87,7 +87,7 @@ md2pdf 标准.md --no-toc        # 不要目次（gb 默认开）
 md2pdf 标准.md --theme minimal # 换回普通主题（不走 GB 版式）
 ```
 
-完整示例见 `examples/gb-sample.md`（产物 `examples/gb-sample.pdf`）。
+起步模板见 `templates/gb.md`；完整示例见 `examples/gb.md`（产物 `examples/gb.pdf`）。
 
 ## 5. 已知边界（待未来完善）
 

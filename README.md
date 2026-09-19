@@ -14,7 +14,7 @@
 
 | elegant（默认，墨蓝 + 古铜） | minimal（黑白公文风） |
 | :---: | :---: |
-| [![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/demo-elegant.pdf) | [![minimal 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-minimal.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/demo-minimal.pdf) |
+| [![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/general-elegant.pdf) | [![minimal 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-minimal.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/general-minimal.pdf) |
 
 仓库：https://cnb.cool/jiyeqian/md2pdf
 
@@ -100,6 +100,20 @@ node ci/inspect-pdf.mjs out.pdf
 - 相对路径图片自动解析进 PDF。
 
 改样式：`assets/base.css`（骨架）与 `assets/theme-*.css`（配色），改完重跑命令即生效。
+
+## 模板与示例
+
+`--type` 的每一类文档，[`templates/`](templates/) 里有一个起步骨架、[`examples/`](examples/README.md) 里有一个完整示例，一一对应：
+
+| type | 模板 | 示例 |
+| --- | --- | --- |
+| general | [templates/general.md](templates/general.md) | [examples/general.md](examples/general.md) |
+| skill | [templates/skill.md](templates/skill.md) | [examples/skill.md](examples/skill.md) |
+| readme | [templates/readme.md](templates/readme.md) | [examples/README.md](examples/README.md)（即示例目录导览） |
+| paper | [templates/paper.md](templates/paper.md) | [examples/paper.md](examples/paper.md) |
+| gb | [templates/gb.md](templates/gb.md) | [examples/gb.md](examples/gb.md) |
+
+起步：复制模板 → 按注释填 frontmatter 与章节 → `md2pdf 你的文件.md`（类型自动识别）。示例目录的完整导览见 [examples/README.md](examples/README.md)。
 
 ## 开发
 

@@ -49,7 +49,8 @@ good "node $(node -v)"
 head2 "结构与可执行位"
 REQUIRED="bin/md2pdf src/md2pdf.mjs src/profiles.mjs src/ws.mjs src/install-skill.mjs assets/shell.html assets/base.css assets/gb-logo.svg tools/trace-gb-logo.mjs tools/gb-logo.src.png
 assets/theme-elegant.css assets/theme-minimal.css assets/theme-gb.css vendor/marked.esm.js vendor/mathjax/tex-svg.js vendor/highlight/highlight.cjs vendor/mermaid/mermaid.min.js vendor/pagedjs/paged.polyfill.min.js
-examples/demo.md examples/skill-sample.md examples/paper-sample.md examples/readme-sample/README.md examples/gb-sample.md
+examples/general.md examples/skill.md examples/paper.md examples/README.md examples/gb.md
+templates/general.md templates/skill.md templates/readme.md templates/paper.md templates/gb.md
 docs/gb-template.md package.json README.md LICENSE
 skill/SKILL.md ci/inspect-pdf.mjs"
 missing=""
