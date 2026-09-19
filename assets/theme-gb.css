@@ -119,3 +119,9 @@ ol li, ul li { padding-left: 0; }
 
 /* ---------- 图 / 表题注统一（黑体小号、居中） ---------- */
 figcaption, table caption { font-family: var(--font-head); color: var(--ink); }
+
+/* Paged.js 遇强制分页会给前一页元素打 data-align-last-split-element="justify"，
+   其内置规则 [data-align-last-split-element='justify'] { text-align-last: justify }
+   会把段落末行（含居中标题、表题）也两端对齐拉伸到整行 —— 非真实 GB 版式。
+   这里整体还原为 auto：末行按 text-align 正常对齐（正文左、标题居中）。 */
+[data-align-last-split-element] { text-align-last: auto !important; }
