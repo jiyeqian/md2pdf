@@ -1,9 +1,10 @@
 /* 主题：gb —— 仿 GB/T 1.1-2020 国标版式（封面 + 目次 + 章条 + 附录）
  *
- * 版式依据：正式发布版 GB 标准（A4，正文 5 号≈10.5pt）
- *   页边距   左 25 / 右 19 / 上 25 / 下 20 mm（装订边左宽）—— 见 src/profiles.mjs 的 gb defaults
+ * 版式依据：正式发布版 GB 标准（A4，正文 5 号≈10.5pt；封面坐标实测自
+ *   GB 2811—2019 / GB/T 48051—2026 的首页墨迹位置，见 buildCover 注释）
+ *   页边距   上 25 / 右 19 / 下 20 / 左 25 mm（装订边左宽）—— 见 src/profiles.mjs 的 gb defaults
  *   页眉     标准号：奇数页（右页）靠右、偶数页（左页）靠左
- *   页码     前置部分（前言/引言）罗马数字，正文阿拉伯数字，封面无页码
+ *   页码     前置部分（目次/前言/引言）罗马数字，正文阿拉伯数字，封面无页码
  *   标题     章标题黑体左对齐；前言/引言/目次/附录标题居中且各自起新页
  *   分页     由 Paged.js 接管（Chrome 原生 @page 做不到奇偶页眉与 target-counter）
  */
@@ -35,25 +36,37 @@
 /* 正文行距比通用主题紧（国标正文排得密） */
 body { line-height: 1.62; text-align: justify; }
 
-/* ---------- 封面（独立一页，无页眉页脚） ---------- */
-.cover { break-after: page; page: gb-cover; position: relative; height: 235mm; text-align: center; }
-.cover-top { display: flex; justify-content: space-between; align-items: flex-start; font-size: 11pt; line-height: 1.6; }
-.cover-ics { text-align: left; font-family: var(--font-body); }
-.cover-stdno { font-family: var(--font-head); font-size: 20pt; font-weight: 700; letter-spacing: 1px; }
-.cover-main { margin-top: 70mm; }
-.cover-cn { font-family: var(--font-head); font-size: 28pt; font-weight: 700; line-height: 1.5; }
-.cover-en { font-family: var(--font-head); font-size: 18pt; margin-top: 14px; line-height: 1.6; }
-.cover-foot { position: absolute; left: 0; right: 0; bottom: 0; font-size: 12pt; line-height: 1.9; }
-.cover-sup { font-size: 10.5pt; margin-bottom: 6px; }
-.cover-dates { letter-spacing: 2px; }
-.cover-org { font-family: var(--font-head); font-size: 14pt; margin-top: 6px; letter-spacing: 2px; }
+/* Paged.js 遇强制分页会给前一页元素打 data-align-last-split-element="justify"，
+   其内置规则 [data-align-last-split-element='justify'] { text-align-last: justify }
+   会把段落末行（含居中标题、表题）也两端对齐拉伸到整行 —— 非真实 GB 版式。
+   这里整体还原为 auto：末行按 text-align 正常对齐（正文左、标题居中）。 */
+[data-align-last-split-element] { text-align-last: auto !important; }
 
+/* ---------- 封面（独立一页，无页眉页脚；版式实测自正式发布版） ---------- */
+/* 封面页边距独立：ICS 顶到 ≈10mm（正文页上边距 25mm 装不下） */
+@page gb-cover { margin: 9mm 19mm 16mm 25mm; }
+.cover { break-after: page; page: gb-cover; text-align: center; }
+.cover-ics { text-align: left; font-size: 11pt; line-height: 1.6; }
+/* 「中华人民共和国国家标准」：黑体，按字均分撑满两边距 */
+.cover-head { display: flex; justify-content: space-between; margin-top: 18mm; font-family: var(--font-head); font-weight: 700; font-size: 26pt; line-height: 1.3; }
+.cover-head i { display: none; }
+/* 标准号：右对齐；代替标准紧随其下 */
+.cover-stdno { margin-top: 6mm; text-align: right; font-family: var(--font-head); font-weight: 700; font-size: 17pt; letter-spacing: .5px; }
+.cover-sup { text-align: right; font-size: 11.5pt; line-height: 1.3; margin-top: 0.5mm; }
+/* 中英文名称 */
+.cover-main { margin-top: 38.5mm; }
+.cover-cn { font-family: var(--font-head); font-size: 28pt; font-weight: 700; line-height: 1.55; }
+.cover-en { font-family: var(--font-head); font-size: 15pt; margin-top: 6.5mm; line-height: 1.6; }
+/* 日期 + 机构：定值下推到页底（封面元素均定高，锚点可预算） */
+.cover-foot { margin-top: 98mm; }
+.cover-dates { display: flex; justify-content: space-between; font-size: 14pt; }
+.cover-org { width: fit-content; margin: 4mm auto 0; text-align: left; font-size: 15pt; line-height: 1.2; }
+.cover-org-pub { text-align: right; margin-right: -1em; }
 
 /* 命名页：封面（无页码）/ 前置（罗马页码）/ 正文（阿拉伯页码）。
-   注意：不要在 main 上写 page——否则「目次(gb-front) → main(gb-body) → 前置节(gb-front)」
+   注意：不要在 main 上写 gb-body——否则「目次(gb-front) → main → 前置节(gb-front)」
    的命名页切换会被 Paged.js 当成两次分页，中间多出一张空白页。 */
 .toc { page: gb-front; counter-reset: page 1; }
-main { page: gb-front; }
 main { page: gb-front; }
 main > section { page: gb-body; }
 main > section:has(> h2.front) { page: gb-front; break-before: page; }
@@ -119,9 +132,3 @@ ol li, ul li { padding-left: 0; }
 
 /* ---------- 图 / 表题注统一（黑体小号、居中） ---------- */
 figcaption, table caption { font-family: var(--font-head); color: var(--ink); }
-
-/* Paged.js 遇强制分页会给前一页元素打 data-align-last-split-element="justify"，
-   其内置规则 [data-align-last-split-element='justify'] { text-align-last: justify }
-   会把段落末行（含居中标题、表题）也两端对齐拉伸到整行 —— 非真实 GB 版式。
-   这里整体还原为 auto：末行按 text-align 正常对齐（正文左、标题居中）。 */
-[data-align-last-split-element] { text-align-last: auto !important; }

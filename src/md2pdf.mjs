@@ -693,6 +693,10 @@ function gbHeaderCss(stdno) {
 }
 
 // GB 封面（仅 gb profile）：标准号 / 中英文名称 / ICS·CCS / 发布·实施日期 / 发布机构
+// 版式实测自正式发布版（GB 2811—2019 / GB/T 48051—2026，A4 595×842pt，坐标换算 mm）：
+//   ICS/CCS 左上 ≈10mm；「中华人民共和国国家标准」≈41mm 撑满两边距；标准号 ≈60mm 右对齐
+//   （代替标准紧随其下）；中文名 ≈115mm、英文名 ≈134mm 居中；日期行 ≈250mm
+//   （发布靠左、实施靠右）；机构三行块（名称/发布/名称）≈263–276mm。
 function buildCover(fm, title) {
   const stdno = fm['标准号'] || fm.standard || '';
   const cn = title || fm.title || '';
@@ -702,25 +706,38 @@ function buildCover(fm, title) {
   const issued = fm['发布日期'] || fm.date || '';
   const impl = fm['实施日期'] || '';
   const sup = fm['代替标准'] || '';
-  const org = fm['发布机构'] || '国家市场监督管理总局 国家标准化管理委员会';
-  const top = [
-    '<div class="cover-top">',
-    '  <div class="cover-ics">' + (ics ? 'ICS ' + esc(ics) : '') +
-      (ccs ? '<br>CCS ' + esc(ccs) : '') + '</div>',
+  // 机构两行 + 居间「发布」；发布机构可覆盖第一行
+  const orgA = fm['发布机构'] || '国家市场监督管理总局';
+  const orgB = fm['发布机构2'] || '国家标准化管理委员会';
+  // 「中华人民共和国国家标准」按字均分撑满两边距，短语间留一个双倍空位
+  const head = (fm['文件类别'] || '中华人民共和国国家标准')
+    .split('').map(c => '<span>' + esc(c) + '</span>').join('<i class="cover-head-gap"></i>');
+  const icsHtml = (ics || ccs)
+    ? '<div class="cover-ics">' + (ics ? 'ICS ' + esc(ics) : '') + (ccs ? '<br>CCS ' + esc(ccs) : '') + '</div>'
+    : '';
+  const datesHtml = (issued || impl)
+    ? '<div class="cover-dates">' +
+      (issued ? '<span>' + esc(issued) + ' 发布</span>' : '<span></span>') +
+      (impl ? '<span>' + esc(impl) + ' 实施</span>' : '<span></span>') +
+      '</div>'
+    : '';
+  const supHtml = sup ? '<div class="cover-sup">代替 ' + esc(sup) + '</div>' : '';
+  return [
+    '<section class="cover">',
+    icsHtml,
+    '  <div class="cover-head">' + head + '</div>',
     '  <div class="cover-stdno">' + esc(stdno) + '</div>',
-    '</div>',
-  ].join('\n');
-  const main = '<div class="cover-main"><div class="cover-cn">' + esc(cn) +
-    '</div>' + (en ? '<div class="cover-en">' + esc(en) + '</div>' : '') + '</div>';
-  const foot = [
-    '<div class="cover-foot">',
-    sup ? '  <div class="cover-sup">代替 ' + esc(sup) + '</div>' : '',
-    '  <div class="cover-dates">' + esc(issued) + (issued && impl ? ' 发布' : '') +
-      (impl ? '　' + esc(impl) + ' 实施' : '') + '</div>',
-    '  <div class="cover-org">' + esc(org) + '</div>',
-    '</div>',
+    supHtml,
+    '  <div class="cover-main"><div class="cover-cn">' + esc(cn) + '</div>' +
+      (en ? '<div class="cover-en">' + esc(en) + '</div>' : '') + '</div>',
+    '  <div class="cover-foot">',
+    datesHtml,
+    '  <div class="cover-org"><div class="cover-org-name">' + esc(orgA) + '</div>' +
+      '<div class="cover-org-pub">发布</div>' +
+      '<div class="cover-org-name">' + esc(orgB) + '</div></div>',
+    '  </div>',
+    '</section>',
   ].filter(Boolean).join('\n');
-  return '<section class="cover">\n' + top + '\n' + main + '\n' + foot + '\n</section>';
 }
 
 async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
