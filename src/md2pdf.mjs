@@ -1013,6 +1013,17 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '</script>',
   ].join('\n') : '';
 
+  // GB 结构化元数据透传：封面渲染键以外的 frontmatter 以 <meta name="gb:键"> 进 <head>，
+  // 使 gb 文档的结构化信息可被其他项目直接消费（--html-only / keep-html 同样包含）。
+  const GB_COVER_KEYS = new Set(['标准号', 'standard', 'title', '英文名称', 'title_en', 'ICS', 'ics', 'CCS', 'ccs',
+    '发布日期', 'date', '实施日期', '代替标准', '发布机构', '发布机构2', '文件类别', 'kicker', 'category', 'author']);
+  const headMeta = profile.gbDoc
+    ? Object.entries(fm)
+        .filter(([k, v]) => v != null && String(v).trim() && !GB_COVER_KEYS.has(k))
+        .map(([k, v]) => '<meta name="gb:' + esc(k) + '" content="' + esc(v) + '">')
+        .join('\n')
+    : '';
+
   const shell = await readFile(path.join(ASSETS, 'shell.html'), 'utf8');
   const out = fill(shell, {
     '{{TITLE}}': esc(title),
@@ -1029,6 +1040,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '{{MATHJAX}}': mathScript,
     '{{MERMAID}}': mermaidScript,
     '{{PAGEDJS}}': pagedScript,
+    '{{HEAD_META}}': headMeta,
   });
 
   if (opts.htmlOnly) return { title, html: out, type: profile.name };

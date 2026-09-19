@@ -124,6 +124,11 @@ for (const [t, [tpl, ex]] of Object.entries(TYPE_FILES)) {
 const exReadme = readIf(path.join(ROOT, 'examples', 'README.md'));
 ok('对应关系：examples/README.md 介绍全部五类示例',
   ['general.md', 'skill.md', 'paper.md', 'gb.md', 'templates'].every(k => exReadme.includes(k)));
+
+// gb 结构化元数据（对齐 SAMR 平台字段）：模板收录 + HTML meta 透传
+const SAMR_KEYS = ['标准状态', '标准性质', '标准类别', '计划号', '技术委员会', '归口单位', '执行单位', '主管部门', '采标程度', '起草单位', '起草人'];
+ok('gb 元数据：模板 frontmatter 收录 SAMR 关键字段',
+  SAMR_KEYS.every(k => readIf(path.join(ROOT, 'templates', 'gb.md')).includes(k)));
 const tmpOut = (n) => path.join(os.tmpdir(), 'md2pdf-ci-' + n + '.html');
 const rSkill = run(['skill/SKILL.md', '--html-only', '-o', tmpOut('skill')]);
 ok('profile：SKILL.md 自动探测为 skill', rSkill.status === 0 && /<div class="kicker">技能文档<\/div>/.test(readIf(tmpOut('skill'))),
@@ -174,7 +179,8 @@ ok('profile：paper 关键词行', /<div class="keywords">[\s\S]*关键词[\s\S]
 const gbDir = path.join(os.tmpdir(), 'md2pdf-ci-gb');
 fs.mkdirSync(gbDir, { recursive: true });
 fs.writeFileSync(path.join(gbDir, 'gb.md'), [
-  '---', '标准号: GB/T 99999—2026', 'title: 测试标准', '发布日期: 2026-01-01', '实施日期: 2026-07-01', '---', '',
+  '---', '标准号: GB/T 99999—2026', 'title: 测试标准', '发布日期: 2026-01-01', '实施日期: 2026-07-01',
+  '标准状态: 现行', '归口单位: 全国×××标准化技术委员会', '---', '',
   '## 前言', '', '前言内容。', '',
   '## 范围', '', '本文件规定了……', '',
   '## 附录 A（规范性）测试方法', '', '### 测试条件', '', '环境温度 25 ℃。', '',
@@ -202,6 +208,8 @@ ok('Paged：页眉标准号奇偶分侧（@page :left margin box）', /@page gb-
 ok('Paged：gb 不输出文末落款（干扰命名页分页）', !/class="colophon"/.test(gbHtml));
 ok('Paged：边距为四值语法（左宽右窄，gb 默认 25/19/20/25）',
   /margin: 25mm 19mm 20mm 25mm/.test(gbHtml));
+ok('gb 元数据：结构化字段随 HTML 透传（<meta name="gb:…">）',
+  /<meta name="gb:归口单位"/.test(gbHtml) && /<meta name="gb:标准状态"/.test(gbHtml));
 
 // 封面版式（P3.1b）：GB 标志、横线、小标宋名称字体
 ok('封面：gb 引用内置 GB 标志（gb-logo.svg，描迹矢量）', /gb-logo\.svg/.test(gbHtml) && !/gb-logo\.png/.test(gbHtml));
@@ -244,6 +252,7 @@ if (fs.existsSync(demo)) {
   ok('渲染：无占位符残留', !/\{\{[A-Z_]+\}\}/.test(html));
   ok('渲染：非 gb 类型不注入 Paged.js（行为零回归）', !/pagedjs/.test(html));
   ok('封面：非 gb 类型不引用 GB 标志', !/gb-logo\./.test(html));
+  ok('gb 元数据：非 gb 类型不透传 gb: meta', !/<meta name="gb:/.test(html));
   ok('渲染：无 undefined/NaN 泄漏', !/undefined|NaN/.test(html));
   ok('渲染：页脚页码模板交给浏览器而非 HTML',
     !/class="pageNumber"/.test(html));
