@@ -725,7 +725,7 @@ function gbHeaderCss(stdno) {
 //   （发布靠左、实施靠右）；机构三行块（名称/发布/名称）≈263–276mm。
 function buildCover(fm, title) {
   const stdno = fm['标准号'] || fm.standard || '';
-  const cn = title || fm.title || '';
+  const cn = fm['中文名称'] || title || fm.title || '';
   const en = fm['英文名称'] || fm.title_en || '';
   const ics = fmStr(fm['国际标准分类号'] || fm.ICS || fm.ics);
   const ccs = fmStr(fm['中国标准分类号'] || fm.CCS || fm.ccs);
@@ -733,11 +733,11 @@ function buildCover(fm, title) {
   const impl = fm['实施日期'] || '';
   const sup = fmStr(fm['全部代替标准'] || fm['代替标准']);
   // 机构两行 + 居间「发布」；发布机构可覆盖第一行
-  // 发布机构：标量或数组（数组即机构块各行，如 [总局, 管理委员会]）
-  const orgs = Array.isArray(fm['发布机构']) ? fm['发布机构']
-    : (fm['发布机构'] ? [fmStr(fm['发布机构'])] : []);
-  const orgA = orgs[0] || fm['发布机构2'] || '国家市场监督管理总局';
-  const orgB = orgs[1] || (Array.isArray(fm['发布机构']) ? '国家标准化管理委员会' : (fm['发布机构2'] || '国家标准化管理委员会'));
+  // 发布单位：封面机构块各行（数组或标量）；旧键 发布机构/发布机构2 仍兼容
+  const orgSrc = fm['发布单位'] ?? fm['发布机构'];
+  const orgs = Array.isArray(orgSrc) ? orgSrc : (orgSrc ? [fmStr(orgSrc)] : []);
+  const orgA = orgs[0] || '国家市场监督管理总局';
+  const orgB = orgs[1] || (Array.isArray(orgSrc) ? '国家标准化管理委员会' : (fm['发布机构2'] || '国家标准化管理委员会'));
   // 「中华人民共和国国家标准」按字均分撑满两边距，短语间留一个双倍空位
   const head = (fm['文件类别'] || '中华人民共和国国家标准')
     .split('').map(c => '<span>' + esc(c) + '</span>').join('<i class="cover-head-gap"></i>');
@@ -854,7 +854,7 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
   html = numberHeadings(html, effNumbering, effScheme);
 
   // 标题：正文首个 H1 → 报头
-  let title = opts.title || fm.title || '';
+  let title = opts.title || fm['中文名称'] || fm.title || '';
   const h1 = /<h1(?:\s[^>]*)?>([\s\S]*?)<\/h1>/.exec(html);
   if (h1) {
     const t = stripTags(h1[1]);
@@ -1044,9 +1044,10 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
 
   // GB 结构化元数据透传：封面渲染键以外的 frontmatter 以 <meta name="gb:键"> 进 <head>，
   // 使 gb 文档的结构化信息可被其他项目直接消费（--html-only / keep-html 同样包含）。
-  const GB_COVER_KEYS = new Set(['标准号', 'standard', 'title', '标准名称', '英文名称', 'title_en',
+  const GB_COVER_KEYS = new Set(['标准号', 'standard', 'title', '中文名称', '标准名称', '英文名称', 'title_en',
     '国际标准分类号', 'ICS', 'ics', '中国标准分类号', 'CCS', 'ccs',
-    '发布日期', 'date', '实施日期', '全部代替标准', '代替标准', '发布机构', '发布机构2', '文件类别', 'kicker', 'category', 'author']);
+    '发布日期', 'date', '实施日期', '全部代替标准', '代替标准',
+    '发布单位', '发布机构', '发布机构2', '文件类别', 'kicker', 'category', 'author']);
   const headMeta = profile.gbDoc
     ? Object.entries(fm)
         .filter(([k, v]) => fmStr(v).trim() && !GB_COVER_KEYS.has(k))

@@ -1,12 +1,15 @@
 ---
-标准号: GB/T 39999—2026
-title: 仿生机械手抓取控制系统技术要求
-英文名称: Technical requirements for grasping control system of bionic manipulators
 国际标准分类号: 25.040.30
 中国标准分类号: J 28
+标准号: GB/T 39999—2026
+全部代替标准: GB/T 39999—2019
+中文名称: 仿生机械手抓取控制系统技术要求
+英文名称: Technical requirements for grasping control system of bionic manipulators
 发布日期: 2026-01-01
 实施日期: 2026-07-01
-全部代替标准: GB/T 39999—2019
+发布单位:
+  - 国家市场监督管理总局
+  - 国家标准化管理委员会
 标准状态: 现行
 标准性质: 推荐性
 标准类别: 产品
