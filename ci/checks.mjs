@@ -213,6 +213,11 @@ ok('Paged：边距为四值语法（左宽右窄，gb 默认 25/19/20/25）',
   /margin: 25mm 19mm 20mm 25mm/.test(gbHtml));
 ok('gb 元数据：结构化字段随 HTML 透传（<meta name="gb:…">）',
   /<meta name="gb:归口单位"/.test(gbHtml) && /<meta name="gb:标准状态"/.test(gbHtml));
+// 页码分侧（奇数页靠右/偶数页靠左，仿正式发布版）
+ok('页码：gb 页码分侧（奇数页 @bottom-right / 偶数页 @bottom-left）',
+  /@page\s+gb-body:right\s*\{\s*@bottom-right\s*\{\s*content:\s*counter\(page\)/.test(gbHtml) &&
+  /@page\s+gb-front:left\s*\{\s*@bottom-left\s*\{\s*content:\s*counter\(page,\s*upper-roman\)/.test(gbHtml) &&
+  !/@bottom-center\s*\{\s*content:\s*counter/.test(gbHtml));
 
 // 封面版式（P3.1b）：GB 标志、横线、小标宋名称字体
 ok('封面：gb 引用内置 GB 标志（gb-logo.svg，描迹矢量）', /gb-logo\.svg/.test(gbHtml) && !/gb-logo\.png/.test(gbHtml));

@@ -87,9 +87,12 @@ main > section:has(> h2.back) { break-before: page; }
 /* 正文页码从第一个带号的章重新计数（前置部分用罗马数字） */
 main > section:has(> h2.body-start) { counter-reset: page 1; }
 
-@page gb-cover { @top-left { content: none; } @top-right { content: none; } @bottom-center { content: none; } }
-@page gb-front { @bottom-center { content: counter(page, upper-roman); } }
-@page gb-body { @bottom-center { content: counter(page); } }
+@page gb-cover { @top-left { content: none; } @top-right { content: none; } @bottom-center { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+/* 页码分侧：奇数页（右页）靠右、偶数页（左页）靠左（官方正式发布版惯例） */
+@page gb-front:right { @bottom-right { content: counter(page, upper-roman); } }
+@page gb-front:left  { @bottom-left  { content: counter(page, upper-roman); } }
+@page gb-body:right  { @bottom-right { content: counter(page); } }
+@page gb-body:left   { @bottom-left  { content: counter(page); } }
 
 /* 页眉/页码在 margin box 里的字号与字体（页眉内容由渲染器按标准号生成） */
 @page gb-front { @top-left { font: 9pt/1 var(--font-head); } @top-right { font: 9pt/1 var(--font-head); } }
