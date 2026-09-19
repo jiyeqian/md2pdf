@@ -219,6 +219,19 @@ ok('页码：gb 页码分侧（奇数页 @bottom-right / 偶数页 @bottom-left�
   /@page\s+gb-front:left\s*\{\s*@bottom-left\s*\{\s*content:\s*counter\(page,\s*upper-roman\)/.test(gbHtml) &&
   !/@bottom-center\s*\{\s*content:\s*counter/.test(gbHtml));
 
+/* ---------- --paged-html：分页 HTML ---------- */
+const rPaged = run(['examples/general.md', '--paged-html', path.join(os.tmpdir(), 'md2pdf-ci-paged.html')]);
+const pagedHtml = readIf(path.join(os.tmpdir(), 'md2pdf-ci-paged.html'));
+ok('paged-html：产出含 Paged.js 与页码/总页数的分页 HTML',
+  rPaged.status === 0 && /paged\.polyfill\.min\.js/.test(pagedHtml) && /counter\(pages\)/.test(pagedHtml),
+  'status=' + rPaged.status);
+ok('paged-html：gb 样例同样注入 Paged.js',
+  (() => {
+    const o = path.join(os.tmpdir(), 'md2pdf-ci-paged-gb.html');
+    const r = run(['examples/gb.md', '--paged-html', o]);
+    return r.status === 0 && /paged\.polyfill\.min\.js/.test(readIf(o));
+  })());
+
 // 封面版式（P3.1b）：GB 标志、横线、小标宋名称字体
 ok('封面：gb 引用内置 GB 标志（gb-logo.svg，描迹矢量）', /gb-logo\.svg/.test(gbHtml) && !/gb-logo\.png/.test(gbHtml));
 ok('封面：机构块「发布」为独立小字并悬挂于两行名称分界（cover-org-pub）', /cover-org-pub/.test(gbHtml) && /发 布/.test(gbHtml));

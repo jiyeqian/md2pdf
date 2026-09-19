@@ -90,6 +90,8 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --footer-left/--footer-right <text>
       --colophon <text>    文末落款
       --keep-html          保留中间 HTML
+      --paged-html [path]  输出分页 HTML：浏览器打开与 PDF 同款分页/页码
+                           （Paged.js；gb 类型含封面/奇偶页眉；缺省路径 = 同名 .html）
       --html-only          只生成 HTML，不启动浏览器（调试样式 / CI 校验用）
       --open               完成后打开 PDF
   -h, --help
@@ -128,6 +130,7 @@ function parseArgs(argv) {
     numberScheme: undefined,
     type: '',
     landscape: false, keepHtml: false, htmlOnly: false, open: false, help: false,
+    pagedHtml: false, pagedHtmlPath: '',
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -158,6 +161,13 @@ function parseArgs(argv) {
       case '--footer-right': o.footerRight = next(); break;
       case '--colophon': o.colophon = next(); break;
       case '--keep-html': o.keepHtml = true; break;
+      case '--paged-html': {
+        // 可带输出路径；不带值时路径缺省为同名 .html
+        const n = argv[i + 1];
+        o.pagedHtml = true;
+        if (n && !n.startsWith('-')) { o.pagedHtmlPath = n; i++; }
+        break;
+      }
       case '--html-only': o.htmlOnly = true; break;
       case '--no-html-only': o.htmlOnly = false; break;
       case '--open': o.open = true; break;
@@ -1040,11 +1050,12 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '<script src="' + mathUrl + '" id="MathJax-script"></script>',
   ].join('\n') : '';
 
-  // Paged.js：仅 GB 类型启用。接管分页后可用 @page 命名页 / 奇偶页眉 / target-counter，
-  // 这些是 Chrome 原生 headerTemplate 与 @page 做不到的（见 docs/gb-template.md）。
+  // Paged.js：PDF 渲染路径仅 GB 类型启用（@page 命名页 / 奇偶页眉 / target-counter，
+  // 见 docs/gb-template.md）。--paged-html 时脚本改注入 paged-html 产物（见下方 pagedOut），
+  // 两份 HTML 必须分离 —— 否则非 gb 的 PDF 会被 Paged.js 二次分页。
   // 时序：必须等 MathJax / Mermaid 渲染完成再分页，否则按错误尺寸切页。
   const pagedUrl = pathToFileURL(path.join(ROOT, 'vendor', 'pagedjs', 'paged.polyfill.min.js')).href;
-  const pagedScript = profile.gbDoc ? [
+  const pagedScriptsBlock = () => [
     '<script>window.PagedConfig = { auto: false };</script>',
     '<script src="' + pagedUrl + '"></script>',
     '<script>',
@@ -1064,7 +1075,8 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '  if (document.readyState === "complete") run(); else window.addEventListener("load", run);',
     '})();',
     '</script>',
-  ].join('\n') : '';
+  ].join('\n');
+  const pagedScript = profile.gbDoc ? pagedScriptsBlock() : '';
 
   // GB 结构化元数据透传：封面渲染键以外的 frontmatter 以 <meta name="gb:键"> 进 <head>，
   // 使 gb 文档的结构化信息可被其他项目直接消费（--html-only / keep-html 同样包含）。
@@ -1099,7 +1111,33 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     '{{HEAD_META}}': headMeta,
   });
 
-  if (opts.htmlOnly) return { title, html: out, type: profile.name };
+  // 分页 HTML（--paged-html）：浏览器打开与 PDF 同款分页/页码。
+  // gb 的 out 已含 Paged.js 与分侧页码规则；其他类型在此注入页码/页脚 margin box 与观感样式。
+  // 这些 CSS 只追加进 paged-html 产物，不影响 PDF 渲染路径。
+  let pagedOut = null;
+  if (opts.pagedHtml) {
+    const footFont = 'font: 8pt/1 -apple-system, "PingFang SC", sans-serif; color: #8a8578; letter-spacing: .5px;';
+    const pageBoxes = profile.gbDoc ? '' : [
+      '@page {',
+      '  @bottom-center { content: counter(page) " / " counter(pages); ' + footFont + ' }',
+      opts.footerLeft ? '  @bottom-left { content: ' + JSON.stringify(opts.footerLeft) + '; ' + footFont + ' }' : '',
+      opts.footerRight ? '  @bottom-right { content: ' + JSON.stringify(opts.footerRight) + '; ' + footFont + ' }' : '',
+      '}',
+    ].filter(Boolean).join('\n');
+    const screenCss = [
+      '@media screen {',
+      '  body { background: #f0f0f0; padding: 8mm 0; }',
+      '  .pagedjs_pages { display: flex; flex-direction: column; align-items: center; gap: 8mm; }',
+      '  .pagedjs_page { background: var(--paper); box-shadow: 0 2px 8px rgba(0, 0, 0, .15); }',
+      '}',
+    ].join('\n');
+    const inject = [pageBoxes, screenCss].filter(Boolean).join('\n');
+    const scripts = profile.gbDoc ? '' : pagedScriptsBlock();
+    pagedOut = out
+      .replace('</style>', inject + '\n</style>')
+      .replace('</body>', scripts + '\n</body>');
+  }
+  if (opts.htmlOnly) return { title, html: pagedOut ?? out, type: profile.name };
 
   const tmpDir = await mkdtemp(path.join(tmpRoot, 'doc-'));
   const htmlPath = path.join(tmpDir, 'index.html');
@@ -1127,6 +1165,12 @@ async function renderOne(mdPath, opts, chrome, marked, hljs, tmpRoot) {
     await writeFile(mdPath.replace(/\.md$/i, '.html'), out, 'utf8');
   } else {
     await rm(tmpDir, { recursive: true, force: true });
+  }
+  if (opts.pagedHtml && pagedOut) {
+    // paged-html 路径独立于 -o（-o 指向 PDF；缺省 paged 路径 = 同名 .html）
+    const pagedPath = opts.pagedHtmlPath || mdPath.replace(/\.md$/i, '.html');
+    await mkdir(path.dirname(pagedPath), { recursive: true });
+    await writeFile(pagedPath, pagedOut, 'utf8');
   }
   return { title, buf, type: profile.name };
 }

@@ -115,6 +115,13 @@ node ci/inspect-pdf.mjs out.pdf
 
 起步：复制模板 → 按注释填 frontmatter 与章节 → `md2pdf 你的文件.md`（类型自动识别）。示例目录的完整导览见 [examples/README.md](examples/README.md)。
 
+### md → 分页 HTML
+
+`md2pdf 你的文件.md --paged-html` 额外产出一份**分页 HTML**：浏览器打开即与 PDF 同款分页、页码
+（`第 x / y 页`、页脚左右文字），gb 类型还带封面/奇偶页眉。原理是同一套 CSS 交给 Paged.js
+在浏览器里分页。注意 HTML 里的 MathJax / Mermaid / Paged.js 以本机绝对路径引用（vendor 目录），
+拷到别的机器需保持相对位置。`--keep-html` 仍为未分页的调试 HTML，两者并存。
+
 ## 开发
 
 ```bash
