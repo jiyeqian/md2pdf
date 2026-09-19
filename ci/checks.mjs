@@ -126,7 +126,7 @@ ok('对应关系：examples/README.md 介绍全部五类示例',
   ['general.md', 'skill.md', 'paper.md', 'gb.md', 'templates'].every(k => exReadme.includes(k)));
 
 // gb 结构化元数据（对齐 SAMR 平台字段）：模板收录 + HTML meta 透传
-const SAMR_KEYS = ['标准状态', '标准性质', '标准类别', '标准计划', '国际标准分类号', '中国标准分类号', '全部代替标准', '归口单位', '执行单位', '主管部门', '采标国际标准', '采标中文名称', '起草单位', '起草人'];
+const SAMR_KEYS = ['标准状态', '标准性质', '标准类别', '标准计划', '国际标准分类号', '中国标准分类号', '全部代替标准', '归口单位', '执行单位', '主管部门', '采标国际标准', '采标中文名称', '采标程度', '起草单位', '起草人'];
 const gbTplFm = readIf(path.join(ROOT, 'templates', 'gb.md')).match(/(^|\n)---\n[\s\S]*?\n---/) || [''];
 ok('gb 元数据：模板 frontmatter 收录 SAMR 全部字段（键名与平台一致）',
   SAMR_KEYS.every(k => gbTplFm[0].includes(k + ':')));

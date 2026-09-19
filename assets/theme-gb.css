@@ -64,8 +64,10 @@ body { line-height: 1.62; text-align: justify; }
 .cover-main { margin-top: 37.5mm; }
 .cover-cn { font-family: var(--font-title); font-size: 28pt; font-weight: 700; line-height: 1.55; }
 .cover-en { font-family: "Times New Roman", Times, "Tinos", serif; font-size: 15pt; margin-top: 6.5mm; line-height: 1.6; }
+/* 采标信息（(ISO 标准号, 采标中文名称, 程度)），仿官方封面排于英文名称下方 */
+.cover-iso { font-family: "Times New Roman", Times, "Tinos", serif; font-size: 11pt; line-height: 1.6; margin: 5mm auto 0; max-width: 82%; }
 /* 日期 + 机构：定值下推到页底（封面元素均定高，锚点可预算） */
-.cover-foot { margin-top: 103mm; }
+.cover-foot { margin-top: 93mm; }
 .cover-dates { display: flex; justify-content: space-between; font-size: 14pt; padding-bottom: 2mm; border-bottom: 1pt solid var(--ink); }
 
 /* 官方实测：名称字号 ≈18pt、两行 top-to-top 行距 18pt；「发布」不占行位，
