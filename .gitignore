@@ -5,3 +5,4 @@ dist/
 .install-meta
 *.pdf
 !examples/*.pdf
+.workbuddy/
