@@ -41,7 +41,7 @@ const themes = fs.readdirSync(themeDir).filter(f => /^theme-.+\.css$/.test(f)).s
 console.log(`校验目标：${ROOT}`);
 
 /* ---------- 1. 版本号一致 ---------- */
-const src = read(srcFile);
+const src = ['md2pdf.mjs', 'render.mjs', 'chrome.mjs', 'options.mjs'].map(f => read(path.join(ROOT, 'src', f))).join('\n');
 const pkg = JSON.parse(read(path.join(ROOT, 'package.json')));
 const vMatch = /const VERSION = '([^']+)'/.exec(src);
 ok('版本号：src 中声明 VERSION', !!vMatch, '未找到 const VERSION');
@@ -352,7 +352,7 @@ ok('书签：开关从 main 传到 chrome.print',
   /outline:\s*opts\.outline\s*[,}]/.test(src),
   '有 --no-outline 分支但没传进渲染，等于没接');
 ok('书签：老版本 Chrome 不认参数时退回无书签渲染',
-  /generateDocumentOutline: true \}\);[\s\S]{0,160}printToPDF', base\)/.test(src),
+  /generateDocumentOutline: true \}\);[\s\S]{0,320}printToPDF', base\)/.test(src),
   '直接抛错会让老版本 Chrome 上整个转换失败');
 ok('书签：帮助文本写明 --no-outline', /--no-outline\s+不生成 PDF 书签/.test(src));
 

@@ -47,7 +47,7 @@ good "node $(node -v)"
 
 # ------------------------------------------------------- 结构与可执行位
 head2 "结构与可执行位"
-REQUIRED="bin/md2pdf src/md2pdf.mjs src/profiles.mjs src/ws.mjs src/install-skill.mjs assets/shell.html assets/base.css assets/gb-logo.svg tools/trace-gb-logo.mjs tools/gb-logo.src.png
+REQUIRED="bin/md2pdf src/md2pdf.mjs src/render.mjs src/chrome.mjs src/options.mjs src/profiles.mjs src/ws.mjs src/install-skill.mjs assets/shell.html assets/base.css assets/gb-logo.svg tools/trace-gb-logo.mjs tools/gb-logo.src.png
 assets/theme-elegant.css assets/theme-minimal.css assets/theme-gb.css vendor/marked.esm.js vendor/mathjax/tex-svg.js vendor/highlight/highlight.cjs vendor/mermaid/mermaid.min.js vendor/pagedjs/paged.polyfill.min.js
 examples/general.md examples/skill.md examples/paper.md examples/README.md examples/gb.md
 templates/general.md templates/skill.md templates/readme.md templates/paper.md templates/gb.md
@@ -73,7 +73,7 @@ if [ -f "$TARGET/bin/md2pdf" ]; then
   sh -n "$TARGET/bin/md2pdf" \
     && good "sh -n 通过（bin/md2pdf）" || bad "shell 语法错误"
 fi
-for f in src/md2pdf.mjs src/ws.mjs src/install-skill.mjs ci/checks.mjs ci/inspect-pdf.mjs; do
+for f in src/md2pdf.mjs src/render.mjs src/chrome.mjs src/options.mjs src/ws.mjs src/install-skill.mjs ci/checks.mjs ci/inspect-pdf.mjs; do
   if [ -f "$TARGET/$f" ]; then
     ( cd "$TARGET" && node --check "$f" >/dev/null 2>&1 ) && good "node --check $f" || bad "node --check $f 失败"
   fi
@@ -142,8 +142,8 @@ if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
     ( cd "$TARGET" && tar cf - --exclude=.git --exclude=node_modules . ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
     LI_LINK='<li><a href="#${s.id}">${esc(s.text)}</a></li>'
     LI_PLAIN='<li>${esc(s.text)}</li>'
-    sed -i.bak "s|$LI_LINK|$LI_PLAIN|" "$TMP/proj/src/md2pdf.mjs" 2>/dev/null \
-      || sed -i '' "s|$LI_LINK|$LI_PLAIN|" "$TMP/proj/src/md2pdf.mjs"
+    sed -i.bak "s|$LI_LINK|$LI_PLAIN|" "$TMP/proj/src/render.mjs" 2>/dev/null \
+      || sed -i '' "s|$LI_LINK|$LI_PLAIN|" "$TMP/proj/src/render.mjs"
     if ( cd "$TMP/proj" && node ci/checks.mjs "$TMP/proj" >/dev/null 2>&1 ); then
       bad "目录项退回纯文本，校验却通过了 —— 可点击目录的断言失效"
     else
@@ -152,8 +152,8 @@ if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
 
     # 破坏 8：去掉 PDF 书签参数（书签静默消失，转换仍"成功"）
     ( cd "$TARGET" && tar cf - --exclude=.git --exclude=node_modules . ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
-    sed -i.bak 's/generateDocumentOutline: true/generateDocumentOutline: false/' "$TMP/proj/src/md2pdf.mjs" 2>/dev/null \
-      || sed -i '' 's/generateDocumentOutline: true/generateDocumentOutline: false/' "$TMP/proj/src/md2pdf.mjs"
+    sed -i.bak 's/generateDocumentOutline: true/generateDocumentOutline: false/' "$TMP/proj/src/chrome.mjs" 2>/dev/null \
+      || sed -i '' 's/generateDocumentOutline: true/generateDocumentOutline: false/' "$TMP/proj/src/chrome.mjs"
     if ( cd "$TMP/proj" && node ci/checks.mjs "$TMP/proj" >/dev/null 2>&1 ); then
       bad "书签参数被关掉，校验却通过了 —— 书签断言失效"
     else
