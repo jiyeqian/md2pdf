@@ -73,8 +73,12 @@ export async function webDocument(html, preview = false, type = 'general') {
   return html;
 }
 
-export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary } = {}) {
+export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '' } = {}) {
   let browser, tmpRoot, closed = false, queued = 0, tail = Promise.resolve();
+  // 公网部署时由反向代理转发，Host 为公网域名；本地开发保持仅本机可访问。
+  // 来源校验始终开启：未配置 publicHost 时只信任回环地址，配置后额外信任该域名（HTTPS）。
+  const allowedHosts = publicHost ? [publicHost] : [];
+  const allowedOrigins = publicHost ? [`https://${publicHost}`, `http://${publicHost}`] : [];
   async function resetBrowser() { const old = browser; browser = undefined; if (old) await old.stop(); }
   async function pdfTask(html, opts) {
     if (closed) throw error(503, '服务正在关闭');
@@ -115,10 +119,10 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     const json = (status, body) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(body)); };
     try {
       const port = server.address()?.port;
-      const hosts = [`127.0.0.1:${port}`, `localhost:${port}`];
-      if (!hosts.includes(req.headers.host)) throw error(403, '仅允许本机访问');
+      const hosts = [`127.0.0.1:${port}`, `localhost:${port}`, ...allowedHosts.map(h => h.includes(':') ? h : `${h}:${port}`), ...allowedHosts];
+      if (!hosts.includes(req.headers.host)) throw error(403, '仅允许受信来源访问');
       const origin = req.headers.origin;
-      if (origin && !hosts.map(host => 'http://' + host).includes(origin)) throw error(403, '不允许跨站请求');
+      if (origin && ![...hosts.map(host => 'http://' + host), ...allowedOrigins].includes(origin)) throw error(403, '不允许跨站请求');
       if (closed) throw error(503, '服务正在关闭');
       if (req.method === 'GET' && staticRoutes.has(req.url)) {
         const [file, type] = staticRoutes.get(req.url);
@@ -156,8 +160,10 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 3000);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT 必须在 1–65535 之间');
-  const app = createApp();
+  const publicHost = process.env.MD2PDF_PUBLIC_HOST || '';
+  const host = publicHost ? '0.0.0.0' : '127.0.0.1';
+  const app = createApp({ publicHost });
   app.server.on('error', e => { console.error('md2pdf 服务启动失败：', e.message); process.exitCode = 1; });
-  app.server.listen(port, '127.0.0.1', () => console.log(`md2pdf 本地工作台：http://127.0.0.1:${port}`));
+  app.server.listen(port, host, () => console.log(`md2pdf 工作台：http://${host}:${port}${publicHost ? `（公网域名 ${publicHost}）` : ''}`));
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { app.close().catch(e => { console.error(e.message); process.exitCode = 1; }); });
 }
