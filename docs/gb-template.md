@@ -176,3 +176,7 @@ md2pdf 标准.md --theme minimal # 换回普通主题（不走 GB 版式）
 
 - GB 文末不输出落款条（`--colophon` 对 gb 不生效）。
 - Paged.js 分页约多花几百毫秒，仅 gb 类型；封面/目次/前言/引言/附录/参考文献各自起新页，数字章之间不强制新页。
+
+## 解析器消费模式
+
+来自 PDF 解析器的 Markdown 建议用 `--type gb --numbering none --no-gb-defaults`：保留源编号，缺失封面名称、机构和文件类别保持空白，避免将模板默认值当作源 PDF 事实。普通生成模式保持既有默认行为。

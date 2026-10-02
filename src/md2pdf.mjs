@@ -52,6 +52,7 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --type <name>       文档类型（默认自动探测）：${PROFILE_NAMES.join('|')}
       --title <text>       覆盖标题
       --kicker <text>      报头小标题
+      --no-gb-defaults     GB 封面缺失字段保持空白，不补默认机构或类别
       --no-meta            不生成元信息条
       --no-lead            首段不作为导语
   -t, --toc                在文首插入目录页（取自二级标题，可点击跳转）

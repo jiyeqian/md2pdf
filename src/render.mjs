@@ -24,7 +24,17 @@ function splitFrontmatter(src) {
   // 值的形态：标量字符串，或 YAML 块式数组 / 行内 [a, b] 数组（Obsidian 风格）。
   // 约定：留空的键不解析（等同未写）；# 注释行与 <!-- --> 说明行忽略。
   const toValue = (raw) => {
-    let v = raw.trim().replace(/^["']|["']$/g, '');
+    const trimmed = raw.trim();
+    // Parser exports use JSON-compatible YAML quoting; decode escapes and arrays.
+    if (trimmed.startsWith('"') || trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (typeof parsed === 'string' || (Array.isArray(parsed) && parsed.every(v => typeof v === 'string'))) {
+          return parsed;
+        }
+      } catch { /* Preserve the existing unquoted YAML subset below. */ }
+    }
+    let v = trimmed.replace(/^["']|["']$/g, '');
     if (/^\[.*\]$/.test(v)) {
       const items = v.slice(1, -1).split(/[,，]/).map(s => s.trim()).filter(Boolean);
       return items.length ? items : undefined;
@@ -40,7 +50,7 @@ function splitFrontmatter(src) {
       if (k != null && !li[1].trim()) continue;
       if (k != null) {
         if (!Array.isArray(fm[k])) fm[k] = fm[k] ? [fm[k]] : [];
-        fm[k].push(li[1].trim());
+        fm[k].push(toValue(li[1]) ?? '');
       }
       continue;
     }
@@ -413,9 +423,9 @@ function gbHeaderCss(stdno) {
 //   ICS/CCS 左上 ≈10mm；「中华人民共和国国家标准」≈41mm 撑满两边距；标准号 ≈60mm 右对齐
 //   （代替标准紧随其下）；中文名 ≈115mm、英文名 ≈134mm 居中；日期行 ≈250mm
 //   （发布靠左、实施靠右）；机构三行块（名称/发布/名称）≈263–276mm。
-function buildCover(fm, title) {
+function buildCover(fm, title, useDefaults = true) {
   const stdno = fm['标准号'] || fm.standard || '';
-  const cn = fm['中文名称'] || title || fm.title || '';
+  const cn = fm['中文名称'] || (useDefaults ? (title || fm.title || '') : '');
   const en = fm['英文名称'] || fm.title_en || '';
   // 采标信息：仿官方封面排在英文名称下方，格式 (国际标准号, 采标英文名称, 程度)。
   // 数据一致性：括号内全部取 frontmatter 原值、原样显示；如需封面用拉丁码（IDT/MOD/NEQ），
@@ -449,10 +459,10 @@ function buildCover(fm, title) {
   // 发布单位：封面机构块各行（数组或标量）；旧键 发布机构/发布机构2 仍兼容
   const orgSrc = fm['发布单位'] ?? fm['发布机构'];
   const orgs = Array.isArray(orgSrc) ? orgSrc : (orgSrc ? [fmStr(orgSrc)] : []);
-  const orgA = orgs[0] || '国家市场监督管理总局';
-  const orgB = orgs[1] || (Array.isArray(orgSrc) ? '国家标准化管理委员会' : (fm['发布机构2'] || '国家标准化管理委员会'));
+  const orgA = orgs[0] || (useDefaults ? '国家市场监督管理总局' : '');
+  const orgB = orgs[1] || fm['发布机构2'] || (useDefaults ? '国家标准化管理委员会' : '');
   // 「中华人民共和国国家标准」按字均分撑满两边距，短语间留一个双倍空位
-  const head = (fm['文件类别'] || '中华人民共和国国家标准')
+  const head = (fm['文件类别'] || (useDefaults ? '中华人民共和国国家标准' : ''))
     .split('').map(c => '<span>' + esc(c) + '</span>').join('<i class="cover-head-gap"></i>');
   const icsHtml = (ics || ccs)
     ? '<div class="cover-ics">' + (ics ? 'ICS ' + esc(ics) : '') + (ccs ? '<br>CCS ' + esc(ccs) : '') + '</div>'
@@ -479,7 +489,7 @@ function buildCover(fm, title) {
     '  <div class="cover-foot" style="margin-top:' + footTop + 'mm;">',
     datesHtml,
     '  <div class="cover-org"><div class="cover-org-name">' + esc(orgA) + '</div>' +
-      '<div class="cover-org-pub">发 布</div>' +
+      '<div class="cover-org-pub">' + ((orgA || orgB) ? '发 布' : '') + '</div>' +
       '<div class="cover-org-name">' + esc(orgB) + '</div></div>',
     '  </div>',
     '</section>',
@@ -684,7 +694,7 @@ export async function render(src, options = {}, context = {}) {
       (fm.affiliation ? '<span class="affil">' + esc(fm.affiliation) + '</span>' : '') +
       '</p>'
     : '';
-  const coverHtml = profile.gbDoc ? buildCover(fm, title) : '';
+  const coverHtml = profile.gbDoc ? buildCover(fm, title, opts.gbDefaults) : '';
   const paperHtml = profile.paperHeader
     ? [
         fm.abstract ? '<div class="abstract"><span class="paper-label">摘要</span><span>' + esc(fm.abstract) + '</span></div>' : '',
