@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import { Chrome } from '../src/chrome.mjs';
 import { createApp, validateInput } from '../src/server.mjs';
 
 async function fixture(t, options = {}) {
@@ -103,4 +104,11 @@ test('times out stuck printing and releases queue for another task', async t => 
   } });
   assert.equal((await app.post('/api/pdf', doc)).status, 504);
   assert.equal((await app.post('/api/pdf', doc)).status, 200);
+});
+
+test('a stopped browser cannot launch later during shutdown', async () => {
+  const browser = new Chrome('never-launch-this-path', '/tmp');
+  await browser.stop();
+  await assert.rejects(browser.start(), /startup cancelled/);
+  assert.equal(browser.proc, undefined);
 });

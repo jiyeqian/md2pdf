@@ -55,7 +55,9 @@ async function waitDevTools(port, ms) {
 export class Chrome {
   constructor(bin, tmpRoot, { incognito = false } = {}) { this.bin = bin; this.tmpRoot = tmpRoot; this.incognito = incognito; }
   async start() {
+    if (this.stopped) throw new Error('Chrome startup cancelled');
     this.userDataDir = await mkdtemp(path.join(this.tmpRoot, 'chrome-'));
+    if (this.stopped) { await rm(this.userDataDir, { recursive: true, force: true }); throw new Error('Chrome startup cancelled'); }
     this.proc = spawn(this.bin, [
       '--headless=new', '--disable-gpu', '--no-sandbox', '--disable-extensions',
       ...(this.incognito ? ['--incognito'] : []),
@@ -81,8 +83,14 @@ export class Chrome {
     const page = list.find(t => t.type === 'page');
     if (!page) throw new Error('未找到可打印的页面目标');
     const WS = await getWSClass();
+    if (this.stopped) throw new Error('Chrome startup cancelled');
     this.ws = new WS(page.webSocketDebuggerUrl);
-    await new Promise((res, rej) => { this.ws.onopen = res; this.ws.onerror = rej; });
+    await new Promise((res, rej) => {
+      const timer = setTimeout(() => rej(new Error('Chrome WebSocket connection timeout')), 5000);
+      this.ws.onopen = () => { clearTimeout(timer); res(); };
+      this.ws.onerror = e => { clearTimeout(timer); rej(e); };
+      this.ws.onclose = () => { clearTimeout(timer); rej(new Error('Chrome connection closed')); };
+    });
     this.id = 0; this.pending = new Map();
     this.ws.onmessage = e => {
       const m = JSON.parse(e.data);
@@ -198,6 +206,7 @@ export class Chrome {
     return Buffer.from(res.data, 'base64');
   }
   async stop() {
+    this.stopped = true;
     try { this.ws && this.ws.close(); } catch {}
     try { this.proc && this.proc.kill('SIGKILL'); } catch {}
     try { this.userDataDir && await rm(this.userDataDir, { recursive: true, force: true }); } catch {}

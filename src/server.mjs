@@ -102,7 +102,8 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       } catch (e) { await resetBrowser(); throw e; }
       finally { clearTimeout(timer); }
     });
-    tail = task;
+    // The queue tail must not retain the last document's PDF buffer.
+    tail = task.then(() => {}, () => {});
     try { return await task; } finally { queued--; }
   }
   const staticRoutes = new Map([['/', ['web/index.html', 'text/html']], ['/app.js', ['web/app.js', 'text/javascript']], ['/app.css', ['web/app.css', 'text/css']]]);
@@ -145,6 +146,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     server.closeIdleConnections?.();
     await resetBrowser();
     await tail.catch(() => {});
+    await resetBrowser();
     server.closeAllConnections?.();
     await stopped;
     if (tmpRoot) await rm(tmpRoot, { recursive: true, force: true });
