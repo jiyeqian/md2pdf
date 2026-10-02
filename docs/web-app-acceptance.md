@@ -57,3 +57,40 @@ node ci/inspect-pdf.mjs /tmp/md2pdf-web-acceptance/general.pdf
 - 原始 HTML 转义为文本。公式中的资源、链接及自定义宏不支持。服务浏览器阻止网络与文件 URL，预览 iframe 无同源权限；这些本地检查不能替代公网安全验收。
 - 非 GB 预览使用 Paged.js，导出使用 Chrome 原生分页，页码、断页与字体可能不同，以 PDF 为准。GB 字体仍取决于本机字体。
 - 两个自动化浏览器的下载事件等待接口未返回事件；实际 Chrome 下载文件已在 Downloads 中检查。浏览器下载能力的结论依据文件落地与 PDF 检查，而非等待接口。
+
+## 公网部署验收（2026-10-02）
+
+已部署上线：https://md2pdf.app.workbuddy.host/
+
+### 部署形态
+
+`workbuddy_sites_deploy`，Node HTTP 服务（`http-service`），启动命令 `env MD2PDF_PUBLIC_HOST=md2pdf.app.workbuddy.host node src/server.mjs`，端口 3000。零 npm 依赖（`installCmd` 为空），复用 `vendor/` 内置解析器。
+
+### 反向代理适配（关键发现）
+
+实测 workbuddy.host 反代传来的 `Host` / `X-Forwarded-Host` 均为**沙箱内部域名**（形如 `3000-<sandboxId>.e2b.bj2.sandbox.cloudstudio.club`），公网域名不可见于 node 服务；`X-Forwarded-Proto` 为 `https`。
+
+据此调整来源校验：本地模式（无 `MD2PDF_PUBLIC_HOST`）保持仅信任回环地址；公网模式 Host 仅做畸形校验（拒绝绝对 URL / 空值），由反向代理完成域名路由，**Origin 白名单严格校验**（`https://目标域名`）以保留 CSRF 防护。
+
+### 端到端实测结果
+
+| 检查项 | 结果 |
+| --- | --- |
+| 首页 / 示例接口 / 渲染接口 | HTTP 200，返回完整 HTML |
+| PDF 下载 | HTTP 200，`%PDF-1.4` 合法文件（116 KB） |
+| Chromium 启动（沙箱） | 成功，`--no-sandbox` 可用 |
+| 中文渲染 | `pdftotext` 提取「测试文档」「你好，世界！」等完整无乱码 |
+| 数学公式 | 行内与独立公式正确渲染 |
+| Mermaid 图 | 「开始→结束」节点正确渲染 |
+| 表格 | 表头与单元格中文正常 |
+| PDF 书签树 | 标题 + 章节层级完整 |
+| PDF 内链注解 | 5 个（正文引用、`\ref`、`\eqref`、参考文献双向链接） |
+| 页脚页码 | 「1/1」正常 |
+
+### 待补强（非阻塞）
+
+- 进程隔离与资源上限：当前 `--no-sandbox` 依赖沙箱自身隔离；队列/超时/临时目录清理已在服务内实现，公网并发与内存峰值尚未压测。
+- GB 类型的字体保真仍需以沙箱实际字体验证（本次验收未覆盖 GB 封面/章条的全量视觉比对）。
+- 界面数据处理说明已更新为「发送至服务器进行排版，不保存正文或编辑历史」。
+
+验证环境：workbuddy.host 沙箱（e2b / cloudstudio），具体 Chromium 版本与系统字体未单独取证。
