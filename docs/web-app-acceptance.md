@@ -4,12 +4,12 @@
 
 2026-10-02 完成计划阶段 0–2：文本渲染内核、受限 Node HTTP 服务、Markdown 编辑器、分页预览与 PDF 下载。仅本地运行，未部署到目标域名；公网环境、安全隔离和容量验收仍未进行。
 
-实现位于 worktree `/Users/jiyeqian/.codex/worktrees/7f01/md2pdf`，分支 `codex/web-app`。提交保留在该分支，未合入 `main`，未打 tag 或 push。
+实现由 worktree 分支 `codex/web-app` 完成，2026-10-02 已快进合入原仓库 `/Users/jiyeqian/Workspace/md2pdf` 的 `main`。未打 tag 或 push。
 
 ## 启动与手工验收
 
 ```bash
-cd /Users/jiyeqian/.codex/worktrees/7f01/md2pdf
+cd /Users/jiyeqian/Workspace/md2pdf
 npm start
 ```
 
