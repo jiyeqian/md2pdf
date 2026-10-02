@@ -75,9 +75,8 @@ export async function webDocument(html, preview = false, type = 'general') {
 
 export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '' } = {}) {
   let browser, tmpRoot, closed = false, queued = 0, tail = Promise.resolve();
-  // 公网部署时由反向代理转发，Host 为公网域名；本地开发保持仅本机可访问。
-  // 来源校验始终开启：未配置 publicHost 时只信任回环地址，配置后额外信任该域名（HTTPS）。
-  const allowedHosts = publicHost ? [publicHost] : [];
+  // 公网部署时由反向代理转发，Host 为沙箱内部域名；本地开发保持仅本机可访问。
+  // 来源校验始终开启：未配置 publicHost 时只信任回环地址；配置后保留 Origin 白名单（防跨站）。
   const allowedOrigins = publicHost ? [`https://${publicHost}`, `http://${publicHost}`] : [];
   async function resetBrowser() { const old = browser; browser = undefined; if (old) await old.stop(); }
   async function pdfTask(html, opts) {
@@ -119,10 +118,20 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     const json = (status, body) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(body)); };
     try {
       const port = server.address()?.port;
-      const hosts = [`127.0.0.1:${port}`, `localhost:${port}`, ...allowedHosts.map(h => h.includes(':') ? h : `${h}:${port}`), ...allowedHosts];
-      if (!hosts.includes(req.headers.host)) throw error(403, '仅允许受信来源访问');
-      const origin = req.headers.origin;
-      if (origin && ![...hosts.map(host => 'http://' + host), ...allowedOrigins].includes(origin)) throw error(403, '不允许跨站请求');
+      if (!publicHost) {
+        // 本地模式：仅信任回环地址，Host 与 Origin 都必须匹配本机。
+        const hosts = [`127.0.0.1:${port}`, `localhost:${port}`];
+        if (!hosts.includes(req.headers.host)) throw error(403, '仅允许本机访问');
+        const origin = req.headers.origin;
+        if (origin && !hosts.map(host => 'http://' + host).includes(origin)) throw error(403, '不允许跨站请求');
+      } else {
+        // 公网模式：反向代理已完成「公网域名 → 沙箱」的路由，node 只见内部沙箱域名，
+        // 因此不再硬比 Host；但保留 Origin 白名单（防跨站），并拒绝畸形 Host（含绝对 URL / 空值）。
+        const host = req.headers.host || '';
+        if (!host || /^(?:https?:)?\/\//i.test(host) || host.includes('@')) throw error(403, '非法的 Host');
+        const origin = req.headers.origin;
+        if (origin && !allowedOrigins.includes(origin)) throw error(403, '不允许跨站请求');
+      }
       if (closed) throw error(503, '服务正在关闭');
       if (req.method === 'GET' && staticRoutes.has(req.url)) {
         const [file, type] = staticRoutes.get(req.url);
