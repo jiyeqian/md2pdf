@@ -6,3 +6,4 @@ dist/
 *.pdf
 !examples/*.pdf
 .workbuddy/
+.wbapp_*.genie
