@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>md2pdf · Markdown 排版工作台</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon" aria-hidden="true">M↓</span><div><h1>md2pdf</h1><p>Markdown 排版工作台</p></div></div>
+    <button id="download" class="primary" disabled>下载 PDF <span aria-hidden="true">↓</span></button>
+  </header>
+  <main>
+    <form id="options" class="toolbar" aria-label="排版选项">
+      <label>文档类型<select name="type"><option value="">自动识别</option><option value="general">通用文档</option><option value="readme">README</option><option value="skill">技能文档</option><option value="paper">论文</option><option value="gb">国家标准</option></select></label>
+      <label>主题<select name="theme"><option value="">跟随文档</option><option value="elegant">雅致 · 墨蓝</option><option value="minimal">简洁 · 黑白</option><option value="gb">国家标准</option></select></label>
+      <label>目录<select name="toc"><option value="">跟随文档</option><option value="true">显示</option><option value="false">隐藏</option></select></label>
+      <label>字号 / pt<input name="fontSize" type="number" value="10.5" min="8" max="24" step="0.5"></label>
+      <label>边距 / mm<select name="margin"><option value="">跟随文档</option><option value="15">15 · 紧凑</option><option value="20">20 · 标准</option><option value="25">25 · 宽松</option></select></label>
+      <label>章节编号<select name="numbering"><option value="">跟随文档</option><option value="auto">自动识别</option><option value="force">强制编号</option><option value="none">不编号</option></select></label>
+      <label>编号方案<select name="numberScheme"><option value="">跟随文档</option><option value="arabic">1 / 1.1</option><option value="cjk">一、/（一）</option><option value="chapter">第 1 章</option><option value="gb">GB 章条</option></select></label>
+    </form>
+    <div class="workspace">
+      <section class="editor-panel" aria-labelledby="editor-title">
+        <div class="panel-heading"><h2 id="editor-title">Markdown</h2><span id="count">0 字符</span></div>
+        <label class="sr-only" for="markdown">Markdown 正文</label>
+        <textarea id="markdown" spellcheck="false" placeholder="正在加载示例…"></textarea>
+        <div class="editor-footer"><span>输入后自动更新预览</span><button id="example" type="button" class="text-button">加载示例</button></div>
+      </section>
+      <section class="preview-panel" aria-labelledby="preview-title">
+        <div class="panel-heading"><h2 id="preview-title">排版预览</h2><span id="document-type">A4</span></div>
+        <div class="preview-surface"><iframe id="preview" title="Markdown 排版预览" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><div id="empty-preview">在左侧开始书写，预览将在这里呈现。</div></div>
+      </section>
+    </div>
+    <div class="status-row"><p id="status" role="status" aria-live="polite">正在加载示例…</p><span>预览分页与 PDF 可能略有差异</span></div>
+    <p class="privacy">内容发送至当前本地服务进行排版，不保存正文。支持内嵌 PNG / JPEG / GIF / WebP 图片；本机路径和远程图片显示为未加载占位。</p>
+  </main>
+</body>
+</html>

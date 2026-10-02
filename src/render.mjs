@@ -495,7 +495,12 @@ export async function render(src, options = {}, context = {}) {
   const hljs = require(path.join(ROOT, 'vendor', 'highlight', 'highlight.cjs'));
   if (context.webSafe) marked.use({ renderer: {
     html(token) { return esc(token.text); },
-    image(token) { return /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(token.href) ? `<img src="${esc(token.href)}" alt="${esc(token.text)}">` : esc(token.text); },
+    image(token) {
+      const embedded = /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(token.href);
+      // Preserve figure labels while making unsupported resources visible to the author.
+      const placeholder = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==';
+      return `<img src="${embedded ? esc(token.href) : placeholder}" alt="${esc(token.text)}${embedded ? '' : '（图片未加载：不支持本机或远程资源）'}">`;
+    },
     link(token) { const label = this.parser.parseInline(token.tokens); return /^(https?:|mailto:|#)/i.test(token.href) ? `<a href="${esc(token.href)}">${label}</a>` : label; },
   } });
   const { fm, body: rawBody } = splitFrontmatter(src);

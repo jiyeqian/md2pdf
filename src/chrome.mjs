@@ -53,11 +53,12 @@ async function waitDevTools(port, ms) {
 }
 
 export class Chrome {
-  constructor(bin, tmpRoot) { this.bin = bin; this.tmpRoot = tmpRoot; }
+  constructor(bin, tmpRoot, { incognito = false } = {}) { this.bin = bin; this.tmpRoot = tmpRoot; this.incognito = incognito; }
   async start() {
     this.userDataDir = await mkdtemp(path.join(this.tmpRoot, 'chrome-'));
     this.proc = spawn(this.bin, [
       '--headless=new', '--disable-gpu', '--no-sandbox', '--disable-extensions',
+      ...(this.incognito ? ['--incognito'] : []),
       '--disable-background-networking', '--no-first-run', '--no-default-browser-check',
       '--disable-features=Translate,OptimizationHints',
       `--user-data-dir=${this.userDataDir}`,

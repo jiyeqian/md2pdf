@@ -23,7 +23,10 @@
     "postinstall": "node src/install-skill.mjs",
     "validate": "bash ci/validate.sh",
     "test": "bash ci/validate.sh",
-    "demo:pdf": "node src/md2pdf.mjs examples/general.md -o /tmp/md2pdf-general.pdf"
+    "demo:pdf": "node src/md2pdf.mjs examples/general.md -o /tmp/md2pdf-general.pdf",
+    "start": "node src/server.mjs",
+    "test:web": "node --test ci/server-checks.mjs",
+    "test:browser": "node ci/browser-checks.mjs"
   },
   "publishConfig": {
     "access": "public"

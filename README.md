@@ -39,6 +39,29 @@ md2pdf 你的文档.md --open   # 装完试一下
 
 **依赖**：Node.js ≥ 18（建议 ≥ 22），以及 Chrome / Edge / Chromium 任一（只渲染、不联网）。零 npm 运行时依赖——`marked` 与 MathJax 已内置在 `vendor/`。
 
+## 本地在线编辑器
+
+在仓库目录启动本地服务（需要 Node.js ≥ 18 和 Chrome / Edge / Chromium）：
+
+```bash
+npm start
+```
+
+打开 `http://127.0.0.1:3000`，左侧编辑 Markdown，右侧分页预览，点击「下载 PDF」导出。支持三种主题、五类文档、目录、字号、页边距和章节编号。默认加载完整示例，包含公式、Mermaid 和参考文献。
+
+```bash
+PORT=3100 npm start                         # 更换端口
+MD2PDF_CHROME="/path/to/chrome" npm start    # 指定浏览器
+npm run test:web                           # HTTP 与安全边界测试
+npm run test:browser                       # 真实 Chrome 与五类 PDF 验收
+```
+
+服务默认仅监听本机。内容会发送到本地服务处理，不保存编辑历史，页面刷新会丢失修改；HTML 在内存中生成；Chrome 使用临时隐私会话，任务成功后清空页面，浏览器重启或服务正常退出时清理目录；强制终止后的目录不保证自动清理。首版不加载远程图片或本机相对图片，支持内嵌 PNG/JPEG/GIF/WebP 图片；不支持的图片显示为占位并保留图号；原始 HTML 按文本显示。公式中的外部资源、链接及自定义宏不支持。预览运行在隔离 iframe 中。
+
+非 GB 文档的分页预览使用 Paged.js，PDF 使用 Chrome 原生分页，分页和字体可能有差异，以导出 PDF 为准。GB 版式的字体仍取决于本机安装情况。本地版本未部署到公网，公网部署需要另行验证运行环境与隔离边界。
+
+在线应用从仓库运行；现有 npm CLI 包的发布范围和零 npm 运行时依赖保持不变。验收步骤与验证边界见 [本地验收记录](docs/web-app-acceptance.md)。
+
 ## 用法
 
 ```bash
