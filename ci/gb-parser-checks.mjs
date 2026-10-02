@@ -20,3 +20,18 @@ const quoted = await render('---\n标准号: "GB/T 1—2020"\n发布单位: ["�
 assert.ok(quoted.html.includes('>甲机构</div>'));
 assert.ok(quoted.html.includes('>乙机构</div>'));
 assert.ok(!quoted.html.includes('>\"甲机构\"</div>'));
+
+const image = await render('---\n标准号: GB/T 1—2020\n---\n\n![页面证据](image.png)', {type: 'gb', numbering: 'none', gbDefaults: false, floatNumbering: false}, {filename: 'test.md'});
+assert.ok(!image.html.includes('<figcaption>图 1：'));
+assert.ok(image.html.includes('<img'));
+assert.equal(parseArgs(['--no-float-numbering']).floatNumbering, false);
+
+const fallback = await render('---\n标准号:\ngb_source_cover: true\n---\n\n![原始封面](cover.png)', {type: 'gb', numbering: 'none', gbDefaults: false, floatNumbering: false}, {filename: 'test.md'});
+assert.ok(!fallback.html.includes('<section class="cover">'));
+assert.ok(fallback.html.includes('cover.png'));
+assert.equal(parseArgs(['--no-gb-cover']).gbCover, false);
+
+assert.ok(fallback.html.includes('body, main { page: gb-body; }'));
+assert.ok(fallback.html.includes('main > section:first-child { break-before: auto; }'));
+
+assert.ok(!fallback.html.includes('<header class="masthead">'));

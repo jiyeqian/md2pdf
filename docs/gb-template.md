@@ -179,4 +179,8 @@ md2pdf 标准.md --theme minimal # 换回普通主题（不走 GB 版式）
 
 ## 解析器消费模式
 
-来自 PDF 解析器的 Markdown 建议用 `--type gb --numbering none --no-gb-defaults`：保留源编号，缺失封面名称、机构和文件类别保持空白，避免将模板默认值当作源 PDF 事实。普通生成模式保持既有默认行为。
+来自 PDF 解析器的 Markdown 建议用 `--type gb --numbering none --no-gb-defaults --no-float-numbering`：保留源编号，缺失封面名称、机构和文件类别保持空白，避免将模板默认值当作源 PDF 事实。普通生成模式保持既有默认行为。
+
+`--no-float-numbering` 保留解析器的源图表编号，不为页面证据或区域回退图制造新的图号。
+
+当解析器无法可靠获得标准号和名称时，输出 `gb_source_cover: true`；消费端不生成猜测封面，改用 Markdown 中的源封面图。该键是消费控制信息，不是标准元数据。也可显式使用 `--no-gb-cover`。

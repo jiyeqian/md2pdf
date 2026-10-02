@@ -33,6 +33,8 @@ export function parseArgs(argv) {
     meta: true, lead: undefined, toc: undefined, linkUrls: false, outline: true, bibliography: 'footnote',
     numbering: undefined,
     gbDefaults: true,
+    gbCover: true,
+    floatNumbering: true,
     numberScheme: undefined,
     type: '',
     landscape: false, keepHtml: false, htmlOnly: false, open: false, help: false,
@@ -48,6 +50,8 @@ export function parseArgs(argv) {
       case '--type': o.type = next(); break;
       case '--title': o.title = next(); break;
       case '--kicker': o.kicker = next(); break;
+      case '--no-float-numbering': o.floatNumbering = false; break;
+      case '--no-gb-cover': o.gbCover = false; break;
       case '--no-gb-defaults': o.gbDefaults = false; break;
       case '--no-meta': o.meta = false; break;
       case '--no-lead': o.lead = false; break;

@@ -577,7 +577,9 @@ export async function render(src, options = {}, context = {}) {
   if (context.webSafe) html = html.replace(/\u0003FOOTNOTE(\d+)\u0003/g, (m, i) => fnMarkup[+i] ?? m);
 
   // 图/表自动编号与题注（收集标签）
-  const floats = numberFloats(html, { skipBadges: profile.skipBadges });
+  const floats = opts.floatNumbering === false
+    ? { html, refs: new Map() }
+    : numberFloats(html, { skipBadges: profile.skipBadges });
   html = floats.html;
   // The editor accepts ordinary Mermaid fences without requiring a CLI figure caption.
   if (context.webSafe) html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>');
@@ -683,7 +685,7 @@ export async function render(src, options = {}, context = {}) {
   // 做不到奇偶差异，改由 Paged.js 的命名页 margin box 绘制（故标准号在这里动态成 CSS）。
   const stdno = fm['标准号'] || fm.standard || '';
   const pageCss = profile.gbDoc ? gbHeaderCss(stdno) : '';
-  const finalCss = pageCss ? css + '\n' + pageCss : css;
+  let finalCss = pageCss ? css + '\n' + pageCss : css;
 
   const kicker = opts.kicker || fm.kicker || fm.category || (profile.kicker ?? '');
 
@@ -694,7 +696,14 @@ export async function render(src, options = {}, context = {}) {
       (fm.affiliation ? '<span class="affil">' + esc(fm.affiliation) + '</span>' : '') +
       '</p>'
     : '';
-  const coverHtml = profile.gbDoc ? buildCover(fm, title, opts.gbDefaults) : '';
+  const sourceCover = fm.gb_source_cover === true || fm.gb_source_cover === 'true';
+  const coverHtml = profile.gbDoc && opts.gbCover !== false && !sourceCover ? buildCover(fm, title, opts.gbDefaults) : '';
+  if (profile.gbDoc && !coverHtml) {
+    // Unsectioned source evidence uses the body page without a generated cover.
+    const header = stdno ? '@top-right { content: ' + cssString(stdno) + '; font: 9pt/1 var(--font-head); }' : '';
+    finalCss += '\nbody, main { page: gb-body; }\nmain > section:first-child { break-before: auto; }\nmain img { max-height: 230mm; object-fit: contain; }\n@page { ' + header + ' @bottom-right { content: counter(page); } }';
+  }
+
   const paperHtml = profile.paperHeader
     ? [
         fm.abstract ? '<div class="abstract"><span class="paper-label">摘要</span><span>' + esc(fm.abstract) + '</span></div>' : '',
@@ -805,7 +814,11 @@ export async function render(src, options = {}, context = {}) {
         .join('\n')
     : '';
 
-  const shell = await readFile(path.join(ASSETS, 'shell.html'), 'utf8');
+  let shell = await readFile(path.join(ASSETS, 'shell.html'), 'utf8');
+  if (profile.gbDoc && !coverHtml) {
+    // Paged.js still assigns a page to the hidden masthead before named main.
+    shell = shell.replace(/<header class="masthead">[\s\S]*?<\/header>/, '');
+  }
   const out = fill(shell, {
     '{{TITLE}}': esc(title),
     '{{CSS}}': finalCss,
