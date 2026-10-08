@@ -6,6 +6,7 @@ import { readFile, mkdtemp, rm } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { render } from './render.mjs';
 import { enhancePreview } from './preview.mjs';
+import { attachSourcePositions } from './editor-position.mjs';
 import { Chrome, findChrome } from './chrome.mjs';
 import { webPolicyDocument, policyForType, effectiveOptions, assertOptionsAllowed, resolveWebType } from './web-options.mjs';
 import { exampleCatalog, findExample, defaultExampleSource } from './web-examples.mjs';
@@ -107,6 +108,9 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     try { return await task; } finally { queued--; }
   }
   const staticRoutes = new Map([['/', ['web/index.html', 'text/html']], ['/app.js', ['web/app.js', 'text/javascript']], ['/app.css', ['web/app.css', 'text/css']], ['/examples.js', ['web/examples.js', 'text/javascript']], ['/examples.css', ['web/examples.css', 'text/css']]]);
+  for (const file of ['editor-vendor.js', 'editor-vendor.LICENSE.txt', 'editor-core.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-core.css', 'editor-pro.css', 'editor-workspace.css']) {
+    staticRoutes.set('/' + file, ['web/' + file, file.endsWith('.css') ? 'text/css' : file.endsWith('.txt') ? 'text/plain' : 'text/javascript']);
+  }
   const server = http.createServer(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -168,7 +172,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       const rendered = await render(md, opts, { webSafe: true });
       if (req.url === '/api/render') {
         json(200, {
-          html: await webDocument(rendered.pagedHtml, true, rendered.type),
+          html: await webDocument(attachSourcePositions(rendered.pagedHtml, md), true, rendered.type),
           type: rendered.type,
           policy: policyForType(rendered.type),
           effective: effectiveOptions(opts, rendered.type),

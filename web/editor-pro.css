@@ -1,0 +1,126 @@
+/* md2pdf 编辑器专业助手面板（大纲 · 引用检查）
+ *
+ * 归属：仅服务 editor-pro.js 生成的 .md-pro-* 结构，不改动 app.css / editor-core.css。
+ * 面板是编辑器面板（.editor-panel，flex 列）里的固定高度块（flex:0 0 auto），
+ * 展开时只压缩下方 CodeMirror 的高度，不改变其内部滚动；主体自带 max-height 滚动，
+ * 因此不会把编辑区域挤出可视区。
+ */
+
+.md-pro-panel {
+  flex: 0 0 auto;
+  border-bottom: 1px solid #eef1f5;
+  background: #fbfcfe;
+  color: #35445a;
+  font-size: 12px;
+}
+
+.md-pro-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 16px;
+  cursor: pointer;
+  color: #33465e;
+  font-weight: 600;
+  list-style: none;
+}
+.md-pro-summary::-webkit-details-marker { display: none; }
+.md-pro-summary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  margin-right: 8px;
+  border-left: 5px solid #8290a2;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform .12s ease;
+}
+.md-pro-panel[open] > .md-pro-summary::before { transform: rotate(90deg); }
+.md-pro-summary-title { flex: 1 1 auto; }
+.md-pro-summary-meta { flex: 0 0 auto; color: #8290a2; font-weight: 400; font-size: 11px; }
+.md-pro-summary:hover { background: #f2f6fb; }
+.md-pro-summary:focus-visible { outline: 2px solid #6f93bc; outline-offset: -2px; }
+
+.md-pro-body {
+  max-height: min(180px, 25vh);
+  overflow: auto;
+  padding: 4px 16px 12px;
+  border-top: 1px solid #eef1f5;
+}
+
+.md-pro-type { margin: 8px 0 2px; color: #33465e; font-weight: 600; }
+.md-pro-status { margin: 0 0 6px; color: #5b6a80; }
+.md-pro-note { margin: 6px 0; color: #8290a2; font-size: 11px; line-height: 1.55; }
+.md-pro-advisory[hidden] { display: none; }
+
+.md-pro-section { margin-top: 10px; }
+.md-pro-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #eef1f5;
+}
+.md-pro-section-head h3 { margin: 0; font-size: 12px; font-weight: 600; color: #33465e; }
+.md-pro-count { color: #8290a2; font-size: 11px; }
+.md-pro-empty { margin: 8px 0; color: #8b96a7; font-size: 11px; }
+
+.md-pro-outline { display: flex; flex-direction: column; gap: 2px; margin: 6px 0 0; }
+.md-pro-outline-item {
+  border: 0;
+  background: transparent;
+  color: #42648b;
+  text-align: left;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font: inherit;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.md-pro-outline-item:hover { background: #eef2f8; color: #233e60; }
+.md-pro-outline-item:focus-visible { outline: 2px solid #6f93bc; outline-offset: -2px; }
+.md-pro-lv1 { padding-left: 6px; font-weight: 600; color: #233e60; }
+.md-pro-lv2 { padding-left: 20px; }
+.md-pro-lv3 { padding-left: 34px; }
+.md-pro-lv4 { padding-left: 48px; color: #5b6a80; }
+.md-pro-lv5 { padding-left: 62px; color: #5b6a80; }
+.md-pro-lv6 { padding-left: 76px; color: #6b788b; }
+
+.md-pro-diags { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 0; }
+.md-pro-diag {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border-left: 3px solid #cbd6e4;
+  background: #f6f8fb;
+}
+.md-pro-diag-warning { border-left-color: #d9a533; background: #fdf7ea; }
+.md-pro-diag-info { border-left-color: #92a6bf; }
+.md-pro-diag-link {
+  flex: 1 1 auto;
+  border: 0;
+  background: transparent;
+  color: #33465e;
+  text-align: left;
+  font: inherit;
+  line-height: 1.55;
+  padding: 0;
+  cursor: pointer;
+  word-break: break-word;
+}
+.md-pro-diag-link:hover { color: #233e60; text-decoration: underline; }
+.md-pro-diag-link:focus-visible { outline: 2px solid #6f93bc; outline-offset: 2px; }
+.md-pro-diag-text { flex: 1 1 auto; line-height: 1.55; word-break: break-word; }
+.md-pro-diag-line { flex: 0 0 auto; color: #8290a2; font-size: 11px; white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .md-pro-body { max-height: min(180px, 25vh); }
+}
+

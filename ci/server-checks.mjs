@@ -47,6 +47,26 @@ test('rejects malformed JSON, unsupported content type and oversized request', a
   }
 });
 
+test('serves local editor assets and limits source positions to preview', async t => {
+  let printed;
+  const app = await fixture(t, { chromeFactory: () => ({
+    start: async () => {},
+    printHtml: async html => { printed = html; return Buffer.from('%PDF-test'); },
+    stop: async () => {},
+  }) });
+  for (const file of ['editor-vendor.js', 'editor-core.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-core.css', 'editor-pro.css', 'editor-workspace.css']) {
+    const response = await fetch(app.url + '/' + file);
+    assert.equal(response.status, 200, file);
+    assert.match(response.headers.get('content-type'), file.endsWith('.css') ? /text\/css/ : /text\/javascript/);
+  }
+  const source = '# 编辑验收\n\n## 中文章节\n\n保留正文。';
+  const response = await app.post('/api/render', { md: source });
+  assert.equal(response.status, 200);
+  assert.match((await response.json()).html, /<h2\b[^>]*data-md2pdf-source-line="3"/);
+  assert.equal((await app.post('/api/pdf', { md: source })).status, 200);
+  assert.doesNotMatch(printed, /data-md2pdf-source-line|md2pdf-source/);
+});
+
 test('web render escapes raw/math HTML, blocks paths and dangerous links, inlines trusted assets', async t => {
   const app = await fixture(t);
   const response = await app.post('/api/render', { md: '# 安全\n\n<script>alert("owned")</script>\n\n$<img src=x onerror=alert(2)>$\n\n![secret](file:///etc/passwd)\n\n![remote](http://127.0.0.1:9999/private)\n\n[bad](javascript:alert%281%29)\n\n## 小节\n\n正常内容' });

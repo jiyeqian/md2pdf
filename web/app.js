@@ -97,6 +97,7 @@ function enumEntries(name, control) {
 function applyPolicy(policy) {
   if (!policy || !policy.controls) return;
   currentPolicy = policy;
+  document.dispatchEvent(new CustomEvent('md-document-type', { detail: { type: policy.type } }));
   for (const [name, control] of Object.entries(policy.controls)) {
     if (name === 'type') continue;
     const field = form.elements[name];
@@ -192,7 +193,8 @@ async function request(url, body, signal) {
 function injectRevision(html, rev) {
   return String(html)
     .replaceAll("type:'md2pdf-ready'", `type:'md2pdf-ready',revision:${rev}`)
-    .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`);
+    .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`)
+    .replaceAll("type:'md2pdf-source'", `type:'md2pdf-source',revision:${rev}`);
 }
 
 async function resolveDocument(signal) {
@@ -263,6 +265,8 @@ window.addEventListener('message', event => {
   if (event.data.type === 'md2pdf-ready') {
     clearTimeout(previewTimer);
     if (!downloading) setStatus('预览已更新');
+  } else if (event.data.type === 'md2pdf-source' && Number.isSafeInteger(event.data.line) && event.data.line > 0 && event.data.line <= editor.value.split('\n').length) {
+    document.dispatchEvent(new CustomEvent('md-preview-source', { detail: { line: event.data.line } }));
   } else if (event.data.type === 'md2pdf-error') {
     clearTimeout(previewTimer);
     setStatus(event.data.error || '预览排版失败。', true);

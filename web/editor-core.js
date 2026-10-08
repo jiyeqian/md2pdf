@@ -125,7 +125,9 @@
         });
       if (!options.length) return null;
       const from = Number.isFinite(result.from) ? clamp(result.from, 0, text.length) : context.pos;
-      return { from, options, validFor: /^[\w\u00b7-\uffff]*$/ };
+      const to = Number.isFinite(result.to) ? clamp(result.to, from, text.length) : context.pos;
+      // The provider filters IDs; the replacement range may include a closing delimiter.
+      return { from, to, options, filter: false };
     }
 
     // ---- default Markdown language (with fenced code highlighting) ----
@@ -203,7 +205,7 @@
     // Replace the whole document. `resetHistory` builds a fresh state (clears
     // undo history) for programmatic load/restore; used by setValue and by
     // external textarea writes.
-    function setDocument(text, resetHistory) {
+    function setDocument(text, resetHistory, notifyInput = true) {
       const next = typeof text === 'string' ? text : String(text == null ? '' : text);
       if (!view) return;
       if (resetHistory) {
@@ -212,7 +214,7 @@
         writeTextarea(next);
         emitChange(next);
         emitCursor(1);
-        emitInput();
+        if (notifyInput) emitInput();
       } else {
         view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: next } });
       }
@@ -240,6 +242,14 @@
     ]);
 
     let extensions = [
+      V.EditorState.phrases.of({
+        'Find': '查找内容', 'Replace': '替换为', 'next': '下一处', 'previous': '上一处',
+        'all': '选择全部', 'match case': '区分大小写', 'regexp': '正则表达式',
+        'by word': '完整词', 'replace': '替换当前', 'replace all': '全部替换',
+        'close': '关闭查找', 'No matches found': '未找到匹配内容',
+        'Fold line': '折叠行', 'Unfold line': '展开行', 'folded code': '已折叠内容',
+        'Completions': '补全建议',
+      }),
       V.lineNumbers(),
       V.highlightActiveLineGutter(),
       V.highlightActiveLine(),
@@ -302,6 +312,12 @@
         const range = normalizeRange(view.state.doc.length, from, to);
         view.dispatch({ changes: { from: range.from, to: range.to, insert: String(text == null ? '' : text) } });
       },
+      replaceRanges: function (changes) {
+        view.dispatch({ changes: changes.map(function (change) {
+          const range = normalizeRange(view.state.doc.length, change.from, change.to);
+          return { from: range.from, to: range.to, insert: String(change.insert) };
+        }) });
+      },
       setSelection: function (from, to) {
         const range = normalizeRange(view.state.doc.length, from, to === undefined ? from : to);
         view.dispatch({ selection: { anchor: range.from, head: range.to }, scrollIntoView: true });
@@ -334,7 +350,7 @@
       button.className = 'md-editor-button';
       button.textContent = item.label;
       button.setAttribute('aria-label', item.label);
-      button.addEventListener('click', function () { runCommand(item.command); view.focus(); });
+      button.addEventListener('click', function () { runCommand(item.command); if (item.command !== 'find' && item.command !== 'replace') view.focus(); });
       toolbar.append(button);
     }
 
@@ -351,6 +367,10 @@
     }
 
     host.append(toolbar, editorHost);
+    // Search fields otherwise commit on keyup/change, missing paste and IME input updates.
+    editorHost.addEventListener('input', function (event) {
+      if (event.target.matches('.cm-search input.cm-textfield')) event.target.dispatchEvent(new Event('change'));
+    });
     textarea.parentNode.insertBefore(host, textarea.nextSibling);
 
     // Install the value bridge before hiding, so any later writes are captured.
@@ -362,7 +382,8 @@
         set: function (next) {
           const text = typeof next === 'string' ? next : String(next == null ? '' : next);
           nativeValue.set.call(this, text);
-          if (view && view.state.doc.toString() !== text) setDocument(text, true);
+          // Native textarea.value assignments are silent; boot's revision guards depend on that.
+          if (view && view.state.doc.toString() !== text) setDocument(text, true, false);
         },
       });
     }
