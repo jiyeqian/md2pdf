@@ -1,0 +1,105 @@
+/* md2pdf web editor — core styles (CodeMirror 6 host). */
+
+.md-editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.md-editor-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid #edf0f4;
+  background: #fbfcfd;
+}
+
+.md-editor-button {
+  border: 1px solid #dbe4f0;
+  background: #fff;
+  color: #42648b;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.md-editor-button:hover {
+  background: #eef2f8;
+  color: #233e60;
+}
+
+.md-editor-button:focus-visible {
+  outline: 2px solid #6f93bc;
+  outline-offset: 2px;
+}
+
+.md-editor-host {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.md-editor-host .cm-editor {
+  height: 100%;
+}
+
+.md-editor-host .cm-editor.cm-focused {
+  outline: none;
+}
+
+/* The textarea is hidden only after the editor mounts successfully. */
+#markdown.md-editor-source[hidden] {
+  display: none;
+}
+
+/* Search / replace panel: keep it readable and Chinese-label friendly. */
+.md-editor-host .cm-panels {
+  background: #fbfcfd;
+  color: #35445a;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.md-editor-host .cm-panel.cm-search input,
+.md-editor-host .cm-panel.cm-search button {
+  font-size: 12px;
+}
+
+.md-editor-host .cm-textfield {
+  border: 1px solid #d9e0e9;
+  border-radius: 6px;
+  padding: 3px 8px;
+  background: #fff;
+  color: #26394f;
+}
+
+.md-editor-host .cm-button {
+  border: 1px solid #dbe4f0;
+  background: #fff;
+  color: #42648b;
+  border-radius: 6px;
+  padding: 3px 10px;
+}
+
+.md-editor-host .cm-panel.cm-search label {
+  color: #677389;
+}
+
+/* Tooltips (autocomplete) stay above the app chrome. */
+.md-editor-host .cm-tooltip {
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(35, 62, 96, .12);
+}
+
+.md-editor-host .cm-tooltip-autocomplete ul li[aria-selected] {
+  background: #eef2f8;
+  color: #233e60;
+}
