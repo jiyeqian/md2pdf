@@ -106,6 +106,112 @@ test('times out stuck printing and releases queue for another task', async t => 
   assert.equal((await app.post('/api/pdf', doc)).status, 200);
 });
 
+test('serves policy, example catalog and allowlisted example sources', async t => {
+  const app = await fixture(t);
+  const policy = await fetch(app.url + '/api/policy');
+  assert.equal(policy.status, 200);
+  const policyDoc = await policy.json();
+  assert.equal(policyDoc.version, 1);
+  assert.ok(policyDoc.policy.gb);
+  assert.deepEqual(policyDoc.policy.gb.availableKeys, ['type', 'toc']);
+
+  const catalogRes = await fetch(app.url + '/api/examples');
+  assert.equal(catalogRes.status, 200);
+  const { examples } = await catalogRes.json();
+  assert.deepEqual(examples.map(e => e.id), ['general', 'skill', 'readme', 'paper', 'gb']);
+  for (const e of examples) {
+    assert.equal(typeof e.type, 'string');
+    assert.ok(e.title && e.description, '目录项需带 id/type/title/description');
+    assert.equal('summary' in e, false);
+    assert.equal('md' in e, false);
+  }
+
+  // 带 id：返回 {md, type, title}
+  const gb = await fetch(app.url + '/api/example?id=gb');
+  assert.equal(gb.status, 200);
+  const gbBody = await gb.json();
+  assert.equal(gbBody.type, 'gb');
+  assert.ok(gbBody.title);
+  assert.match(gbBody.md, /标准号/);
+
+  // 旧契约：不带 id 仍返回默认正文
+  const defaultRes = await fetch(app.url + '/api/example');
+  assert.equal(defaultRes.status, 200);
+  const defaultBody = await defaultRes.json();
+  assert.equal(typeof defaultBody.md, 'string');
+  assert.ok(defaultBody.md.length > 0);
+
+  // 白名单之外（遍历 / 未知 id）一律 404
+  for (const route of ['/api/example?id=../../package.json', '/api/example?id=../examples/general.md', '/api/example?id=nope']) {
+    assert.equal((await fetch(app.url + route)).status, 404, route);
+  }
+
+  // 在线示例 .md：只服务白名单实例
+  const md = await fetch(app.url + '/examples/general.md');
+  assert.equal(md.status, 200);
+  assert.match(md.headers.get('content-type'), /text\/markdown/);
+  for (const route of ['/examples/../package.json', '/examples/%2e%2e/package.json', '/examples/secret.md']) {
+    assert.equal((await fetch(app.url + route)).status, 404, route);
+  }
+});
+
+test('enforces document-type policy on both render and pdf before rendering', async t => {
+  const app = await fixture(t);
+  // 直接覆盖被禁用的控件 → 400
+  assert.equal((await app.post('/api/render', { md: doc.md, opts: { theme: 'gb' } })).status, 400);
+  assert.equal((await app.post('/api/pdf', { md: doc.md, opts: { numberScheme: 'gb' } })).status, 400);
+
+  // 未开放的编号方案（paper 无 cjk）→ 400
+  const paper = { md: '---\nabstract: 摘要\n---\n# 论文\n\n## 方法\n\n正文', opts: { numberScheme: 'cjk' } };
+  assert.equal((await app.post('/api/render', paper)).status, 400);
+
+  // 自动识别为 gb 后，字号 / 版式等一律锁定 → 400
+  const gbSource = '---\n标准号: GB/T 9999-2020\n---\n# 标准\n\n## 范围\n\n正文';
+  assert.equal((await app.post('/api/render', { md: gbSource, opts: { fontSize: 12 } })).status, 400);
+  assert.equal((await app.post('/api/render', { md: gbSource, opts: { marginTop: 12 } })).status, 400);
+
+  // 合法的原始 GB 输入（不加任何覆盖）→ 200，并回带策略/生效配置
+  const ok = await app.post('/api/render', { md: gbSource, opts: {} });
+  assert.equal(ok.status, 200);
+  const body = await ok.json();
+  assert.equal(body.type, 'gb');
+  assert.equal(body.policy.locked, true);
+  assert.equal(body.effective.theme, 'gb');
+  assert.equal(body.effective.numberScheme, 'gb');
+});
+
+test('render metadata reflects the effective configuration', async t => {
+  const app = await fixture(t);
+  const res = await app.post('/api/render', { md: doc.md, opts: { theme: 'minimal' } });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.type, 'general');
+  assert.equal(body.effective.theme, 'minimal');
+  assert.ok(body.policy.controls.theme);
+});
+
+test('resolve reports automatic type before stale overrides are submitted', async t => {
+  const app = await fixture(t);
+  const res = await app.post('/api/resolve', { md: '---\n标准号: GB/T 9999-2020\n---\n# 标准', opts: {} });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.type, 'gb');
+  assert.equal(body.policy.controls.fontSize.available, false);
+  assert.equal(body.policy.controls.toc.available, true);
+});
+
+test('publicHost mode allows the configured Origin and denies others', async t => {
+  const app = await fixture(t, { publicHost: 'docs.example.test' });
+  assert.equal((await app.post('/api/render', doc, { Origin: 'https://docs.example.test' })).status, 200);
+  assert.equal((await app.post('/api/render', doc, { Origin: 'http://docs.example.test' })).status, 200);
+  assert.equal((await app.post('/api/render', doc, { Origin: 'https://evil.example.test' })).status, 403);
+  assert.equal((await app.post('/api/render', doc, { Origin: 'null' })).status, 403);
+  const malformed = await new Promise((resolve, reject) => {
+    http.get(app.url, { headers: { Host: 'https://evil.example' } }, res => { res.resume(); resolve(res.statusCode); }).on('error', reject);
+  });
+  assert.equal(malformed, 403);
+});
+
 test('a stopped browser cannot launch later during shutdown', async () => {
   const browser = new Chrome('never-launch-this-path', '/tmp');
   await browser.stop();

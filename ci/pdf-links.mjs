@@ -65,6 +65,14 @@ export function analyze(file) {
   };
   if (catalogNum != null) collectDests(dict(body(catalogNum), 'Dests'));
 
+  const annotationPages = new Map();
+  for (const page of pageObjs) {
+    const pageBody = body(page);
+    const inline = /\/Annots\s*\[([^\]]*)\]/.exec(pageBody);
+    const indirect = dict(pageBody, 'Annots');
+    const annotations = inline?.[1] || (indirect == null ? '' : body(indirect));
+    for (const ref of annotations.matchAll(/(\d+)\s+\d+\s+R/g)) annotationPages.set(+ref[1], page);
+  }
   const links = [];
   for (const n of objs.keys()) {
     const b = body(n);
@@ -73,7 +81,7 @@ export function analyze(file) {
     const nameM = /\/Dest\s*\/([^\s/\[\]<>()]+)/.exec(b);
     const arrM = /\/Dest\s*\[\s*(\d+)\s+\d+\s+R/.exec(b);
     const goTo = /\/S\s*\/GoTo[\s\S]{0,300}?\/D\s*(?:\[\s*(\d+)\s+\d+\s+R|\/([^\s/\[\]<>()]+))/.exec(b);
-    const link = { obj: n, kind: 'none', target: null, ref: null, page: undefined };
+    const link = { obj: n, sourcePage: annotationPages.get(n), kind: 'none', target: null, ref: null, page: undefined };
     if (uriM) { link.kind = 'uri'; link.target = uriM[1].replace(/\\([()\\])/g, '$1'); }
     else if (nameM) { link.kind = 'internal'; link.ref = nameM[1]; link.target = nameM[1]; }
     else if (arrM) { link.kind = 'internal'; link.ref = 'page#' + arrM[1]; link.page = +arrM[1]; }
@@ -100,6 +108,7 @@ export function summarize(r) {
     namedDestinations: r.names.size,
     total: r.links.length,
     internal: internal.length,
+    crossPage: internal.filter(l => l.sourcePage != null && l.page != null && l.sourcePage !== l.page).length,
     uri: r.links.filter(l => l.kind === 'uri').length,
     none: r.links.filter(l => l.kind === 'none').length,
     dangling: internal.filter(l => l.dangling),

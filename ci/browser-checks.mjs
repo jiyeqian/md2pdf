@@ -6,6 +6,7 @@ import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { createApp } from '../src/server.mjs';
 import { Chrome, findChrome } from '../src/chrome.mjs';
+import { analyze, summarize } from './pdf-links.mjs';
 
 const out = path.resolve(process.env.MD2PDF_ACCEPTANCE_DIR || path.join(os.tmpdir(), 'md2pdf-web-acceptance'));
 await mkdir(out, { recursive: true });
@@ -27,6 +28,11 @@ try {
     assert.ok(/\/Subtype\s*\/Link/.test(text), `${type} links missing`);
     const file = path.join(out, type + '.pdf');
     await writeFile(file, pdf);
+    const links = summarize(analyze(file));
+    assert.ok(links.internal > 0, `${type}: internal destinations missing`);
+    assert.equal(links.dangling.length, 0, `${type}: dangling PDF destinations`);
+    if (type === 'general') assert.ok(links.crossPage > 0, 'cross-page PDF links missing');
+    assert.ok(!links.uris.some(uri => uri.startsWith(url + '#')), `${type}: internal links became site URLs`);
     const info = spawnSync('pdfinfo', [file], { encoding: 'utf8' });
     if (!info.error) { assert.equal(info.status, 0); console.log(`${type}: ${info.stdout.match(/^Pages:\s+(\d+)/m)?.[1]} pages, bookmarks and links OK`); }
     else console.log(`${type}: PDF, bookmarks and links OK (pdfinfo unavailable)`);
@@ -42,8 +48,39 @@ try {
       assert.equal(counts.errors, 0, 'MathJax reported invalid math');
       assert.equal(counts.images, true, 'Embedded images failed to decode');
       assert.deepEqual(counts.footers, Array.from({length:counts.pages},(_,i)=>`${i+1} / ${counts.pages}`));
+      const visual = await previewBrowser.send('Runtime.evaluate', { expression: `JSON.stringify({background:getComputedStyle(document.querySelector('.pagedjs_page')).backgroundColor,shadow:getComputedStyle(document.querySelector('.pagedjs_page')).boxShadow,gap:getComputedStyle(document.querySelector('.pagedjs_pages')).rowGap,markers:[...document.querySelectorAll('.pagedjs_pages main ol:not(.references):not(.footnotes) > li[data-md2pdf-n]')].map(li=>li.getAttribute('data-md2pdf-n')),referenceMarkers:document.querySelectorAll('.pagedjs_pages .references [data-md2pdf-n], .pagedjs_pages .footnotes [data-md2pdf-n]').length})`, returnByValue:true });
+      const appearance = JSON.parse(visual.result.value);
+      assert.equal(appearance.background, 'rgb(255, 255, 255)');
+      assert.notEqual(appearance.shadow, 'none');
+      assert.equal(appearance.gap, '24px');
+      assert.equal(appearance.referenceMarkers, 0);
+      assert.ok(appearance.markers.includes('1') && appearance.markers.includes('2'), JSON.stringify(appearance));
+      // Activate actual anchors after pagination: navigation stays in-document and highlights a visible target.
+      for (const selector of ['sup.fnref a', 'a.ref', 'mjx-container a']) {
+        const clicked = await previewBrowser.send('Runtime.evaluate', { expression: `(() => { const scope=document.querySelector('.pagedjs_pages'); const a=scope.querySelector(${JSON.stringify(selector)}); if(!a) return JSON.stringify({missing:true}); const before=location.href; a.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true})); const target=scope.querySelector('.md2pdf-preview-target'); return JSON.stringify({href:a.getAttribute('href')||a.getAttribute('xlink:href'),unchanged:location.href===before,target:target?.id||target?.getAttribute('data-id'),visible:!!target&&target.getClientRects().length>0}); })()`, returnByValue:true });
+        const jump=JSON.parse(clicked.result.value);
+        assert.equal(jump.missing, undefined, selector + ': missing reference');
+        assert.equal(jump.unchanged, true, selector + ': navigated away');
+        assert.equal(jump.visible, true, selector + ': visible target missing');
+      }
+      console.log('preview sheets and internal anchors:', JSON.stringify(appearance));
       console.log('general preview:', JSON.stringify(counts));
     }
+  }
+  // Online sources must be self-contained and render through the same public API.
+  const catalog = await (await fetch(url + '/api/examples')).json();
+  assert.equal(catalog.examples.length, 5);
+  for (const item of catalog.examples) {
+    const sample = await (await fetch(url + '/api/example?id=' + item.id)).json();
+    const rendered = await post('/api/render', { md: sample.md, opts: { type: sample.type } });
+    assert.equal(rendered.status, 200, item.id + ': online render failed');
+    const { html } = await rendered.json();
+    await previewBrowser.printHtml(html, { webSafe: true, waitMath: /window\.__md2pdfMathReady\s*=\s*false/.test(html), waitMermaid: /window\.__md2pdfMermaidReady\s*=\s*false/.test(html), waitPaged: true });
+    const result = await previewBrowser.send('Runtime.evaluate', { expression: `JSON.stringify({pages:document.querySelectorAll('.pagedjs_page').length,images:[...document.querySelectorAll('img')].every(img=>img.complete&&img.naturalWidth>0)})`, returnByValue:true });
+    const state = JSON.parse(result.result.value);
+    assert.ok(state.pages > 0, item.id + ': pagination missing');
+    assert.equal(state.images, true, item.id + ': online image failed');
+    console.log('online example:', item.id, state.pages, 'pages, images OK');
   }
   // A failed graph must fail the export, and the next valid document must still print.
   const invalid = await post('/api/pdf', { md: '# Invalid\n\n```mermaid\nthis is not valid mermaid\n```' });

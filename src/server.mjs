@@ -1,10 +1,14 @@
 import http from 'node:http';
 import path from 'node:path';
 import os from 'node:os';
+import { existsSync } from 'node:fs';
 import { readFile, mkdtemp, rm } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { render } from './render.mjs';
+import { enhancePreview } from './preview.mjs';
 import { Chrome, findChrome } from './chrome.mjs';
+import { webPolicyDocument, policyForType, effectiveOptions, assertOptionsAllowed, resolveWebType } from './web-options.mjs';
+import { exampleCatalog, findExample, defaultExampleSource } from './web-examples.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LIMIT = 1024 * 1024;
@@ -62,14 +66,7 @@ export async function webDocument(html, preview = false, type = 'general') {
   html = html.replace(/\.catch\(function \(\) \{ window\.__md2pdf(Mermaid|Paged)Ready = true; \}\)/g, (_, name) => `.catch(function (e) { window.__md2pdf${name}Error = String(e); window.__md2pdf${name}Ready = true; })`);
   html = html.replace(/catch \(e\) \{ window\.__md2pdf(Mermaid|Paged)Ready = true; \}/g, (_, name) => `catch (e) { window.__md2pdf${name}Error = String(e); window.__md2pdf${name}Ready = true; }`);
   html = html.replace('<meta charset="utf-8">', `<meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${DOC_CSP}"><meta name="referrer" content="no-referrer">`);
-  if (preview) {
-    // Paged.js can lose generated CSS counters; keep preview TOC markers explicit.
-    html = html.replace(/(<div class="toc">[\s\S]*?<ol>)([\s\S]*?)(<\/ol>)/, (_, start, entries, end) => {
-      let index = 0;
-      return start + entries.replace(/<li>/g, () => `<li data-preview-index="${String(++index).padStart(2, '0')}">`) + end;
-    }).replace('</style>', '.toc li[data-preview-index]::before { content: attr(data-preview-index); counter-increment: none; } .web-page-number::before, .web-page-number::after { content: none !important; }\n</style>');
-  }
-  if (preview) html = html.replace('</body>', `<script>(function(){var started=Date.now();function check(){var failed=window.__md2pdfMermaidError||window.__md2pdfPagedError; if(failed){parent.postMessage({type:'md2pdf-error',error:'公式、图表或分页失败'},'*');return;}if(window.__md2pdfMathReady!==false&&window.__md2pdfMermaidReady!==false&&window.__md2pdfPagedReady!==false){document.fonts.ready.then(function(){var pages=document.querySelectorAll('.pagedjs_page');if(${JSON.stringify(type)}!=='gb')pages.forEach(function(page,index){var footer=page.querySelector('.pagedjs_margin-bottom-center .pagedjs_margin-content');if(footer){footer.classList.add('web-page-number');footer.textContent=(index+1)+' / '+pages.length;footer.style.fontSize='8pt';footer.style.color='#8a8578';}});function fit(){var page=document.querySelector('.pagedjs_page'),pages=document.querySelector('.pagedjs_pages');if(page&&pages)pages.style.zoom=Math.min(1,(document.documentElement.clientWidth-24)/page.offsetWidth);}fit();addEventListener('resize',fit);parent.postMessage({type:'md2pdf-ready'},'*');});return;}if(Date.now()-started>30000){parent.postMessage({type:'md2pdf-error',error:'排版超时，请缩短文档或检查公式与图表'},'*');return;}setTimeout(check,100);}addEventListener('load',check);})();</script></body>`);
+  if (preview) html = enhancePreview(html, type);
   return html;
 }
 
@@ -109,7 +106,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     tail = task.then(() => {}, () => {});
     try { return await task; } finally { queued--; }
   }
-  const staticRoutes = new Map([['/', ['web/index.html', 'text/html']], ['/app.js', ['web/app.js', 'text/javascript']], ['/app.css', ['web/app.css', 'text/css']]]);
+  const staticRoutes = new Map([['/', ['web/index.html', 'text/html']], ['/app.js', ['web/app.js', 'text/javascript']], ['/app.css', ['web/app.css', 'text/css']], ['/examples.js', ['web/examples.js', 'text/javascript']], ['/examples.css', ['web/examples.css', 'text/css']]]);
   const server = http.createServer(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -135,14 +132,49 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       if (closed) throw error(503, '服务正在关闭');
       if (req.method === 'GET' && staticRoutes.has(req.url)) {
         const [file, type] = staticRoutes.get(req.url);
-        res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8` }); res.end(await readFile(path.join(ROOT, file))); return;
+        const target = path.join(ROOT, file);
+        if (!existsSync(target)) { json(404, { error: '页面不存在' }); return; }
+        res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8` }); res.end(await readFile(target)); return;
       }
-      if (req.method === 'GET' && req.url === '/api/example') { json(200, { md: await readFile(path.join(ROOT, 'examples/general.md'), 'utf8') }); return; }
-      if (!['/api/render', '/api/pdf'].includes(req.url)) { json(404, { error: '页面不存在' }); return; }
+      // UI 页面由前端工作流后续补齐：仅在文件已存在时提供，缺失时按 404 处理而非 500。
+      if (req.method === 'GET' && req.url === '/examples' && existsSync(path.join(ROOT, 'web/examples.html'))) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(await readFile(path.join(ROOT, 'web/examples.html'))); return;
+      }
+      // 在线示例：只服务白名单里的 .md（id 必须命中固定目录），请求参数不参与路径拼接。
+      if (req.method === 'GET' && req.url.startsWith('/examples/')) {
+        const example = await findExample(decodeURIComponent(req.url.slice('/examples/'.length)).replace(/\.md$/i, ''));
+        if (!example) { json(404, { error: '示例不存在' }); return; }
+        res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' }); res.end(example.md); return;
+      }
+      if (req.method === 'GET' && req.url === '/api/policy') { json(200, webPolicyDocument()); return; }
+      if (req.method === 'GET' && req.url === '/api/examples') {
+        const examples = (await exampleCatalog()).map(({ id, type, title, summary }) => ({ id, type, title, description: summary }));
+        json(200, { examples }); return;
+      }
+      if (req.method === 'GET' && (req.url === '/api/example' || req.url.startsWith('/api/example?'))) {
+        const id = new URL(req.url, 'http://localhost').searchParams.get('id');
+        if (!id) { json(200, { md: await defaultExampleSource() }); return; }
+        const example = await findExample(id);
+        if (!example) { json(404, { error: '示例不存在' }); return; }
+        json(200, { md: example.md, type: example.type, title: example.title }); return;
+      }
+      if (!['/api/render', '/api/pdf', '/api/resolve'].includes(req.url)) { json(404, { error: '页面不存在' }); return; }
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); json(405, { error: '请使用 POST' }); return; }
       const { md, opts } = validateInput(await readBody(req));
+      // 先由原文判定生效类型，再按类型策略强制校验，最后才渲染（不把默认编号方案塞进 opts）。
+      const type = resolveWebType(md, opts.type);
+      if (req.url === '/api/resolve') { json(200, { type, policy: policyForType(type) }); return; }
+      assertOptionsAllowed(opts, type);
       const rendered = await render(md, opts, { webSafe: true });
-      if (req.url === '/api/render') { json(200, { html: await webDocument(rendered.pagedHtml, true, rendered.type), type: rendered.type }); return; }
+      if (req.url === '/api/render') {
+        json(200, {
+          html: await webDocument(rendered.pagedHtml, true, rendered.type),
+          type: rendered.type,
+          policy: policyForType(rendered.type),
+          effective: effectiveOptions(opts, rendered.type),
+        });
+        return;
+      }
       const pdf = await pdfTask(await webDocument(rendered.html), rendered.printOptions);
       const name = Array.from(Buffer.from(rendered.title.replace(/[\x00-\x1f\x7f\/\\]/g, '_')).toString('utf8')).slice(0, 100).join('') || 'document';
       const encodedName = encodeURIComponent(name).replace(/[!'()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());

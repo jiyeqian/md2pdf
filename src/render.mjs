@@ -17,7 +17,7 @@ const addClass = (attrs, cls) => /\sclass="/.test(attrs)
   ? attrs.replace(/\sclass="([^"]*)"/, (m, c) => ` class="${c} ${cls}"`)
   : `${attrs} class="${cls}"`;
 
-function splitFrontmatter(src) {
+export function splitFrontmatter(src) {
   const m = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(src);
   if (!m) return { fm: {}, body: src };
   const fm = {};
