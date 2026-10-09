@@ -308,13 +308,16 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   } };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const port = Number(process.env.PORT || 3000);
+export function startServer({ port = Number(process.env.PORT || 3000), publicHost = process.env.MD2PDF_PUBLIC_HOST || '' } = {}) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT 必须在 1–65535 之间');
-  const publicHost = process.env.MD2PDF_PUBLIC_HOST || '';
   const host = publicHost ? '0.0.0.0' : '127.0.0.1';
   const app = createApp({ publicHost });
   app.server.on('error', e => { console.error('md2pdf 服务启动失败：', e.message); process.exitCode = 1; });
   app.server.listen(port, host, () => console.log(`md2pdf 工作台：http://${host}:${port}${publicHost ? `（公网域名 ${publicHost}）` : ''}`));
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { app.close().catch(e => { console.error(e.message); process.exitCode = 1; }); });
+  return app;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  startServer();
 }

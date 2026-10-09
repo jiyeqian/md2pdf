@@ -68,11 +68,14 @@ md2pdf skill install --target claude
 
 ## 本地在线编辑器
 
-在仓库目录启动本地服务（需要 Node.js ≥ 18 和 Chrome / Edge / Chromium）：
+全局安装后即可启动本地工作台（需要 Node.js ≥ 18 和 Chrome / Edge / Chromium；此命令随 1.14.1 起的版本提供）：
 
 ```bash
-npm start
+md2pdf webapp             # 默认端口 3000
+md2pdf webapp --port 3001 # 自定义端口
 ```
+
+仅监听 `127.0.0.1`，按 `Ctrl+C` 停止。端口被占用时会明确报错，可换用其他端口；推荐使用 1024 以上的端口。在源码仓库仍可用 `npm start` 启动。
 
 打开 `http://127.0.0.1:3000`，左侧编辑 Markdown，右侧分页预览，点击「下载 PDF」导出。支持五类文档，按类型提供主题、目录、字号、页边距和章节编号选项；国家标准使用固定版式。默认加载完整示例，包含公式、Mermaid 和参考文献。
 
@@ -87,7 +90,7 @@ npm run test:browser                       # 真实 Chrome 与五类 PDF 验收
 
 非 GB 文档的分页预览使用 Paged.js，PDF 使用 Chrome 原生分页，分页和字体可能有差异，以导出 PDF 为准。GB 版式的字体仍取决于本机安装情况。在线体验见文档开头链接；自行部署到公网时需验证运行环境与隔离边界。
 
-在线应用从仓库运行；现有 npm CLI 包的发布范围和零 npm 运行时依赖保持不变。验收步骤与验证边界见 [本地验收记录](docs/web-app-acceptance.md)。
+npm 包包含本地工作台和示例库资源，保留零 npm 运行时依赖。验收步骤与验证边界见 [本地验收记录](docs/web-app-acceptance.md)。
 
 ## 用法
 
