@@ -23,9 +23,9 @@ const wsJs = await read('web/editor-workspace.js');
 const wsCss = await read('web/editor-workspace.css');
 
 // ---------------------------------------------------------------- index.html
-test('头部品牌：主标题 md2pdf，副标题 MAKE MD2PDF GREAT，页面标题 md2pdf', () => {
+test('头部品牌：主标题 md2pdf，副标题编辑器，页面标题 md2pdf', () => {
   assert.match(indexHtml, /<h1 class="brand-logo">md2pdf<\/h1>/);
-  assert.match(indexHtml, /<p class="brand-sub">MAKE MD2PDF GREAT<\/p>/);
+  assert.match(indexHtml, /<p class="brand-sub">编辑器<\/p>/);
   assert.match(indexHtml, /<title>md2pdf<\/title>/);
   assert.ok(!/Markdown 排版工作台<\/p>/.test(indexHtml), '不应残留旧的描述文案');
 });
@@ -626,4 +626,13 @@ test('选项模型：范围默认值（元数据缺省回退），空值不发�
   assert.equal(model.rangeOptionValue('lineHeight', '1.9'), 1.9);
   assert.equal(model.rangeOptionValue('fontSize', 'abc'), undefined);
   assert.equal(model.rangeOptionValue('margin', undefined), undefined);
+});
+
+test('两页标语居中且弱化，模板页面文案一致', async () => {
+  const examples = await read('web/examples.html');
+  for (const html of [indexHtml, examples]) assert.match(html, /<p class="topbar-tagline">MAKE MD2PDF GREAT<\/p>/);
+  assert.match(examples, /<h2>模板示例<\/h2>/);
+  assert.match(examples, /id="use-example"[^>]*>使用模板<\/button>/);
+  assert.ok(!examples.includes('使用此示例'));
+  assert.match(appCss, /\.topbar-tagline\{[^}]*left:50%[^}]*color:#9aa5b3/);
 });

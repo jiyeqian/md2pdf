@@ -72,3 +72,8 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .range-note:empty{display:none}
 [data-control].is-default .range-number{color:#9aa6b6}
 @media(max-width:600px){.range-popover{left:auto;right:0;width:min(300px,calc(100vw - 24px))}}
+
+/* 标语独立居中；窄屏放在第二行，避让品牌和导航。 */
+.topbar{position:relative}
+.topbar-tagline{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;color:#9aa5b3;font-size:11px;font-weight:400;letter-spacing:1px;white-space:nowrap;pointer-events:none}
+@media(max-width:700px){.topbar{height:94px;padding-bottom:22px}.topbar-tagline{top:auto;bottom:8px;transform:translateX(-50%);font-size:10px;letter-spacing:.8px}}
