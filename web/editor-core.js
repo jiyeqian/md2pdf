@@ -75,7 +75,66 @@
     return count;
   }
 
-  const helpers = { clamp, normalizeRange, offsetToLine, lineToOffset, lineCount };
+  // Consume md2pdf math and footnotes before Markdown's shortcut-link parser.
+  // Styling links differently cannot repair a syntax tree that spans prose.
+  function academicMarkdownExtension() {
+    return {
+      defineNodes: ['MdMath', 'MdFootnote', 'MdFootnoteDefinition'],
+      parseBlock: [{
+        name: 'MdMathBlock', before: 'FencedCode',
+        parse(cx, line) {
+          if (line.indent - line.baseIndent >= 4 || !/^\$\$\s*$/.test(line.text.slice(line.pos))) return false;
+          const start = cx.lineStart + line.pos;
+          cx.nextLine();
+          while (true) {
+            const closed = /^\s*\$\$\s*$/.test(line.text.slice(line.basePos));
+            const more = cx.nextLine();
+            if (closed || !more) break;
+          }
+          cx.addElement(cx.elt('MdMath', start, cx.prevLineEnd()));
+          return true;
+        }
+      }, {
+        name: 'MdFootnoteDefinition', before: 'LinkReference',
+        parse(cx, line) {
+          if (line.indent - line.baseIndent >= 4) return false;
+          const text = line.text.slice(line.pos);
+          const match = /^\[\^[^\]\s]+\]:[ \t]*/.exec(text);
+          if (!match) return false;
+          const start = cx.lineStart + line.pos;
+          const end = cx.lineStart + line.text.length;
+          const children = cx.parser.parseInline(text.slice(match[0].length), start + match[0].length);
+          cx.addElement(cx.elt('MdFootnoteDefinition', start, end, children));
+          cx.nextLine();
+          return true;
+        }
+      }],
+      parseInline: [{
+        name: 'MdMathInline', before: 'Escape',
+        parse(cx, next, pos) {
+          if (next !== 36) return -1;
+          const size = cx.char(pos + 1) === 36 ? 2 : 1;
+          for (let end = pos + size; end < cx.end; end++) {
+            if (cx.char(end) === 92) { end++; continue; }
+            if (size === 1 && cx.char(end) === 10) return -1;
+            if (cx.char(end) !== 36 || (size === 2 && cx.char(end + 1) !== 36)) continue;
+            if (end === pos + size) return -1;
+            return cx.addElement(cx.elt('MdMath', pos, end + size));
+          }
+          return -1;
+        }
+      }, {
+        name: 'MdFootnote', before: 'Link',
+        parse(cx, next, pos) {
+          if (next !== 91 || cx.char(pos + 1) !== 94) return -1;
+          const match = /^\[\^[^\]\s]+\]/.exec(cx.slice(pos, cx.end));
+          return match ? cx.addElement(cx.elt('MdFootnote', pos, pos + match[0].length)) : -1;
+        }
+      }]
+    };
+  }
+
+  const helpers = { clamp, normalizeRange, offsetToLine, lineToOffset, lineCount, academicMarkdownExtension };
   global.mdEditorCoreHelpers = helpers;
 
   // ---------------------------------------------------------------------------
@@ -155,7 +214,7 @@
       return codeLanguageNames[name] || null;
     }
 
-    const markdownSupport = V.markdown({ base: V.markdownLanguage, codeLanguages: codeLanguageFor });
+    const markdownSupport = V.markdown({ base: V.markdownLanguage, codeLanguages: codeLanguageFor, extensions: [academicMarkdownExtension()] });
 
     const highlightStyle = V.HighlightStyle.define([
       { tag: V.tags.heading, color: '#233e60', fontWeight: '700' },
