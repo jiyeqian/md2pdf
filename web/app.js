@@ -12,7 +12,6 @@ const statusEl = document.querySelector('#status');
 const download = document.querySelector('#download');
 const countEl = document.querySelector('#count');
 const emptyPreview = document.querySelector('#empty-preview');
-const documentType = document.querySelector('#document-type');
 const browseExamples = document.querySelector('#browse-examples');
 const topExamplesLink = document.querySelector('#examples-link-top');
 
@@ -71,8 +70,6 @@ function setStatus(message, error = false) {
   statusEl.textContent = message;
   statusEl.dataset.error = String(error);
 }
-
-function typeLabel(type) { return (policyDoc && policyDoc.labels && policyDoc.labels.type && policyDoc.labels.type[type]) || type || '自动识别'; }
 
 function updateCount() {
   if (countEl) countEl.textContent = `${editor.value.length.toLocaleString('zh-CN')} 字符`;
@@ -253,7 +250,6 @@ async function renderPreview() {
     if (current !== revision) return;
     if (result.policy) applyPolicy(result.policy);
     if (emptyPreview) emptyPreview.hidden = true;
-    if (documentType) documentType.textContent = typeLabel(result.type || type) + ' · A4';
     previewRevision = current;
     preview.srcdoc = injectRevision(result.html, current);
     setStatus('正在加载公式、图表与分页…');

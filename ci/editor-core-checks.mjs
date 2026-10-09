@@ -105,6 +105,9 @@ async function checkSourceContract() {
   for (const command of ['undo', 'redo', 'find', 'replace', 'fold', 'unfold', 'toggleFold']) assert(source.includes(command + ':'), 'command ' + command);
   assert(source.includes('toggleFold: function () { return V.unfoldCode(view) || V.foldCode(view); }'), 'toggleFold prefers unfold then fold at the current position');
   assert(source.includes("aria-label': 'Markdown 正文编辑器'"), 'content aria-label (Chinese)');
+  const activeLine = /'\.cm-activeLine':\s*\{\s*backgroundColor:\s*'rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)'/.exec(source);
+  assert(activeLine && Number(activeLine[1]) < 1, 'active-line background cannot obscure the selection layer');
+  assert(source.includes('&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground'), 'focused selection theme targets the drawSelection layer');
 }
 
 async function checkLicense() {

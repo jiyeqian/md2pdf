@@ -105,7 +105,8 @@
 
     formula: [{ d: 'M6 5.2h8L9.6 10l4.4 4.8H6' }],
     foldToggle: [{ d: 'M6.6 8.6 10 5.2l3.4 3.4' }, { d: 'M6.6 11.4 10 14.8l3.4-3.4' }],
-    sync: [{ circle: [10, 10, 3] }, { d: 'M10 3.4v2.2' }, { d: 'M10 14.4v2.2' }, { d: 'M3.4 10h2.2' }, { d: 'M14.4 10h2.2' }],
+    // Tabler arrows-exchange（24 网格）按 0.8333333333 缩放进 20 视图，路径数据未改动。
+    sync: [{ g: 'scale(0.8333333333)', d: 'M7 10h14l-4 -4M17 14h-14l4 4' }],
     insert: [{ rect: [4, 4, 12, 12], rx: 2 }, { d: 'M10 7v6' }, { d: 'M7 10h6' }]
   };
 
@@ -132,6 +133,12 @@
     svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('focusable', 'false');
     (ICONS[name] || []).forEach(function (shape) {
+      var parent = svg;
+      if (shape.g) {
+        parent = document.createElementNS(SVG_NS, 'g');
+        parent.setAttribute('transform', shape.g);
+        svg.appendChild(parent);
+      }
       var node;
       if (shape.circle) {
         node = document.createElementNS(SVG_NS, 'circle');
@@ -154,7 +161,7 @@
       node.setAttribute('stroke-width', '1.4');
       node.setAttribute('stroke-linecap', 'round');
       node.setAttribute('stroke-linejoin', 'round');
-      svg.appendChild(node);
+      parent.appendChild(node);
     });
     return svg;
   }
@@ -435,8 +442,8 @@
     return button;
   }
 
-  // 在两侧 panel-heading 的动作区注入全屏按钮；Markdown 侧位于最右，
-  // 预览侧置于下载按钮之前（下载仍是该栏最右的主操作）。
+  // 在两侧 panel-heading 的动作区注入全屏按钮：Markdown 侧位于最右，
+  // 预览侧追加在下载按钮之后，全屏始终位于该栏最右。
   function buildFullscreenButtons() {
     var editorHeading = editorPanel.querySelector('.panel-heading');
     var previewHeading = previewPanel.querySelector('.panel-heading');
@@ -449,11 +456,7 @@
 
     previewFullscreenBtn = makeFullscreenButton('预览全屏', '全屏预览（Esc 退出）');
     previewFullscreenBtn.addEventListener('click', function () { toggleFullscreen('preview'); });
-    if (previewActions) {
-      var downloadBtn = previewActions.querySelector('#download');
-      if (downloadBtn) previewActions.insertBefore(previewFullscreenBtn, downloadBtn);
-      else previewActions.appendChild(previewFullscreenBtn);
-    }
+    if (previewActions) previewActions.appendChild(previewFullscreenBtn);
     applyFullscreen(null); // 同步按钮初始 aria-pressed / title
   }
 
