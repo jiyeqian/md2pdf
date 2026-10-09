@@ -40,12 +40,13 @@ import { SCHEME_NAMES } from './numbering.mjs';
 import { parseArgs, expandArgs } from './options.mjs';
 import { render } from './render.mjs';
 import { Chrome, findChrome } from './chrome.mjs';
-const VERSION = '1.14.0';
+const VERSION = '1.14.1';
 
 const HELP = `
 md2pdf ${VERSION} —— Markdown → 优雅 PDF
 
   md2pdf <file.md> [file2.md ...] [选项]
+  md2pdf webapp [--port <端口>]（默认 3000，仅本机访问）
   md2pdf skill install --target <codex|workbuddy|codebuddy|claude|agents> [--force]
   md2pdf skill install --dir <技能目录> [--force]
 
@@ -121,6 +122,7 @@ function resolveOutput(mdPath, opts) {
 
 async function main() {
   const args = process.argv.slice(2);
+  if (args[0] === 'webapp') { const { runWebapp } = await import('./webapp.mjs'); await runWebapp(args.slice(1)); return; }
   if (args[0] === 'skill') { await installSkill(args.slice(1)); return; }
   const opts = parseArgs(expandArgs(args));
   if (opts.help) { console.log(HELP); return; }
