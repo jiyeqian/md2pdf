@@ -89,6 +89,30 @@
 
 .md-editor-host .cm-panel.cm-search label {
   color: #677389;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+
+/* App form inputs fill their container; search controls must stay inline. */
+.md-editor-host .cm-panel.cm-search .cm-textfield {
+  width: 180px;
+  max-width: calc(100% - 28px);
+  height: 28px;
+  vertical-align: middle;
+}
+
+.md-editor-host .cm-panel.cm-search input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  flex: 0 0 14px;
+  margin: 0;
+}
+
+.md-editor-host .cm-panel.cm-search {
+  padding-right: 28px;
 }
 
 /* Tooltips (autocomplete) stay above the app chrome. */
