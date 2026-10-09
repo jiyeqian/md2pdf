@@ -6,6 +6,7 @@
 
 ## 特色功能
 
+- **安装即用的 Web App**：全局安装后运行 `md2pdf webapp`，即可在 `http://127.0.0.1:3000` 使用 Markdown 编辑、分页预览与 PDF 导出；可用 `md2pdf webapp --port 3001` 指定端口（1.14.1 起提供）。
 - **BibTeX 脚注 → GB/T 7714—2025 参考文献**：脚注内容写成 BibTeX（`@article{...}`、`@book{...}` 等），自动按国标《信息与文献 参考文献著录规则》著录，并汇总为文末「参考文献」章节。
 - **参考文献双向链接**：正文引用编号可跳到参考文献，参考文献编号也可跳回正文原文位置（PDF 内链）。
 - **参考文献自动排序**：编号按正文「首次引用顺序」自动排列（类 LaTeX），markdown 里的定义顺序不受影响。
@@ -24,9 +25,9 @@
 
 | elegant（默认，墨蓝 + 古铜） | gb（国家标准版式） |
 | :---: | :---: |
-| [![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/general-elegant.pdf) | [![国家标准示例封面](docs/theme-gb.png)](examples/gb.pdf) |
+| [![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/general-elegant.pdf) | [![国家标准示例封面](https://raw.githubusercontent.com/jiyeqian/md2pdf/main/docs/theme-gb.png)](https://github.com/jiyeqian/md2pdf/blob/main/examples/gb.pdf) |
 
-点击效果图查看完整 PDF；国家标准示例的 Markdown 源码见 [examples/gb.md](examples/gb.md)。
+点击效果图查看完整 PDF；国家标准示例的 Markdown 源码见 [examples/gb.md](https://github.com/jiyeqian/md2pdf/blob/main/examples/gb.md)。
 
 ## 安装
 
