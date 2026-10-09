@@ -17,3 +17,33 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .fixed-rules[hidden]{display:none}
 .fixed-rules::before{content:"固定规则";display:inline-block;margin-right:8px;padding:1px 8px;border-radius:999px;background:#233e60;color:#fff;font-size:11px;font-weight:600;vertical-align:1px}
 @media(max-width:600px){.topbar-actions{gap:8px}.ghost-link{padding:8px 6px}}
+
+
+/* ---------- 顶栏 / 页脚链接按钮外观（示例库） ---------- */
+.button-link{display:inline-flex;align-items:center;gap:6px;color:#33465e;font-size:13px;font-weight:600;text-decoration:none;padding:9px 14px;border:1px solid #d9e0e9;border-radius:8px;background:#fff}
+.button-link:hover{background:#eef2f8;border-color:#b7c6da;color:#233e60}
+.button-link:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
+.button-link--small{padding:4px 10px;font-size:12px;font-weight:500}
+
+/* ---------- 面板标题栏动作区（全屏 / 下载） ---------- */
+.panel-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.panel-heading .panel-actions>span{color:#8290a2;font-size:11px}
+.icon-button{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;border:1px solid #dbe2ec;border-radius:7px;background:#fff;color:#42648b;line-height:0}
+.icon-button:hover:not(:disabled){background:#eef2f8;border-color:#b7c6da;color:#233e60}
+.icon-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
+.icon-button[aria-pressed="true"]{background:#233e60;border-color:#233e60;color:#fff}
+.btn-icon{width:16px;height:16px;display:block}
+
+/* 下载：紧凑主按钮 + 图标；加载态只动状态属性，不破坏图标 */
+.panel-heading .primary{display:inline-flex;gap:7px;padding:6px 12px;font-size:12px;border-radius:7px;position:relative}
+.panel-heading .primary .btn-label{color:inherit;font-size:12px}
+.panel-heading .panel-download{width:32px;height:32px;padding:0;justify-content:center}
+.panel-download .btn-icon{width:17px;height:17px}
+.panel-download[data-state="loading"] .btn-icon{visibility:hidden}
+.panel-download[data-state="loading"]::after{content:"";position:absolute;left:calc(50% - 7.5px);top:50%;width:15px;height:15px;margin-top:-7.5px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:md-download-spin .8s linear infinite}
+@keyframes md-download-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.panel-download[data-state="loading"]::after{animation-duration:2s}}
+@media(max-width:600px){.panel-heading{padding:0 12px}.icon-button{width:28px;height:28px}.panel-heading .primary{padding:6px 9px}}
+
+
+.draft-warning { margin: 10px 0; padding: 10px 14px; border: 1px solid #d6a640; border-radius: 8px; background: #fff8e6; color: #694700; font-size: 13px; }

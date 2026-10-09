@@ -127,3 +127,10 @@ test('非字符串输入抛错；无 body 时追加在末尾', () => {
   assert.ok(out.trimEnd().endsWith('</script>'));
 });
 
+
+test('预览 iframe 将 Escape 桥接给父窗口且不拦输入法组合', () => {
+  const js = injectedScript(enhancePreview(DOC, 'general'));
+  assert.match(js, /document\.addEventListener\("keydown"/);
+  assert.match(js, /event\.key === "Escape" && !event\.isComposing/);
+  assert.match(js, /parent\.postMessage\(\{type:'md2pdf-exit-fullscreen'\}/);
+});

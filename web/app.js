@@ -32,9 +32,9 @@ let policyDoc = null;
 let currentPolicy = null;
 let resolveCache = { key: null, result: null };
 
-// ---------- 浏览器会话存储（草稿与选项），失败时静默降级 ----------
+// ---------- 浏览器会话存储（草稿与选项） ----------
 function readStore(key) { try { return sessionStorage.getItem(key); } catch { return null; } }
-function writeStore(key, value) { try { value == null ? sessionStorage.removeItem(key) : sessionStorage.setItem(key, value); } catch { /* 隐私模式等：忽略 */ } }
+function writeStore(key, value) { try { value == null ? sessionStorage.removeItem(key) : sessionStorage.setItem(key, value); return true; } catch { return false; } }
 function readFormOptions() {
   const opts = {};
   for (const name of CONTROL_ORDER) { const field = form.elements[name]; if (field) opts[name] = field.value; }
@@ -42,7 +42,19 @@ function readFormOptions() {
 }
 function saveDraft() {
   if (!editor || !initialized) return;
-  writeStore(DRAFT_KEY, JSON.stringify({ md: editor.value, opts: readFormOptions(), savedAt: Date.now() }));
+  const saved = writeStore(DRAFT_KEY, JSON.stringify({ md: editor.value, opts: readFormOptions(), savedAt: Date.now() }));
+  let warning = document.getElementById('draft-warning');
+  if (!saved && !warning) {
+    warning = document.createElement('p');
+    warning.id = 'draft-warning';
+    warning.className = 'draft-warning';
+    warning.setAttribute('role', 'alert');
+    document.querySelector('.status-row').after(warning);
+  }
+  if (warning) {
+    warning.hidden = saved;
+    warning.textContent = saved ? '' : '当前修改未保存：浏览器存储额度不足或被禁用。请复制并保存 Markdown 源码后再刷新或离开；刷新可能恢复旧草稿。';
+  }
 }
 function readDraft() {
   const raw = readStore(DRAFT_KEY);
@@ -66,6 +78,15 @@ function typeLabel(type) { return (policyDoc && policyDoc.labels && policyDoc.la
 function updateCount() {
   if (countEl) countEl.textContent = `${editor.value.length.toLocaleString('zh-CN')} 字符`;
   download.disabled = downloading || !editor.value.trim();
+}
+
+// 下载按钮加载态：只改状态属性与标签文本，保留内联 SVG 图标不被 textContent 抹除。
+const downloadLabel = download ? download.querySelector('.btn-label') : null;
+function setDownloadState(loading) {
+  if (!download) return;
+  download.dataset.state = loading ? 'loading' : 'idle';
+  download.setAttribute('aria-busy', loading ? 'true' : 'false');
+  if (downloadLabel) downloadLabel.textContent = loading ? '正在导出…' : '下载 PDF';
 }
 
 // ---------- 选项策略 ----------
@@ -194,7 +215,8 @@ function injectRevision(html, rev) {
   return String(html)
     .replaceAll("type:'md2pdf-ready'", `type:'md2pdf-ready',revision:${rev}`)
     .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`)
-    .replaceAll("type:'md2pdf-source'", `type:'md2pdf-source',revision:${rev}`);
+    .replaceAll("type:'md2pdf-source'", `type:'md2pdf-source',revision:${rev}`)
+    .replaceAll("type:'md2pdf-exit-fullscreen'", `type:'md2pdf-exit-fullscreen',revision:${rev}`);
 }
 
 async function resolveDocument(signal) {
@@ -261,7 +283,12 @@ async function renderPreview() {
 }
 
 window.addEventListener('message', event => {
-  if (event.source !== preview.contentWindow || !event.data || event.data.revision !== previewRevision || previewRevision !== revision) return;
+  if (event.source !== preview.contentWindow || !event.data || event.data.revision !== previewRevision) return;
+  if (event.data.type === 'md2pdf-exit-fullscreen') {
+    document.dispatchEvent(new CustomEvent('md-preview-exit-fullscreen'));
+    return;
+  }
+  if (previewRevision !== revision) return;
   if (event.data.type === 'md2pdf-ready') {
     clearTimeout(previewTimer);
     if (!downloading) setStatus('预览已更新');
@@ -353,7 +380,7 @@ download.addEventListener('click', async () => {
   if (!form.reportValidity()) return;
   downloading = true;
   updateCount();
-  download.textContent = '正在导出…';
+  setDownloadState(true);
   setStatus('正在生成 PDF，复杂文档可能需要稍等。');
   const exportRevision = revision;
   const exportMd = editor.value;
@@ -389,7 +416,7 @@ download.addEventListener('click', async () => {
     setStatus(error.message, true);
   } finally {
     downloading = false;
-    download.textContent = '下载 PDF ↓';
+    setDownloadState(false);
     updateCount();
   }
 });

@@ -46,7 +46,7 @@ export const PINNED = {
 };
 
 export const ENTRY = `export { EditorState, Compartment, StateEffect, Transaction } from '@codemirror/state';
-export { EditorView, keymap, drawSelection, dropCursor, rectangularSelection, crosshairCursor, lineNumbers, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, placeholder } from '@codemirror/view';
+export { EditorView, keymap, drawSelection, dropCursor, rectangularSelection, crosshairCursor, lineNumbers, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, placeholder, ViewPlugin, Decoration, WidgetType } from '@codemirror/view';
 export { history, historyKeymap, defaultKeymap, indentWithTab, undo, redo, undoDepth, redoDepth } from '@codemirror/commands';
 export { foldKeymap, foldCode, unfoldCode, foldAll, unfoldAll, codeFolding, indentOnInput, bracketMatching, indentUnit, syntaxHighlighting, defaultHighlightStyle, HighlightStyle, LanguageSupport, StreamLanguage, LanguageDescription } from '@codemirror/language';
 export { searchKeymap, highlightSelectionMatches, openSearchPanel, closeSearchPanel, findNext, findPrevious, replaceNext, replaceAll, SearchQuery, search, setSearchQuery } from '@codemirror/search';

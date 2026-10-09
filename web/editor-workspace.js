@@ -2,8 +2,8 @@
 
 // md2pdf 工作台：编辑布局与预览位置关联
 //
-// 归属：本模块只负责「工作台外壳」——格式工具条、可拖拽分隔条、专注写作模式、
-// 以及编辑器与预览之间的按章节位置桥接。编辑器内核（window.mdEditor）与专业
+// 归属：本模块只负责「工作台外壳」——格式工具条、可拖拽分隔条、全屏（Markdown /
+// 预览）模式，以及编辑器与预览之间的按章节位置桥接。编辑器内核（window.mdEditor）与专业
 // 助手（window.mdEditorTools）由其它模块提供，本模块通过约定 API 调用，不修改它们。
 //
 // 约定：
@@ -21,7 +21,8 @@
   window.__mdpdfWorkspace = true;
 
   var RATIO_KEY = 'md2pdf:editor-ratio';   // 与草稿键 md2pdf:draft 分离
-  var FOCUS_CLASS = 'editor-focus';
+  var FOCUS_CLASS = 'editor-focus';         // Markdown 全屏（原「专注写作」）
+  var PREVIEW_FOCUS_CLASS = 'preview-focus'; // 预览全屏
   var MIN_EDITOR = 300;                    // 与 app.css 的 minmax(300px, …) 对齐
   var MIN_PREVIEW = 380;                   // 与 app.css 的 minmax(380px, …) 对齐
   var DIVIDER = 10;                        // 与 CSS 变量 --md-wt-divider 对齐
@@ -34,7 +35,7 @@
   workspace.classList.add('md-editor-workspace');
 
   var previewFrame = document.querySelector('#preview');
-  var toolbar, divider, focusBtn, syncInput, snippetSelect, insertSnippetBtn, details;
+  var toolbar, divider, editorFullscreenBtn, previewFullscreenBtn, syncInput, snippetSelect, insertSnippetBtn, details;
   var commandButtons = [];
   var ready = false;
   var dragging = false;
@@ -132,7 +133,7 @@
     var spacer = make('span', { class: 'md-wt-spacer', 'aria-hidden': 'true' });
 
     syncInput = make('input', { type: 'checkbox', id: 'md-wt-sync', class: 'md-wt-sync-input' });
-    syncInput.checked = false; // 初始关闭
+    syncInput.checked = true; // 默认开启（按章节近似定位）；回环由 suppressUntil 抑制
     syncInput.addEventListener('change', function () {
       if (syncInput.checked) locateCurrentCursor();
     });
@@ -140,14 +141,10 @@
     syncLabel.appendChild(syncInput);
     syncLabel.appendChild(make('span', null, '同步定位（按章节）'));
 
-    focusBtn = make('button', { type: 'button', class: 'md-wt-button md-wt-focus', title: '专注写作：隐藏预览并保留其状态（Esc 退出）', 'aria-label': '专注写作', 'aria-pressed': 'false' }, '专注写作');
-    focusBtn.addEventListener('click', function () { toggleFocus(); });
-
     toolbar.appendChild(formatGroup);
     toolbar.appendChild(historyGroup);
     toolbar.appendChild(spacer);
     toolbar.appendChild(syncLabel);
-    toolbar.appendChild(focusBtn);
 
     var heading = editorPanel.querySelector('.panel-heading');
     if (heading && heading.nextSibling) editorPanel.insertBefore(toolbar, heading.nextSibling);
@@ -212,7 +209,7 @@
     workspace.insertBefore(divider, previewPanel);
 
     divider.addEventListener('pointerdown', function (event) {
-      if (workspace.classList.contains(FOCUS_CLASS)) return;
+      if (fullscreenMode()) return;
       dragging = true;
       try { divider.setPointerCapture(event.pointerId); } catch (e) { /* 忽略 */ }
       divider.classList.add('md-wt-dragging');
@@ -266,16 +263,85 @@
     applyWidth(stored * rect.width, rect.width, false);
   }
 
-  // ---------------------------------------------------------------- 专注写作
-  function toggleFocus(force) {
-    var active = typeof force === 'boolean' ? force : !workspace.classList.contains(FOCUS_CLASS);
-    workspace.classList.toggle(FOCUS_CLASS, active);
-    if (focusBtn) {
-      focusBtn.setAttribute('aria-pressed', String(active));
-      focusBtn.textContent = active ? '退出专注' : '专注写作';
-      focusBtn.title = active ? '退出专注（Esc）' : '专注写作：隐藏预览并保留其状态（Esc 退出）';
+  // ---------------------------------------------------------------- 全屏（Markdown / 预览）
+  // 两种全屏共用同一固定 viewport 面板模式：只切换工作区状态类，互斥，
+  // 且不触碰 iframe 的 srcdoc 或编辑器实例，因此进出全屏都不重载、不丢状态。
+  function nextFullscreenMode(current, requested) {
+    return current === requested ? null : requested;
+  }
+
+  function fullscreenMode() {
+    if (workspace.classList.contains(FOCUS_CLASS)) return 'editor';
+    if (workspace.classList.contains(PREVIEW_FOCUS_CLASS)) return 'preview';
+    return null;
+  }
+
+  function applyFullscreen(mode) {
+    var editorOn = mode === 'editor';
+    var previewOn = mode === 'preview';
+    workspace.classList.toggle(FOCUS_CLASS, editorOn);
+    workspace.classList.toggle(PREVIEW_FOCUS_CLASS, previewOn);
+    if (editorFullscreenBtn) {
+      editorFullscreenBtn.setAttribute('aria-pressed', String(editorOn));
+      editorFullscreenBtn.setAttribute('aria-label', editorOn ? '退出 Markdown 全屏' : 'Markdown 全屏写作');
+      editorFullscreenBtn.title = editorOn ? '退出全屏（Esc）' : '全屏写作（Esc 退出）';
     }
-    if (active) focusEditor();
+    if (previewFullscreenBtn) {
+      previewFullscreenBtn.setAttribute('aria-pressed', String(previewOn));
+      previewFullscreenBtn.setAttribute('aria-label', previewOn ? '退出预览全屏' : '预览全屏');
+      previewFullscreenBtn.title = previewOn ? '退出全屏（Esc）' : '全屏预览（Esc 退出）';
+    }
+    if (editorOn) focusEditor();
+  }
+
+  function toggleFullscreen(mode) {
+    applyFullscreen(nextFullscreenMode(fullscreenMode(), mode));
+  }
+
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  function fullscreenIcon() {
+    var svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'btn-icon');
+    svg.setAttribute('viewBox', '0 0 20 20');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    var path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', 'M7.5 3.5H4.5v3M12.5 3.5h3v3M7.5 16.5H4.5v-3M12.5 16.5h3v-3');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-width', '1.4');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+    return svg;
+  }
+
+  function makeFullscreenButton(label, title) {
+    var button = make('button', { type: 'button', class: 'icon-button', 'aria-pressed': 'false', 'aria-label': label, title: title });
+    button.appendChild(fullscreenIcon());
+    return button;
+  }
+
+  // 在两侧 panel-heading 的动作区注入全屏按钮；Markdown 侧位于最右，
+  // 预览侧置于下载按钮之前（下载仍是该栏最右的主操作）。
+  function buildFullscreenButtons() {
+    var editorHeading = editorPanel.querySelector('.panel-heading');
+    var previewHeading = previewPanel.querySelector('.panel-heading');
+    var editorActions = editorHeading && editorHeading.querySelector('.panel-actions');
+    var previewActions = previewHeading && previewHeading.querySelector('.panel-actions');
+
+    editorFullscreenBtn = makeFullscreenButton('Markdown 全屏写作', '全屏写作（Esc 退出）');
+    editorFullscreenBtn.addEventListener('click', function () { toggleFullscreen('editor'); });
+    if (editorActions) editorActions.appendChild(editorFullscreenBtn);
+
+    previewFullscreenBtn = makeFullscreenButton('预览全屏', '全屏预览（Esc 退出）');
+    previewFullscreenBtn.addEventListener('click', function () { toggleFullscreen('preview'); });
+    if (previewActions) {
+      var downloadBtn = previewActions.querySelector('#download');
+      if (downloadBtn) previewActions.insertBefore(previewFullscreenBtn, downloadBtn);
+      else previewActions.appendChild(previewFullscreenBtn);
+    }
+    applyFullscreen(null); // 同步按钮初始 aria-pressed / title
   }
 
   // ---------------------------------------------------------------- 位置桥接
@@ -324,7 +390,7 @@
   function onKeydown(event) {
     if (event.defaultPrevented) return;
     if (event.isComposing || event.keyCode === 229) return;   // 输入法组合中不拦截
-    if (event.key === 'Escape' && workspace.classList.contains(FOCUS_CLASS)) { toggleFocus(false); return; }
+    if (event.key === 'Escape' && fullscreenMode()) { applyFullscreen(null); return; }
     var mod = event.ctrlKey || event.metaKey;
     if (!mod || event.altKey || event.shiftKey) return;
     var key = (event.key || '').toLowerCase();
@@ -333,6 +399,11 @@
     event.preventDefault();
     runInsert(key === 'b' ? 'bold' : key === 'i' ? 'italic' : 'link');
   }
+
+  // Escape in the sandboxed iframe cannot bubble into the parent document.
+  document.addEventListener('md-preview-exit-fullscreen', function () {
+    if (fullscreenMode() === 'preview') applyFullscreen(null);
+  });
 
   // ---------------------------------------------------------------- 事件装配
   function onReady() {
@@ -361,6 +432,7 @@
 
   buildToolbar();
   buildDivider();
+  buildFullscreenButtons();
   restoreRatio();
   wireEvents();
   setEnabled(ready);
