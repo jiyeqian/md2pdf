@@ -36,3 +36,11 @@ test('npm ships the web assets and each topbar ends with the safe GitHub link', 
     assert.match(nav, /href="https:\/\/github\.com\/jiyeqian\/md2pdf" target="_blank" rel="noopener noreferrer"[^>]*>GitHub<\/a>\s*<\/nav>/);
   }
 });
+
+test('both brand icons are accessible links back to the editor homepage', () => {
+  for (const name of ['index.html', 'examples.html']) {
+    const html = readFileSync(new URL('../web/' + name, import.meta.url), 'utf8');
+    assert.match(html, /<a class="brand-icon" href="\/" aria-label="返回编辑器" title="返回编辑器">M↓<\/a>/);
+    assert.doesNotMatch(html, /class="brand-icon"[^>]*aria-hidden/);
+  }
+});

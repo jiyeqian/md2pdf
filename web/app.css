@@ -4,6 +4,10 @@
 @media(max-width:480px){.topbar{height:74px;padding:0 14px}.brand p{font-size:10px}.primary{padding:11px 13px;gap:10px}main{padding:14px}.toolbar{padding:13px;gap:11px}.toolbar label{flex-basis:40%;min-width:100px}.workspace{gap:14px}.editor-panel{height:370px}.preview-panel{height:570px}}
 
 
+.brand-icon{text-decoration:none}
+.brand-icon:hover{background:#34577f}
+.brand-icon:focus-visible{outline:2px solid #6f93bc;outline-offset:3px}
+
 /* ---------- 选项策略：隐藏不可用控件 ---------- */
 .toolbar label[hidden]{display:none!important}
 .topbar-actions{display:flex;align-items:center;gap:16px}
@@ -31,16 +35,14 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .icon-button[aria-pressed="true"]{background:#233e60;border-color:#233e60;color:#fff}
 .btn-icon{width:16px;height:16px;display:block}
 
-/* 下载：紧凑主按钮 + 图标；加载态只动状态属性，不破坏图标 */
-.panel-heading .primary{display:inline-flex;gap:7px;padding:6px 12px;font-size:12px;border-radius:7px;position:relative}
-.panel-heading .primary .btn-label{color:inherit;font-size:12px}
-.panel-heading .panel-download{width:32px;height:32px;padding:0;justify-content:center}
-.panel-download .btn-icon{width:17px;height:17px}
+/* 下载：与全屏按钮一致的描边图标按钮（30px）；加载态只动状态属性，不破坏图标 */
+.panel-download{position:relative}
+.panel-download .btn-icon{width:16px;height:16px}
 .panel-download[data-state="loading"] .btn-icon{visibility:hidden}
-.panel-download[data-state="loading"]::after{content:"";position:absolute;left:calc(50% - 7.5px);top:50%;width:15px;height:15px;margin-top:-7.5px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:md-download-spin .8s linear infinite}
+.panel-download[data-state="loading"]::after{content:"";position:absolute;left:calc(50% - 7.5px);top:50%;width:15px;height:15px;margin-top:-7.5px;border:2px solid rgba(66,100,139,.3);border-top-color:#42648b;border-radius:50%;animation:md-download-spin .8s linear infinite}
 @keyframes md-download-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.panel-download[data-state="loading"]::after{animation-duration:2s}}
-@media(max-width:600px){.panel-heading{padding:0 12px}.icon-button{width:28px;height:28px}.panel-heading .primary{padding:6px 9px}}
+@media(max-width:600px){.panel-heading{padding:0 12px}.icon-button{width:28px;height:28px}}
 
 
 .draft-warning { margin: 10px 0; padding: 10px 14px; border: 1px solid #d6a640; border-radius: 8px; background: #fff8e6; color: #694700; font-size: 13px; }

@@ -239,11 +239,12 @@
       '.cm-scroller': { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,Consolas,"PingFang SC","Microsoft YaHei",monospace', lineHeight: '1.8', overflow: 'auto' },
       '.cm-content': { padding: '18px 20px', caretColor: '#233e60' },
       '.cm-gutters': { backgroundColor: '#f7f8fa', color: '#9aa6b6', border: 'none', borderRight: '1px solid #edf0f4' },
-      '.cm-activeLine': { backgroundColor: '#f4f7fb' },
+      // drawSelection paints beneath text; an opaque active-line background hides it.
+      '.cm-activeLine': { backgroundColor: 'rgba(244, 247, 251, 0.4)' },
       '.cm-activeLineGutter': { backgroundColor: '#eef2f8', color: '#42648b' },
-      '.cm-selectionBackground, ::selection': { backgroundColor: '#cfe0f4' },
+      '.cm-selectionBackground': { backgroundColor: '#cfe0f4' },
       '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#233e60' },
-      '&.cm-focused .cm-selectionBackground, &.cm-focused ::selection': { backgroundColor: '#bcd6f2' },
+      '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': { backgroundColor: '#bcd6f2' },
       '.cm-foldPlaceholder': { backgroundColor: '#eef2f8', border: '1px solid #dbe4f0', color: '#42648b', padding: '0 6px', borderRadius: '4px' },
     }, { dark: false });
 

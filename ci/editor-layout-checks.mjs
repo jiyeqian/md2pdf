@@ -50,19 +50,21 @@ test('下载按钮移入预览 panel-heading，保留 id/disabled/aria-label 与
   const block = heading[0];
   assert.match(block, /<button id="download"[^>]*disabled/);
   assert.match(block, /aria-label="下载 PDF"/);
-  assert.match(block, /class="primary panel-download"/);
+  assert.match(block, /class="icon-button panel-download"/, '下载应为与全屏一致的描边图标按钮');
   assert.match(block, /<span class="btn-label sr-only">下载 PDF<\/span>/);
-  assert.match(block, /<svg class="btn-icon"[^>]*aria-hidden="true"/);
+  assert.match(block, /<svg class="btn-icon"[^>]*viewBox="0 0 24 24"[^>]*stroke="currentColor"/, '应内联 Tabler file-type-pdf 图标（currentColor，24 视图）');
+  assert.match(block, /M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4/, '应保留 file-type-pdf 路径数据');
   // 下载必须在预览 surface 之前（位于标题栏内）
   assert.ok(block.indexOf('id="download"') < block.indexOf('preview-surface'), '下载按钮应在标题栏而非预览区');
 });
 
-test('两侧标题栏提供动作区：Markdown 侧计数，预览侧计数 + 下载', () => {
+test('两侧标题栏提供动作区：Markdown 侧计数，预览侧仅下载与全屏', () => {
   const editor = indexHtml.match(/<section class="editor-panel"[\s\S]*?<\/section>/)[0];
   assert.match(editor, /<div class="panel-actions">\s*<span id="count">0 字符<\/span>\s*<\/div>/);
   const preview = indexHtml.match(/<section class="preview-panel"[\s\S]*?<\/section>/)[0];
-  assert.match(preview, /<span id="document-type">A4<\/span>/);
-  assert.match(preview, /<button id="download" class="primary panel-download"/);
+  assert.ok(!indexHtml.includes('document-type'), 'index 不应再有 #document-type');
+  assert.ok(!preview.includes('document-type'), '预览标题不应再显示文档类型文本');
+  assert.match(preview, /<button id="download" class="icon-button panel-download"/);
 });
 
 test('editor-workspace.js 在两侧动作区注入全屏图标按钮（外壳职责）', () => {
@@ -73,7 +75,7 @@ test('editor-workspace.js 在两侧动作区注入全屏图标按钮（外壳职
   assert.match(wsJs, /make\('button', \{ type: 'button', class: 'icon-button', 'aria-pressed': 'false', 'aria-label': label, title: title \}\)/);
   assert.match(wsJs, /querySelector\('\.panel-actions'\)/);
   assert.match(wsJs, /editorActions\.appendChild\(editorFullscreenBtn\)/, 'Markdown 全屏按钮应位于动作区最右');
-  assert.match(wsJs, /previewActions\.insertBefore\(previewFullscreenBtn, downloadBtn\)/, '预览全屏按钮应位于下载按钮之前');
+  assert.match(wsJs, /previewActions\.appendChild\(previewFullscreenBtn\)/, '预览全屏按钮应追加在下载按钮之后（最右）');
 });
 
 test('字符计数保留', () => {
@@ -280,13 +282,13 @@ test('行为：双全屏互斥、再次点击退出、Esc 退出（vm 执行真�
   vm.runInContext(wsJs, env.sandbox, { filename: 'editor-workspace.js' });
   const { workspace, editorActions, previewActions, downloadNode, buttonIn, document } = env;
 
-  // 模块应把全屏按钮注入到动作区：Markdown 侧最右、预览侧在下载之前。
+  // 模块应把全屏按钮注入到动作区：Markdown 侧最右、预览侧在下载之后。
   const editorBtn = buttonIn(editorActions);
-  const previewBtn = buttonIn(previewActions);
+  const previewBtn = previewActions.children.filter(c => c.tagName === 'BUTTON').find(b => b !== downloadNode);
   assert.ok(editorBtn, '应注入 Markdown 全屏按钮');
   assert.ok(previewBtn, '应注入预览全屏按钮');
-  assert.equal(previewActions.children.indexOf(previewBtn), 0, '预览全屏按钮应位于下载之前');
-  assert.equal(previewActions.children.indexOf(downloadNode), 1);
+  assert.equal(previewActions.children.indexOf(downloadNode), 0, '下载按钮应位于动作区最左');
+  assert.equal(previewActions.children.indexOf(previewBtn), 1, '预览全屏按钮应位于下载之后（最右）');
 
   assert.equal(workspace.classList.contains('editor-focus'), false);
   assert.equal(editorBtn.getAttribute('aria-pressed'), 'false', '初始应同步 aria-pressed');
@@ -344,13 +346,21 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   for (const button of buttons) {
     assert.ok(button.getAttribute('aria-label'), '每个图标按钮需有中文 aria-label');
     assert.ok(button.getAttribute('title'), '每个图标按钮需有 title（功能/快捷键）');
-    const icon = (button.children || []).find(c => c.tagName === 'SVG');
+    const icon = (button.children || []).find(c => c.tagName === 'SVG' || c.tagName === 'IMG');
     assert.ok(icon, '每个按钮需内含 SVG 图标');
-    assert.equal(icon.getAttribute('viewBox'), '0 0 20 20');
+    if (icon.tagName === 'SVG') assert.equal(icon.getAttribute('viewBox'), '0 0 20 20');
+    else {
+      const src = button.getAttribute('aria-label') === 'BibTeX 参考文献' ? '/icons/bibtex.svg' : '/icons/doi.svg';
+      assert.equal(icon.getAttribute('src'), src);
+      assert.equal(icon.getAttribute('alt'), '');
+      assert.equal(icon.getAttribute('aria-hidden'), 'true');
+    }
   }
   assert.equal(all.filter(n => n.classList && n.classList.contains('md-wt-group')).length, 5, '应有 5 个操作分组');
   assert.equal(buttons.filter(b => b.getAttribute('aria-label') === '查找与替换').length, 1);
   assert.equal(buttons.filter(b => ['查找', '替换'].includes(b.getAttribute('aria-label'))).length, 0);
+  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === 'DOI 引用').length, 1);
+  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === 'BibTeX 参考文献').length, 1);
   const headingButton = buttons.find(b => b.getAttribute('aria-label') === '二级标题');
   assert.ok(headingButton && headingButton.getAttribute('title').includes('H2'));
 
