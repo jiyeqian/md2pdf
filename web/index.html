@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>md2pdf · Markdown 排版工作台</title>
+  <title>md2pdf</title>
   <link rel="stylesheet" href="/app.css">
   <link rel="stylesheet" href="/editor-core.css">
   <link rel="stylesheet" href="/editor-images.css">
@@ -18,13 +18,13 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="brand-icon" aria-hidden="true">M↓</span><div class="brand-text"><h1 class="brand-logo">MAKE MD2PDF GREAT</h1><p class="brand-sub">md2pdf</p></div></div>
+    <div class="brand"><span class="brand-icon" aria-hidden="true">M↓</span><div class="brand-text"><h1 class="brand-logo">md2pdf</h1><p class="brand-sub">MAKE MD2PDF GREAT</p></div></div>
     <nav class="topbar-actions" aria-label="页面导航">
       <a id="examples-link-top" class="button-link" href="/examples">示例库</a>
     </nav>
   </header>
   <main>
-    <form id="options" class="toolbar" aria-label="排版选项" aria-describedby="fixed-rules">
+    <form id="options" class="toolbar" aria-label="排版选项">
       <label>文档类型<select name="type"><option value="">自动识别</option><option value="general">通用文档</option><option value="readme">README</option><option value="skill">技能文档</option><option value="paper">论文</option><option value="gb">国家标准</option></select></label>
       <label data-control="theme">主题<select name="theme"><option value="">跟随文档</option><option value="elegant">雅致 · 墨蓝</option><option value="minimal">简洁 · 黑白</option><option value="gb">国家标准</option></select></label>
       <label data-control="toc">目录<select name="toc"><option value="">跟随文档</option><option value="true">显示</option><option value="false">隐藏</option></select></label>
@@ -33,7 +33,6 @@
       <label data-control="numbering">章节编号<select name="numbering"><option value="">跟随文档</option><option value="auto">自动识别</option><option value="force">强制编号</option><option value="none">不编号</option></select></label>
       <label data-control="numberScheme">编号方案<select name="numberScheme"><option value="">跟随文档</option><option value="arabic">1 / 1.1</option><option value="cjk">一、/（一）</option><option value="chapter">第 1 章</option><option value="gb">GB 章条</option></select></label>
     </form>
-    <p id="fixed-rules" class="fixed-rules" role="note" aria-live="polite"></p>
     <div class="workspace">
       <section class="editor-panel" aria-labelledby="editor-title">
         <div class="panel-heading">

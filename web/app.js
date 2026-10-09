@@ -13,7 +13,6 @@ const download = document.querySelector('#download');
 const countEl = document.querySelector('#count');
 const emptyPreview = document.querySelector('#empty-preview');
 const documentType = document.querySelector('#document-type');
-const fixedRules = document.querySelector('#fixed-rules');
 const browseExamples = document.querySelector('#browse-examples');
 const topExamplesLink = document.querySelector('#examples-link-top');
 
@@ -143,26 +142,7 @@ function applyPolicy(policy) {
       field.placeholder = '默认';
     }
   }
-  renderFixedRules(policy);
   saveDraft();
-}
-
-function renderFixedRules(policy) {
-  const lines = [];
-  for (const [name, control] of Object.entries(policy.controls || {})) {
-    if (name === 'type' || control.available !== false) continue;
-    const label = control.label || name;
-    let fixed = control.fixedLabel || control.fixedValue || '固定';
-    if (name === 'margin' && control.fixedNote) fixed = fixed + '；' + control.fixedNote;
-    lines.push(label + '：' + fixed + '（固定）');
-  }
-  let text;
-  if (policy.locked) text = '国家标准模板固定规则：' + lines.join('；') + '。';
-  else if (lines.length) text = '固定规则：' + lines.join('；') + '。';
-  else text = '当前文档类型下所有选项均可在线调整。';
-  const notes = (policy.notes || []).join(' ');
-  if (notes) text += ' ' + notes;
-  if (fixedRules) { fixedRules.textContent = text; fixedRules.hidden = false; }
 }
 
 function applyStoredOptions(stored) {

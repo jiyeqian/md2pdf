@@ -610,14 +610,61 @@
     return picker;
   }
 
-  function installToolbarButton(toolbar) {
+  // Compact line-art SVG icon (same style as the workspace toolbar icons).
+  function imageIcon() {
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = doc.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'md-wt-icon');
+    svg.setAttribute('viewBox', '0 0 20 20');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    const shapes = [
+      { rect: [4.2, 5, 11.6, 10], rx: 1.8 },
+      { circle: [7.8, 8.6, 1.3] },
+      { d: 'M5 14.6l3.2-3.4 2.4 2.3 3-3.4 1.2 1.3' },
+    ];
+    for (const shape of shapes) {
+      let node;
+      if (shape.circle) {
+        node = doc.createElementNS(NS, 'circle');
+        node.setAttribute('cx', shape.circle[0]);
+        node.setAttribute('cy', shape.circle[1]);
+        node.setAttribute('r', shape.circle[2]);
+      } else if (shape.rect) {
+        node = doc.createElementNS(NS, 'rect');
+        node.setAttribute('x', shape.rect[0]);
+        node.setAttribute('y', shape.rect[1]);
+        node.setAttribute('width', shape.rect[2]);
+        node.setAttribute('height', shape.rect[3]);
+        if (shape.rx != null) node.setAttribute('rx', shape.rx);
+      } else {
+        node = doc.createElementNS(NS, 'path');
+        node.setAttribute('d', shape.d);
+      }
+      node.setAttribute('fill', 'none');
+      node.setAttribute('stroke', 'currentColor');
+      node.setAttribute('stroke-width', '1.4');
+      node.setAttribute('stroke-linecap', 'round');
+      node.setAttribute('stroke-linejoin', 'round');
+      svg.appendChild(node);
+    }
+    return svg;
+  }
+
+  // Mount the icon button into the insert group's mount point (or the toolbar
+  // itself as a fallback). Only appearance/mounting changes here; the picker
+  // and the whole insertion pipeline below are untouched.
+  function installToolbarButton(container) {
     const button = doc.createElement('button');
     button.type = 'button';
-    button.className = 'md-editor-button md-image-insert';
-    button.textContent = '插入图片';
+    button.className = 'md-wt-button md-image-insert';
+    // Keep the dynamically mounted button in its group's arrow-key navigation.
+    button.tabIndex = container.closest('[role="group"]') ? -1 : 0;
     button.setAttribute('aria-label', '插入图片');
+    button.title = '插入图片（选择文件，或直接粘贴 / 拖放）';
+    button.appendChild(imageIcon());
     button.addEventListener('click', function () { ensurePicker().click(); });
-    toolbar.append(button);
+    container.append(button);
   }
 
   // Mount the button + status into the *visible* workspace toolbar. It is built
@@ -627,7 +674,8 @@
     const toolbar = doc.querySelector('.md-wt-toolbar');
     if (!toolbar) return false;
     toolbarMounted = true;
-    installToolbarButton(toolbar);
+    const mount = toolbar.querySelector('[data-md-wt-mount="images"]') || toolbar;
+    installToolbarButton(mount);
     statusEl = installStatus(toolbar);
     return true;
   }

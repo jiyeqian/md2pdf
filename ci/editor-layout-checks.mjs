@@ -17,14 +17,26 @@ import vm from 'node:vm';
 const read = rel => readFile(new URL('../' + rel, import.meta.url), 'utf8');
 const indexHtml = await read('web/index.html');
 const appJs = await read('web/app.js');
+const appCss = await read('web/app.css');
 const wsJs = await read('web/editor-workspace.js');
 const wsCss = await read('web/editor-workspace.css');
 
 // ---------------------------------------------------------------- index.html
-test('头部品牌：Logo 文字为 MAKE MD2PDF GREAT，保留 md2pdf 品牌', () => {
-  assert.match(indexHtml, /<h1 class="brand-logo">MAKE MD2PDF GREAT<\/h1>/);
-  assert.match(indexHtml, /<p class="brand-sub">md2pdf<\/p>/);
-  assert.ok(!/Markdown 排版工作台<\/p>/.test(indexHtml), '副标题不应仍是旧的描述文案');
+test('头部品牌：主标题 md2pdf，副标题 MAKE MD2PDF GREAT，页面标题 md2pdf', () => {
+  assert.match(indexHtml, /<h1 class="brand-logo">md2pdf<\/h1>/);
+  assert.match(indexHtml, /<p class="brand-sub">MAKE MD2PDF GREAT<\/p>/);
+  assert.match(indexHtml, /<title>md2pdf<\/title>/);
+  assert.ok(!/Markdown 排版工作台<\/p>/.test(indexHtml), '不应残留旧的描述文案');
+});
+
+test('固定规则整栏已移除（index / form / app / css）', () => {
+  assert.ok(!indexHtml.includes('fixed-rules'), 'index 不应再有 #fixed-rules');
+  assert.ok(!/aria-describedby/.test(indexHtml), 'form 不应再引用 fixed-rules');
+  assert.ok(!/fixedRules|renderFixedRules/.test(appJs), 'app.js 不应再有 fixedRules 代码');
+  assert.ok(!/\.fixed-rules/.test(appCss), 'app.css 不应残留 .fixed-rules');
+  // 真实控件约束功能仍在。
+  assert.match(appJs, /function applyPolicy/);
+  assert.match(appJs, /control\.available !== false/);
 });
 
 test('示例库链接采用按钮外观', () => {
@@ -104,7 +116,7 @@ test('editor-workspace.js：语法有效且不调用浏览器全屏 API', () => 
 test('editor-workspace.js：双全屏契约与默认同步定位', () => {
   for (const token of [
     "var PREVIEW_FOCUS_CLASS = 'preview-focus'", 'function nextFullscreenMode', 'function applyFullscreen',
-    'function buildFullscreenButtons', 'syncInput.checked = true', "setAttribute('aria-pressed'",
+    'function buildFullscreenButtons', "setAttribute('aria-pressed', 'true')", "setAttribute('aria-pressed'",
     "toggleFullscreen('editor')", "toggleFullscreen('preview')",
   ]) assert.ok(wsJs.includes(token), '缺少：' + token);
   // 互斥：applyFullscreen 同时切换两个状态类
@@ -113,6 +125,39 @@ test('editor-workspace.js：双全屏契约与默认同步定位', () => {
   assert.match(body, /classList\.toggle\(PREVIEW_FOCUS_CLASS, previewOn\)/);
   // Esc：任意全屏下退出
   assert.match(wsJs, /event\.key === 'Escape' && fullscreenMode\(\)/);
+});
+
+test('editor-workspace.js：工具栏为分组 SVG 图标按钮，title/aria-label 齐备，同步定位是图标开关', () => {
+  for (const token of ['var ICONS = {', 'function iconSvg', 'function iconButton', "createElementNS(SVG_NS, 'svg')", "class: 'md-wt-button'"]) {
+    assert.ok(wsJs.includes(token), '缺少图标基础设施：' + token);
+  }
+  for (const token of ['md-wt-group--history', 'md-wt-group--format', 'md-wt-group--insert', 'md-wt-group--academic', 'md-wt-group--view']) {
+    assert.ok(wsJs.includes(token), '缺少分组：' + token);
+  }
+  for (const token of ["label: '撤销'", "hint: '撤销（Ctrl/⌘+Z）'", "label: '查找'", "label: '粗体'", "label: '链接'", "label: '脚注'", "label: '公式'"]) {
+    assert.ok(wsJs.includes(token), '缺少按钮文案：' + token);
+  }
+  // 插入组挂载点（图片按钮由图片模块挂入）
+  assert.match(wsJs, /'data-md-wt-mount': mount/, '插入组应暴露图片挂载点');
+  assert.match(wsJs, /IMAGE_MOUNT_ATTR = 'data-md-wt-mount'/);
+  // 折叠/展开共用一个命令按钮，不猜状态
+  assert.ok(wsJs.includes("runCommand('toggleFold')"), '折叠按钮应调用 toggleFold');
+  // 同步定位：图标开关按钮（aria-pressed）+ .checked 兼容访问器，不是隐藏复选框
+  assert.ok(!/type: 'checkbox'/.test(wsJs), '不再使用隐藏复选框冒充按钮');
+  assert.match(wsJs, /defineProperty\(button, 'checked'/, '保留 .checked 兼容访问器');
+  assert.match(wsJs, /'aria-pressed', 'true'/, '同步定位默认开启');
+});
+
+test('editor-workspace.css：紧凑图标按钮、组间分隔、窄屏不溢出', () => {
+  for (const token of [
+    '.md-wt-icon { width: 16px; height: 16px',
+    '.md-wt-group + .md-wt-group',
+    'border-left: 1px solid #e3e8ef',
+    'width: 28px',
+    'max-width: 390px',
+  ]) assert.ok(wsCss.includes(token), '缺少：' + token);
+  assert.ok(!/.md-wt-sync-input/.test(wsCss), '不应残留同步复选框样式');
+  assert.match(wsCss, /\.md-wt-toolbar \{[^}]*flex-wrap: wrap/);
 });
 
 // ---------------------------------------------------------------- editor-workspace.css
@@ -227,7 +272,7 @@ function fakeEnvironment() {
   sandbox.window = sandbox;
   vm.createContext(sandbox);
   const buttonIn = node => node.children.find(child => child.tagName === 'BUTTON');
-  return { sandbox, workspace, editorActions, previewActions, downloadNode, buttonIn, document };
+  return { sandbox, workspace, editorPanel, previewPanel, editorActions, previewActions, downloadNode, buttonIn, document };
 }
 
 test('行为：双全屏互斥、再次点击退出、Esc 退出（vm 执行真实逻辑）', () => {
@@ -282,3 +327,45 @@ test('行为：双全屏互斥、再次点击退出、Esc 退出（vm 执行真�
   assert.equal(workspace.classList.contains('editor-focus'), true, 'iframe 不应退出 Markdown 全屏');
 });
 
+test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开关；折叠按钮调用 toggleFold（vm 执行）', () => {
+  const env = fakeEnvironment();
+  const calls = [];
+  env.sandbox.mdEditor = { runCommand(name) { calls.push(name); return true; }, focus() {}, getCursorLine() { return 1; } };
+  vm.runInContext(wsJs, env.sandbox, { filename: 'editor-workspace.js' });
+
+  const walk = (node, out) => { out.push(node); (node.children || []).forEach(child => walk(child, out)); return out; };
+  const all = walk(env.editorPanel, []);
+  const toolbar = all.find(n => n.classList && n.classList.contains('md-wt-toolbar'));
+  assert.ok(toolbar, '应生成工作台工具条');
+  assert.ok(!all.some(n => n.tagName === 'INPUT'), '工具栏不应再含隐藏复选框 input');
+
+  const buttons = all.filter(n => n.tagName === 'BUTTON' && n.classList.contains('md-wt-button'));
+  assert.ok(buttons.length >= 15, '图标按钮数量偏少：' + buttons.length);
+  for (const button of buttons) {
+    assert.ok(button.getAttribute('aria-label'), '每个图标按钮需有中文 aria-label');
+    assert.ok(button.getAttribute('title'), '每个图标按钮需有 title（功能/快捷键）');
+    const icon = (button.children || []).find(c => c.tagName === 'SVG');
+    assert.ok(icon, '每个按钮需内含 SVG 图标');
+    assert.equal(icon.getAttribute('viewBox'), '0 0 20 20');
+  }
+  assert.equal(all.filter(n => n.classList && n.classList.contains('md-wt-group')).length, 5, '应有 5 个操作分组');
+  const mount = all.find(n => n.getAttribute && n.getAttribute('data-md-wt-mount') === 'images');
+  assert.ok(mount, '插入组应暴露图片按钮挂载点');
+  assert.notEqual(mount.getAttribute('aria-hidden'), 'true', '图片挂载点不能隐藏其子按钮的可访问名称');
+
+  const syncBtn = all.find(n => n.getAttribute && n.getAttribute('id') === 'md-wt-sync');
+  assert.ok(syncBtn, '应存在 #md-wt-sync');
+  assert.equal(syncBtn.tagName, 'BUTTON', '同步定位应是按钮而非复选框');
+  assert.equal(syncBtn.getAttribute('aria-pressed'), 'true', '同步定位默认开启');
+  assert.equal(syncBtn.checked, true, '.checked 兼容访问器读出默认值');
+  syncBtn.dispatch('click');
+  assert.equal(syncBtn.getAttribute('aria-pressed'), 'false', '点击应关闭同步定位');
+  assert.equal(syncBtn.checked, false);
+  syncBtn.dispatch('click');
+  assert.equal(syncBtn.getAttribute('aria-pressed'), 'true', '再次点击应开启');
+
+  const foldBtn = buttons.find(b => b.getAttribute('aria-label') === '折叠或展开');
+  assert.ok(foldBtn, '应有折叠 / 展开共用按钮');
+  foldBtn.dispatch('click');
+  assert.deepEqual(calls, ['toggleFold'], '折叠按钮应调用 toggleFold 命令');
+});

@@ -23,46 +23,53 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 6px;
-  padding: 7px 12px;
+  gap: 4px 8px;
+  padding: 7px 10px;
   min-width: 0;
   background: #fbfcfe;
   border-bottom: 1px solid #eef1f5;
 }
-.md-wt-toolbar .md-wt-group { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.md-wt-spacer { flex: 1 1 auto; }
+.md-wt-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+/* 组间细分隔线：首个分组不画线；换行时分隔线随分组保留。 */
+.md-wt-group + .md-wt-group {
+  margin-left: 4px;
+  padding-left: 8px;
+  border-left: 1px solid #e3e8ef;
+}
+.md-wt-mount { display: inline-flex; align-items: center; gap: 4px; }
 
+/* 固定紧凑的图标按钮：工具条内所有按钮尺寸一致，仅图标随颜色变化。 */
 .md-wt-toolbar button,
 .md-wt-snippets button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex: 0 0 auto;
   border: 1px solid #dbe2ec;
   background: #fff;
   color: #33465e;
   border-radius: 6px;
-  padding: 4px 9px;
-  font-size: 12px;
-  line-height: 1.4;
-  white-space: nowrap;
+  line-height: 0;
 }
+.md-wt-icon { width: 16px; height: 16px; display: block; }
 .md-wt-toolbar button:hover:not(:disabled),
 .md-wt-snippets button:hover:not(:disabled) { border-color: #b7c6da; background: #f2f6fb; }
 .md-wt-toolbar button:focus-visible,
 .md-wt-snippets button:focus-visible,
-.md-wt-snippets select:focus-visible,
-.md-wt-sync-input:focus-visible { outline: 2px solid #6f93bc; outline-offset: 2px; }
+.md-wt-snippets select:focus-visible { outline: 2px solid #6f93bc; outline-offset: 2px; }
 .md-wt-toolbar button:disabled,
 .md-wt-snippets button:disabled { opacity: .5; cursor: not-allowed; }
 .md-wt-toolbar button[aria-pressed="true"] { background: #233e60; border-color: #233e60; color: #fff; }
 
-.md-wt-sync {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: #5b6a80;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.md-wt-sync-input { margin: 0; width: auto; height: auto; flex: 0 0 auto; }
 .md-editor-workspace .md-editor-toolbar { display: none; }
 
 /* ---------------- 更多插入（专业片段） ---------------- */
@@ -146,7 +153,15 @@
   .workspace.md-editor-workspace.preview-focus .preview-panel { height: 100%; }
 }
 @media (max-width: 480px) {
-  .md-wt-toolbar button, .md-wt-snippets button { padding: 4px 7px; }
-  .md-wt-sync { width: 100%; }
+  .md-wt-toolbar { gap: 4px 6px; padding: 6px 8px; }
+  .md-wt-group + .md-wt-group { margin-left: 2px; padding-left: 6px; }
   .md-wt-hint { flex-basis: 100%; }
+}
+/* 390px 窄屏：进一步收紧间距与按钮尺寸，靠 flex-wrap 换行，绝不横向溢出。 */
+@media (max-width: 390px) {
+  .md-wt-toolbar { gap: 3px 5px; padding: 6px 7px; }
+  .md-wt-group { gap: 3px; }
+  .md-wt-group + .md-wt-group { margin-left: 2px; padding-left: 5px; }
+  .md-wt-toolbar button, .md-wt-snippets button { width: 26px; height: 26px; }
+  .md-wt-icon { width: 15px; height: 15px; }
 }

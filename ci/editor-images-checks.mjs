@@ -325,3 +325,22 @@ test('拖放使用鼠标坐标映射的文档位置，失败时安全回落', ()
   assert.equal(H.dropRange({clientX: 120, clientY: 340}, {posAtCoords: () => {throw new Error('坐标不可用');}}), null);
   assert.equal(H.dropRange({clientX: 120, clientY: 340}, {posAtCoords: () => NaN}), null);
 });
+
+test('图片按钮挂到插入组挂载点并图标化，点击真正打开 picker（不改导入管线）', async () => {
+  const src = await readFile(path.join(ROOT, 'web/editor-images.js'), 'utf8');
+  assert.match(src, /querySelector\('\[data-md-wt-mount="images"\]'\) \|\| toolbar/, '优先使用插入组挂载点，缺省回落到工具条');
+  assert.match(src, /doc\.querySelector\('\.md-wt-toolbar'\)/, '仍定位可见工作台工具条');
+  assert.match(src, /button\.className = 'md-wt-button md-image-insert'/, '按钮沿用工作台图标按钮外观');
+  assert.match(src, /function imageIcon/, '内联 SVG 图标（无新依赖）');
+  assert.match(src, /createElementNS\(NS, 'svg'\)/, '用 SVG 命名空间建图标');
+  assert.match(src, /ensurePicker\(\)\.click\(\)/, '点击按钮真正触发文件选择');
+  assert.match(src, /installToolbarButton\(mount\)/, '挂载到插入组挂载点');
+  // 导入管线未被改动
+  assert.match(src, /api\.replaceRange\(from, to, plan\.insert\)/);
+  assert.match(src, /planImageInsertion/);
+});
+
+test('工具栏挂载点由工作台提供（字符契约对齐）', async () => {
+  const workspace = await readFile(path.join(ROOT, 'web/editor-workspace.js'), 'utf8');
+  assert.match(workspace, /'data-md-wt-mount': mount/, '工作台插入组应暴露图片挂载点');
+});

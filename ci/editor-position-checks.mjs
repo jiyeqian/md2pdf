@@ -156,8 +156,9 @@ test('editor-workspace.js 关键契约齐备', () => {
 test('editor-workspace.js：普通按钮均为 type=button，且不使用浏览器全屏 API', () => {
   const created = (wsJs.match(/make\('button'/g) || []).length;
   const typed = (wsJs.match(/make\('button', \{ type: 'button'/g) || []).length;
-  assert.ok(created >= 4, '工具栏按钮数量偏少：' + created);
+  assert.ok(created >= 2, '按钮创建点偏少：' + created);
   assert.equal(created, typed, '存在未显式声明 type=button 的按钮');
+  assert.ok(wsJs.includes('function iconButton'), '工具栏图标按钮由 iconButton 统一创建');
   assert.ok(!/requestFullscreen|fullscreenElement|exitFullscreen/.test(wsJs), '不得调用浏览器全屏 API');
 });
 

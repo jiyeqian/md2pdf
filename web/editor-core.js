@@ -311,6 +311,9 @@
       replace: function () { return V.openSearchPanel(view); },
       fold: function () { return V.foldCode(view); },
       unfold: function () { return V.unfoldCode(view); },
+      // 折叠 / 展开共用同一命令：优先展开当前位置（若已折叠），否则折叠。
+      // foldCode / unfoldCode 只作用于当前选区/光标所在范围，嵌套折叠亦只影响该处。
+      toggleFold: function () { return V.unfoldCode(view) || V.foldCode(view); },
     };
 
     function runCommand(name) {

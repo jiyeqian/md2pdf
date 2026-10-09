@@ -1,9 +1,13 @@
 /* md2pdf web editor — 图片插入与 base64 折叠（web/editor-images.js 的样式）。 */
 
-/* 工具栏上的「插入图片」按钮：沿用 core 的按钮外观，仅加一点强调色。 */
-.md-editor-button.md-image-insert {
+/* 工具栏插入组内的「插入图片」图标按钮：沿用工作台按钮外观，仅加一点强调色。 */
+.md-wt-button.md-image-insert {
   color: #1f6f8b;
   border-color: #cfe0ea;
+}
+.md-wt-button.md-image-insert:hover:not(:disabled) {
+  color: #12556d;
+  border-color: #b3d2e0;
 }
 
 /* 图片插入状态提示（工具栏内，随状态行联动）。 */
