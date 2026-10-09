@@ -284,6 +284,7 @@ function parseBibTeX(content) {
     if (body[i] === '{') {
       let depth = 0, j = i;
       while (j < n) {
+        if (body[j] === '\\') { j += 2; continue; }
         if (body[j] === '{') depth++;
         else if (body[j] === '}') { depth--; if (depth === 0) { j++; break; } }
         j++;
@@ -300,7 +301,7 @@ function parseBibTeX(content) {
       value = vm ? vm[0] : '';
       i += value.length;
     }
-    fields[name] = value.trim();
+    fields[name] = value.trim().replace(/\\([&%#_{}])/g, '$1');
   }
   return { type, key, fields };
 }
@@ -309,6 +310,7 @@ function parseBibTeX(content) {
 function formatOneAuthor(a) {
   const name = a.trim();
   if (!name) return '';
+  if (name.startsWith('{') && name.endsWith('}')) return name.slice(1, -1);
   if (/[\u4e00-\u9fa5]/.test(name)) return name;
   const initials = g => g.split(/\s+/).map(w => (w[0] ? w[0].toUpperCase() + '.' : '')).join('');
   if (name.includes(',')) {
@@ -338,6 +340,7 @@ function formatGB7714(entry) {
   const ap = authors ? (authors.endsWith('.') ? authors + ' ' : authors + '. ') : '';
   const title = f.title || '';
   const year = f.year || '';
+  const withDoi = text => f.doi ? text.replace(/\.$/, '') + '. DOI: ' + f.doi + '.' : text;
   switch (entry.type) {
     case 'article': {
       const vol = f.volume || '';
@@ -345,35 +348,35 @@ function formatGB7714(entry) {
       const volIssue = vol ? (num ? vol + '(' + num + ')' : vol) : (num ? '(' + num + ')' : '');
       const pages = f.pages ? ': ' + f.pages : '';
       let s = ap + title + '[J]. ' + (f.journal || '') + ', ' + year + (volIssue ? ', ' + volIssue : '') + pages;
-      if (f.doi) s += '. DOI: ' + f.doi;
       s += '.';
-      return s;
+      return withDoi(s);
     }
     case 'inproceedings':
     case 'conference': {
       const pages = f.pages ? ': ' + f.pages : '';
-      return ap + title + '[C]//' + (f.booktitle || '') + '. ' + (f.address || '') + ', ' + year + pages + '.';
+      const publisher = f.address && f.publisher ? f.address + ': ' + f.publisher : (f.address || f.publisher || '');
+      return withDoi(ap + title + '[C]//' + (f.booktitle || '') + '. ' + [publisher, year].filter(Boolean).join(', ') + pages + '.');
     }
     case 'phdthesis':
     case 'mastersthesis': {
-      return ap + title + '[D]. ' + (f.address || '') + ': ' + (f.school || '') + ', ' + year + '.';
+      return withDoi(ap + title + '[D]. ' + (f.address || '') + ': ' + (f.school || '') + ', ' + year + '.');
     }
     case 'book': {
       let s = ap + title + '[M]. ';
       if (f.edition) s += f.edition + '. ';
       const pub = f.address && f.publisher ? f.address + ': ' + f.publisher : (f.address || f.publisher || '');
       s += pub + (pub ? ', ' : '') + year + '.';
-      return s;
+      return withDoi(s);
     }
     case 'techreport': {
-      return ap + title + '[R]. ' + (f.institution || '') + ', ' + year + '.';
+      return withDoi(ap + title + '[R]. ' + (f.institution || '') + ', ' + year + '.');
     }
     default: {
       let s = ap + title + '[EB/OL]. ';
       if (f.urldate) s += '(' + f.urldate + ')';
       if (f.url) s += f.url;
       s += '.';
-      return s;
+      return withDoi(s);
     }
   }
 }

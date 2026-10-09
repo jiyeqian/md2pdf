@@ -344,13 +344,21 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   for (const button of buttons) {
     assert.ok(button.getAttribute('aria-label'), '每个图标按钮需有中文 aria-label');
     assert.ok(button.getAttribute('title'), '每个图标按钮需有 title（功能/快捷键）');
-    const icon = (button.children || []).find(c => c.tagName === 'SVG');
+    const icon = (button.children || []).find(c => c.tagName === 'SVG' || c.tagName === 'IMG');
     assert.ok(icon, '每个按钮需内含 SVG 图标');
-    assert.equal(icon.getAttribute('viewBox'), '0 0 20 20');
+    if (icon.tagName === 'SVG') assert.equal(icon.getAttribute('viewBox'), '0 0 20 20');
+    else {
+      const src = button.getAttribute('aria-label') === 'BibTeX 参考文献' ? '/icons/bibtex.svg' : '/icons/doi.svg';
+      assert.equal(icon.getAttribute('src'), src);
+      assert.equal(icon.getAttribute('alt'), '');
+      assert.equal(icon.getAttribute('aria-hidden'), 'true');
+    }
   }
   assert.equal(all.filter(n => n.classList && n.classList.contains('md-wt-group')).length, 5, '应有 5 个操作分组');
   assert.equal(buttons.filter(b => b.getAttribute('aria-label') === '查找与替换').length, 1);
   assert.equal(buttons.filter(b => ['查找', '替换'].includes(b.getAttribute('aria-label'))).length, 0);
+  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === 'DOI 引用').length, 1);
+  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === 'BibTeX 参考文献').length, 1);
   const headingButton = buttons.find(b => b.getAttribute('aria-label') === '二级标题');
   assert.ok(headingButton && headingButton.getAttribute('title').includes('H2'));
 

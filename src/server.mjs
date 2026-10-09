@@ -10,6 +10,7 @@ import { attachSourcePositions } from './editor-position.mjs';
 import { Chrome, findChrome } from './chrome.mjs';
 import { webPolicyDocument, policyForType, effectiveOptions, assertOptionsAllowed, resolveWebType } from './web-options.mjs';
 import { exampleCatalog, findExample, defaultExampleSource } from './web-examples.mjs';
+import { createDoiResolver } from './doi.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LIMIT = 24 * 1024 * 1024;
@@ -146,13 +147,13 @@ export function validateInput(body) {
   return { md: body.md, opts: { ...opts, pagedHtml: true } };
 }
 
-async function readBody(req) {
+async function readBody(req, limit = LIMIT) {
   if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] || '')) throw error(415, '仅支持 application/json');
-  if (Number(req.headers['content-length']) > LIMIT) throw error(413, '请求体超过 24 MiB');
+  if (Number(req.headers['content-length']) > limit) throw error(413, limit === LIMIT ? '请求体超过 24 MiB' : 'DOI 请求体超过 4 KiB');
   const chunks = []; let length = 0;
   for await (const chunk of req) {
     length += chunk.length;
-    if (length > LIMIT) throw error(413, '请求体超过 24 MiB');
+    if (length > limit) throw error(413, limit === LIMIT ? '请求体超过 24 MiB' : 'DOI 请求体超过 4 KiB');
     chunks.push(chunk);
   }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
@@ -177,8 +178,9 @@ export async function webDocument(html, preview = false, type = 'general') {
   return html;
 }
 
-export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '' } = {}) {
+export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '', doiResolver = createDoiResolver().resolve } = {}) {
   let browser, tmpRoot, closed = false, queued = 0, tail = Promise.resolve();
+  let doiRequests = 0;
   // 公网部署时由反向代理转发，Host 为沙箱内部域名；本地开发保持仅本机可访问。
   // 来源校验始终开启：未配置 publicHost 时只信任回环地址；配置后保留 Origin 白名单（防跨站）。
   const allowedOrigins = publicHost ? [`https://${publicHost}`, `http://${publicHost}`] : [];
@@ -214,9 +216,10 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     try { return await task; } finally { queued--; }
   }
   const staticRoutes = new Map([['/', ['web/index.html', 'text/html']], ['/app.js', ['web/app.js', 'text/javascript']], ['/app.css', ['web/app.css', 'text/css']], ['/examples.js', ['web/examples.js', 'text/javascript']], ['/examples.css', ['web/examples.css', 'text/css']]]);
-  for (const file of ['editor-vendor.js', 'editor-vendor.LICENSE.txt', 'editor-core.js', 'editor-images.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-core.css', 'editor-images.css', 'editor-pro.css', 'editor-workspace.css']) {
+  for (const file of ['editor-vendor.js', 'editor-vendor.LICENSE.txt', 'editor-core.js', 'editor-images.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-core.css', 'editor-images.css', 'editor-pro.css', 'editor-workspace.css', 'editor-doi.js', 'editor-doi-helpers.mjs', 'editor-doi.css']) {
     staticRoutes.set('/' + file, ['web/' + file, file.endsWith('.css') ? 'text/css' : file.endsWith('.txt') ? 'text/plain' : 'text/javascript']);
   }
+  for (const name of ['doi', 'bibtex']) staticRoutes.set('/icons/' + name + '.svg', ['web/icons/' + name + '.svg', 'image/svg+xml']);
   const server = http.createServer(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -268,6 +271,17 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         if (!example) { json(404, { error: '示例不存在' }); return; }
         json(200, { md: example.md, type: example.type, title: example.title }); return;
       }
+      if (req.url === '/api/doi') {
+        if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); json(405, { error: '请使用 POST' }); return; }
+        const input = await readBody(req, 4096);
+        if (!input || typeof input !== 'object' || Array.isArray(input) || typeof input.doi !== 'string' || Object.keys(input).some(key => key !== 'doi')) throw error(400, '请提供 DOI 字符串');
+        if (closed) throw error(503, '服务正在关闭');
+        if (doiRequests >= 4) throw error(429, 'DOI 查询繁忙，请稍后重试');
+        doiRequests++;
+        try { json(200, await doiResolver(input.doi)); }
+        finally { doiRequests--; }
+        return;
+      }
       if (!['/api/render', '/api/pdf', '/api/resolve'].includes(req.url)) { json(404, { error: '页面不存在' }); return; }
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); json(405, { error: '请使用 POST' }); return; }
       const { md, opts } = validateInput(await readBody(req));
@@ -290,7 +304,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       const encodedName = encodeURIComponent(name).replace(/[!'()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());
       res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="document.pdf"; filename*=UTF-8''${encodedName}.pdf` }); res.end(pdf);
     } catch (e) {
-      if (!res.headersSent && !res.destroyed) json(e.status || 500, { error: e.status ? e.message : '渲染失败，请检查文档或 Chrome 配置后重试' });
+      if (!res.headersSent && !res.destroyed) json(e.status || 500, { error: e.status ? e.message : req.url === '/api/doi' ? 'DOI 查询失败，请稍后重试' : '渲染失败，请检查文档或 Chrome 配置后重试' });
     }
   });
   server.requestTimeout = 15000;

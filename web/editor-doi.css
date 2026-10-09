@@ -1,0 +1,145 @@
+/* md2pdf 编辑器 DOI 引用对话框样式
+ *
+ * 独立文件：不改动 app.css / editor-*.css。原生 <dialog>（非阻塞），
+ * 类名统一 md-doi-* 前缀，避免与图片对话框（.md-image-*）冲突。
+ */
+
+/* ---------------- 对话框 ---------------- */
+.md-doi-dialog {
+  width: min(560px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid #dfe5ed;
+  border-radius: 10px;
+  background: #fff;
+  color: #35445a;
+  font-size: 13px;
+  box-shadow: 0 18px 48px rgba(24, 42, 68, .18);
+}
+.md-doi-dialog::backdrop { background: rgba(24, 34, 50, .34); }
+.md-doi-dialog form { display: flex; flex-direction: column; }
+.md-doi-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 18px;
+  border-bottom: 1px solid #eef1f5;
+}
+.md-doi-dialog h2 { margin: 0; font-size: 14px; font-weight: 600; color: #233e60; }
+.md-doi-dialog-close {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #677389;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  line-height: 1;
+  font-size: 17px;
+  padding: 0;
+}
+.md-doi-dialog-close:hover:not(:disabled) { background: #f2f6fb; border-color: #dbe2ec; }
+
+.md-doi-dialog-body { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; }
+.md-doi-field { display: flex; flex-direction: column; gap: 6px; }
+.md-doi-field > span { font-size: 12px; color: #677389; }
+.md-doi-dialog input[type="text"],
+.md-doi-dialog textarea {
+  width: 100%;
+  border: 1px solid #d9e0e9;
+  border-radius: 6px;
+  padding: 8px 9px;
+  color: #26394f;
+  font-size: 13px;
+  background: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.md-doi-dialog textarea { min-height: 108px; resize: vertical; line-height: 1.6; }
+.md-doi-dialog :focus-visible { outline: 2px solid #6f93bc; outline-offset: 2px; }
+.md-doi-hint { margin: 0; font-size: 11px; line-height: 1.6; color: #8994a5; }
+
+.md-doi-manual { border: 1px solid #eef1f5; border-radius: 8px; padding: 8px 10px; background: #fbfcfe; }
+.md-doi-manual > summary { cursor: pointer; font-size: 12px; color: #42648b; }
+.md-doi-manual[open] > summary { margin-bottom: 9px; }
+.md-doi-manual-inner { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---------------- 消息 / 加载 ---------------- */
+.md-doi-message {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+.md-doi-message:empty { display: none; }
+.md-doi-message[data-tone="error"] { background: #fdf2f2; border-color: #f0cccc; color: #a53434; }
+.md-doi-message[data-tone="warn"] { background: #fff8ec; border-color: #f0dfba; color: #8a6320; }
+.md-doi-message[data-tone="ok"] { background: #f1f7f2; border-color: #c9e2d0; color: #33663f; }
+.md-doi-message[data-tone="info"] { background: #f2f6fb; border-color: #d7e2ef; color: #42648b; }
+.md-doi-message[data-tone="busy"] { background: #f2f6fb; border-color: #d7e2ef; color: #42648b; }
+.md-doi-loading { display: flex; align-items: center; gap: 8px; }
+.md-doi-spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid #cbd8e8;
+  border-top-color: #233e60;
+  animation: md-doi-spin .8s linear infinite;
+  flex: 0 0 auto;
+}
+@keyframes md-doi-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .md-doi-spinner { animation: none; } }
+
+/* ---------------- 底部按钮 ---------------- */
+.md-doi-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 13px 18px;
+  border-top: 1px solid #eef1f5;
+  background: #fbfcfe;
+}
+.md-doi-dialog-actions .md-doi-spacer { flex: 1 1 auto; }
+.md-doi-button {
+  border: 1px solid #dbe2ec;
+  background: #fff;
+  color: #33465e;
+  border-radius: 6px;
+  padding: 8px 13px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.md-doi-button:hover:not(:disabled) { background: #f2f6fb; border-color: #b7c6da; }
+.md-doi-button--primary { background: #233e60; border-color: #233e60; color: #fff; font-weight: 600; }
+.md-doi-button--primary:hover:not(:disabled) { background: #34577f; }
+.md-doi-button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ---------------- 持久状态 / 未著录提示 ---------------- */
+/* 独立于 .status-row 里的 #status：应用状态刷新不会覆盖这里的文字。 */
+.md-doi-status {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #677389;
+  max-width: 62%;
+  text-align: right;
+}
+.md-doi-status:empty { display: none; }
+.md-doi-status[data-tone="warn"] { color: #8a6320; }
+.md-doi-status[data-tone="error"] { color: #a53434; }
+.md-doi-status[data-tone="ok"] { color: #33663f; }
+
+/* 工具条里的 SVG 文件图标（/icons/*.svg）与内联 SVG 同尺寸、单色化。 */
+.md-wt-toolbar img.md-wt-icon {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  opacity: .9;
+}
+.md-wt-toolbar button[aria-pressed="true"] img.md-wt-icon { filter: grayscale(1) brightness(0) invert(1); }
+
+@media (max-width: 900px) {
+  .md-doi-status { max-width: none; text-align: left; }
+}
+

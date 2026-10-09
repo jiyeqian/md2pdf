@@ -102,14 +102,30 @@
     table: [{ rect: [4.2, 5.4, 11.6, 9.2], rx: 1.6 }, { d: 'M4.2 9.5h11.6' }, { d: 'M9.7 5.4v9.2' }],
     figure: [{ d: 'M4.4 15.6V9.2' }, { d: 'M8.8 15.6V5.4' }, { d: 'M13.2 15.6v-4' }, { d: 'M3.4 16.6h13.2' }],
     footnote: [{ d: 'M4.4 7.8h8' }, { d: 'M4.4 10.9h8' }, { d: 'M4.4 14h5' }, { d: 'M13.8 5.4 15.6 4.4v5.4' }],
-    bibliography: [{ d: 'M5 4.6h6a1.8 1.8 0 0 1 1.8 1.8v9H6.8A1.8 1.8 0 0 1 5 13.6z' }, { d: 'M8 8h3.4' }, { d: 'M8 10.6h3.4' }],
+
     formula: [{ d: 'M6 5.2h8L9.6 10l4.4 4.8H6' }],
     foldToggle: [{ d: 'M6.6 8.6 10 5.2l3.4 3.4' }, { d: 'M6.6 11.4 10 14.8l3.4-3.4' }],
     sync: [{ circle: [10, 10, 3] }, { d: 'M10 3.4v2.2' }, { d: 'M10 14.4v2.2' }, { d: 'M3.4 10h2.2' }, { d: 'M14.4 10h2.2' }],
     insert: [{ rect: [4, 4, 12, 12], rx: 2 }, { d: 'M10 7v6' }, { d: 'M7 10h6' }]
   };
 
+  // SVG 文件图标：仅「参考文献」与「DOI 引用」两个按钮使用本地 SVG 资源，
+  // 其余按钮仍走下面的内联路径图标，逻辑不受影响。
+  var FILE_ICONS = {
+    bibliography: { src: '/icons/bibtex.svg', label: 'BibTeX 参考文献' },
+    doi: { src: '/icons/doi.svg', label: 'DOI 引用' }
+  };
+
   function iconSvg(name) {
+    var iconFile = FILE_ICONS[name];
+    if (iconFile) {
+      var img = document.createElement('img');
+      img.setAttribute('class', 'md-wt-icon');
+      img.setAttribute('src', iconFile.src);
+      img.setAttribute('alt', '');
+      img.setAttribute('aria-hidden', 'true');
+      return img;
+    }
     var svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('class', 'md-wt-icon');
     svg.setAttribute('viewBox', '0 0 20 20');
@@ -169,7 +185,8 @@
   ];
   var ACADEMIC_ITEMS = [
     { icon: 'footnote', label: '脚注', hint: '脚注定义 [^id]', insert: 'footnote' },
-    { icon: 'bibliography', label: '参考文献', hint: '插入 BibTeX 条目（自动著录）', insert: 'bibliography' },
+    { icon: 'bibliography', label: 'BibTeX 参考文献', hint: '插入 BibTeX 条目（自动著录为参考文献）', insert: 'bibliography' },
+    { icon: 'doi', label: 'DOI 引用', hint: '按 DOI 或 DOI 链接查询文献，插入引用与 BibTeX 定义' },
     { icon: 'formula', label: '公式', hint: '行内或独立公式', insert: 'formula' }
   ];
   var SNIPPETS = [
@@ -185,6 +202,10 @@
   function appendItem(group, item) {
     var button = iconButton(item.icon, item.label, item.hint);
     if (item.insert) button.addEventListener('click', function () { runInsert(item.insert); });
+    // DOI 按钮由 web/editor-doi.js 实现界面：这里只派发事件，不耦合实现。
+    else if (item.icon === 'doi') button.addEventListener('click', function () {
+      document.dispatchEvent(new CustomEvent('md-doi-open'));
+    });
     else button.addEventListener('click', function () { runCommand(item.command); });
     commandButtons.push(button);
     group.appendChild(button);
