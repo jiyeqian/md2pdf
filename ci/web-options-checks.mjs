@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { PROFILES } from '../src/profiles.mjs';
 import {
   webPolicyDocument, policyForType, effectiveOptions, assertOptionsAllowed, resolveWebType,
+  LINE_HEIGHT_RANGE, GB_LINE_HEIGHT, WEB_OPTION_SPEC,
 } from '../src/web-options.mjs';
 
 const gb = PROFILES.gb.defaults;
@@ -19,7 +20,7 @@ test('gb policy locks everything except toc and inherits original profile defaul
   const policy = policyForType('gb');
   assert.equal(policy.locked, true);
   assert.deepEqual(policy.availableKeys, ['type', 'toc']);
-  for (const key of ['theme', 'numberScheme', 'numbering', 'fontSize', 'margin']) {
+  for (const key of ['theme', 'numberScheme', 'numbering', 'fontSize', 'lineHeight', 'margin']) {
     assert.equal(policy.controls[key].available, false, key + ' 应为锁定的控件');
     assert.ok(policy.lockedKeys.includes(key), key + ' 应出现在 lockedKeys');
   }
@@ -32,8 +33,41 @@ test('gb policy locks everything except toc and inherits original profile defaul
   assert.equal(policy.fixed.marginLeft, gb.marginLeft);
   assert.equal(policy.fixed.marginRight, gb.marginRight);
   assert.equal(policy.controls.fontSize.fixedValue, 10.5);
+  // GB 行距固定为内置模板值，与 theme-gb.css 的 1.62 一致
+  assert.equal(policy.controls.lineHeight.fixedValue, GB_LINE_HEIGHT);
+  assert.equal(policy.controls.lineHeight.fixedValue, 1.62);
   assert.equal(policy.controls.toc.available, true);
   assert.equal(policy.controls.type.available, true);
+});
+
+test('lineHeight is an unsettable number control with the documented range and default', () => {
+  const c = policyForType('general').controls.lineHeight;
+  assert.equal(c.available, true);
+  assert.equal(c.kind, 'number');
+  assert.equal(c.unsettable, true);
+  assert.equal(c.allowEmpty, true);
+  assert.equal(c.min, 1);
+  assert.equal(c.max, 2.5);
+  assert.equal(c.step, 0.05);
+  assert.equal(c.defaultValue, 1.9);
+  assert.equal(c.fixedValue, 1.9);
+  // 自动识别阶段与 paper 等通用能力类型同样开放行距
+  assert.equal(policyForType('').controls.lineHeight.available, true);
+  assert.equal(policyForType('paper').controls.lineHeight.available, true);
+});
+
+test('policy document advertises the lineHeight range, baseline and http whitelist', () => {
+  const doc = webPolicyDocument();
+  assert.deepEqual(LINE_HEIGHT_RANGE, { min: 1, max: 2.5, step: 0.05 });
+  assert.equal(doc.lineHeight.min, 1);
+  assert.equal(doc.lineHeight.max, 2.5);
+  assert.equal(doc.lineHeight.step, 0.05);
+  assert.equal(doc.lineHeight.defaultValue, 1.9);
+  assert.equal(doc.lineHeight.unsettable, true);
+  assert.equal(doc.lineHeight.gbValue, GB_LINE_HEIGHT);
+  assert.equal(doc.baseline.lineHeight, 1.9);
+  assert.ok(WEB_OPTION_SPEC.numbers.lineHeight, 'HTTP 白名单应包含 lineHeight');
+  assert.deepEqual(WEB_OPTION_SPEC.numbers.lineHeight, [1, 2.5]);
 });
 
 test('paper policy does not offer the cjk numbering scheme', () => {
@@ -53,6 +87,7 @@ test('assertOptionsAllowed rejects forbidden overrides', () => {
   bad({ numberScheme: 'gb' }, 'gb');
   bad({ numbering: 'force' }, 'gb');
   bad({ fontSize: 12 }, 'gb');
+  bad({ lineHeight: 2 }, 'gb');
   bad({ marginTop: 25 }, 'gb');
   bad({ margin: 20 }, 'gb');
   bad({ marginLeft: 25 }, 'gb');
@@ -62,6 +97,8 @@ test('assertOptionsAllowed rejects forbidden overrides', () => {
 test('assertOptionsAllowed accepts the legitimate selections', () => {
   assert.doesNotThrow(() => assertOptionsAllowed({ theme: 'minimal', numberScheme: 'cjk', numbering: 'force' }, 'general'));
   assert.doesNotThrow(() => assertOptionsAllowed({ numberScheme: 'chapter' }, 'paper'));
+  assert.doesNotThrow(() => assertOptionsAllowed({ lineHeight: 2.1 }, 'general'));
+  assert.doesNotThrow(() => assertOptionsAllowed({ lineHeight: 1 }, 'paper'));
   assert.doesNotThrow(() => assertOptionsAllowed({ toc: true, landscape: false }, 'gb'));
   assert.doesNotThrow(() => assertOptionsAllowed({}, 'gb'));
 });
@@ -88,4 +125,13 @@ test('effectiveOptions inherits gb template defaults without mutating opts', () 
   assert.equal(effective.marginRight, gb.marginRight);
   assert.equal(effective.fontSize, 10.5);
   assert.deepEqual(opts, {}, 'effectiveOptions 不得回写调用方的 opts');
+});
+
+test('effectiveOptions reports lineHeight; GB is fixed at the template value', () => {
+  assert.equal(effectiveOptions({}, 'general').lineHeight, 1.9);
+  assert.equal(effectiveOptions({ lineHeight: 2.2 }, 'general').lineHeight, 2.2);
+  assert.equal(effectiveOptions({}, 'paper').lineHeight, 1.9);
+  assert.equal(effectiveOptions({}, 'gb').lineHeight, GB_LINE_HEIGHT);
+  // 即便调用方误传 GB 行距，有效值仍是模板固定值（服务端会先拒绝该请求）
+  assert.equal(effectiveOptions({ lineHeight: 2 }, 'gb').lineHeight, GB_LINE_HEIGHT);
 });

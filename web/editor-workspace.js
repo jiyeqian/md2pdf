@@ -107,7 +107,9 @@
     foldToggle: [{ d: 'M6.6 8.6 10 5.2l3.4 3.4' }, { d: 'M6.6 11.4 10 14.8l3.4-3.4' }],
     // Tabler arrows-exchange（24 网格）按 0.8333333333 缩放进 20 视图，路径数据未改动。
     sync: [{ g: 'scale(0.8333333333)', d: 'M7 10h14l-4 -4M17 14h-14l4 4' }],
-    insert: [{ rect: [4, 4, 12, 12], rx: 2 }, { d: 'M10 7v6' }, { d: 'M7 10h6' }]
+    insert: [{ rect: [4, 4, 12, 12], rx: 2 }, { d: 'M10 7v6' }, { d: 'M7 10h6' }],
+    // 从模板创建：文档轮廓（折角）+ 加号，与其它按钮同为 20×20 线性描边。
+    template: [{ d: 'M11.2 3.6H6.2a1.4 1.4 0 0 0-1.4 1.4v10a1.4 1.4 0 0 0 1.4 1.4h7.6a1.4 1.4 0 0 0 1.4-1.4V7.4z' }, { d: 'M11.2 3.6v3.8h3.4' }, { d: 'M7.8 11h4.4' }, { d: 'M10 8.8v4.4' }]
   };
 
   // SVG 文件图标：仅「参考文献」与「DOI 引用」两个按钮使用本地 SVG 资源，
@@ -183,6 +185,8 @@
     { icon: 'italic', label: '斜体', hint: '斜体（Ctrl/⌘+I）', insert: 'italic' }
   ];
   var INSERT_ITEMS = [
+    // 首位：从模板创建（锚点到模板库，草稿由根应用的委托 + pagehide 保存）。
+    { icon: 'template', label: '从模板创建', hint: '从模板创建：在模板库中浏览示例并交接回编辑器，当前草稿会保留', href: '/examples', id: 'browse-examples' },
     { icon: 'link', label: '链接', hint: '链接（Ctrl/⌘+K）', insert: 'link' },
     { icon: 'quote', label: '引用', hint: '引用块 > …', insert: 'quote' },
     { icon: 'code', label: '行内代码', hint: '行内代码（反引号包裹）', insert: 'code' },
@@ -207,14 +211,23 @@
   var IMAGE_MOUNT_ATTR = 'data-md-wt-mount';
 
   function appendItem(group, item) {
-    var button = iconButton(item.icon, item.label, item.hint);
-    if (item.insert) button.addEventListener('click', function () { runInsert(item.insert); });
-    // DOI 按钮由 web/editor-doi.js 实现界面：这里只派发事件，不耦合实现。
-    else if (item.icon === 'doi') button.addEventListener('click', function () {
-      document.dispatchEvent(new CustomEvent('md-doi-open'));
-    });
-    else button.addEventListener('click', function () { runCommand(item.command); });
-    commandButtons.push(button);
+    // 锚点项（从模板创建）：沿用图标按钮外观，但用 <a> 自带导航行为，
+    // 不注册编辑器命令，也不参与启用/禁用（编辑器未就绪时也能进入模板库）。
+    var button;
+    if (item.href) {
+      button = make('a', { class: 'md-wt-button', href: item.href, 'aria-label': item.label, title: item.hint });
+      if (item.id) button.setAttribute('id', item.id);
+      button.appendChild(iconSvg(item.icon));
+    } else {
+      button = iconButton(item.icon, item.label, item.hint);
+      if (item.insert) button.addEventListener('click', function () { runInsert(item.insert); });
+      // DOI 按钮由 web/editor-doi.js 实现界面：这里只派发事件，不耦合实现。
+      else if (item.icon === 'doi') button.addEventListener('click', function () {
+        document.dispatchEvent(new CustomEvent('md-doi-open'));
+      });
+      else if (item.command) button.addEventListener('click', function () { runCommand(item.command); });
+      commandButtons.push(button);
+    }
     group.appendChild(button);
     return button;
   }
@@ -302,8 +315,8 @@
 
   // 键盘工具条：左右方向键在按钮间移动，Home/End 到首尾。
   function wireRovingTabindex(group) {
-    var buttons = function () { return Array.prototype.filter.call(group.querySelectorAll('button'), function (b) { return !b.disabled; }); };
-    Array.prototype.forEach.call(group.querySelectorAll('button'), function (b, i) { b.tabIndex = i === 0 ? 0 : -1; });
+    var buttons = function () { return Array.prototype.filter.call(group.querySelectorAll('button, a.md-wt-button'), function (b) { return !b.disabled; }); };
+    Array.prototype.forEach.call(group.querySelectorAll('button, a.md-wt-button'), function (b, i) { b.tabIndex = i === 0 ? 0 : -1; });
     group.addEventListener('keydown', function (event) {
       var key = event.key;
       if (key !== 'ArrowRight' && key !== 'ArrowLeft' && key !== 'Home' && key !== 'End') return;

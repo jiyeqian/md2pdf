@@ -16,6 +16,7 @@ import vm from 'node:vm';
 
 const read = rel => readFile(new URL('../' + rel, import.meta.url), 'utf8');
 const indexHtml = await read('web/index.html');
+const examplesHtml = await read('web/examples.html');
 const appJs = await read('web/app.js');
 const appCss = await read('web/app.css');
 const wsJs = await read('web/editor-workspace.js');
@@ -39,9 +40,13 @@ test('固定规则整栏已移除（index / form / app / css）', () => {
   assert.match(appJs, /control\.available !== false/);
 });
 
-test('示例库链接采用按钮外观', () => {
-  assert.match(indexHtml, /<a id="examples-link-top" class="button-link" href="\/examples">示例库<\/a>/);
-  assert.match(indexHtml, /<a id="browse-examples" class="button-link button-link--small" href="\/examples">/);
+test('导航栏示例库入口改为「模板库」，编辑器与库页标题统一', () => {
+  assert.match(indexHtml, /<a id="examples-link-top" class="button-link" href="\/examples">模板库<\/a>/);
+  assert.ok(!/示例库/.test(indexHtml), '编辑器不应再残留「示例库」字样');
+  // 库页标题 / 副标题同步为「模板库」。
+  assert.match(examplesHtml, /<title>md2pdf · 模板库<\/title>/);
+  assert.match(examplesHtml, /<h1>md2pdf<\/h1><p>模板库<\/p>/);
+  assert.ok(!/示例库/.test(examplesHtml), '库页不应再残留「示例库」标题');
 });
 
 test('下载按钮移入预览 panel-heading，保留 id/disabled/aria-label 与图标', () => {
@@ -103,10 +108,12 @@ test('app.js：下载加载态不使用 textContent 覆盖按钮，改状态属�
 });
 
 test('app.js：保留草稿与示例交接', () => {
-  for (const token of ["DRAFT_KEY = 'md2pdf:draft'", "HANDOFF_KEY = 'md2pdf:handoff'", 'function saveDraft', 'browseExamples', 'topExamplesLink', 'sessionStorage']) {
+  for (const token of ["DRAFT_KEY = 'md2pdf:draft'", "HANDOFF_KEY = 'md2pdf:handoff'", 'function saveDraft', '#browse-examples', 'topExamplesLink', 'sessionStorage']) {
     assert.ok(appJs.includes(token), '缺少交接契约：' + token);
   }
-  assert.match(appJs, /link\?\.addEventListener\('click', saveDraft\)/);
+  assert.match(appJs, /topExamplesLink\?\.addEventListener\('click', saveDraft\)/);
+  assert.match(appJs, /closest\('#browse-examples, #examples-link-top'\)/, '动态注入的从模板创建需经委托保存草稿');
+  assert.ok(appJs.includes("window.addEventListener('pagehide', saveDraft)"), 'pagehide 兜底保存');
 });
 
 // ---------------------------------------------------------------- editor-workspace.js
@@ -364,6 +371,14 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   const headingButton = buttons.find(b => b.getAttribute('aria-label') === '二级标题');
   assert.ok(headingButton && headingButton.getAttribute('title').includes('H2'));
 
+  const templateLink = all.find(n => n.getAttribute && n.getAttribute('id') === 'browse-examples');
+  assert.ok(templateLink, '工具条应含「从模板创建」锚点');
+  assert.equal(templateLink.tagName, 'A', '从模板创建应是锚点而非命令按钮');
+  assert.equal(templateLink.getAttribute('href'), '/examples');
+  assert.equal(templateLink.getAttribute('aria-label'), '从模板创建');
+  assert.ok(templateLink.getAttribute('title'), '锚点需有 title');
+  assert.ok((templateLink.children || []).some(c => c.tagName === 'SVG'), '锚点应含文档+图标');
+
   const mount = all.find(n => n.getAttribute && n.getAttribute('data-md-wt-mount') === 'images');
   assert.ok(mount, '插入组应暴露图片按钮挂载点');
   assert.notEqual(mount.getAttribute('aria-hidden'), 'true', '图片挂载点不能隐藏其子按钮的可访问名称');
@@ -383,4 +398,231 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   assert.ok(foldBtn, '应有折叠 / 展开共用按钮');
   foldBtn.dispatch('click');
   assert.deepEqual(calls, ['toggleFold'], '折叠按钮应调用 toggleFold 命令');
+});
+
+
+// ---------------------------------------------------------------- 选项模型（index.html 静态）
+test('index.html：「标题编号」合并菜单替代旧的章节编号 / 编号方案两个控件', () => {
+  assert.match(indexHtml, /<label data-control="numbering">标题编号<select name="numbering">/);
+  assert.ok(!indexHtml.includes('name="numberScheme"'), '不应再有独立的编号方案控件');
+  assert.ok(!/data-control="numberScheme"/.test(indexHtml), '不应再有独立的编号方案控件外壳');
+  assert.ok(!indexHtml.includes('编号方案'), '旧「编号方案」控件文案应已移除');
+  // 六项语义完整的选项：跟随 / 不加 / 自动 / 数字 / 中文 / 章节
+  for (const [value, label] of [
+    ['', '跟随文档'], ['none', '不加编号'], ['auto', '自动编号'],
+    ['force:arabic', '数字编号 · 1 / 1.1'], ['force:cjk', '中文编号 · 一、/（一）'], ['force:chapter', '章节编号 · 第 1 章'],
+  ]) assert.match(indexHtml, new RegExp('<option value="' + value + '">' + label.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&') + '</option>'), '缺少选项：' + label);
+});
+
+test('index.html：字号 / 边距 / 行距为紧凑按钮 + 调整浮层（滑块 / 数值 / 跟随文档 / 说明）', () => {
+  const specs = [
+    ['fontSize', 8, 24, '0.5', 'pt'],
+    ['margin', 10, 40, '1', 'mm'],
+    ['lineHeight', 1, 2.5, '0.05', '倍'],
+  ];
+  for (const [name, min, max, step, unit] of specs) {
+    const at = indexHtml.indexOf('data-control="' + name + '"');
+    assert.ok(at >= 0, '缺少控件：' + name);
+    const next = indexHtml.indexOf('data-control="', at + 1);
+    const block = indexHtml.slice(at, next < 0 ? at + 2000 : next);
+    assert.match(block, /<details class="range-pop">/, name + ' 应为 details 浮层');
+    assert.match(block, /<summary class="range-trigger"[^>]*>跟随文档<\/summary>/, name + ' 触发器默认文案应为「跟随文档」');
+    assert.match(block, new RegExp('data-range-slider="' + name + '" min="' + min + '" max="' + max + '" step="' + step + '"'), name + ' 滑块范围');
+    assert.match(block, new RegExp('<input name="' + name + '"[^>]*data-range-number="' + name + '"[^>]*type="number" min="' + min + '" max="' + max + '" step="' + step + '"'), name + ' 数值输入范围');
+    assert.match(block, new RegExp('data-range-default="' + name + '"'), name + ' 跟随文档按钮');
+    assert.match(block, new RegExp('data-range-note="' + name + '"'), name + ' 模板默认说明节点');
+    assert.match(block, new RegExp('<span class="range-unit">' + unit + '<\/span>'), name + ' 单位');
+  }
+  // 边距旧的三档下拉已移除
+  assert.ok(!/<select name="margin"/.test(indexHtml), '边距不应再是下拉选择');
+});
+
+test('从模板创建入口：迁到 Markdown 工具条插入组首位（锚点 + 文档图标）', () => {
+  // 底部不再重复入口。
+  assert.ok(!indexHtml.includes('id="browse-examples"'), '底部不应再有重复入口');
+  assert.ok(!/>浏览示例库<\/a>/.test(indexHtml), '旧的示例入口文案应移除');
+  assert.ok(!/>从模板创建<\/a>/.test(indexHtml), 'index 底部不再内联从模板创建');
+  // editor-workspace.js 注入锚点：保持 id / href / aria-label，使用文档+图标。
+  assert.match(wsJs, /href: '\/examples'/);
+  assert.match(wsJs, /label: '从模板创建'/);
+  assert.match(wsJs, /id: 'browse-examples'/);
+  assert.match(wsJs, /template: \[/, '需要线性文档+图标');
+  const insertBlock = wsJs.slice(wsJs.indexOf('var INSERT_ITEMS = ['), wsJs.indexOf('];', wsJs.indexOf('var INSERT_ITEMS = [')));
+  const templateAt = insertBlock.indexOf("{ icon: 'template'");
+  const linkAt = insertBlock.indexOf("{ icon: 'link'");
+  assert.ok(templateAt >= 0 && linkAt >= 0 && templateAt < linkAt, '从模板创建应位于插入组首位');
+});
+
+test('app.css：范围控件为紧凑按钮 + 浮层样式（滑块 / 数值 / 单位 / 默认态）', () => {
+  for (const token of ['.range-row', '.range-slider', '.range-number', '.range-default', '.range-pop', '.range-trigger', '.range-popover', '.range-note', '.range-unit', '[data-control].is-default']) {
+    assert.ok(appCss.includes(token), '缺少：' + token);
+  }
+  const open = (appCss.match(/\{/g) || []).length;
+  const close = (appCss.match(/\}/g) || []).length;
+  assert.equal(open, close, 'CSS 花括号不平衡');
+});
+
+// ---------------------------------------------------------------- app.js 静态契约
+test('app.js：控件顺序含 lineHeight，且合并菜单不再单列 numberScheme', () => {
+  const order = appJs.match(/const CONTROL_ORDER = \[[^\]]*\]/)[0];
+  assert.ok(order.includes("'lineHeight'"), '控制顺序应包含 lineHeight');
+  assert.ok(!order.includes('numberScheme'), '合并后不应再把 numberScheme 单列在控制顺序里');
+});
+
+test('app.js：滑块与数值双向同步、跟随文档省略覆盖、触发器文案 + 浮层互斥、复用防抖', () => {
+  for (const token of ['data-range-slider', 'data-range-number', 'data-range-default', 'data-range-note', 'function syncRangeFromEvent', 'function showRangeDefault', 'function reflectRangeValue', 'function updateRangeTrigger', 'function updateRangeNote', 'function closeRangePopovers', 'details.range-pop', 'showRangeDefault(name, currentRange(name))']) {
+    assert.ok(appJs.includes(token), '缺少：' + token);
+  }
+  assert.match(appJs, /form\.addEventListener\('input', event => \{ syncRangeFromEvent\(event\.target\); saveDraft\(\); schedulePreview\(\)/);
+  // collectedOptions 只在非空时发送，未显式操作不覆盖默认
+  assert.match(appJs, /const value = field\.value;\s*\n\s*if \(value === ''\) continue;/);
+});
+
+// ---------------------------------------------------------------- 选项模型（vm 执行 app.js 真实逻辑）
+function fakeAppEnvironment() {
+  class ClassList {
+    constructor() { this.set = new Set(); }
+    add(...c) { c.forEach(x => this.set.add(x)); }
+    remove(...c) { c.forEach(x => this.set.delete(x)); }
+    toggle(c, force) { const on = force === undefined ? !this.set.has(c) : !!force; on ? this.set.add(c) : this.set.delete(c); return on; }
+    contains(c) { return this.set.has(c); }
+  }
+  class FakeNode {
+    constructor(tag) {
+      this.tagName = (tag || 'div').toUpperCase();
+      this.classList = new ClassList();
+      this.attrs = {};
+      this.children = [];
+      this.listeners = {};
+      this.style = { setProperty() {} };
+      this.dataset = {};
+      this.hidden = false;
+      this.disabled = false;
+      this.textContent = '';
+      this.value = '';
+      this.options = [];
+      this.q = {};
+    }
+    setAttribute(k, v) { this.attrs[k] = String(v); }
+    getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null; }
+    removeAttribute(k) { delete this.attrs[k]; }
+    set className(v) { this.classList.set = new Set(String(v).split(/\s+/).filter(Boolean)); }
+    get className() { return Array.from(this.classList.set).join(' '); }
+    appendChild(c) { this.children.push(c); return c; }
+    append(...c) { c.forEach(x => this.children.push(x)); }
+    after() {}
+    before() {}
+    replaceChildren(...c) { this.children = c.slice(); }
+    querySelector(sel) { return this.q[sel] || null; }
+    querySelectorAll() { return []; }
+    addEventListener(type, fn) { (this.listeners[type] || (this.listeners[type] = [])).push(fn); }
+    removeEventListener() {}
+    dispatch(type, event) { (this.listeners[type] || []).forEach(fn => fn(event || { type })); }
+    focus() {}
+    closest() { return null; }
+  }
+  const form = new FakeNode('form');
+  const named = {};
+  for (const name of ['type', 'theme', 'toc', 'numbering']) named[name] = new FakeNode('select');
+  for (const name of ['fontSize', 'margin', 'lineHeight']) named[name] = new FakeNode('input');
+  named.type.value = '';
+  form.elements = named;
+  const editor = new FakeNode('textarea');
+  const preview = new FakeNode('iframe');
+  const document = {
+    createElement: tag => new FakeNode(tag),
+    createElementNS: (ns, tag) => new FakeNode(tag),
+    querySelector(sel) {
+      if (sel === '#markdown') return editor;
+      if (sel === '#options') return form;
+      if (sel === '#preview') return preview;
+      if (sel === '#status') return new FakeNode('p');
+      if (sel === '#download') return new FakeNode('button');
+      if (sel === '#count') return new FakeNode('span');
+      if (sel === '#empty-preview') return new FakeNode('div');
+      if (sel === '#browse-examples' || sel === '#examples-link-top') return new FakeNode('a');
+      if (sel === '.status-row') return new FakeNode('div');
+      return null;
+    },
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent() {},
+  };
+  const sandbox = {
+    document,
+    sessionStorage: { getItem() { return null; }, setItem() {}, removeItem() {} },
+    console: { warn() {}, log() {}, error() {} },
+    setTimeout, clearTimeout,
+    fetch: () => new Promise(() => {}),
+    CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init && init.detail; } },
+    AbortController: class { constructor() { this.signal = {}; } abort() {} },
+    navigator: { userActivation: { isActive: false } },
+    addEventListener() {},
+    removeEventListener() {},
+  };
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  return { sandbox };
+}
+
+const appEnv = fakeAppEnvironment();
+vm.runInContext(appJs, appEnv.sandbox, { filename: 'app.js' });
+const model = appEnv.sandbox.window.md2pdfOptions;
+// vm 内创建的对象/数组来自另一 realm，deepStrictEqual 会因原型不同而失败，统一转成 plain JSON 再比较。
+const plain = value => JSON.parse(JSON.stringify(value));
+
+test('调整浮层定位在视口内，适配工具栏左右两列', () => {
+  appEnv.sandbox.innerWidth = 452;
+  for (const anchorLeft of [28, 232]) {
+    const panel = { style: {}, getBoundingClientRect: () => ({ width: 300 }) };
+    const details = { querySelector: () => panel, getBoundingClientRect: () => ({ left: anchorLeft }) };
+    appEnv.sandbox.positionRangePopover(details);
+    const left = anchorLeft + parseFloat(panel.style.left);
+    assert.ok(left >= 12, '浮层不应超出左边缘');
+    assert.ok(left + 300 <= 440, '浮层不应超出右边缘');
+    assert.equal(panel.style.right, 'auto');
+  }
+});
+
+test('选项模型：合并菜单按类型能力过滤（general 全量 / paper 无 cjk / GB 隐藏）', () => {
+  assert.ok(model, 'app.js 应导出 md2pdfOptions 纯函数模型');
+  const general = { numbering: { available: true, values: ['auto', 'force', 'none'] }, numberScheme: { available: true, values: ['arabic', 'cjk', 'chapter'] } };
+  assert.deepEqual(plain(model.headingChoices(general).map(e => e[0])), ['', 'none', 'auto', 'force:arabic', 'force:cjk', 'force:chapter']);
+  const paper = { numbering: { available: true, values: ['auto', 'force', 'none'] }, numberScheme: { available: true, values: ['arabic', 'chapter'] } };
+  assert.deepEqual(plain(model.headingChoices(paper).map(e => e[0])), ['', 'none', 'auto', 'force:arabic', 'force:chapter']);
+  const gb = { numbering: { available: false, values: [] }, numberScheme: { available: false, values: [] } };
+  assert.deepEqual(plain(model.headingChoices(gb)), [['', '跟随文档']]);
+  assert.equal(model.headingAvailable(gb), false);
+  assert.equal(model.headingAvailable(general), true);
+});
+
+test('选项模型：旧草稿 numbering + numberScheme 正确合并为菜单 token', () => {
+  assert.equal(model.headingDraftToken('force', 'cjk'), 'force:cjk');
+  assert.equal(model.headingDraftToken('force', ''), 'force:arabic');
+  assert.equal(model.headingDraftToken('force:cjk'), 'force:cjk');
+  assert.equal(model.headingDraftToken('auto', 'chapter'), 'auto');
+  assert.equal(model.headingDraftToken('none', ''), 'none');
+  assert.equal(model.headingDraftToken('', 'cjk'), '');
+  assert.deepEqual(plain(model.decodeHeadingToken('force:chapter')), { numbering: 'force', numberScheme: 'chapter' });
+  assert.deepEqual(plain(model.decodeHeadingToken('none')), { numbering: 'none' });
+  assert.deepEqual(plain(model.decodeHeadingToken('')), {});
+});
+
+test('选项模型：发送前过滤类型不支持的方案，跟随文档省略两项', () => {
+  const paper = { numbering: { available: true, values: ['auto', 'force', 'none'] }, numberScheme: { available: true, values: ['arabic', 'chapter'] } };
+  const general = { numbering: { available: true, values: ['auto', 'force', 'none'] }, numberScheme: { available: true, values: ['arabic', 'cjk', 'chapter'] } };
+  assert.deepEqual(plain(model.headingOptionsFromToken('force:cjk', general)), { numbering: 'force', numberScheme: 'cjk' });
+  assert.deepEqual(plain(model.headingOptionsFromToken('force:cjk', paper)), { numbering: 'force' });
+  assert.deepEqual(plain(model.headingOptionsFromToken('none', general)), { numbering: 'none' });
+  assert.deepEqual(plain(model.headingOptionsFromToken('', general)), {});
+});
+
+test('选项模型：范围默认值（元数据缺省回退），空值不发送覆盖', () => {
+  assert.deepEqual(plain(model.resolveRange('lineHeight', null)), { min: 1, max: 2.5, step: 0.05, defaultValue: 1.9 });
+  assert.deepEqual(plain(model.resolveRange('margin', null)), { min: 10, max: 40, step: 1, defaultValue: 20 });
+  assert.equal(model.resolveRange('margin', { min: 10, max: 40, step: 1, defaultValue: 22 }).defaultValue, 22);
+  assert.equal(model.rangeOptionValue('fontSize', ''), undefined);
+  assert.equal(model.rangeOptionValue('lineHeight', '1.9'), 1.9);
+  assert.equal(model.rangeOptionValue('fontSize', 'abc'), undefined);
+  assert.equal(model.rangeOptionValue('margin', undefined), undefined);
 });

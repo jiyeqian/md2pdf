@@ -44,8 +44,10 @@
 }
 .md-wt-mount { display: inline-flex; align-items: center; gap: 4px; }
 
-/* 固定紧凑的图标按钮：工具条内所有按钮尺寸一致，仅图标随颜色变化。 */
+/* 固定紧凑的图标按钮：工具条内所有按钮尺寸一致，仅图标随颜色变化。
+ * 「从模板创建」是 <a> 锚点，沿用同一外观（文字按钮语义，随 currentColor）。 */
 .md-wt-toolbar button,
+.md-wt-toolbar a.md-wt-button,
 .md-wt-snippets button {
   display: inline-flex;
   align-items: center;
@@ -60,10 +62,13 @@
   border-radius: 6px;
   line-height: 0;
 }
+.md-wt-toolbar a.md-wt-button { text-decoration: none; }
 .md-wt-icon { width: 16px; height: 16px; display: block; }
 .md-wt-toolbar button:hover:not(:disabled),
+.md-wt-toolbar a.md-wt-button:hover,
 .md-wt-snippets button:hover:not(:disabled) { border-color: #b7c6da; background: #f2f6fb; }
 .md-wt-toolbar button:focus-visible,
+.md-wt-toolbar a.md-wt-button:focus-visible,
 .md-wt-snippets button:focus-visible,
 .md-wt-snippets select:focus-visible { outline: 2px solid #6f93bc; outline-offset: 2px; }
 .md-wt-toolbar button:disabled,
@@ -162,6 +167,6 @@
   .md-wt-toolbar { gap: 3px 5px; padding: 6px 7px; }
   .md-wt-group { gap: 3px; }
   .md-wt-group + .md-wt-group { margin-left: 2px; padding-left: 5px; }
-  .md-wt-toolbar button, .md-wt-snippets button { width: 26px; height: 26px; }
+  .md-wt-toolbar button, .md-wt-toolbar a.md-wt-button, .md-wt-snippets button { width: 26px; height: 26px; }
   .md-wt-icon { width: 15px; height: 15px; }
 }

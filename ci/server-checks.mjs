@@ -18,8 +18,10 @@ const doc = { md: '# 测试\n\n正文\n\n## 小节\n\n内容', opts: {} };
 
 test('validates options, body shape, limits and TeX resource macros', () => {
   assert.equal(validateInput(doc).opts.pagedHtml, true);
-  for (const body of [null, [], { md: 1 }, { md: '' }, { ...doc, path: '/etc/passwd' }, { ...doc, opts: { output: '/tmp/out' } }, { ...doc, opts: { theme: '../secret' } }, { ...doc, opts: { fontSize: NaN } }, { ...doc, opts: { toc: 'false' } }, { ...doc, opts: { toString: 'x' } }, { md: '\\href{javascript:alert(1)}{X}' }]) assert.throws(() => validateInput(body), { status: 400 });
+  for (const body of [null, [], { md: 1 }, { md: '' }, { ...doc, path: '/etc/passwd' }, { ...doc, opts: { output: '/tmp/out' } }, { ...doc, opts: { theme: '../secret' } }, { ...doc, opts: { fontSize: NaN } }, { ...doc, opts: { lineHeight: 0.9 } }, { ...doc, opts: { lineHeight: 2.6 } }, { ...doc, opts: { lineHeight: NaN } }, { ...doc, opts: { lineHeight: '2.1' } }, { ...doc, opts: { toc: 'false' } }, { ...doc, opts: { toString: 'x' } }, { md: '\\href{javascript:alert(1)}{X}' }]) assert.throws(() => validateInput(body), { status: 400 });
   assert.throws(() => validateInput({ md: 'a'.repeat(200001) }), { status: 413 });
+  // 有限数字 1.0–2.5（含边界）通过；保留原值不做改写
+  for (const lineHeight of [1, 1.9, 2.5]) assert.equal(validateInput({ ...doc, opts: { lineHeight } }).opts.lineHeight, lineHeight);
 });
 
 // 生成“恰好 bytes 字节”的标准 Base64 载荷（字符数 4 的倍数，填充仅出现在末尾）。
@@ -296,6 +298,37 @@ test('render metadata reflects the effective configuration', async t => {
   assert.equal(body.type, 'general');
   assert.equal(body.effective.theme, 'minimal');
   assert.ok(body.policy.controls.theme);
+});
+
+test('lineHeight flows through to the rendered CSS and effective options', async t => {
+  const app = await fixture(t);
+  // 省略时保持正文默认 1.9（--doc-line-height 变量落到 base.css 的 :root）
+  const dflt = await app.post('/api/render', { md: doc.md, opts: {} });
+  assert.equal(dflt.status, 200);
+  const dfltBody = await dflt.json();
+  assert.equal(dfltBody.effective.lineHeight, 1.9);
+  assert.equal(dfltBody.policy.controls.lineHeight.available, true);
+  assert.match(dfltBody.html, /--doc-line-height:\s*1\.9;/);
+  assert.match(dfltBody.html, /line-height:\s*var\(--doc-line-height\)/);
+  // 显式值既回显在 effective，也写进与 PDF 同源的 CSS
+  const custom = await app.post('/api/render', { md: doc.md, opts: { lineHeight: 2.1 } });
+  assert.equal(custom.status, 200);
+  const customBody = await custom.json();
+  assert.equal(customBody.effective.lineHeight, 2.1);
+  assert.match(customBody.html, /--doc-line-height:\s*2\.1;/);
+  // 范围外 / 非法类型 → 400
+  for (const lineHeight of [0.5, 3, '2.1', null, true]) {
+    assert.equal((await app.post('/api/render', { md: doc.md, opts: { lineHeight } })).status, 400, String(lineHeight));
+  }
+  // GB：行距锁定为模板固定值，拒绝任何在线覆盖
+  const gbSource = '---\n标准号: GB/T 9999-2020\n---\n# 标准\n\n## 范围\n\n正文';
+  assert.equal((await app.post('/api/render', { md: gbSource, opts: { lineHeight: 2 } })).status, 400);
+  const gbOk = await app.post('/api/render', { md: gbSource, opts: {} });
+  assert.equal(gbOk.status, 200);
+  const gbBody = await gbOk.json();
+  assert.equal(gbBody.effective.lineHeight, 1.62);
+  assert.equal(gbBody.policy.controls.lineHeight.available, false);
+  assert.match(gbBody.html, /body\s*\{[^}]*line-height:\s*1\.62/);
 });
 
 test('resolve reports automatic type before stale overrides are submitted', async t => {

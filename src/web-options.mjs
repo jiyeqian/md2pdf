@@ -21,7 +21,7 @@ export const POLICY_VERSION = 1;
 // 只用于「把生效值回显给前端」，真正生效的仍然是 render 自己算的结果。
 export const WEB_BASELINE = {
   theme: 'elegant', numberScheme: 'arabic', numbering: 'auto', toc: false,
-  fontSize: 10.5, marginTop: 20, marginBottom: 18, marginLeft: 18, marginRight: 18,
+  fontSize: 10.5, lineHeight: 1.9, marginTop: 20, marginBottom: 18, marginLeft: 18, marginRight: 18,
 };
 
 export const TYPE_LABELS = { general: '通用文档', skill: '技能文档', readme: 'README', paper: '论文', gb: '国家标准' };
@@ -29,15 +29,19 @@ export const THEME_LABELS = { elegant: '雅致 · 墨蓝', minimal: '简洁 · �
 export const SCHEME_LABELS = { arabic: '1 / 1.1', gb: 'GB 章条', cjk: '一、/（一）', chapter: '第 1 章' };
 export const NUMBERING_LABELS = { auto: '自动识别', force: '强制编号', none: '不编号' };
 export const MARGIN_OPTIONS = [{ value: '15', label: '15 · 紧凑' }, { value: '20', label: '20 · 标准' }, { value: '25', label: '25 · 宽松' }];
-export const OPTION_LABELS = { type: '文档类型', theme: '主题', toc: '目录', fontSize: '字号', margin: '页边距', numbering: '章节编号', numberScheme: '编号方案', landscape: '页面方向' };
+export const OPTION_LABELS = { type: '文档类型', theme: '主题', toc: '目录', fontSize: '字号', lineHeight: '行距', margin: '页边距', numbering: '章节编号', numberScheme: '编号方案', landscape: '页面方向' };
 export const FONT_SIZE_RANGE = { min: 8, max: 24, step: 0.5 };
+// 正文行距：有限数字 1.0–2.5（step 0.05），省略时保持正文默认 1.9。
+export const LINE_HEIGHT_RANGE = { min: 1, max: 2.5, step: 0.05 };
+// GB 国家标准版式的固定正文行距，须与 assets/theme-gb.css 的 body{line-height:1.62} 保持一致。
+export const GB_LINE_HEIGHT = 1.62;
 export const MARGIN_RANGE = { min: 10, max: 40 };
 
 // HTTP 层接受的选项白名单（键名即前端控件名；margin 由前端展开成四个数值）
 export const WEB_OPTION_SPEC = {
   enums: { type: PROFILE_NAMES.slice(), theme: Object.keys(THEME_LABELS), numbering: Object.keys(NUMBERING_LABELS), numberScheme: SCHEME_NAMES.slice() },
   booleans: ['toc', 'landscape'],
-  numbers: { fontSize: [8, 24], marginTop: [10, 40], marginBottom: [10, 40], marginSide: [10, 40], marginLeft: [10, 40], marginRight: [10, 40] },
+  numbers: { fontSize: [8, 24], lineHeight: [1, 2.5], marginTop: [10, 40], marginBottom: [10, 40], marginSide: [10, 40], marginLeft: [10, 40], marginRight: [10, 40] },
 };
 
 /**
@@ -46,12 +50,12 @@ export const WEB_OPTION_SPEC = {
  * - 未列出键 = 锁定：前端隐藏并说明，后端拒绝覆盖。
  * - 空类型 '' 表示「自动识别」阶段（尚未拿到服务端判定的类型），按最保守的非 GB 能力集渲染。
  */
-const GENERAL_CAPS = { theme: ['elegant', 'minimal'], numberScheme: ['arabic', 'cjk', 'chapter'], numbering: ['auto', 'force', 'none'], toc: true, margin: true, fontSize: true };
+const GENERAL_CAPS = { theme: ['elegant', 'minimal'], numberScheme: ['arabic', 'cjk', 'chapter'], numbering: ['auto', 'force', 'none'], toc: true, margin: true, fontSize: true, lineHeight: true };
 const TYPE_CAPABILITIES = {
   general: GENERAL_CAPS,
   readme: GENERAL_CAPS,
   skill: GENERAL_CAPS,
-  paper: { theme: ['elegant', 'minimal'], numberScheme: ['arabic', 'chapter'], numbering: ['auto', 'force', 'none'], toc: true, margin: true, fontSize: true },
+  paper: { theme: ['elegant', 'minimal'], numberScheme: ['arabic', 'chapter'], numbering: ['auto', 'force', 'none'], toc: true, margin: true, fontSize: true, lineHeight: true },
   // GB：仅目录可调；主题 / 编号方案 / 编号行为 / 字号 / 版式全部锁定（应用内置国家标准模板）
   gb: { toc: true },
 };
@@ -108,6 +112,7 @@ export function policyForType(type = '') {
     theme: control('theme', caps.theme, { kind: 'enum', fixedValue: fixed.theme, fixedLabel: THEME_LABELS[fixed.theme] || fixed.theme }),
     toc: control('toc', caps.toc, { kind: 'tri', allowEmpty: true, fixedValue: type ? Boolean(d.toc ?? WEB_BASELINE.toc) : false, triValues: ['true', 'false'] }),
     fontSize: control('fontSize', caps.fontSize, { kind: 'number', allowEmpty: true, unsettable: true, min: FONT_SIZE_RANGE.min, max: FONT_SIZE_RANGE.max, step: FONT_SIZE_RANGE.step, defaultValue: WEB_BASELINE.fontSize, fixedValue: d.fontSize ?? WEB_BASELINE.fontSize }),
+    lineHeight: control('lineHeight', caps.lineHeight, { kind: 'number', allowEmpty: true, unsettable: true, min: LINE_HEIGHT_RANGE.min, max: LINE_HEIGHT_RANGE.max, step: LINE_HEIGHT_RANGE.step, defaultValue: WEB_BASELINE.lineHeight, fixedValue: type === 'gb' ? GB_LINE_HEIGHT : (d.lineHeight ?? WEB_BASELINE.lineHeight) }),
     margin: control('margin', caps.margin, { kind: 'enum', allowEmpty: true, values: caps.margin ? MARGIN_OPTIONS.map(o => o.value) : [], fixedValue: `${fixed.marginTop} / ${fixed.marginBottom}`, fixedNote: `左右 ${fixed.marginLeft} / ${fixed.marginRight} mm` }),
     numbering: control('numbering', caps.numbering, { kind: 'enum', fixedValue: fixed.numbering, fixedLabel: NUMBERING_LABELS[fixed.numbering] || fixed.numbering }),
     numberScheme: control('numberScheme', caps.numberScheme, { kind: 'enum', fixedValue: fixed.numberScheme, fixedLabel: SCHEME_LABELS[fixed.numberScheme] || fixed.numberScheme }),
@@ -135,6 +140,7 @@ export function webPolicyDocument() {
     labels: { type: TYPE_LABELS, theme: THEME_LABELS, numberScheme: SCHEME_LABELS, numbering: NUMBERING_LABELS, option: OPTION_LABELS },
     marginOptions: MARGIN_OPTIONS,
     fontSize: { ...FONT_SIZE_RANGE, defaultValue: WEB_BASELINE.fontSize, unsettable: true },
+    lineHeight: { ...LINE_HEIGHT_RANGE, defaultValue: WEB_BASELINE.lineHeight, unsettable: true, gbValue: GB_LINE_HEIGHT },
     baseline: { ...WEB_BASELINE },
     policy: Object.fromEntries(PROFILE_NAMES.map(id => [id, policyForType(id)])),
     autoPolicy: policyForType(''),
@@ -169,6 +175,7 @@ export function assertOptionsAllowed(opts, type) {
     }
   }
   if (present('fontSize') && !caps.fontSize) throw error400('国家标准文档的字号应用内置国家标准模板，不能在线修改');
+  if (present('lineHeight') && !caps.lineHeight) throw error400('国家标准文档的行距应用内置国家标准模板，不能在线修改');
   if (!caps.margin) {
     if (MARGIN_KEYS.some(present)) throw error400('国家标准文档的页边距应用内置国家标准模板，不能在线修改');
     if (present('landscape') && opts.landscape !== false) throw error400('国家标准文档固定为 A4 纵向，不支持切换页面方向');
@@ -223,6 +230,8 @@ export function effectiveOptions(opts = {}, type = 'general') {
     numbering: pick('numbering', WEB_BASELINE.numbering),
     toc: pick('toc', WEB_BASELINE.toc),
     fontSize: pick('fontSize', WEB_BASELINE.fontSize),
+    // GB 行距固定为内置模板值（theme-gb.css 1.62），不接受在线覆盖。
+    lineHeight: type === 'gb' ? GB_LINE_HEIGHT : pick('lineHeight', WEB_BASELINE.lineHeight),
     landscape: pick('landscape', false),
     marginTop: pick('marginTop', WEB_BASELINE.marginTop),
     marginBottom: pick('marginBottom', WEB_BASELINE.marginBottom),

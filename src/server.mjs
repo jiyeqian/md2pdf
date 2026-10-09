@@ -137,7 +137,7 @@ export function validateInput(body) {
   if (typeof opts !== 'object' || !opts || Array.isArray(opts)) throw error(400, 'opts 必须是对象');
   const enums = { type: ['general', 'skill', 'readme', 'paper', 'gb'], theme: ['elegant', 'minimal', 'gb'], numbering: ['auto', 'force', 'none'], numberScheme: ['arabic', 'gb', 'cjk', 'chapter'] };
   const booleans = ['toc', 'landscape'];
-  const numbers = { fontSize: [8, 24], marginTop: [10, 40], marginBottom: [10, 40], marginSide: [10, 40], marginLeft: [10, 40], marginRight: [10, 40] };
+  const numbers = { fontSize: [8, 24], lineHeight: [1, 2.5], marginTop: [10, 40], marginBottom: [10, 40], marginSide: [10, 40], marginLeft: [10, 40], marginRight: [10, 40] };
   for (const [key, value] of Object.entries(opts)) {
     if (Object.hasOwn(enums, key)) { if (!enums[key].includes(value)) throw error(400, `无效选项：${key}`); }
     else if (booleans.includes(key)) { if (typeof value !== 'boolean') throw error(400, `无效选项：${key}`); }
