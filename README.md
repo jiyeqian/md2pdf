@@ -16,7 +16,7 @@
 | :---: | :---: |
 | [![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/general-elegant.pdf) | [![minimal 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-minimal.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/general-minimal.pdf) |
 
-仓库：https://cnb.cool/jiyeqian/md2pdf
+仓库：https://github.com/jiyeqian/md2pdf
 
 ## 安装
 
@@ -148,7 +148,7 @@ node ci/inspect-pdf.mjs out.pdf
 ## 开发
 
 ```bash
-git clone https://cnb.cool/jiyeqian/md2pdf.git
+git clone https://github.com/jiyeqian/md2pdf.git
 cd md2pdf
 npm link              # 命令指向仓库，改代码立即生效
 bash ci/validate.sh   # 本地与 CI 同一套校验（无需浏览器）

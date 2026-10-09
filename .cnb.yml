@@ -1,11 +1,12 @@
 # CNB 云原生构建（cnb.cool）
 #
-# 定位：发布前校验 + 打标签时发布到 npm。
+# 定位：发布前校验 + main 同步到 GitHub + 打标签时发布到 npm。
 # 构建节点是 Linux 容器，没有 macOS、也不装 Chrome —— 所以 CI 不打印 PDF，
 # 渲染校验落在 HTML 阶段（--html-only）。真实 PDF 打印属于本机环节。
 # 发布到 npm：用 node:22 镜像（自带 npm），通过 imports 引用密钥仓库 secrets 里的 npm.yml（含 NPM_TOKEN）。
 
-$:
+# 使用 glob 匹配，保证 main 的独立同步任务不会屏蔽原有流水线。
+"**":
   push:
     - name: 校验
       env:
@@ -45,3 +46,20 @@ $:
           script: |
             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
             npm publish --access public
+
+main:
+  push:
+    - name: 同步到 GitHub
+      stages:
+        - name: 推送 main
+          image: tencentcom/git-sync
+          imports:
+            - https://cnb.cool/jiyeqian/secrets/-/blob/main/github-md2pdf.yml
+          settings:
+            target_url: https://github.com/jiyeqian/md2pdf.git
+            auth_type: https
+            username: ${GITHUB_SYNC_USERNAME}
+            password: ${GITHUB_SYNC_TOKEN}
+            branch: main
+            force: false
+            push_tags: false
