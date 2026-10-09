@@ -13,7 +13,9 @@
 // * Typed CodeMirror changes write back to the textarea via the native setter and
 //   dispatch a bubbling `input` event, so app.js keeps working unchanged.
 // * Document CustomEvents: `md-editor-ready` (once, no detail),
-//   `md-editor-change` ({value}), `md-editor-cursor` ({line}).
+//   `md-editor-change` ({value}), `md-editor-cursor` ({line}),
+//   `md-editor-reset` ({value}, fired when a programmatic load replaces the doc),
+//   `md-editor-transaction` ({changes} ChangeSet of the last edit).
 // * Public API: window.mdEditor (see API below). No eval, no unsafe HTML.
 //
 // The file is a classic script (no import/export) and a valid ES module so the
@@ -73,7 +75,66 @@
     return count;
   }
 
-  const helpers = { clamp, normalizeRange, offsetToLine, lineToOffset, lineCount };
+  // Consume md2pdf math and footnotes before Markdown's shortcut-link parser.
+  // Styling links differently cannot repair a syntax tree that spans prose.
+  function academicMarkdownExtension() {
+    return {
+      defineNodes: ['MdMath', 'MdFootnote', 'MdFootnoteDefinition'],
+      parseBlock: [{
+        name: 'MdMathBlock', before: 'FencedCode',
+        parse(cx, line) {
+          if (line.indent - line.baseIndent >= 4 || !/^\$\$\s*$/.test(line.text.slice(line.pos))) return false;
+          const start = cx.lineStart + line.pos;
+          cx.nextLine();
+          while (true) {
+            const closed = /^\s*\$\$\s*$/.test(line.text.slice(line.basePos));
+            const more = cx.nextLine();
+            if (closed || !more) break;
+          }
+          cx.addElement(cx.elt('MdMath', start, cx.prevLineEnd()));
+          return true;
+        }
+      }, {
+        name: 'MdFootnoteDefinition', before: 'LinkReference',
+        parse(cx, line) {
+          if (line.indent - line.baseIndent >= 4) return false;
+          const text = line.text.slice(line.pos);
+          const match = /^\[\^[^\]\s]+\]:[ \t]*/.exec(text);
+          if (!match) return false;
+          const start = cx.lineStart + line.pos;
+          const end = cx.lineStart + line.text.length;
+          const children = cx.parser.parseInline(text.slice(match[0].length), start + match[0].length);
+          cx.addElement(cx.elt('MdFootnoteDefinition', start, end, children));
+          cx.nextLine();
+          return true;
+        }
+      }],
+      parseInline: [{
+        name: 'MdMathInline', before: 'Escape',
+        parse(cx, next, pos) {
+          if (next !== 36) return -1;
+          const size = cx.char(pos + 1) === 36 ? 2 : 1;
+          for (let end = pos + size; end < cx.end; end++) {
+            if (cx.char(end) === 92) { end++; continue; }
+            if (size === 1 && cx.char(end) === 10) return -1;
+            if (cx.char(end) !== 36 || (size === 2 && cx.char(end + 1) !== 36)) continue;
+            if (end === pos + size) return -1;
+            return cx.addElement(cx.elt('MdMath', pos, end + size));
+          }
+          return -1;
+        }
+      }, {
+        name: 'MdFootnote', before: 'Link',
+        parse(cx, next, pos) {
+          if (next !== 91 || cx.char(pos + 1) !== 94) return -1;
+          const match = /^\[\^[^\]\s]+\]/.exec(cx.slice(pos, cx.end));
+          return match ? cx.addElement(cx.elt('MdFootnote', pos, pos + match[0].length)) : -1;
+        }
+      }]
+    };
+  }
+
+  const helpers = { clamp, normalizeRange, offsetToLine, lineToOffset, lineCount, academicMarkdownExtension };
   global.mdEditorCoreHelpers = helpers;
 
   // ---------------------------------------------------------------------------
@@ -101,6 +162,11 @@
     editorHost.className = 'md-editor-host';
 
     const completionCompartment = new V.Compartment();
+    // External extensions (e.g. the image module's base64 folding) are installed
+    // through a dedicated compartment so adding one never rebuilds the document
+    // state (which would clear undo history). Kept as a flat array for re-init.
+    const externalCompartment = new V.Compartment();
+    let externalExtensions = [];
     let completionProvider = null;
     let view = null;
     let ready = false;
@@ -148,14 +214,14 @@
       return codeLanguageNames[name] || null;
     }
 
-    const markdownSupport = V.markdown({ base: V.markdownLanguage, codeLanguages: codeLanguageFor });
+    const markdownSupport = V.markdown({ base: V.markdownLanguage, codeLanguages: codeLanguageFor, extensions: [academicMarkdownExtension()] });
 
     const highlightStyle = V.HighlightStyle.define([
       { tag: V.tags.heading, color: '#233e60', fontWeight: '700' },
       { tag: V.tags.strong, fontWeight: '700' },
       { tag: V.tags.emphasis, fontStyle: 'italic' },
       { tag: V.tags.strikethrough, textDecoration: 'line-through' },
-      { tag: V.tags.link, color: '#42648b', textDecoration: 'underline' },
+      { tag: V.tags.link, color: '#42648b', textDecoration: 'none' },
       { tag: V.tags.url, color: '#8290a2' },
       { tag: V.tags.monospace, color: '#9a3b5c' },
       { tag: V.tags.keyword, color: '#8a4baf' },
@@ -202,6 +268,12 @@
       doc.dispatchEvent(new CustomEvent('md-editor-cursor', { detail: { line } }));
     }
 
+    // Full extension list for a fresh state: the fixed set plus the current
+    // external extensions (kept so a reset/restore does not silently uninstall them).
+    function fullExtensions() {
+      return extensions.concat([externalCompartment.of(externalExtensions)]);
+    }
+
     // Replace the whole document. `resetHistory` builds a fresh state (clears
     // undo history) for programmatic load/restore; used by setValue and by
     // external textarea writes.
@@ -209,11 +281,16 @@
       const next = typeof text === 'string' ? text : String(text == null ? '' : text);
       if (!view) return;
       if (resetHistory) {
-        const state = V.EditorState.create({ doc: next, extensions: extensions });
+        const state = V.EditorState.create({ doc: next, extensions: fullExtensions() });
         view.setState(state);
         writeTextarea(next);
         emitChange(next);
         emitCursor(1);
+        // A programmatic document replacement (setValue / loading another example)
+        // invalidates any pending offset a consumer may hold: announce it so the
+        // image module can abort an async insertion instead of writing into the
+        // wrong document.
+        doc.dispatchEvent(new CustomEvent('md-editor-reset', { detail: { value: next } }));
         if (notifyInput) emitInput();
       } else {
         view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: next } });
@@ -227,6 +304,12 @@
         writeTextarea(value);
         emitChange(value);
         emitInput();
+        // Mapped transaction event: consumers holding a pending offset (e.g. the
+        // image module reading files asynchronously) can remap it across edits
+        // via detail.changes.mapPos(pos, assoc).
+        doc.dispatchEvent(new CustomEvent('md-editor-transaction', {
+          detail: { changes: update.changes },
+        }));
       }
       emitCursor(update.state.doc.lineAt(update.state.selection.main.head).number);
     });
@@ -287,6 +370,9 @@
       replace: function () { return V.openSearchPanel(view); },
       fold: function () { return V.foldCode(view); },
       unfold: function () { return V.unfoldCode(view); },
+      // 折叠 / 展开共用同一命令：优先展开当前位置（若已折叠），否则折叠。
+      // foldCode / unfoldCode 只作用于当前选区/光标所在范围，嵌套折叠亦只影响该处。
+      toggleFold: function () { return V.unfoldCode(view) || V.foldCode(view); },
     };
 
     function runCommand(name) {
@@ -329,6 +415,15 @@
       },
       getCursorLine: function () { return view.state.doc.lineAt(view.state.selection.main.head).number; },
       runCommand: runCommand,
+      // Install a CodeMirror extension at runtime without rebuilding the state
+      // (undo history is preserved). Used by the image module for base64 folding
+      // and paste/drop handling. Returns false for a falsy input.
+      addExtension: function (extension) {
+        if (!extension) return false;
+        externalExtensions = externalExtensions.concat([extension]);
+        view.dispatch({ effects: externalCompartment.reconfigure(externalExtensions) });
+        return true;
+      },
       setCompletions: function (provider) {
         completionProvider = typeof provider === 'function' ? provider : null;
         view.dispatch({ effects: completionCompartment.reconfigure(V.autocompletion({ override: completionProvider ? [completionSource] : [], activateOnTyping: true })) });
@@ -357,7 +452,7 @@
     // ---- mount ----
     try {
       view = new V.EditorView({
-        state: V.EditorState.create({ doc: textarea.value, extensions: extensions }),
+        state: V.EditorState.create({ doc: textarea.value, extensions: fullExtensions() }),
         parent: editorHost,
       });
     } catch (error) {

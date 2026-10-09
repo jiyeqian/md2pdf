@@ -13,7 +13,6 @@ const download = document.querySelector('#download');
 const countEl = document.querySelector('#count');
 const emptyPreview = document.querySelector('#empty-preview');
 const documentType = document.querySelector('#document-type');
-const fixedRules = document.querySelector('#fixed-rules');
 const browseExamples = document.querySelector('#browse-examples');
 const topExamplesLink = document.querySelector('#examples-link-top');
 
@@ -32,9 +31,9 @@ let policyDoc = null;
 let currentPolicy = null;
 let resolveCache = { key: null, result: null };
 
-// ---------- 浏览器会话存储（草稿与选项），失败时静默降级 ----------
+// ---------- 浏览器会话存储（草稿与选项） ----------
 function readStore(key) { try { return sessionStorage.getItem(key); } catch { return null; } }
-function writeStore(key, value) { try { value == null ? sessionStorage.removeItem(key) : sessionStorage.setItem(key, value); } catch { /* 隐私模式等：忽略 */ } }
+function writeStore(key, value) { try { value == null ? sessionStorage.removeItem(key) : sessionStorage.setItem(key, value); return true; } catch { return false; } }
 function readFormOptions() {
   const opts = {};
   for (const name of CONTROL_ORDER) { const field = form.elements[name]; if (field) opts[name] = field.value; }
@@ -42,7 +41,19 @@ function readFormOptions() {
 }
 function saveDraft() {
   if (!editor || !initialized) return;
-  writeStore(DRAFT_KEY, JSON.stringify({ md: editor.value, opts: readFormOptions(), savedAt: Date.now() }));
+  const saved = writeStore(DRAFT_KEY, JSON.stringify({ md: editor.value, opts: readFormOptions(), savedAt: Date.now() }));
+  let warning = document.getElementById('draft-warning');
+  if (!saved && !warning) {
+    warning = document.createElement('p');
+    warning.id = 'draft-warning';
+    warning.className = 'draft-warning';
+    warning.setAttribute('role', 'alert');
+    document.querySelector('.status-row').after(warning);
+  }
+  if (warning) {
+    warning.hidden = saved;
+    warning.textContent = saved ? '' : '当前修改未保存：浏览器存储额度不足或被禁用。请复制并保存 Markdown 源码后再刷新或离开；刷新可能恢复旧草稿。';
+  }
 }
 function readDraft() {
   const raw = readStore(DRAFT_KEY);
@@ -66,6 +77,15 @@ function typeLabel(type) { return (policyDoc && policyDoc.labels && policyDoc.la
 function updateCount() {
   if (countEl) countEl.textContent = `${editor.value.length.toLocaleString('zh-CN')} 字符`;
   download.disabled = downloading || !editor.value.trim();
+}
+
+// 下载按钮加载态：只改状态属性与标签文本，保留内联 SVG 图标不被 textContent 抹除。
+const downloadLabel = download ? download.querySelector('.btn-label') : null;
+function setDownloadState(loading) {
+  if (!download) return;
+  download.dataset.state = loading ? 'loading' : 'idle';
+  download.setAttribute('aria-busy', loading ? 'true' : 'false');
+  if (downloadLabel) downloadLabel.textContent = loading ? '正在导出…' : '下载 PDF';
 }
 
 // ---------- 选项策略 ----------
@@ -122,26 +142,7 @@ function applyPolicy(policy) {
       field.placeholder = '默认';
     }
   }
-  renderFixedRules(policy);
   saveDraft();
-}
-
-function renderFixedRules(policy) {
-  const lines = [];
-  for (const [name, control] of Object.entries(policy.controls || {})) {
-    if (name === 'type' || control.available !== false) continue;
-    const label = control.label || name;
-    let fixed = control.fixedLabel || control.fixedValue || '固定';
-    if (name === 'margin' && control.fixedNote) fixed = fixed + '；' + control.fixedNote;
-    lines.push(label + '：' + fixed + '（固定）');
-  }
-  let text;
-  if (policy.locked) text = '国家标准模板固定规则：' + lines.join('；') + '。';
-  else if (lines.length) text = '固定规则：' + lines.join('；') + '。';
-  else text = '当前文档类型下所有选项均可在线调整。';
-  const notes = (policy.notes || []).join(' ');
-  if (notes) text += ' ' + notes;
-  if (fixedRules) { fixedRules.textContent = text; fixedRules.hidden = false; }
 }
 
 function applyStoredOptions(stored) {
@@ -194,7 +195,9 @@ function injectRevision(html, rev) {
   return String(html)
     .replaceAll("type:'md2pdf-ready'", `type:'md2pdf-ready',revision:${rev}`)
     .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`)
-    .replaceAll("type:'md2pdf-source'", `type:'md2pdf-source',revision:${rev}`);
+    .replaceAll("type:'md2pdf-source'", `type:'md2pdf-source',revision:${rev}`)
+    .replaceAll("type:'md2pdf-exit-fullscreen'", `type:'md2pdf-exit-fullscreen',revision:${rev}`)
+    .replaceAll("type:'md2pdf-open-repo'", `type:'md2pdf-open-repo',revision:${rev}`);
 }
 
 async function resolveDocument(signal) {
@@ -261,7 +264,29 @@ async function renderPreview() {
 }
 
 window.addEventListener('message', event => {
-  if (event.source !== preview.contentWindow || !event.data || event.data.revision !== previewRevision || previewRevision !== revision) return;
+  if (event.source !== preview.contentWindow || !event.data || event.data.revision !== previewRevision) return;
+  if (event.data.type === 'md2pdf-exit-fullscreen') {
+    document.dispatchEvent(new CustomEvent('md-preview-exit-fullscreen'));
+    return;
+  }
+  // 受控外链：预览里点可信落款链接时，父窗口只打开固定官方仓库地址。
+  // 消息不含任何 URL 参数；仅在确有用户激活（真实点击）时打开，避免无交互弹出。
+  if (event.data.type === 'md2pdf-open-repo') {
+    if (navigator.userActivation && !navigator.userActivation.isActive) return;
+    const opened = window.open('https://github.com/jiyeqian/md2pdf', '_blank', 'noopener,noreferrer');
+    // 若浏览器拦截弹窗（返回 null），给出可手动打开的提示（仅在此时改一次状态）。
+    if (!opened && statusEl) {
+      setStatus('若新标签页未打开，请点击：');
+      const link = document.createElement('a');
+      link.href = 'https://github.com/jiyeqian/md2pdf';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'md2pdf GitHub 仓库';
+      statusEl.append(link);
+    }
+    return;
+  }
+  if (previewRevision !== revision) return;
   if (event.data.type === 'md2pdf-ready') {
     clearTimeout(previewTimer);
     if (!downloading) setStatus('预览已更新');
@@ -353,7 +378,7 @@ download.addEventListener('click', async () => {
   if (!form.reportValidity()) return;
   downloading = true;
   updateCount();
-  download.textContent = '正在导出…';
+  setDownloadState(true);
   setStatus('正在生成 PDF，复杂文档可能需要稍等。');
   const exportRevision = revision;
   const exportMd = editor.value;
@@ -389,7 +414,7 @@ download.addEventListener('click', async () => {
     setStatus(error.message, true);
   } finally {
     downloading = false;
-    download.textContent = '下载 PDF ↓';
+    setDownloadState(false);
     updateCount();
   }
 });

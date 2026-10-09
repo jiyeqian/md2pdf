@@ -67,4 +67,12 @@ build_sample paper   examples/paper.md   templates/paper.md examples/control-loo
 build_sample README  examples/README.md  templates/readme.md
 build_sample gb      examples/gb.md      templates/gb.md
 
+# README 国家标准效果图：使用已有 GB 示例 PDF 的封面。
+if need_build docs/theme-gb.png examples/gb.pdf; then
+  pdftoppm -png -r 150 -f 1 -l 1 -singlefile examples/gb.pdf docs/theme-gb
+  report "→ 生成" docs/theme-gb.png
+else
+  report "skip" docs/theme-gb.png
+fi
+
 echo "✓ examples 产物已同步（general-elegant/minimal、skill、paper、README、gb 与 docs/theme-*.png）"

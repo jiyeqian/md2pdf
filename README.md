@@ -2,6 +2,8 @@
 
 把 Markdown 排成**优雅的中文 A4 PDF**：报头大标题、元信息条、精心排过的表格/代码/引用/列表、页脚页码，还支持数学公式与参考文献。不是 pandoc 的默认样式——是可以直接拿去打印、发给别人看的版式。
 
+仓库：[GitHub](https://github.com/jiyeqian/md2pdf) · 在线体验：[md2pdf 工作台](https://md2pdf.app.workbuddy.host/)
+
 ## 特色功能
 
 - **BibTeX 脚注 → GB/T 7714—2025 参考文献**：脚注内容写成 BibTeX（`@article{...}`、`@book{...}` 等），自动按国标《信息与文献 参考文献著录规则》著录，并汇总为文末「参考文献」章节。
@@ -10,13 +12,21 @@
 - **渲染 LaTeX 公式**：内置 MathJax，`$...$` 行内公式与 `$$...$$` 独立公式原样渲染，独立公式**自动编号**（`\label{eq:x}` 定义、`\eqref{eq:x}` 交叉引用），SVG 输出、零字体依赖。
 - **图表编号与引用**：支持 mermaid 图、普通图片、矢量图（SVG）三类图与表格，统一自动编号为题注「图 N / 表 N：…」，正文用 `\ref{fig:x}` / `\ref{tab:x}` 交叉引用并链接到原图（类 LaTeX）。
 - **代码语法高亮**：代码块按语言自动着色（内置 highlight.js，支持 Python、JavaScript、Bash 等常见语言）。
-- **相对路径图片自动解析**：Markdown 里的相对路径图片自动转成绝对地址，正常嵌入 PDF。
+- **相对路径图片自动解析（CLI）**：Markdown 里的相对路径图片自动转成绝对地址，正常嵌入 PDF。
+- **五类文档与类型约束**：支持通用文档、README、技能文档、论文和国家标准；按类型应用模板，在线工作台只显示该类型可配置的选项，国家标准的主题、字号、页边距与编号规则按模板固定。
+- **国家标准专用版式**：根据 frontmatter 生成标准封面和页眉，支持章条编号、前言、引言、目次与附录结构；示例使用演示元数据，不代表正式发布的标准。
+- **高效 Markdown 编辑**：语法高亮、行号、撤销重做、查找替换、折叠展开、快捷键与分组图标工具栏；一键插入表格、公式、脚注、BibTeX 和专业片段。
+- **专业助手**：展示标题大纲与公式、图表、脚注引用信息，提供交叉引用补全及跳转，提示缺失目标、重复标识、不受支持的引用和手写章节号不一致；提示不代表标准合规结论。
+- **便捷插图**：直接粘贴截图、拖入图片或点击「插入图片」，自动生成带唯一图号标识的 Base64 Markdown；支持 PNG、JPEG、GIF、WebP，并将长图片数据折叠显示，保持编辑区整洁。
+- **逐页预览与专注模式**：A4 纸张分隔预览、按标题章节近似同步定位，编辑区与预览区可分别全屏；预览和 PDF 支持文内引用跳转，预览栏直接下载 PDF。
+- **专业示例库**：浏览五类文档的 Markdown 源码及对应分页效果，一键载入工作台继续编辑。
+- **浏览器会话草稿**：在当前浏览器会话中保存正文和选项，刷新或往返示例库可恢复；存储额度不足时提示保存失败，建议另存重要内容。
 
-| elegant（默认，墨蓝 + 古铜） | minimal（黑白公文风） |
+| elegant（默认，墨蓝 + 古铜） | gb（国家标准版式） |
 | :---: | :---: |
-| [![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/general-elegant.pdf) | [![minimal 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-minimal.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/general-minimal.pdf) |
+| [![elegant 主题效果](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/docs/theme-elegant.png)](https://cnb.cool/jiyeqian/md2pdf/-/git/raw/main/examples/general-elegant.pdf) | [![国家标准示例封面](docs/theme-gb.png)](examples/gb.pdf) |
 
-仓库：https://github.com/jiyeqian/md2pdf
+点击效果图查看完整 PDF；国家标准示例的 Markdown 源码见 [examples/gb.md](examples/gb.md)。
 
 ## 安装
 
@@ -64,7 +74,7 @@ md2pdf skill install --target claude
 npm start
 ```
 
-打开 `http://127.0.0.1:3000`，左侧编辑 Markdown，右侧分页预览，点击「下载 PDF」导出。支持三种主题、五类文档、目录、字号、页边距和章节编号。默认加载完整示例，包含公式、Mermaid 和参考文献。
+打开 `http://127.0.0.1:3000`，左侧编辑 Markdown，右侧分页预览，点击「下载 PDF」导出。支持五类文档，按类型提供主题、目录、字号、页边距和章节编号选项；国家标准使用固定版式。默认加载完整示例，包含公式、Mermaid 和参考文献。
 
 ```bash
 PORT=3100 npm start                         # 更换端口
@@ -73,9 +83,9 @@ npm run test:web                           # HTTP 与安全边界测试
 npm run test:browser                       # 真实 Chrome 与五类 PDF 验收
 ```
 
-服务默认仅监听本机。内容会发送到本地服务处理，不保存编辑历史，页面刷新会丢失修改；HTML 在内存中生成；Chrome 使用临时隐私会话，任务成功后清空页面，浏览器重启或服务正常退出时清理目录；强制终止后的目录不保证自动清理。首版不加载远程图片或本机相对图片，支持内嵌 PNG/JPEG/GIF/WebP 图片；不支持的图片显示为占位并保留图号；原始 HTML 按文本显示。公式中的外部资源、链接及自定义宏不支持。预览运行在隔离 iframe 中。
+服务默认仅监听本机。内容会发送到本地服务处理，服务器不保存正文或编辑历史，草稿与选项保存在当前浏览器会话中；HTML 在内存中生成；Chrome 使用临时隐私会话，任务成功后清空页面，浏览器重启或服务正常退出时清理目录；强制终止后的目录不保证自动清理。网页端不加载远程图片或本机相对图片，支持内嵌 PNG/JPEG/GIF/WebP 图片；不支持的图片显示为占位并保留图号；原始 HTML 按文本显示。公式中的外部资源、链接及自定义宏不支持。预览运行在隔离 iframe 中。
 
-非 GB 文档的分页预览使用 Paged.js，PDF 使用 Chrome 原生分页，分页和字体可能有差异，以导出 PDF 为准。GB 版式的字体仍取决于本机安装情况。本地版本未部署到公网，公网部署需要另行验证运行环境与隔离边界。
+非 GB 文档的分页预览使用 Paged.js，PDF 使用 Chrome 原生分页，分页和字体可能有差异，以导出 PDF 为准。GB 版式的字体仍取决于本机安装情况。在线体验见文档开头链接；自行部署到公网时需验证运行环境与隔离边界。
 
 在线应用从仓库运行；现有 npm CLI 包的发布范围和零 npm 运行时依赖保持不变。验收步骤与验证边界见 [本地验收记录](docs/web-app-acceptance.md)。
 

@@ -4,7 +4,7 @@
  * 所有规则都以 .workspace.md-editor-workspace（JS 初始化后加上的类）限定，
  * 因此加载顺序晚于/早于 app.css 都不会被其基础规则覆盖。
  * 组件：格式工具条（.md-wt-toolbar）、更多插入（.md-wt-details）、
- *       可拖拽分隔条（.md-wt-divider）、专注写作（.editor-focus 状态）。
+ *       可拖拽分隔条（.md-wt-divider）、全屏（.editor-focus / .preview-focus 状态）。
  */
 
 /* ---------------- 桌面三栏：编辑区 | 分隔条 | 预览区 ---------------- */
@@ -23,46 +23,53 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 6px;
-  padding: 7px 12px;
+  gap: 4px 8px;
+  padding: 7px 10px;
   min-width: 0;
   background: #fbfcfe;
   border-bottom: 1px solid #eef1f5;
 }
-.md-wt-toolbar .md-wt-group { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-.md-wt-spacer { flex: 1 1 auto; }
+.md-wt-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+/* 组间细分隔线：首个分组不画线；换行时分隔线随分组保留。 */
+.md-wt-group + .md-wt-group {
+  margin-left: 4px;
+  padding-left: 8px;
+  border-left: 1px solid #e3e8ef;
+}
+.md-wt-mount { display: inline-flex; align-items: center; gap: 4px; }
 
+/* 固定紧凑的图标按钮：工具条内所有按钮尺寸一致，仅图标随颜色变化。 */
 .md-wt-toolbar button,
 .md-wt-snippets button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex: 0 0 auto;
   border: 1px solid #dbe2ec;
   background: #fff;
   color: #33465e;
   border-radius: 6px;
-  padding: 4px 9px;
-  font-size: 12px;
-  line-height: 1.4;
-  white-space: nowrap;
+  line-height: 0;
 }
+.md-wt-icon { width: 16px; height: 16px; display: block; }
 .md-wt-toolbar button:hover:not(:disabled),
 .md-wt-snippets button:hover:not(:disabled) { border-color: #b7c6da; background: #f2f6fb; }
 .md-wt-toolbar button:focus-visible,
 .md-wt-snippets button:focus-visible,
-.md-wt-snippets select:focus-visible,
-.md-wt-sync-input:focus-visible { outline: 2px solid #6f93bc; outline-offset: 2px; }
+.md-wt-snippets select:focus-visible { outline: 2px solid #6f93bc; outline-offset: 2px; }
 .md-wt-toolbar button:disabled,
 .md-wt-snippets button:disabled { opacity: .5; cursor: not-allowed; }
 .md-wt-toolbar button[aria-pressed="true"] { background: #233e60; border-color: #233e60; color: #fff; }
 
-.md-wt-sync {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: #5b6a80;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.md-wt-sync-input { margin: 0; width: auto; height: auto; flex: 0 0 auto; }
 .md-editor-workspace .md-editor-toolbar { display: none; }
 
 /* ---------------- 更多插入（专业片段） ---------------- */
@@ -120,21 +127,41 @@
 .md-wt-divider:focus-visible { outline: 2px solid #6f93bc; outline-offset: -2px; }
 .md-wt-divider.md-wt-dragging { cursor: col-resize; }
 
-/* ---------------- 专注写作（隐藏预览，保留其状态与内容） ---------------- */
-.workspace.md-editor-workspace.editor-focus { position: fixed; inset: 12px; z-index: 50; height: auto; min-height: 0; grid-template-columns: 1fr; column-gap: 0; background: #fff; box-shadow: 0 0 0 24px #f5f6f8; }
+/* ---------------- 全屏（Markdown / 预览）——同一固定 viewport 面板模式 ----------------
+ * 两种全屏只切换工作区上的状态类，隐藏对面面板；iframe 与编辑器实例不被重建，
+ * 因此预览与正文状态在进出全屏时都保留。 */
+.workspace.md-editor-workspace.editor-focus,
+.workspace.md-editor-workspace.preview-focus {
+  position: fixed; inset: 12px; z-index: 50;
+  height: auto; min-height: 0;
+  grid-template-columns: 1fr; column-gap: 0;
+  background: #fff; box-shadow: 0 0 0 24px #f5f6f8;
+}
 .workspace.md-editor-workspace.editor-focus .editor-panel { height: 100%; }
 .workspace.md-editor-workspace.editor-focus .preview-panel { display: none; }
 .workspace.md-editor-workspace.editor-focus .md-wt-divider { display: none; }
+.workspace.md-editor-workspace.preview-focus .preview-panel { height: 100%; }
+.workspace.md-editor-workspace.preview-focus .editor-panel { display: none; }
+.workspace.md-editor-workspace.preview-focus .md-wt-divider { display: none; }
 
 /* ---------------- 窄屏：纵向堆叠，隐藏分隔条，避免横向溢出 ---------------- */
 @media (max-width: 900px) {
   .workspace.md-editor-workspace { grid-template-columns: 1fr; column-gap: 0; height: auto; min-height: 0; }
   .md-wt-divider { display: none; }
   .workspace.md-editor-workspace .editor-panel { height: 650px; }
-  .workspace.md-editor-workspace.editor-focus .editor-panel { height: 100%; }
+  .workspace.md-editor-workspace.editor-focus .editor-panel,
+  .workspace.md-editor-workspace.preview-focus .preview-panel { height: 100%; }
 }
 @media (max-width: 480px) {
-  .md-wt-toolbar button, .md-wt-snippets button { padding: 4px 7px; }
-  .md-wt-sync { width: 100%; }
+  .md-wt-toolbar { gap: 4px 6px; padding: 6px 8px; }
+  .md-wt-group + .md-wt-group { margin-left: 2px; padding-left: 6px; }
   .md-wt-hint { flex-basis: 100%; }
+}
+/* 390px 窄屏：进一步收紧间距与按钮尺寸，靠 flex-wrap 换行，绝不横向溢出。 */
+@media (max-width: 390px) {
+  .md-wt-toolbar { gap: 3px 5px; padding: 6px 7px; }
+  .md-wt-group { gap: 3px; }
+  .md-wt-group + .md-wt-group { margin-left: 2px; padding-left: 5px; }
+  .md-wt-toolbar button, .md-wt-snippets button { width: 26px; height: 26px; }
+  .md-wt-icon { width: 15px; height: 15px; }
 }

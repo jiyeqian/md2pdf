@@ -18,6 +18,8 @@
 // 安全边界不变：不加 <base>、不去掉 sandbox（sandbox 在 web/index.html 的 iframe 上）、
 // 不削弱 CSP。DOM 查找不做选择器字符串插值。
 
+import { REPO_URL } from './render.mjs';
+
 export const PREVIEW_MARKER = 'md2pdf-preview-enhance';
 
 /* 分页完成之后才注入的屏幕观感样式：灰底画布 + 白色纸张 + 页间距 + 投影。 */
@@ -64,6 +66,7 @@ function runtimeScript(type) {
     '(function () {',
     "  var IS_GB = " + JSON.stringify(isGb) + ';',
     '  var PREVIEW_CSS = ' + css + ';',
+    '  var REPO_URL = ' + JSON.stringify(REPO_URL) + ';',
     '  var stamped = false;',
     '',
     '  // 分页前：把有序列表的序号写成显式属性，尊重 start / value / reversed。',
@@ -128,6 +131,13 @@ function runtimeScript(type) {
     '    }',
     '    if (!anchor) return;',
     '    var href = anchor.getAttribute("href");',
+    '    // 仅信任带专用 data 属性、且 href 精确等于官方 URL 的落款链接：',
+    '    // 拦截后只回传消息类型，不带任何用户可控的 URL 参数。',
+    '    if (anchor.getAttribute("data-md2pdf-open-repo") === "1" && href === REPO_URL) {',
+    '      event.preventDefault();',
+    "      parent.postMessage({type:'md2pdf-open-repo'}, '*');",
+    '      return;',
+    '    }',
     '    if (!href || href.charAt(0) !== "#") return;',
     '    event.preventDefault();',
     '    var frag = href.slice(1);',
@@ -152,6 +162,11 @@ function runtimeScript(type) {
     '    var heading = event.target.closest && event.target.closest(".pagedjs_pages [data-md2pdf-source-line]");',
     '    if (heading && !event.target.closest("a")) {',
     "      parent.postMessage({type:'md2pdf-source',line:Number(heading.getAttribute('data-md2pdf-source-line'))}, '*');",
+    '    }',
+    '  });',
+    '  document.addEventListener("keydown", function (event) {',
+    '    if (event.key === "Escape" && !event.isComposing) {',
+    "      parent.postMessage({type:'md2pdf-exit-fullscreen'}, '*');",
     '    }',
     '  });',
     '  addEventListener("message", function (event) {',

@@ -102,7 +102,8 @@ async function checkSourceContract() {
   assert(source.includes('textarea.hidden = true'), 'textarea hidden after init');
   for (const name of REQUIRED_API) assert(source.includes(name + ':'), 'api method ' + name);
   for (const event of ['md-editor-ready', 'md-editor-change', 'md-editor-cursor']) assert(source.includes(event), 'event ' + event);
-  for (const command of ['undo', 'redo', 'find', 'replace', 'fold', 'unfold']) assert(source.includes(command + ':'), 'command ' + command);
+  for (const command of ['undo', 'redo', 'find', 'replace', 'fold', 'unfold', 'toggleFold']) assert(source.includes(command + ':'), 'command ' + command);
+  assert(source.includes('toggleFold: function () { return V.unfoldCode(view) || V.foldCode(view); }'), 'toggleFold prefers unfold then fold at the current position');
   assert(source.includes("aria-label': 'Markdown 正文编辑器'"), 'content aria-label (Chinese)');
 }
 

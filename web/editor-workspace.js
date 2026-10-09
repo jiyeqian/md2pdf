@@ -2,8 +2,8 @@
 
 // md2pdf 工作台：编辑布局与预览位置关联
 //
-// 归属：本模块只负责「工作台外壳」——格式工具条、可拖拽分隔条、专注写作模式、
-// 以及编辑器与预览之间的按章节位置桥接。编辑器内核（window.mdEditor）与专业
+// 归属：本模块只负责「工作台外壳」——格式工具条、可拖拽分隔条、全屏（Markdown /
+// 预览）模式，以及编辑器与预览之间的按章节位置桥接。编辑器内核（window.mdEditor）与专业
 // 助手（window.mdEditorTools）由其它模块提供，本模块通过约定 API 调用，不修改它们。
 //
 // 约定：
@@ -21,7 +21,8 @@
   window.__mdpdfWorkspace = true;
 
   var RATIO_KEY = 'md2pdf:editor-ratio';   // 与草稿键 md2pdf:draft 分离
-  var FOCUS_CLASS = 'editor-focus';
+  var FOCUS_CLASS = 'editor-focus';         // Markdown 全屏（原「专注写作」）
+  var PREVIEW_FOCUS_CLASS = 'preview-focus'; // 预览全屏
   var MIN_EDITOR = 300;                    // 与 app.css 的 minmax(300px, …) 对齐
   var MIN_PREVIEW = 380;                   // 与 app.css 的 minmax(380px, …) 对齐
   var DIVIDER = 10;                        // 与 CSS 变量 --md-wt-divider 对齐
@@ -34,7 +35,7 @@
   workspace.classList.add('md-editor-workspace');
 
   var previewFrame = document.querySelector('#preview');
-  var toolbar, divider, focusBtn, syncInput, snippetSelect, insertSnippetBtn, details;
+  var toolbar, divider, editorFullscreenBtn, previewFullscreenBtn, syncInput, snippetSelect, insertSnippetBtn, details;
   var commandButtons = [];
   var ready = false;
   var dragging = false;
@@ -80,28 +81,98 @@
   }
 
   // ---------------------------------------------------------------- 工具条
-  // 名称与顺序：常用格式 → 撤销/重做/查找/折叠 → 专注写作。
-  var FORMAT_BUTTONS = [
-    { name: 'heading', label: '标题', hint: '插入标题片段（## 小节）' },
-    { name: 'bold', label: '粗体', hint: '粗体（Ctrl/⌘+B）' },
-    { name: 'italic', label: '斜体', hint: '斜体（Ctrl/⌘+I）' },
-    { name: 'link', label: '链接', hint: '链接（Ctrl/⌘+K）' },
-    { name: 'code', label: '行内代码', hint: '行内代码（反引号包裹）' },
-    { name: 'codeblock', label: '代码块', hint: '插入带语言标识的代码块' },
-    { name: 'quote', label: '引用', hint: '引用块 > …' },
-    { name: 'table', label: '表格', hint: '插入 Markdown 表格' },
-    { name: 'footnote', label: '脚注', hint: '脚注定义 [^id]' },
-    { name: 'bibliography', label: '参考文献', hint: '插入 BibTeX 条目（自动著录）' },
-    { name: 'formula', label: '公式', hint: '行内或独立公式' },
-    { name: 'figure', label: '图表', hint: '图片 / 图表（自动编号 图 N）' }
+  // 分组：撤销重做/查找替换 · 文字格式 · 插入 · 学术 · 视图。
+  // 每个控件都是固定紧凑尺寸的 SVG 图标按钮：title 显示功能与快捷键，
+  // aria-label 为中文，:focus-visible 有可见焦点环。图片按钮由图片模块挂到
+  // 插入组的挂载点上，本模块不参与图片导入管线。
+  // 图标：路径 / 圆 / 矩形描述，统一 20×20 线性描边，颜色随文字（currentColor）。
+  // 默认开启的同步定位是一个带 aria-pressed 的图标开关按钮。
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var ICONS = {
+    undo: [{ d: 'M7 5.2 3.6 8.6 7 12' }, { d: 'M3.6 8.6H12a4.4 4.4 0 0 1 0 8.8H9.4' }],
+    redo: [{ d: 'M13 5.2 16.4 8.6 13 12' }, { d: 'M16.4 8.6H8a4.4 4.4 0 0 0 0 8.8h2.6' }],
+    find: [{ circle: [8.8, 8.8, 4.8] }, { d: 'M12.5 12.5 16.4 16.4' }],
+    replace: [{ d: 'M5 7.2h9l-2.6-2.6' }, { d: 'M15 12.8H6l2.6 2.6' }],
+    heading: [{ d: 'M6 5v10' }, { d: 'M14 5v10' }, { d: 'M6 10h8' }],
+    bold: [{ d: 'M7 5.2h3.6a2.4 2.4 0 0 1 0 4.8H7z' }, { d: 'M7 10h4a2.4 2.4 0 0 1 0 4.8H7z' }],
+    italic: [{ d: 'M9.6 5.2h4.4' }, { d: 'M6 14.8h4.4' }, { d: 'M11.6 5.2 8.4 14.8' }],
+    link: [{ d: 'M8.4 11.6a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-1 1' }, { d: 'M11.6 8.4a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l1-1' }],
+    quote: [{ d: 'M6.2 7.4h2.6v2.6a2.6 2.6 0 0 1-2.6 2.6' }, { d: 'M11.6 7.4h2.6v2.6a2.6 2.6 0 0 1-2.6 2.6' }],
+    code: [{ d: 'M8.4 6.2 5 10l3.4 3.8' }, { d: 'M11.6 6.2 15 10l-3.4 3.8' }],
+    codeblock: [{ rect: [4.2, 5.4, 11.6, 9.2], rx: 1.6 }, { d: 'M8.4 8.6 7 10l1.4 1.4' }, { d: 'M11.6 8.6 13 10l-1.4 1.4' }],
+    table: [{ rect: [4.2, 5.4, 11.6, 9.2], rx: 1.6 }, { d: 'M4.2 9.5h11.6' }, { d: 'M9.7 5.4v9.2' }],
+    figure: [{ d: 'M4.4 15.6V9.2' }, { d: 'M8.8 15.6V5.4' }, { d: 'M13.2 15.6v-4' }, { d: 'M3.4 16.6h13.2' }],
+    footnote: [{ d: 'M4.4 7.8h8' }, { d: 'M4.4 10.9h8' }, { d: 'M4.4 14h5' }, { d: 'M13.8 5.4 15.6 4.4v5.4' }],
+    bibliography: [{ d: 'M5 4.6h6a1.8 1.8 0 0 1 1.8 1.8v9H6.8A1.8 1.8 0 0 1 5 13.6z' }, { d: 'M8 8h3.4' }, { d: 'M8 10.6h3.4' }],
+    formula: [{ d: 'M6 5.2h8L9.6 10l4.4 4.8H6' }],
+    foldToggle: [{ d: 'M6.6 8.6 10 5.2l3.4 3.4' }, { d: 'M6.6 11.4 10 14.8l3.4-3.4' }],
+    sync: [{ circle: [10, 10, 3] }, { d: 'M10 3.4v2.2' }, { d: 'M10 14.4v2.2' }, { d: 'M3.4 10h2.2' }, { d: 'M14.4 10h2.2' }],
+    insert: [{ rect: [4, 4, 12, 12], rx: 2 }, { d: 'M10 7v6' }, { d: 'M7 10h6' }]
+  };
+
+  function iconSvg(name) {
+    var svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'md-wt-icon');
+    svg.setAttribute('viewBox', '0 0 20 20');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    (ICONS[name] || []).forEach(function (shape) {
+      var node;
+      if (shape.circle) {
+        node = document.createElementNS(SVG_NS, 'circle');
+        node.setAttribute('cx', shape.circle[0]);
+        node.setAttribute('cy', shape.circle[1]);
+        node.setAttribute('r', shape.circle[2]);
+      } else if (shape.rect) {
+        node = document.createElementNS(SVG_NS, 'rect');
+        node.setAttribute('x', shape.rect[0]);
+        node.setAttribute('y', shape.rect[1]);
+        node.setAttribute('width', shape.rect[2]);
+        node.setAttribute('height', shape.rect[3]);
+        if (shape.rx != null) node.setAttribute('rx', shape.rx);
+      } else {
+        node = document.createElementNS(SVG_NS, 'path');
+        node.setAttribute('d', shape.d);
+      }
+      node.setAttribute('fill', 'none');
+      node.setAttribute('stroke', 'currentColor');
+      node.setAttribute('stroke-width', '1.4');
+      node.setAttribute('stroke-linecap', 'round');
+      node.setAttribute('stroke-linejoin', 'round');
+      svg.appendChild(node);
+    });
+    return svg;
+  }
+
+  function iconButton(name, label, title) {
+    var button = make('button', { type: 'button', class: 'md-wt-button', title: title, 'aria-label': label });
+    button.appendChild(iconSvg(name));
+    return button;
+  }
+
+  var HISTORY_ITEMS = [
+    { icon: 'undo', label: '撤销', hint: '撤销（Ctrl/⌘+Z）', command: 'undo' },
+    { icon: 'redo', label: '重做', hint: '重做（Ctrl/⌘+Shift+Z）', command: 'redo' },
+    { icon: 'find', label: '查找', hint: '查找（Ctrl/⌘+F）', command: 'find' },
+    { icon: 'replace', label: '替换', hint: '查找并替换', command: 'replace' }
   ];
-  var HISTORY_BUTTONS = [
-    { command: 'undo', label: '撤销', hint: '撤销（Ctrl/⌘+Z）' },
-    { command: 'redo', label: '重做', hint: '重做（Ctrl/⌘+Shift+Z）' },
-    { command: 'find', label: '查找', hint: '查找 / 替换（Ctrl/⌘+F）' },
-    { command: 'replace', label: '替换', hint: '查找并替换正文' },
-    { command: 'fold', label: '折叠', hint: '折叠当前标题' },
-    { command: 'unfold', label: '展开', hint: '展开当前标题' }
+  var FORMAT_ITEMS = [
+    { icon: 'heading', label: '标题', hint: '插入标题片段（## 小节）', insert: 'heading' },
+    { icon: 'bold', label: '粗体', hint: '粗体（Ctrl/⌘+B）', insert: 'bold' },
+    { icon: 'italic', label: '斜体', hint: '斜体（Ctrl/⌘+I）', insert: 'italic' }
+  ];
+  var INSERT_ITEMS = [
+    { icon: 'link', label: '链接', hint: '链接（Ctrl/⌘+K）', insert: 'link' },
+    { icon: 'quote', label: '引用', hint: '引用块 > …', insert: 'quote' },
+    { icon: 'code', label: '行内代码', hint: '行内代码（反引号包裹）', insert: 'code' },
+    { icon: 'codeblock', label: '代码块', hint: '插入带语言标识的代码块', insert: 'codeblock' },
+    { icon: 'table', label: '表格', hint: '插入 Markdown 表格', insert: 'table' },
+    { icon: 'figure', label: '图表', hint: '图表块（自动编号 图 N）', insert: 'figure' }
+  ];
+  var ACADEMIC_ITEMS = [
+    { icon: 'footnote', label: '脚注', hint: '脚注定义 [^id]', insert: 'footnote' },
+    { icon: 'bibliography', label: '参考文献', hint: '插入 BibTeX 条目（自动著录）', insert: 'bibliography' },
+    { icon: 'formula', label: '公式', hint: '行内或独立公式', insert: 'formula' }
   ];
   var SNIPPETS = [
     { name: 'gb-scope', label: '标准范围（gb-scope）' },
@@ -110,52 +181,73 @@
     { name: 'skill', label: '技能文档（skill）' }
   ];
 
+  // 图片按钮挂载点：图片模块只把按钮挂到这里（不改导入管线）；找不到时回落到工具条。
+  var IMAGE_MOUNT_ATTR = 'data-md-wt-mount';
+
+  function appendItem(group, item) {
+    var button = iconButton(item.icon, item.label, item.hint);
+    if (item.insert) button.addEventListener('click', function () { runInsert(item.insert); });
+    else button.addEventListener('click', function () { runCommand(item.command); });
+    commandButtons.push(button);
+    group.appendChild(button);
+    return button;
+  }
+
+  function buildGroup(label, className, items, mount) {
+    var group = make('div', { class: 'md-wt-group ' + className, role: 'group', 'aria-label': label });
+    items.forEach(function (item) {
+      appendItem(group, item);
+      // 图片按钮紧跟「表格」之后，位于「图表」之前。
+      if (mount && item.insert === 'table') {
+        group.appendChild(make('span', { class: 'md-wt-mount', 'data-md-wt-mount': mount }));
+      }
+    });
+    wireRovingTabindex(group);
+    return group;
+  }
+
+  function buildSyncButton() {
+    // 带 aria-pressed 的图标开关按钮（有键盘语义），保留 #md-wt-sync 与 .checked 兼容访问器，
+    // 不使用没有键盘语义的隐藏复选框冒充按钮。
+    var button = iconButton('sync', '同步定位', '同步定位：按标题所在章节近似联动（点击开启 / 关闭）');
+    button.setAttribute('id', 'md-wt-sync');
+    button.setAttribute('aria-pressed', 'true'); // 默认开启；回环由 suppressUntil 抑制
+    Object.defineProperty(button, 'checked', {
+      configurable: true,
+      get: function () { return button.getAttribute('aria-pressed') === 'true'; },
+      set: function (value) { button.setAttribute('aria-pressed', String(!!value)); }
+    });
+    button.addEventListener('click', function () {
+      var on = button.getAttribute('aria-pressed') !== 'true';
+      button.setAttribute('aria-pressed', String(on));
+      if (on) locateCurrentCursor();
+    });
+    commandButtons.push(button);
+    return button;
+  }
+
   function buildToolbar() {
     toolbar = make('div', { class: 'md-wt-toolbar', role: 'toolbar', 'aria-label': 'Markdown 格式与操作工具条', 'aria-orientation': 'horizontal' });
 
-    var formatGroup = make('div', { class: 'md-wt-group', role: 'group', 'aria-label': '插入格式' });
-    FORMAT_BUTTONS.forEach(function (item) {
-      var button = make('button', { type: 'button', class: 'md-wt-button', title: item.hint, 'aria-label': item.label }, item.label);
-      button.addEventListener('click', function () { runInsert(item.name); });
-      commandButtons.push(button);
-      formatGroup.appendChild(button);
-    });
+    toolbar.appendChild(buildGroup('撤销重做与查找替换', 'md-wt-group--history', HISTORY_ITEMS));
+    toolbar.appendChild(buildGroup('文字格式', 'md-wt-group--format', FORMAT_ITEMS));
+    toolbar.appendChild(buildGroup('插入', 'md-wt-group--insert', INSERT_ITEMS, 'images'));
+    toolbar.appendChild(buildGroup('学术', 'md-wt-group--academic', ACADEMIC_ITEMS));
 
-    var historyGroup = make('div', { class: 'md-wt-group', role: 'group', 'aria-label': '编辑历史与查找' });
-    HISTORY_BUTTONS.forEach(function (item) {
-      var button = make('button', { type: 'button', class: 'md-wt-button', title: item.hint, 'aria-label': item.label }, item.label);
-      button.addEventListener('click', function () { runCommand(item.command); });
-      commandButtons.push(button);
-      historyGroup.appendChild(button);
-    });
-
-    var spacer = make('span', { class: 'md-wt-spacer', 'aria-hidden': 'true' });
-
-    syncInput = make('input', { type: 'checkbox', id: 'md-wt-sync', class: 'md-wt-sync-input' });
-    syncInput.checked = false; // 初始关闭
-    syncInput.addEventListener('change', function () {
-      if (syncInput.checked) locateCurrentCursor();
-    });
-    var syncLabel = make('label', { class: 'md-wt-sync', for: 'md-wt-sync', title: '按标题所在章节近似定位光标位置，不逐行或逐像素同步' });
-    syncLabel.appendChild(syncInput);
-    syncLabel.appendChild(make('span', null, '同步定位（按章节）'));
-
-    focusBtn = make('button', { type: 'button', class: 'md-wt-button md-wt-focus', title: '专注写作：隐藏预览并保留其状态（Esc 退出）', 'aria-label': '专注写作', 'aria-pressed': 'false' }, '专注写作');
-    focusBtn.addEventListener('click', function () { toggleFocus(); });
-
-    toolbar.appendChild(formatGroup);
-    toolbar.appendChild(historyGroup);
-    toolbar.appendChild(spacer);
-    toolbar.appendChild(syncLabel);
-    toolbar.appendChild(focusBtn);
+    var view = make('div', { class: 'md-wt-group md-wt-group--view', role: 'group', 'aria-label': '视图' });
+    var foldButton = iconButton('foldToggle', '折叠或展开', '折叠 / 展开当前位置（Ctrl+Shift+[ / ]；Mac：⌘+Option+[ / ]）');
+    foldButton.addEventListener('click', function () { runCommand('toggleFold'); });
+    commandButtons.push(foldButton);
+    view.appendChild(foldButton);
+    syncInput = buildSyncButton();
+    view.appendChild(syncInput);
+    wireRovingTabindex(view);
+    toolbar.appendChild(view);
 
     var heading = editorPanel.querySelector('.panel-heading');
-    if (heading && heading.nextSibling) editorPanel.insertBefore(toolbar, heading.nextSibling);
-    else if (heading) heading.after(toolbar);
+    // insertBefore(node, null/undefined) 追加到末尾，避免依赖 after()。
+    if (heading) editorPanel.insertBefore(toolbar, heading.nextSibling);
     else editorPanel.insertBefore(toolbar, editorPanel.firstChild);
-
-    wireRovingTabindex(formatGroup);
-    wireRovingTabindex(historyGroup);
 
     buildSnippetDetails();
   }
@@ -168,7 +260,7 @@
     snippetSelect = make('select', { id: 'md-wt-snippet', 'aria-label': '专业片段' });
     snippetSelect.appendChild(make('option', { value: '' }, '选择片段类型…'));
     SNIPPETS.forEach(function (item) { snippetSelect.appendChild(make('option', { value: item.name }, item.label)); });
-    insertSnippetBtn = make('button', { type: 'button', class: 'md-wt-button', title: '插入所选专业片段' }, '插入片段');
+    insertSnippetBtn = iconButton('insert', '插入所选专业片段', '插入所选专业片段');
     insertSnippetBtn.addEventListener('click', function () {
       if (snippetSelect.value) runInsert(snippetSelect.value);
     });
@@ -212,7 +304,7 @@
     workspace.insertBefore(divider, previewPanel);
 
     divider.addEventListener('pointerdown', function (event) {
-      if (workspace.classList.contains(FOCUS_CLASS)) return;
+      if (fullscreenMode()) return;
       dragging = true;
       try { divider.setPointerCapture(event.pointerId); } catch (e) { /* 忽略 */ }
       divider.classList.add('md-wt-dragging');
@@ -266,16 +358,84 @@
     applyWidth(stored * rect.width, rect.width, false);
   }
 
-  // ---------------------------------------------------------------- 专注写作
-  function toggleFocus(force) {
-    var active = typeof force === 'boolean' ? force : !workspace.classList.contains(FOCUS_CLASS);
-    workspace.classList.toggle(FOCUS_CLASS, active);
-    if (focusBtn) {
-      focusBtn.setAttribute('aria-pressed', String(active));
-      focusBtn.textContent = active ? '退出专注' : '专注写作';
-      focusBtn.title = active ? '退出专注（Esc）' : '专注写作：隐藏预览并保留其状态（Esc 退出）';
+  // ---------------------------------------------------------------- 全屏（Markdown / 预览）
+  // 两种全屏共用同一固定 viewport 面板模式：只切换工作区状态类，互斥，
+  // 且不触碰 iframe 的 srcdoc 或编辑器实例，因此进出全屏都不重载、不丢状态。
+  function nextFullscreenMode(current, requested) {
+    return current === requested ? null : requested;
+  }
+
+  function fullscreenMode() {
+    if (workspace.classList.contains(FOCUS_CLASS)) return 'editor';
+    if (workspace.classList.contains(PREVIEW_FOCUS_CLASS)) return 'preview';
+    return null;
+  }
+
+  function applyFullscreen(mode) {
+    var editorOn = mode === 'editor';
+    var previewOn = mode === 'preview';
+    workspace.classList.toggle(FOCUS_CLASS, editorOn);
+    workspace.classList.toggle(PREVIEW_FOCUS_CLASS, previewOn);
+    if (editorFullscreenBtn) {
+      editorFullscreenBtn.setAttribute('aria-pressed', String(editorOn));
+      editorFullscreenBtn.setAttribute('aria-label', editorOn ? '退出 Markdown 全屏' : 'Markdown 全屏写作');
+      editorFullscreenBtn.title = editorOn ? '退出全屏（Esc）' : '全屏写作（Esc 退出）';
     }
-    if (active) focusEditor();
+    if (previewFullscreenBtn) {
+      previewFullscreenBtn.setAttribute('aria-pressed', String(previewOn));
+      previewFullscreenBtn.setAttribute('aria-label', previewOn ? '退出预览全屏' : '预览全屏');
+      previewFullscreenBtn.title = previewOn ? '退出全屏（Esc）' : '全屏预览（Esc 退出）';
+    }
+    if (editorOn) focusEditor();
+  }
+
+  function toggleFullscreen(mode) {
+    applyFullscreen(nextFullscreenMode(fullscreenMode(), mode));
+  }
+
+  function fullscreenIcon() {
+    var svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'btn-icon');
+    svg.setAttribute('viewBox', '0 0 20 20');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    var path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', 'M7.5 3.5H4.5v3M12.5 3.5h3v3M7.5 16.5H4.5v-3M12.5 16.5h3v-3');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-width', '1.4');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+    return svg;
+  }
+
+  function makeFullscreenButton(label, title) {
+    var button = make('button', { type: 'button', class: 'icon-button', 'aria-pressed': 'false', 'aria-label': label, title: title });
+    button.appendChild(fullscreenIcon());
+    return button;
+  }
+
+  // 在两侧 panel-heading 的动作区注入全屏按钮；Markdown 侧位于最右，
+  // 预览侧置于下载按钮之前（下载仍是该栏最右的主操作）。
+  function buildFullscreenButtons() {
+    var editorHeading = editorPanel.querySelector('.panel-heading');
+    var previewHeading = previewPanel.querySelector('.panel-heading');
+    var editorActions = editorHeading && editorHeading.querySelector('.panel-actions');
+    var previewActions = previewHeading && previewHeading.querySelector('.panel-actions');
+
+    editorFullscreenBtn = makeFullscreenButton('Markdown 全屏写作', '全屏写作（Esc 退出）');
+    editorFullscreenBtn.addEventListener('click', function () { toggleFullscreen('editor'); });
+    if (editorActions) editorActions.appendChild(editorFullscreenBtn);
+
+    previewFullscreenBtn = makeFullscreenButton('预览全屏', '全屏预览（Esc 退出）');
+    previewFullscreenBtn.addEventListener('click', function () { toggleFullscreen('preview'); });
+    if (previewActions) {
+      var downloadBtn = previewActions.querySelector('#download');
+      if (downloadBtn) previewActions.insertBefore(previewFullscreenBtn, downloadBtn);
+      else previewActions.appendChild(previewFullscreenBtn);
+    }
+    applyFullscreen(null); // 同步按钮初始 aria-pressed / title
   }
 
   // ---------------------------------------------------------------- 位置桥接
@@ -324,7 +484,7 @@
   function onKeydown(event) {
     if (event.defaultPrevented) return;
     if (event.isComposing || event.keyCode === 229) return;   // 输入法组合中不拦截
-    if (event.key === 'Escape' && workspace.classList.contains(FOCUS_CLASS)) { toggleFocus(false); return; }
+    if (event.key === 'Escape' && fullscreenMode()) { applyFullscreen(null); return; }
     var mod = event.ctrlKey || event.metaKey;
     if (!mod || event.altKey || event.shiftKey) return;
     var key = (event.key || '').toLowerCase();
@@ -333,6 +493,11 @@
     event.preventDefault();
     runInsert(key === 'b' ? 'bold' : key === 'i' ? 'italic' : 'link');
   }
+
+  // Escape in the sandboxed iframe cannot bubble into the parent document.
+  document.addEventListener('md-preview-exit-fullscreen', function () {
+    if (fullscreenMode() === 'preview') applyFullscreen(null);
+  });
 
   // ---------------------------------------------------------------- 事件装配
   function onReady() {
@@ -361,6 +526,7 @@
 
   buildToolbar();
   buildDivider();
+  buildFullscreenButtons();
   restoreRatio();
   wireEvents();
   setEnabled(ready);

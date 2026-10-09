@@ -127,3 +127,22 @@ test('非字符串输入抛错；无 body 时追加在末尾', () => {
   assert.ok(out.trimEnd().endsWith('</script>'));
 });
 
+
+test('预览 iframe 将 Escape 桥接给父窗口且不拦输入法组合', () => {
+  const js = injectedScript(enhancePreview(DOC, 'general'));
+  assert.match(js, /document\.addEventListener\("keydown"/);
+  assert.match(js, /event\.key === "Escape" && !event\.isComposing/);
+  assert.match(js, /parent\.postMessage\(\{type:'md2pdf-exit-fullscreen'\}/);
+});
+
+
+test('可信落款链接：按专用 data 属性 + 精确官方 URL 拦截，回传消息不含 URL 参数', () => {
+  const js = injectedScript(enhancePreview(DOC, 'general'));
+  const url = 'https://github.com/jiyeqian/md2pdf';
+  assert.ok(js.includes('var REPO_URL = ' + JSON.stringify(url)), '脚本应内嵌官方 URL 常量');
+  assert.match(js, /getAttribute\("data-md2pdf-open-repo"\) === "1"/);
+  assert.match(js, /href === REPO_URL/);
+  assert.match(js, /parent\.postMessage\(\{type:'md2pdf-open-repo'\}, '\*'\)/);
+  assert.ok(js.includes("type:'md2pdf-open-repo'"), '供前端 injectRevision 注入 revision');
+  assert.doesNotMatch(js, /type:'md2pdf-open-repo'[^}]*url/, '消息不得携带 URL 参数');
+});
