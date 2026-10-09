@@ -185,8 +185,6 @@
     { icon: 'italic', label: '斜体', hint: '斜体（Ctrl/⌘+I）', insert: 'italic' }
   ];
   var INSERT_ITEMS = [
-    // 首位：从模板创建（锚点到模板库，草稿由根应用的委托 + pagehide 保存）。
-    { icon: 'template', label: '从模板创建', hint: '从模板创建：在模板库中浏览示例并交接回编辑器，当前草稿会保留', href: '/examples', id: 'browse-examples' },
     { icon: 'link', label: '链接', hint: '链接（Ctrl/⌘+K）', insert: 'link' },
     { icon: 'quote', label: '引用', hint: '引用块 > …', insert: 'quote' },
     { icon: 'code', label: '行内代码', hint: '行内代码（反引号包裹）', insert: 'code' },
@@ -465,7 +463,11 @@
 
     editorFullscreenBtn = makeFullscreenButton('Markdown 全屏写作', '全屏写作（Esc 退出）');
     editorFullscreenBtn.addEventListener('click', function () { toggleFullscreen('editor'); });
-    if (editorActions) editorActions.appendChild(editorFullscreenBtn);
+    if (editorActions) {
+      var templateLink = appendItem(editorActions, { icon: 'template', label: '从模板创建', hint: '从模板创建', href: '/examples', id: 'browse-examples' });
+      templateLink.className = 'icon-button';
+      editorActions.appendChild(editorFullscreenBtn);
+    }
 
     previewFullscreenBtn = makeFullscreenButton('预览全屏', '全屏预览（Esc 退出）');
     previewFullscreenBtn.addEventListener('click', function () { toggleFullscreen('preview'); });

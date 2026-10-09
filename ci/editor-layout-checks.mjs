@@ -371,8 +371,11 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   const headingButton = buttons.find(b => b.getAttribute('aria-label') === '二级标题');
   assert.ok(headingButton && headingButton.getAttribute('title').includes('H2'));
 
-  const templateLink = all.find(n => n.getAttribute && n.getAttribute('id') === 'browse-examples');
-  assert.ok(templateLink, '工具条应含「从模板创建」锚点');
+  const templateLink = env.editorActions.children.find(n => n.getAttribute && n.getAttribute('id') === 'browse-examples');
+  assert.ok(templateLink, '标题栏应含「从模板创建」锚点');
+  assert.equal(env.editorActions.children.at(-2), templateLink, '模板入口应紧邻全屏按钮左侧');
+  assert.equal(templateLink.className, 'icon-button');
+  assert.ok(!walk(toolbar, []).includes(templateLink), '工具条不再重复模板入口');
   assert.equal(templateLink.tagName, 'A', '从模板创建应是锚点而非命令按钮');
   assert.equal(templateLink.getAttribute('href'), '/examples');
   assert.equal(templateLink.getAttribute('aria-label'), '从模板创建');
@@ -437,7 +440,7 @@ test('index.html：字号 / 边距 / 行距为紧凑按钮 + 调整浮层（滑�
   assert.ok(!/<select name="margin"/.test(indexHtml), '边距不应再是下拉选择');
 });
 
-test('从模板创建入口：迁到 Markdown 工具条插入组首位（锚点 + 文档图标）', () => {
+test('从模板创建入口：位于 Markdown 标题栏全屏按钮之前（锚点 + 文档图标）', () => {
   // 底部不再重复入口。
   assert.ok(!indexHtml.includes('id="browse-examples"'), '底部不应再有重复入口');
   assert.ok(!/>浏览示例库<\/a>/.test(indexHtml), '旧的示例入口文案应移除');
@@ -448,9 +451,7 @@ test('从模板创建入口：迁到 Markdown 工具条插入组首位（锚点 
   assert.match(wsJs, /id: 'browse-examples'/);
   assert.match(wsJs, /template: \[/, '需要线性文档+图标');
   const insertBlock = wsJs.slice(wsJs.indexOf('var INSERT_ITEMS = ['), wsJs.indexOf('];', wsJs.indexOf('var INSERT_ITEMS = [')));
-  const templateAt = insertBlock.indexOf("{ icon: 'template'");
-  const linkAt = insertBlock.indexOf("{ icon: 'link'");
-  assert.ok(templateAt >= 0 && linkAt >= 0 && templateAt < linkAt, '从模板创建应位于插入组首位');
+  assert.ok(!insertBlock.includes("icon: 'template'"), '插入组不再包含模板入口');
 });
 
 test('app.css：范围控件为紧凑按钮 + 浮层样式（滑块 / 数值 / 单位 / 默认态）', () => {
