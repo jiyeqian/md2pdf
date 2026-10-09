@@ -40,7 +40,7 @@ import { SCHEME_NAMES } from './numbering.mjs';
 import { parseArgs, expandArgs } from './options.mjs';
 import { render } from './render.mjs';
 import { Chrome, findChrome } from './chrome.mjs';
-const VERSION = '1.10.2';
+const VERSION = '1.14.0';
 
 const HELP = `
 md2pdf ${VERSION} —— Markdown → 优雅 PDF
