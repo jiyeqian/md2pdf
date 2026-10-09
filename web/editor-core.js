@@ -434,8 +434,7 @@
     const toolbarButtons = [
       { label: '撤销', command: 'undo' },
       { label: '重做', command: 'redo' },
-      { label: '查找', command: 'find' },
-      { label: '替换', command: 'replace' },
+      { label: '查找与替换', command: 'find' },
       { label: '折叠', command: 'fold' },
       { label: '展开', command: 'unfold' },
     ];

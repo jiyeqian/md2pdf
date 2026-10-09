@@ -92,8 +92,7 @@
     undo: [{ d: 'M7 5.2 3.6 8.6 7 12' }, { d: 'M3.6 8.6H12a4.4 4.4 0 0 1 0 8.8H9.4' }],
     redo: [{ d: 'M13 5.2 16.4 8.6 13 12' }, { d: 'M16.4 8.6H8a4.4 4.4 0 0 0 0 8.8h2.6' }],
     find: [{ circle: [8.8, 8.8, 4.8] }, { d: 'M12.5 12.5 16.4 16.4' }],
-    replace: [{ d: 'M5 7.2h9l-2.6-2.6' }, { d: 'M15 12.8H6l2.6 2.6' }],
-    heading: [{ d: 'M6 5v10' }, { d: 'M14 5v10' }, { d: 'M6 10h8' }],
+    heading: [{ d: 'M3.5 5v10M10 5v10M3.5 10H10' }, { d: 'M13 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2.5-5 6h5' }],
     bold: [{ d: 'M7 5.2h3.6a2.4 2.4 0 0 1 0 4.8H7z' }, { d: 'M7 10h4a2.4 2.4 0 0 1 0 4.8H7z' }],
     italic: [{ d: 'M9.6 5.2h4.4' }, { d: 'M6 14.8h4.4' }, { d: 'M11.6 5.2 8.4 14.8' }],
     link: [{ d: 'M8.4 11.6a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-1 1' }, { d: 'M11.6 8.4a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l1-1' }],
@@ -153,11 +152,10 @@
   var HISTORY_ITEMS = [
     { icon: 'undo', label: '撤销', hint: '撤销（Ctrl/⌘+Z）', command: 'undo' },
     { icon: 'redo', label: '重做', hint: '重做（Ctrl/⌘+Shift+Z）', command: 'redo' },
-    { icon: 'find', label: '查找', hint: '查找（Ctrl/⌘+F）', command: 'find' },
-    { icon: 'replace', label: '替换', hint: '查找并替换', command: 'replace' }
+    { icon: 'find', label: '查找与替换', hint: '查找与替换（Ctrl/⌘+F）', command: 'find' }
   ];
   var FORMAT_ITEMS = [
-    { icon: 'heading', label: '标题', hint: '插入标题片段（## 小节）', insert: 'heading' },
+    { icon: 'heading', label: '二级标题', hint: '插入二级标题（H2 / ## 小节）', insert: 'heading' },
     { icon: 'bold', label: '粗体', hint: '粗体（Ctrl/⌘+B）', insert: 'bold' },
     { icon: 'italic', label: '斜体', hint: '斜体（Ctrl/⌘+I）', insert: 'italic' }
   ];
