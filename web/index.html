@@ -20,9 +20,10 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><a class="brand-icon" href="/" aria-label="返回编辑器" title="返回编辑器">M↓</a><div class="brand-text"><h1 class="brand-logo">md2pdf</h1><p class="brand-sub">MAKE MD2PDF GREAT</p></div></div>
+    <div class="brand"><a class="brand-icon" href="/" aria-label="返回编辑器" title="返回编辑器">M↓</a><div class="brand-text"><h1 class="brand-logo">md2pdf</h1><p class="brand-sub">编辑器</p></div></div>
+    <p class="topbar-tagline">MAKE MD2PDF GREAT</p>
     <nav class="topbar-actions" aria-label="页面导航">
-      <a id="examples-link-top" class="button-link" href="/examples">示例库</a>
+      <a id="examples-link-top" class="button-link" href="/examples">模板库</a>
       <a class="button-link" href="https://github.com/jiyeqian/md2pdf" target="_blank" rel="noopener noreferrer" aria-label="md2pdf GitHub 仓库">GitHub</a>
     </nav>
   </header>
@@ -31,10 +32,10 @@
       <label>文档类型<select name="type"><option value="">自动识别</option><option value="general">通用文档</option><option value="readme">README</option><option value="skill">技能文档</option><option value="paper">论文</option><option value="gb">国家标准</option></select></label>
       <label data-control="theme">主题<select name="theme"><option value="">跟随文档</option><option value="elegant">雅致 · 墨蓝</option><option value="minimal">简洁 · 黑白</option><option value="gb">国家标准</option></select></label>
       <label data-control="toc">目录<select name="toc"><option value="">跟随文档</option><option value="true">显示</option><option value="false">隐藏</option></select></label>
-      <label data-control="fontSize">字号 / pt<input name="fontSize" type="number" min="8" max="24" step="0.5" placeholder="默认"></label>
-      <label data-control="margin">边距 / mm<select name="margin"><option value="">跟随文档</option><option value="15">15 · 紧凑</option><option value="20">20 · 标准</option><option value="25">25 · 宽松</option></select></label>
-      <label data-control="numbering">章节编号<select name="numbering"><option value="">跟随文档</option><option value="auto">自动识别</option><option value="force">强制编号</option><option value="none">不编号</option></select></label>
-      <label data-control="numberScheme">编号方案<select name="numberScheme"><option value="">跟随文档</option><option value="arabic">1 / 1.1</option><option value="cjk">一、/（一）</option><option value="chapter">第 1 章</option><option value="gb">GB 章条</option></select></label>
+      <div class="toolbar-field" data-control="fontSize"><span class="toolbar-field-label">字号 / pt</span><details class="range-pop"><summary class="range-trigger" data-range-trigger="fontSize" aria-label="字号：跟随文档">跟随文档</summary><div class="range-popover"><div class="range-row"><input type="range" class="range-slider" data-range-slider="fontSize" min="8" max="24" step="0.5" aria-label="字号滑块"><span class="range-field"><input name="fontSize" class="range-number" data-range-number="fontSize" type="number" min="8" max="24" step="0.5" placeholder="默认" aria-label="字号"><span class="range-unit">pt</span></span></div><div class="range-actions"><button type="button" class="range-default" data-range-default="fontSize" title="省略字号覆盖，使用模板默认">跟随文档</button></div><p class="range-note" data-range-note="fontSize"></p></div></details></div>
+      <div class="toolbar-field" data-control="margin"><span class="toolbar-field-label">边距 / mm</span><details class="range-pop"><summary class="range-trigger" data-range-trigger="margin" aria-label="页边距：跟随文档">跟随文档</summary><div class="range-popover"><div class="range-row"><input type="range" class="range-slider" data-range-slider="margin" min="10" max="40" step="1" aria-label="页边距滑块"><span class="range-field"><input name="margin" class="range-number" data-range-number="margin" type="number" min="10" max="40" step="1" placeholder="默认" aria-label="页边距"><span class="range-unit">mm</span></span></div><div class="range-actions"><button type="button" class="range-default" data-range-default="margin" title="省略页边距覆盖，恢复模板的不对称默认边距">跟随文档</button></div><p class="range-note" data-range-note="margin"></p></div></details></div>
+      <div class="toolbar-field" data-control="lineHeight"><span class="toolbar-field-label">正文行距 / 倍</span><details class="range-pop"><summary class="range-trigger" data-range-trigger="lineHeight" aria-label="行距：跟随文档">跟随文档</summary><div class="range-popover"><div class="range-row"><input type="range" class="range-slider" data-range-slider="lineHeight" min="1" max="2.5" step="0.05" aria-label="行距滑块"><span class="range-field"><input name="lineHeight" class="range-number" data-range-number="lineHeight" type="number" min="1" max="2.5" step="0.05" placeholder="默认" aria-label="行距"><span class="range-unit">倍</span></span></div><div class="range-actions"><button type="button" class="range-default" data-range-default="lineHeight" title="省略行距覆盖，使用模板默认">跟随文档</button></div><p class="range-note" data-range-note="lineHeight"></p></div></details></div>
+      <label data-control="numbering">标题编号<select name="numbering"><option value="">跟随文档</option><option value="none">不加编号</option><option value="auto">自动编号</option><option value="force:arabic">数字编号 · 1 / 1.1</option><option value="force:cjk">中文编号 · 一、/（一）</option><option value="force:chapter">章节编号 · 第 1 章</option></select></label>
     </form>
     <div class="workspace">
       <section class="editor-panel" aria-labelledby="editor-title">
@@ -46,7 +47,7 @@
         </div>
         <label class="sr-only" for="markdown">Markdown 正文</label>
         <textarea id="markdown" spellcheck="false" placeholder="正在加载示例…"></textarea>
-        <div class="editor-footer"><span>输入后自动更新预览</span><a id="browse-examples" class="button-link button-link--small" href="/examples">浏览示例库</a></div>
+        <div class="editor-footer"><span>输入后自动更新预览</span></div>
       </section>
       <section class="preview-panel" aria-labelledby="preview-title">
         <div class="panel-heading">
@@ -62,7 +63,7 @@
       </section>
     </div>
     <div class="status-row"><p id="status" role="status" aria-live="polite">正在加载示例…</p><span>预览分页与 PDF 可能略有差异</span></div>
-    <p class="privacy">正文发送至服务器进行排版，服务器不保存正文或编辑历史。草稿与选项仅保存在当前浏览器会话（sessionStorage）中；浏览示例库或刷新页面后草稿会恢复。支持内嵌 PNG / JPEG / GIF / WebP 图片；本机路径和远程图片显示为未加载占位。</p>
+    <p class="privacy">正文发送至服务器进行排版，服务器不保存正文或编辑历史。草稿与选项仅保存在当前浏览器会话（sessionStorage）中；浏览模板库或刷新页面后草稿会恢复。支持内嵌 PNG / JPEG / GIF / WebP 图片；本机路径和远程图片显示为未加载占位。</p>
   </main>
 </body>
 </html>

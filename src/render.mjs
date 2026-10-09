@@ -678,13 +678,18 @@ export async function render(src, options = {}, context = {}) {
   if (!existsSync(themeFile)) throw new Error(`未知主题：${effTheme}（可用：${listThemes().join(', ')}）`);
   const base = await readFile(path.join(ASSETS, 'base.css'), 'utf8');
   const theme = await readFile(themeFile, 'utf8');
+  // 正文行距：webapp 选项 opts.lineHeight（有限数字 1.0–2.5，server 已校验范围）。
+  // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 theme-gb.css 的
+  // body{line-height:1.62} 直接覆盖，且 server 拒绝为 gb 传入 lineHeight。
+  const effLineHeight = Number.isFinite(opts.lineHeight) ? opts.lineHeight : 1.9;
   const css = (base + '\n' + theme)
     .replace(/\{\{PAGE_SIZE\}\}/g, opts.landscape ? 'A4 landscape' : 'A4')
     .replace(/\{\{MARGIN_TOP\}\}/g, `${effMarginTop}mm`)
     .replace(/\{\{MARGIN_BOTTOM\}\}/g, `${effMarginBottom}mm`)
     .replace(/\{\{MARGIN_LEFT\}\}/g, `${effMarginLeft}mm`)
     .replace(/\{\{MARGIN_RIGHT\}\}/g, `${effMarginRight}mm`)
-    .replace(/\{\{FONT_SIZE\}\}/g, `${opts.fontSize}pt`);
+    .replace(/\{\{FONT_SIZE\}\}/g, `${opts.fontSize}pt`)
+    .replace(/\{\{LINE_HEIGHT\}\}/g, `${effLineHeight}`);
 
   // GB 页眉标准号：奇数页靠右、偶数页靠左。Chrome 原生 headerTemplate 只有单一模板，
   // 做不到奇偶差异，改由 Paged.js 的命名页 margin box 绘制（故标准号在这里动态成 CSS）。

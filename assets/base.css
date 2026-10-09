@@ -1,5 +1,5 @@
 /* md2pdf — 基础排版（与主题无关的骨架）
-   占位符：{{MARGIN_TOP}} {{MARGIN_RIGHT}} {{MARGIN_BOTTOM}} {{MARGIN_LEFT}} {{FONT_SIZE}} */
+   占位符：{{MARGIN_TOP}} {{MARGIN_RIGHT}} {{MARGIN_BOTTOM}} {{MARGIN_LEFT}} {{FONT_SIZE}} {{LINE_HEIGHT}} */
 
 @page {
   size: {{PAGE_SIZE}};
@@ -9,6 +9,7 @@
 
 :root {
   --doc-font-size: {{FONT_SIZE}};
+  --doc-line-height: {{LINE_HEIGHT}};
 }
 
 * { box-sizing: border-box; }
@@ -24,7 +25,9 @@ body {
   color: var(--text);
   font-family: var(--font-body);
   font-size: var(--doc-font-size);
-  line-height: 1.9;
+  /* 普通正文（段落 / 列表 / 引用等无独立 line-height 的元素）继承此行距；
+     标题、表格、代码、脚注、题注等各自声明行距，不受影响。GB 由 theme-gb.css 固定 1.62。 */
+  line-height: var(--doc-line-height);
   /* 中文正文不加字间距：否则 PDF 复制/检索时会被拆成单字 */
   letter-spacing: 0;
 }
