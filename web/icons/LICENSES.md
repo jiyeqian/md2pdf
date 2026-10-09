@@ -4,13 +4,13 @@
 `/icons/doi.svg`、`/icons/bibtex.svg` 提供）。除这两个文件外，本目录不含任何
 图标库、字体或依赖包。
 
-本地改动（两个文件一致）：
+本地适配：
 
 - 删除原始固定 `width` / `height`，改为 `viewBox`，以便在紧凑工具条按钮中等比缩放；
 - 删除 `role="img"` / `<title>`（按钮已由 `aria-label` 提供可访问名称，`<img>` 使用
   `alt="" aria-hidden="true"`）；
-- 填充色固化为 `#33465e`，与工具条线性图标 `currentColor` 的观感一致。
-- 未改动任何路径数据（path `d`）与图形形状。
+- BibTeX 填充色为 `#33465e`；DOI 使用 `#42648b` 描边，与工具条线性图标一致。
+- BibTeX 保留原始路径；DOI 保留圆形及 `doi` 字样，重绘为 20 × 20 网格、1.4 描边的线性图标。
 
 ## bibtex.svg
 
