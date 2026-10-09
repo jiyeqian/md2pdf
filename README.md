@@ -1,5 +1,9 @@
 # md2pdf
 
+[![CNB CI · main](https://cnb.cool/jiyeqian/md2pdf/-/badge/git/latest/ci/status/push?branch=main)](https://cnb.cool/jiyeqian/md2pdf/-/build)
+[![npm 版本](https://img.shields.io/npm/v/@jiyeqian/md2pdf)](https://www.npmjs.com/package/@jiyeqian/md2pdf)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/jiyeqian/md2pdf/blob/main/LICENSE)
+
 把 Markdown 排成**优雅的中文 A4 PDF**：报头大标题、元信息条、精心排过的表格/代码/引用/列表、页脚页码，还支持数学公式与参考文献。不是 pandoc 的默认样式——是可以直接拿去打印、发给别人看的版式。
 
 仓库：[GitHub](https://github.com/jiyeqian/md2pdf) · 在线体验：[md2pdf 工作台](https://md2pdf.app.workbuddy.host/)
