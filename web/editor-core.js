@@ -162,7 +162,7 @@
       { tag: V.tags.strong, fontWeight: '700' },
       { tag: V.tags.emphasis, fontStyle: 'italic' },
       { tag: V.tags.strikethrough, textDecoration: 'line-through' },
-      { tag: V.tags.link, color: '#42648b', textDecoration: 'underline' },
+      { tag: V.tags.link, color: '#42648b', textDecoration: 'none' },
       { tag: V.tags.url, color: '#8290a2' },
       { tag: V.tags.monospace, color: '#9a3b5c' },
       { tag: V.tags.keyword, color: '#8a4baf' },

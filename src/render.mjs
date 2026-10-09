@@ -8,6 +8,8 @@ import { resolveNumberScheme } from './numbering.mjs';
 import { defaultOptions } from './options.mjs';
 export { defaultOptions } from './options.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// Web 落款占位文件名（document.md）指向的官方仓库。预览点击时按同一常量精确校验 href。
+export const REPO_URL = 'https://github.com/jiyeqian/md2pdf';
 const ASSETS = path.join(ROOT, 'assets');
 const listThemes = () => readdirSync(ASSETS).filter(f => /^theme-.+\.css$/.test(f)).map(f => f.slice(6, -4)).sort();
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -712,9 +714,15 @@ export async function render(src, options = {}, context = {}) {
     : '';
   const colophonLeft = opts.colophon ?? (profile.skillMeta && fm.name ? `SKILL · ${fm.name}` : path.basename(mdPath));
   const colophonRight = opts.colophon ? '' : title;
+  // 仅 Web（context.webSafe）默认落款左侧是占位文件名 document.md、且无显式 --colophon 时，
+  // 把它换成仓库超链接；CLI 文件名落款、显式 colophon、技能 SKILL 落款一律保持原样。
+  const colophonRepoLink = context.webSafe && !opts.colophon && colophonLeft === 'document.md';
+  const colophonLeftHtml = colophonRepoLink
+    ? `<a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a>`
+    : esc(colophonLeft);
   // GB 标准没有文末落款；且落款元素会干扰 Paged.js 的命名页分页（多出空白页），故整体不输出
   const colophonHtml = profile.gbDoc ? '' :
-    `<div class="colophon">\n  <span>${esc(colophonLeft)}</span>\n  <span>${esc(colophonRight)}</span>\n</div>`;
+    `<div class="colophon">\n  <span>${colophonLeftHtml}</span>\n  <span>${esc(colophonRight)}</span>\n</div>`;
 
   // 用函数形式替换：既支持多处占位符，也避免用户文本里的 $& 被当作替换模式
   const fill = (tpl, map) => Object.entries(map).reduce(

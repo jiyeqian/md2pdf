@@ -25,7 +25,7 @@
     "test": "bash ci/validate.sh",
     "demo:pdf": "node src/md2pdf.mjs examples/general.md -o /tmp/md2pdf-general.pdf",
     "start": "node src/server.mjs",
-    "test:web": "node ci/editor-core-checks.mjs && node --test ci/server-checks.mjs ci/web-options-checks.mjs ci/preview-checks.mjs ci/editor-position-checks.mjs ci/editor-analysis-checks.mjs ci/editor-images-checks.mjs ci/editor-layout-checks.mjs",
+    "test:web": "node ci/editor-core-checks.mjs && node --test ci/server-checks.mjs ci/web-options-checks.mjs ci/preview-checks.mjs ci/editor-position-checks.mjs ci/editor-analysis-checks.mjs ci/editor-images-checks.mjs ci/editor-layout-checks.mjs ci/web-colophon-checks.mjs",
     "test:browser": "node ci/browser-checks.mjs"
   },
   "publishConfig": {

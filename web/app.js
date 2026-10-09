@@ -196,7 +196,8 @@ function injectRevision(html, rev) {
     .replaceAll("type:'md2pdf-ready'", `type:'md2pdf-ready',revision:${rev}`)
     .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`)
     .replaceAll("type:'md2pdf-source'", `type:'md2pdf-source',revision:${rev}`)
-    .replaceAll("type:'md2pdf-exit-fullscreen'", `type:'md2pdf-exit-fullscreen',revision:${rev}`);
+    .replaceAll("type:'md2pdf-exit-fullscreen'", `type:'md2pdf-exit-fullscreen',revision:${rev}`)
+    .replaceAll("type:'md2pdf-open-repo'", `type:'md2pdf-open-repo',revision:${rev}`);
 }
 
 async function resolveDocument(signal) {
@@ -266,6 +267,23 @@ window.addEventListener('message', event => {
   if (event.source !== preview.contentWindow || !event.data || event.data.revision !== previewRevision) return;
   if (event.data.type === 'md2pdf-exit-fullscreen') {
     document.dispatchEvent(new CustomEvent('md-preview-exit-fullscreen'));
+    return;
+  }
+  // 受控外链：预览里点可信落款链接时，父窗口只打开固定官方仓库地址。
+  // 消息不含任何 URL 参数；仅在确有用户激活（真实点击）时打开，避免无交互弹出。
+  if (event.data.type === 'md2pdf-open-repo') {
+    if (navigator.userActivation && !navigator.userActivation.isActive) return;
+    const opened = window.open('https://github.com/jiyeqian/md2pdf', '_blank', 'noopener,noreferrer');
+    // 若浏览器拦截弹窗（返回 null），给出可手动打开的提示（仅在此时改一次状态）。
+    if (!opened && statusEl) {
+      setStatus('若新标签页未打开，请点击：');
+      const link = document.createElement('a');
+      link.href = 'https://github.com/jiyeqian/md2pdf';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'md2pdf GitHub 仓库';
+      statusEl.append(link);
+    }
     return;
   }
   if (previewRevision !== revision) return;
