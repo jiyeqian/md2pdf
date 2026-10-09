@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import { existsSync } from 'node:fs';
 import { Chrome } from '../src/chrome.mjs';
-import { createApp, validateInput } from '../src/server.mjs';
+import { createApp, validateInput, imageBudget } from '../src/server.mjs';
+
+const webFile = name => new URL('../web/' + name, import.meta.url);
 
 async function fixture(t, options = {}) {
   const app = createApp({ chromeBinary: 'test-browser', ...options });
@@ -17,6 +20,66 @@ test('validates options, body shape, limits and TeX resource macros', () => {
   assert.equal(validateInput(doc).opts.pagedHtml, true);
   for (const body of [null, [], { md: 1 }, { md: '' }, { ...doc, path: '/etc/passwd' }, { ...doc, opts: { output: '/tmp/out' } }, { ...doc, opts: { theme: '../secret' } }, { ...doc, opts: { fontSize: NaN } }, { ...doc, opts: { toc: 'false' } }, { ...doc, opts: { toString: 'x' } }, { md: '\\href{javascript:alert(1)}{X}' }]) assert.throws(() => validateInput(body), { status: 400 });
   assert.throws(() => validateInput({ md: 'a'.repeat(200001) }), { status: 413 });
+});
+
+// 生成“恰好 bytes 字节”的标准 Base64 载荷（字符数 4 的倍数，填充仅出现在末尾）。
+const b64 = bytes => { const g = Math.ceil(bytes / 3); return 'A'.repeat(g * 4 - (g * 3 - bytes)) + '='.repeat(g * 3 - bytes); };
+
+test('image budget counts only strictly-valid embedded Markdown image tokens', () => {
+  const ok = '![img](data:image/png;base64,AAAA)';
+  const budget = imageBudget('# 标题\n\n' + ok);
+  assert.equal(budget.images, 1);
+  assert.equal(budget.totalBytes, 3);
+  assert.equal(budget.excluded, 'data:image/png;base64,AAAA'.length);
+  // 代码块 / 行内代码里的“图片”不算图片；非图片、非法 Base64、裸 URL、普通链接也都不算。
+  const notImages = [
+    '![x](data:image/png;base64,AAAA',
+    '\\![x](data:image/png;base64,AAAA)',
+    '![x](<data:image/png;base64,AAAA)',
+    '![x](data:image/png;base64,AAAA invalid)',
+    '```\n![x](data:image/png;base64,AAAA)\n```',
+    '~~~\n![x](data:image/png;base64,AAAA)\n~~~',
+    '`![x](data:image/png;base64,AAAA)`',
+    '    ![x](data:image/png;base64,AAAA)',
+    '![x](data:text/plain;base64,AAAA)',
+    '![x](data:image/svg+xml;base64,AAAA)',
+    '![x](data:IMAGE/PNG;base64,AAAA)',
+    '![x](data:image/png;base64,AAA)',
+    '![x](data:image/png;base64,AAAAA)',
+    '![x](data:image/png;base64,AA=A)',
+    '![x](data:image/png,notbase64)',
+    'data:image/png;base64,AAAA',
+    '[x](data:image/png;base64,AAAA)',
+  ];
+  for (const md of notImages) assert.equal(imageBudget(md).images, 0, md);
+  // 末尾填充形式合法（1/2 个 =）；标题与尖括号写法同样识别。
+  assert.equal(imageBudget('![a](data:image/gif;base64,AA==)').totalBytes, 1);
+  assert.equal(imageBudget('![a](data:image/jpeg;base64,AAA=)').totalBytes, 2);
+  assert.equal(imageBudget('![a](data:image/webp;base64,AAAA "题")').images, 1);
+  assert.equal(imageBudget('![a](<data:image/png;base64,AAAA>)').images, 1);
+});
+
+test('body-character budget excludes valid images but blocks smuggle attempts', () => {
+  // 图片 token 的语法开销计入正文；正文 190000 字 + 约 20k Base64 图片 → 总长度超过 200000 仍应接受。
+  const image = '![x](data:image/png;base64,' + b64(15000) + ')';
+  const withImage = 'a'.repeat(190000) + '\n\n' + image;
+  assert.ok(withImage.length > 200000, '嵌入图片后总长度应超过 200000');
+  assert.equal(validateInput({ md: withImage }).opts.pagedHtml, true);
+  // 同样的“图片”放进代码块 → 计入正文 → 超限拒绝。
+  assert.throws(() => validateInput({ md: 'a'.repeat(200000) + '\n\n```\n' + image + '\n```' }), { status: 413 });
+  // 非图片 / 非法 Base64 Data URL 不能借图片 token 绕过正文字符预算。
+  assert.throws(() => validateInput({ md: 'a'.repeat(200000) + '\n\n![x](data:text/plain;base64,' + b64(3) + ')' }), { status: 413 });
+  assert.throws(() => validateInput({ md: 'a'.repeat(200000) + '\n\n![x](data:image/png;base64,AAA)' }), { status: 413 });
+});
+
+test('enforces 10 MiB per-image and 16 MiB total image budgets', () => {
+  const over = '![x](data:image/png;base64,' + b64(10 * 1024 * 1024 + 1) + ')';
+  assert.throws(() => validateInput({ md: over }), { status: 413 });
+  const part = b64(7 * 1024 * 1024); // 7 MiB/张，两张 14 MiB 在限内，三张 21 MiB 超限
+  const within = '![a](data:image/png;base64,' + part + ')\n\n![b](data:image/jpeg;base64,' + part + ')';
+  assert.equal(validateInput({ md: within }).opts.pagedHtml, true);
+  const tooMuch = '![a](data:image/png;base64,' + part + ')\n\n![b](data:image/jpeg;base64,' + part + ')\n\n![c](data:image/gif;base64,' + part + ')';
+  assert.throws(() => validateInput({ md: tooMuch }), { status: 413 });
 });
 
 test('serves UI/example; refuses traversal, foreign host/origin and wrong methods', async t => {
@@ -41,10 +104,28 @@ test('serves UI/example; refuses traversal, foreign host/origin and wrong method
 
 test('rejects malformed JSON, unsupported content type and oversized request', async t => {
   const app = await fixture(t);
-  for (const [body, type, expected] of [['{', 'application/json', 400], ['x', 'text/plain', 415], ['a'.repeat(1024 * 1024 + 1), 'application/json', 413]]) {
+  for (const [body, type, expected] of [['{', 'application/json', 400], ['x', 'text/plain', 415], ['a'.repeat(24 * 1024 * 1024 + 1), 'application/json', 413]]) {
     const response = await fetch(app.url + '/api/render', { method: 'POST', headers: { 'Content-Type': type }, body });
     assert.equal(response.status, expected);
   }
+});
+
+test('accepts a small embedded image end to end and rejects image overflows over HTTP', async t => {
+  const app = await fixture(t);
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==';
+  const ok = await app.post('/api/render', { md: '# 图\n\n![小图](data:image/png;base64,' + png + ')' });
+  assert.equal(ok.status, 200);
+  assert.match((await ok.json()).html, /data:image\/png;base64,/);
+
+  const single = await app.post('/api/render', { md: '![x](data:image/png;base64,' + b64(10 * 1024 * 1024 + 1) + ')' });
+  assert.equal(single.status, 413);
+  assert.match((await single.json()).error, /10 MiB/);
+
+  // 3×5.5 MiB ≈ 16.5 MiB 解码，Base64 总量约 22 MiB，仍在 24 MiB 请求上限内，用于命中 16 MiB 图片预算。
+  const part = b64(5.5 * 1024 * 1024);
+  const total = await app.post('/api/render', { md: '![a](data:image/png;base64,' + part + ')\n\n![b](data:image/png;base64,' + part + ')\n\n![c](data:image/png;base64,' + part + ')' });
+  assert.equal(total.status, 413);
+  assert.match((await total.json()).error, /16 MiB/);
 });
 
 test('serves local editor assets and limits source positions to preview', async t => {
@@ -54,10 +135,17 @@ test('serves local editor assets and limits source positions to preview', async 
     printHtml: async html => { printed = html; return Buffer.from('%PDF-test'); },
     stop: async () => {},
   }) });
-  for (const file of ['editor-vendor.js', 'editor-core.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-core.css', 'editor-pro.css', 'editor-workspace.css']) {
+  const editorAssets = ['editor-vendor.js', 'editor-core.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-core.css', 'editor-pro.css', 'editor-workspace.css', 'editor-images.js', 'editor-images.css'];
+  for (const file of editorAssets) {
     const response = await fetch(app.url + '/' + file);
+    if (!existsSync(webFile(file))) { assert.equal(response.status, 404, file + ' 缺失时应为 404 而非 500'); continue; }
     assert.equal(response.status, 200, file);
-    assert.match(response.headers.get('content-type'), file.endsWith('.css') ? /text\/css/ : /text\/javascript/);
+    assert.match(response.headers.get('content-type'), file.endsWith('.css') ? /text\/css/ : /text\/javascript/, file);
+  }
+  // 图片模块静态路由必须已接线：文件存在即按脚本/样式返回，不存在也必须被识别为 404（而非 SPA 回退）。
+  for (const file of ['editor-images.js', 'editor-images.css']) {
+    const response = await fetch(app.url + '/' + file);
+    assert.ok([200, 404].includes(response.status), file);
   }
   const source = '# 编辑验收\n\n## 中文章节\n\n保留正文。';
   const response = await app.post('/api/render', { md: source });
