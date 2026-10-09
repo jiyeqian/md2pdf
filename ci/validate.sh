@@ -87,6 +87,8 @@ else
   bad "缺少 ci/checks.mjs"
 fi
 
+( cd "$TARGET" && node --test ci/skill-install-checks.mjs ) || FAIL=1
+
 # ------------------------------------------------- 反向自测（守卫真的会失败）
 # 只会"全绿"的校验等于没有校验：故意破坏一份副本，确认校验确实报错。
 if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then

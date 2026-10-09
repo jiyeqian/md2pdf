@@ -21,21 +21,21 @@ md2pdf 文件名.md --theme minimal --toc
 
 - **命令入口**：npm 全局 bin 目录里的 `md2pdf`
 - **程序本体**：npm 全局包 `@jiyeqian/md2pdf`（`node_modules/@jiyeqian/md2pdf/`）
-- **源码仓库**：https://cnb.cool/jiyeqian/md2pdf （Public，唯一实现的源头）
-- **本说明书**：仓库里的 `skill/SKILL.md`，安装时由 npm `postinstall` 复制到技能目录
-  （WorkBuddy 下即 `~/.workbuddy/skills/md-to-pdf/SKILL.md`）
+- **源码仓库**：https://github.com/jiyeqian/md2pdf
+- **本说明书**：仓库里的 `skill/SKILL.md`，通过 `md2pdf skill install` 显式安装。
 
-**没装过 / 换了机器** —— 一条命令（命令与说明书一起装好）：
+**没装过 / 换了机器**：
 
 ```bash
 npm install -g @jiyeqian/md2pdf
+md2pdf skill install --target workbuddy
 ```
 
-若 `command -v md2pdf` 为空，就是没装，跑上面这条即可。
+将 `workbuddy` 换为 `codex`、`codebuddy`、`claude`（Claude Code）或 `agents` 可选择其他用户级技能目录；也可使用 `--dir /path/to/md-to-pdf` 自定义目录。
+若 `command -v md2pdf` 为空，先安装 npm 包。
 
-**升级**：`npm update -g @jiyeqian/md2pdf` · **卸载**：`npm uninstall -g @jiyeqian/md2pdf`
-
-环境变量：`MD2PDF_SKILL=0` 不装说明书；`MD2PDF_SKILL_DIR=<dir>` 指定技能目录。
+**升级**：`npm update -g @jiyeqian/md2pdf` 后再次执行 Skill 安装命令；内容相同则跳过，内容不同时需 `--force` 确认覆盖。
+**卸载命令**：`npm uninstall -g @jiyeqian/md2pdf`，已有 Skill 文件会保留。
 
 ## 常用选项
 

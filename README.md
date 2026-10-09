@@ -24,7 +24,7 @@
 npm install -g @jiyeqian/md2pdf   # 需要 Node ≥ 18（建议 ≥ 22）
 ```
 
-装上即可用 `md2pdf` 命令；npm 的 `postinstall` 会把技能说明书装进 `~/.workbuddy`（存在时，供 Agent 使用）。
+装上即可用 `md2pdf` 命令；Skill 需通过命令显式安装，npm 安装或更新不会自动修改 Agent 技能目录。
 
 ```bash
 md2pdf 你的文档.md --open   # 装完试一下
@@ -32,10 +32,27 @@ md2pdf 你的文档.md --open   # 装完试一下
 
 **更新**：`npm update -g @jiyeqian/md2pdf` · **卸载**：`npm uninstall -g @jiyeqian/md2pdf`
 
-| 变量 | 作用 |
+安装 Agent Skill（按需选择目标）：
+
+```bash
+md2pdf skill install --target codex
+md2pdf skill install --target workbuddy
+md2pdf skill install --target codebuddy
+md2pdf skill install --target claude
+```
+
+| target | 用户级安装目录 |
 | --- | --- |
-| `MD2PDF_SKILL=0` | 安装时不装 Agent 技能说明书 |
-| `MD2PDF_SKILL_DIR=<dir>` | 说明书落点，默认 `~/.workbuddy/skills/md-to-pdf` |
+| `codex` | `~/.codex/skills/md-to-pdf` |
+| `workbuddy` | `~/.workbuddy/skills/md-to-pdf` |
+| `codebuddy` | `~/.codebuddy/skills/md-to-pdf` |
+| `claude` | `~/.claude/skills/md-to-pdf`（Claude Code） |
+| `agents` | `~/.agents/skills/md-to-pdf` |
+
+自定义目录：`md2pdf skill install --dir /path/to/md-to-pdf`。必须指定 `--target` 或 `--dir`，不可同时指定。
+文件内容相同则提示已是最新；内容不同时默认保留，确认覆盖后追加 `--force`。
+更新 npm 包后再次运行安装命令更新 Skill；失败会返回非零状态。卸载 npm 包不会删除已有 Skill。
+旧的 `MD2PDF_SKILL`、`MD2PDF_SKILL_DIR` 环境变量不再使用。
 
 **依赖**：Node.js ≥ 18（建议 ≥ 22），以及 Chrome / Edge / Chromium 任一（只渲染、不联网）。零 npm 运行时依赖——`marked` 与 MathJax 已内置在 `vendor/`。
 

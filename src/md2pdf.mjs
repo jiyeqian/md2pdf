@@ -34,6 +34,7 @@ import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { spawn, spawnSync } from 'node:child_process';
+import { installSkill } from './install-skill.mjs';
 import { PROFILE_NAMES } from './profiles.mjs';
 import { SCHEME_NAMES } from './numbering.mjs';
 import { parseArgs, expandArgs } from './options.mjs';
@@ -45,6 +46,8 @@ const HELP = `
 md2pdf ${VERSION} —— Markdown → 优雅 PDF
 
   md2pdf <file.md> [file2.md ...] [选项]
+  md2pdf skill install --target <codex|workbuddy|codebuddy|claude|agents> [--force]
+  md2pdf skill install --dir <技能目录> [--force]
 
 选项：
   -o, --output <path>      输出路径（默认与输入同目录同名 .pdf）
@@ -117,7 +120,9 @@ function resolveOutput(mdPath, opts) {
 }
 
 async function main() {
-  const opts = parseArgs(expandArgs(process.argv.slice(2)));
+  const args = process.argv.slice(2);
+  if (args[0] === 'skill') { await installSkill(args.slice(1)); return; }
+  const opts = parseArgs(expandArgs(args));
   if (opts.help) { console.log(HELP); return; }
   if (opts.version) { console.log(VERSION); return; }
   if (!opts.inputs.length) { console.log(HELP); process.exitCode = 1; return; }

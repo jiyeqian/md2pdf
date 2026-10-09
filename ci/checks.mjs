@@ -389,17 +389,11 @@ if (skillMd) {
   ok('技能：frontmatter 有 description',
     !!(fm && /^description:\s*\S/m.test(fm[1])));
 }
-ok('技能：npm postinstall 由 src/install-skill.mjs 负责安装',
-  installSkill.length > 0 && /install-skill\.mjs/.test(pkg.scripts?.postinstall || ''),
-  'npm 没有原生技能安装钩子，必须走 postinstall');
-ok('技能：postinstall 会复制 skill/SKILL.md 到技能目录',
-  /skill\/SKILL\.md/.test(installSkill) && /skills\/md-to-pdf/.test(installSkill),
-  '期望 install-skill.mjs 同时引用 skill/SKILL.md 与 skills/md-to-pdf');
-ok('技能：postinstall 提供 MD2PDF_SKILL 开关与 MD2PDF_SKILL_DIR 落点',
-  /MD2PDF_SKILL/.test(installSkill) && /MD2PDF_SKILL_DIR/.test(installSkill));
+ok('技能：npm 不再自动安装说明书', !pkg.scripts?.postinstall);
+ok('技能：显式安装实现随包分发', installSkill.length > 0);
 ok('技能：npm 包会把 skill/ 一并发布（files 含 skill）',
   Array.isArray(pkg.files) && pkg.files.includes('skill'),
-  'files 不含 skill 的话，装出来的包里没有 SKILL.md，postinstall 无源可复制');
+  'files 不含 skill 的话，装出来的包里没有 SKILL.md，显式安装无源可复制');
 
 /* ---------- 汇总 ---------- */
 console.log(`\n结果：${pass} 项通过，${fail} 项失败`);
