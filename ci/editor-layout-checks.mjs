@@ -134,7 +134,7 @@ test('editor-workspace.js：工具栏为分组 SVG 图标按钮，title/aria-lab
   for (const token of ['md-wt-group--history', 'md-wt-group--format', 'md-wt-group--insert', 'md-wt-group--academic', 'md-wt-group--view']) {
     assert.ok(wsJs.includes(token), '缺少分组：' + token);
   }
-  for (const token of ["label: '撤销'", "hint: '撤销（Ctrl/⌘+Z）'", "label: '查找'", "label: '粗体'", "label: '链接'", "label: '脚注'", "label: '公式'"]) {
+  for (const token of ["label: '撤销'", "hint: '撤销（Ctrl/⌘+Z）'", "label: '查找与替换'", "label: '粗体'", "label: '链接'", "label: '脚注'", "label: '公式'"]) {
     assert.ok(wsJs.includes(token), '缺少按钮文案：' + token);
   }
   // 插入组挂载点（图片按钮由图片模块挂入）
@@ -349,6 +349,11 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
     assert.equal(icon.getAttribute('viewBox'), '0 0 20 20');
   }
   assert.equal(all.filter(n => n.classList && n.classList.contains('md-wt-group')).length, 5, '应有 5 个操作分组');
+  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === '查找与替换').length, 1);
+  assert.equal(buttons.filter(b => ['查找', '替换'].includes(b.getAttribute('aria-label'))).length, 0);
+  const headingButton = buttons.find(b => b.getAttribute('aria-label') === '二级标题');
+  assert.ok(headingButton && headingButton.getAttribute('title').includes('H2'));
+
   const mount = all.find(n => n.getAttribute && n.getAttribute('data-md-wt-mount') === 'images');
   assert.ok(mount, '插入组应暴露图片按钮挂载点');
   assert.notEqual(mount.getAttribute('aria-hidden'), 'true', '图片挂载点不能隐藏其子按钮的可访问名称');
