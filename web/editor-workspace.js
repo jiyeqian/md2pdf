@@ -564,8 +564,6 @@
     return button;
   }
 
-  var markdownFilename = 'document.md';
-
   function fileStatus(message, error) {
     var status = document.querySelector('#status');
     if (status) { status.textContent = message; status.setAttribute('data-error', String(!!error)); }
@@ -590,18 +588,19 @@
         var text = await file.text();
         if (!window.mdEditor || typeof window.mdEditor.setValue !== 'function') throw new Error('editor unavailable');
         window.mdEditor.setValue(text.replace(/^\uFEFF/, ''));
-        markdownFilename = file.name;
         focusEditor();
       } catch (e) { fileStatus('无法读取 Markdown 文件，请重试。', true); }
     });
     actions.appendChild(makeFileButton('打开 Markdown 文件', 'open', function () { input.click(); }));
   }
 
-  function saveMarkdown() {
+  async function saveMarkdown() {
     if (!window.mdEditor || typeof window.mdEditor.getValue !== 'function') return;
-    var blob = new Blob([window.mdEditor.getValue()], { type: 'text/markdown;charset=utf-8' });
+    var text = window.mdEditor.getValue();
+    var files = await import('./editor-files.mjs');
+    var blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
     var url = URL.createObjectURL(blob);
-    var link = make('a', { href: url, download: markdownFilename });
+    var link = make('a', { href: url, download: files.markdownDownloadName(text) });
     document.body.appendChild(link);
     link.click();
     link.remove();

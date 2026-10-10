@@ -140,7 +140,7 @@
 .workspace.md-editor-workspace .panel-heading {
   display: grid;
   container-type: inline-size;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
 }
@@ -150,7 +150,8 @@
 .md-wt-zoom {
   position: relative;
   align-self: stretch;
-  width: clamp(64px, calc(100cqw - 280px), 200px);
+  justify-self: center;
+  width: min(100%, 200px);
   min-width: 0;
   height: 100%;
   min-height: 40px;
