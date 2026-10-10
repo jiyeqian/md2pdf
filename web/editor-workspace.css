@@ -155,18 +155,20 @@
   min-height: 40px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 2px;
 }
-.md-wt-zoom > .ruler-control { width: 100%; }
-.md-wt-zoom > .ruler-scale { width: 100%; margin-top: -4px; }
+.md-wt-zoom > .ruler-control { position: absolute; left: 27px; right: 30px; bottom: 6px; width: auto; }
+.md-wt-zoom > .ruler-scale { position: absolute; inset: 0; width: 100%; height: auto; margin: 0; pointer-events: none; }
 /* 端点标签沿用共享外观，仅收紧字号以适配 48px 标题栏。 */
-.md-wt-zoom .ruler-label { font-size: 9px; color: #9aa5b3; }
+.md-wt-zoom .ruler-label { top: calc(100% - 16px); bottom: auto; transform: translateY(-50%); font-size: 9px; color: #9aa5b3; }
+.md-wt-zoom .ruler-label--min { left: 0; }
+.md-wt-zoom .ruler-label--max { left: auto; right: 0; }
 /* 当前值 bubble：横向随滑块值移动（--zoom-pos 由 JS 写入），纵向浮在轨道上方，
  * clamp 保证到端点时也不越出容器，因此不会挡住左侧标题或右侧动作。 */
 .md-wt-zoom .md-wt-zoom-value {
   position: absolute;
-  top: 1px;
+  top: -8px;
   left: clamp(16px, var(--zoom-pos, 50%), calc(100% - 16px));
   transform: translateX(-50%);
   z-index: 2;
