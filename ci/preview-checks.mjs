@@ -146,3 +146,27 @@ test('可信落款链接：按专用 data 属性 + 精确官方 URL 拦截，回
   assert.ok(js.includes("type:'md2pdf-open-repo'"), '供前端 injectRevision 注入 revision');
   assert.doesNotMatch(js, /type:'md2pdf-open-repo'[^}]*url/, '消息不得携带 URL 参数');
 });
+
+test('预览缩放：先算自适应再乘 zoom/100，默认 100 保持原效果', () => {
+  const js = injectedScript(enhancePreview(DOC, 'general'));
+  assert.match(js, /var ZOOM_MIN = 50, ZOOM_MAX = 150, ZOOM_STEP = 5;/);
+  assert.match(js, /var zoom = 100;/);
+  assert.match(js, /var base = Math\.min\(1, \(document\.documentElement\.clientWidth - 24\) \/ page\.offsetWidth\);/);
+  assert.match(js, /pages\.style\.zoom = base \* \(zoom \/ 100\);/);
+});
+
+test('预览缩放：只接受 parent 消息，校验有限数值并夹到 50–150', () => {
+  const js = injectedScript(enhancePreview(DOC, 'general'));
+  assert.match(js, /event\.data\.type !== "md2pdf-preview-zoom"/);
+  assert.match(js, /if \(event\.source !== parent \|\| !event\.data \|\| event\.data\.type !== "md2pdf-preview-zoom"\) return;/);
+  assert.match(js, /if \(!Number\.isFinite\(z\)\) return;/);
+  assert.match(js, /Math\.max\(ZOOM_MIN, Math\.min\(ZOOM_MAX, Math\.round\(z \/ ZOOM_STEP\) \* ZOOM_STEP\)\)/);
+  assert.match(js, /zoom = z;\s*fit\(\);/);
+});
+
+test('预览缩放：指针按下时向父窗口回传纯消息类型（关闭浮层接口）', () => {
+  const js = injectedScript(enhancePreview(DOC, 'general'));
+  assert.match(js, /document\.addEventListener\("pointerdown", function \(\) \{/);
+  assert.match(js, /parent\.postMessage\(\{type:'md2pdf-preview-pointerdown'\}, '\*'\)/);
+  assert.doesNotMatch(js, /type:'md2pdf-preview-pointerdown'[^}]*\w/, 'pointerdown 消息不得携带参数');
+});

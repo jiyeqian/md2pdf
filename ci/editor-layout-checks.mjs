@@ -417,7 +417,7 @@ test('index.html：「标题编号」合并菜单替代旧的章节编号 / 编�
   ]) assert.match(indexHtml, new RegExp('<option value="' + value + '">' + label.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&') + '</option>'), '缺少选项：' + label);
 });
 
-test('index.html：字号 / 边距 / 行距为紧凑按钮 + 调整浮层（滑块 / 数值 / 跟随文档 / 说明）', () => {
+test('index.html：字号 / 边距 / 行距为紧凑按钮 + 调整浮层（直尺滑块 / 重置图标 / 说明）', () => {
   const specs = [
     ['fontSize', 8, 24, '0.5', 'pt'],
     ['margin', 10, 40, '1', 'mm'],
@@ -431,10 +431,10 @@ test('index.html：字号 / 边距 / 行距为紧凑按钮 + 调整浮层（滑�
     assert.match(block, /<details class="range-pop">/, name + ' 应为 details 浮层');
     assert.match(block, /<summary class="range-trigger"[^>]*>跟随文档<\/summary>/, name + ' 触发器默认文案应为「跟随文档」');
     assert.match(block, new RegExp('data-range-slider="' + name + '" min="' + min + '" max="' + max + '" step="' + step + '"'), name + ' 滑块范围');
-    assert.match(block, new RegExp('<input name="' + name + '"[^>]*data-range-number="' + name + '"[^>]*type="number" min="' + min + '" max="' + max + '" step="' + step + '"'), name + ' 数值输入范围');
+    assert.match(block, new RegExp('<input[^>]*name="' + name + '"[^>]*type="hidden"'), name + ' 隐藏字段保留草稿与导出参数');
     assert.match(block, new RegExp('data-range-default="' + name + '"'), name + ' 跟随文档按钮');
     assert.match(block, new RegExp('data-range-note="' + name + '"'), name + ' 模板默认说明节点');
-    assert.match(block, new RegExp('<span class="range-unit">' + unit + '<\/span>'), name + ' 单位');
+    assert.ok(!block.includes('class="range-unit"'), name + ' 浮层不再显示数值输入单位');
   }
   // 边距旧的三档下拉已移除
   assert.ok(!/<select name="margin"/.test(indexHtml), '边距不应再是下拉选择');
@@ -454,8 +454,8 @@ test('从模板创建入口：位于 Markdown 标题栏全屏按钮之前（锚�
   assert.ok(!insertBlock.includes("icon: 'template'"), '插入组不再包含模板入口');
 });
 
-test('app.css：范围控件为紧凑按钮 + 浮层样式（滑块 / 数值 / 单位 / 默认态）', () => {
-  for (const token of ['.range-row', '.range-slider', '.range-number', '.range-default', '.range-pop', '.range-trigger', '.range-popover', '.range-note', '.range-unit', '[data-control].is-default']) {
+test('app.css：范围控件为紧凑按钮 + 直尺滑块及重置图标', () => {
+  for (const token of ['.ruler-slider', '.ruler-scale', '.range-default', '.range-pop', '.range-trigger', '.range-popover', '.range-note']) {
     assert.ok(appCss.includes(token), '缺少：' + token);
   }
   const open = (appCss.match(/\{/g) || []).length;
@@ -558,12 +558,13 @@ function fakeAppEnvironment() {
     CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init && init.detail; } },
     AbortController: class { constructor() { this.signal = {}; } abort() {} },
     navigator: { userActivation: { isActive: false } },
-    addEventListener() {},
+    listeners: {},
+    addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); },
     removeEventListener() {},
   };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
-  return { sandbox };
+  return { sandbox, form, preview };
 }
 
 const appEnv = fakeAppEnvironment();
@@ -635,4 +636,21 @@ test('两页标语居中且弱化，模板页面文案一致', async () => {
   assert.match(examples, /id="use-example"[^>]*>使用模板<\/button>/);
   assert.ok(!examples.includes('使用此示例'));
   assert.match(appCss, /\.topbar-tagline\{[^}]*left:50%[^}]*color:#9aa5b3/);
+});
+
+test('预览点击关闭浮层仅接受当前 iframe 与当前 revision 的消息', () => {
+  const env = fakeAppEnvironment();
+  env.preview.contentWindow = {};
+  const popover = { open: true };
+  env.form.querySelectorAll = selector => selector.endsWith('[open]') ? [popover] : [];
+  vm.runInContext(appJs, env.sandbox);
+  vm.runInContext('previewRevision = 7', env.sandbox);
+  const emit = event => env.sandbox.listeners.message.forEach(fn => fn(event));
+  emit({ source: {}, data: { type: 'md2pdf-preview-pointerdown', revision: 7 } });
+  assert.equal(popover.open, true);
+  emit({ source: env.preview.contentWindow, data: { type: 'md2pdf-preview-pointerdown', revision: 6 } });
+  assert.equal(popover.open, true);
+  emit({ source: env.preview.contentWindow, data: { type: 'md2pdf-preview-pointerdown', revision: 7 } });
+  assert.equal(popover.open, false);
+  assert.match(env.sandbox.injectRevision("type:'md2pdf-preview-pointerdown'", 7), /revision:7/);
 });
