@@ -615,15 +615,18 @@ export async function render(src, options = {}, context = {}) {
     if (!title) title = t;
     html = html.replace(h1[0], '');
   }
-  if (!title) title = path.basename(mdPath, path.extname(mdPath));
+  if (!title && !h1) title = context.webSafe ? '设置一级标题为文档标题' : path.basename(mdPath, path.extname(mdPath));
 
-  // 导语：移除 H1 后的第一段
+  // 导言仅取首个一级标题与后续首个二级标题之间的第一段。
   let lead = '';
-  if (effLead) {
-    const p = /<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/.exec(html);
-    if (p && stripTags(p[1]).length > 12 && p.index < 2000) {
+  if (effLead && h1) {
+    const afterTitle = html.slice(h1.index);
+    const h2 = /<h2(?:\s[^>]*)?>/.exec(afterTitle);
+    const p = /<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/.exec(afterTitle);
+    if (p && h2 && p.index < h2.index) {
       lead = p[1];
-      html = html.replace(p[0], '');
+      const offset = h1.index + p.index;
+      html = html.slice(0, offset) + html.slice(offset + p[0].length);
     }
   }
 
@@ -643,32 +646,24 @@ export async function render(src, options = {}, context = {}) {
     return `<img ${pre}src="${pathToFileURL(abs).href}"${post}>`;
   });
 
-  // 章节锚点：给二级标题补 id，供目录内链与（Chrome 生成的）PDF 书签定位
+  // 目录从 H2–H6 中实际存在的最高层级开始，H1 不进入目录。
   const secIds = [];
-  html = html.replace(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>/g, (m, attrs = '', inner = '') => {
-    // front：GB 前置部分（前言/引言），目次里显示罗马页码
+  html = html.replace(/<h([2-6])(\s[^>]*)?>([\s\S]*?)<\/h\1>/g, (m, level, attrs = '', inner = '') => {
     const front = /\bclass="[^"]*\bfront\b/.test(attrs);
-    const has = /\sid="/.test(attrs);
-    if (has) {
-      secIds.push({ id: /\sid="([^"]+)"/.exec(attrs)[1], text: stripTags(inner), front });
-      return m;
-    }
-    const id = `sec-${secIds.length + 1}`;
-    secIds.push({ id, text: stripTags(inner), front });
-    return `<h2${attrs} id="${id}">${inner}</h2>`;
+    const existing = /\sid="([^"]+)"/.exec(attrs);
+    const id = existing ? existing[1] : `sec-${secIds.length + 1}`;
+    secIds.push({ id, text: stripTags(inner), front, level: +level });
+    return existing ? m : `<h${level}${attrs} id="${id}">${inner}</h${level}>`;
   });
-
-  // 目录：文首一张可点击的目录页（仅当二级标题多于一个才值得排）
-  // toc 为三态：CLI 显式指定优先，否则用 profile 默认（readme 默认开），最后兜底 false
   let toc = '';
-  if (useToc && secIds.length > 1) {
-    // GB 目次：条目「标题 + 点线 + 右对齐页码」。页码由 Paged.js 的
-    // target-counter(attr(href), page) 在分页后填入，所以这里只放结构。
-    const tocItem = profile.gbDoc
-      ? s => `<li><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
-      : s => `<li><a href="#${s.id}">${esc(s.text)}</a></li>`;
-    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目 录'}</div><ol>` +
-      secIds.map(tocItem).join('') + `</ol></div>`;
+  if (useToc && secIds.length) {
+    const levels = [...new Set(secIds.map(s => s.level))].sort((a, b) => a - b);
+    const included = levels.slice(0, opts.tocDepth === 2 ? 2 : 1);
+    const items = secIds.filter(s => included.includes(s.level));
+    const tocItem = s => profile.gbDoc
+      ? `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
+      : `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}">${esc(s.text)}</a></li>`;
+    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目录'}</div><ol>` + items.map(tocItem).join('') + '</ol></div>';
   }
 
   html = sectionize(html);
@@ -726,7 +721,7 @@ export async function render(src, options = {}, context = {}) {
   // 把它换成仓库超链接；CLI 文件名落款、显式 colophon、技能 SKILL 落款一律保持原样。
   const colophonRepoLink = context.webSafe && !opts.colophon && colophonLeft === 'document.md';
   const colophonLeftHtml = colophonRepoLink
-    ? `<a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a>`
+    ? `make <a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a> great`
     : esc(colophonLeft);
   // GB 标准没有文末落款；且落款元素会干扰 Paged.js 的命名页分页（多出空白页），故整体不输出
   const colophonHtml = profile.gbDoc ? '' :

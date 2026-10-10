@@ -142,7 +142,7 @@ if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
     # 破坏 7：把目录项退回成纯文本（丢掉内链）
     # 待替换串用变量拼出 —— 直接写双引号里的 ${s.id} 会被本脚本的 shell 当成展开
     ( cd "$TARGET" && tar cf - --exclude=.git --exclude=node_modules . ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
-    LI_LINK='<li><a href="#${s.id}">${esc(s.text)}</a></li>'
+    LI_LINK='<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}">${esc(s.text)}</a></li>'
     LI_PLAIN='<li>${esc(s.text)}</li>'
     sed -i.bak "s|$LI_LINK|$LI_PLAIN|" "$TMP/proj/src/render.mjs" 2>/dev/null \
       || sed -i '' "s|$LI_LINK|$LI_PLAIN|" "$TMP/proj/src/render.mjs"

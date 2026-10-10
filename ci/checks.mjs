@@ -263,7 +263,7 @@ if (fs.existsSync(demo)) {
   ok('渲染：有序与无序列表都在', /<ol>/.test(html) && /<ul>/.test(html));
   ok('渲染：H2 已分节', /<section>/.test(html));
   ok('渲染：--toc 生效', /class="toc"/.test(html));
-  ok('渲染：目录项是可点击内链', /<li><a href="#sec-\d+">/.test(html));
+  ok('渲染：目录项是可点击内链', /<li(?: class="toc-level-[01]")?><a href="#sec-\d+">/.test(html));
   const tocIds = [...html.matchAll(/<a href="#(sec-\d+)"/g)].map(m => m[1]);
   const h2Ids = [...html.matchAll(/<h2 id="(sec-\d+)"/g)].map(m => m[1]);
   ok('渲染：目录锚点与标题 id 一一对应',

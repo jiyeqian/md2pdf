@@ -114,6 +114,7 @@
     formula: [{ d: 'M6 5.2h8L9.6 10l4.4 4.8H6' }],
     foldToggle: [{ d: 'M6.6 8.6 10 5.2l3.4 3.4' }, { d: 'M6.6 11.4 10 14.8l3.4-3.4' }],
     // Tabler arrows-exchange（24 网格）按 0.8333333333 缩放进 20 视图，路径数据未改动。
+    unsync: [{ d: 'M7 7h8l-3-3M13 13H5l3 3M3 3l14 14' }],
     sync: [{ g: 'scale(0.8333333333)', d: 'M7 10h14l-4 -4M17 14h-14l4 4' }],
     insert: [{ rect: [4, 4, 12, 12], rx: 2 }, { d: 'M10 7v6' }, { d: 'M7 10h6' }],
     // 从模板创建：文档轮廓（折角）+ 加号，与其它按钮同为 20×20 线性描边。
@@ -256,15 +257,21 @@
     // 不使用没有键盘语义的隐藏复选框冒充按钮。
     var button = iconButton('sync', '同步定位', '同步定位：按标题所在章节近似联动（点击开启 / 关闭）');
     button.setAttribute('id', 'md-wt-sync');
-    button.setAttribute('aria-pressed', 'true'); // 默认开启；回环由 suppressUntil 抑制
+    function updateSync(on) {
+      button.setAttribute('aria-pressed', String(on));
+      button.textContent = '';
+      button.appendChild(iconSvg(on ? 'unsync' : 'sync'));
+      button.title = on ? '断开同步定位' : '开启同步定位';
+    }
+    updateSync(true); // 默认开启；图标表示点击后的动作。
     Object.defineProperty(button, 'checked', {
       configurable: true,
       get: function () { return button.getAttribute('aria-pressed') === 'true'; },
-      set: function (value) { button.setAttribute('aria-pressed', String(!!value)); }
+      set: function (value) { updateSync(!!value); }
     });
     button.addEventListener('click', function () {
       var on = button.getAttribute('aria-pressed') !== 'true';
-      button.setAttribute('aria-pressed', String(on));
+      updateSync(on);
       if (on) locateCurrentCursor();
     });
     commandButtons.push(button);
@@ -526,11 +533,15 @@
     workspace.classList.toggle(PREVIEW_FOCUS_CLASS, previewOn);
     if (editorFullscreenBtn) {
       editorFullscreenBtn.setAttribute('aria-pressed', String(editorOn));
+      editorFullscreenBtn.textContent = '';
+      editorFullscreenBtn.appendChild(fullscreenIcon(editorOn));
       editorFullscreenBtn.setAttribute('aria-label', editorOn ? '退出 Markdown 全屏' : 'Markdown 全屏写作');
       editorFullscreenBtn.title = editorOn ? '退出全屏（Esc）' : '全屏写作（Esc 退出）';
     }
     if (previewFullscreenBtn) {
       previewFullscreenBtn.setAttribute('aria-pressed', String(previewOn));
+      previewFullscreenBtn.textContent = '';
+      previewFullscreenBtn.appendChild(fullscreenIcon(previewOn));
       previewFullscreenBtn.setAttribute('aria-label', previewOn ? '退出预览全屏' : '预览全屏');
       previewFullscreenBtn.title = previewOn ? '退出全屏（Esc）' : '全屏预览（Esc 退出）';
     }
@@ -541,14 +552,14 @@
     applyFullscreen(nextFullscreenMode(fullscreenMode(), mode));
   }
 
-  function fullscreenIcon() {
+  function fullscreenIcon(shrink) {
     var svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('class', 'btn-icon');
     svg.setAttribute('viewBox', '0 0 20 20');
     svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('focusable', 'false');
     var path = document.createElementNS(SVG_NS, 'path');
-    path.setAttribute('d', 'M7.5 3.5H4.5v3M12.5 3.5h3v3M7.5 16.5H4.5v-3M12.5 16.5h3v-3');
+    path.setAttribute('d', shrink ? 'M3.5 7.5h4v-4M16.5 7.5h-4v-4M3.5 12.5h4v4M16.5 12.5h-4v4' : 'M7.5 3.5H4.5v3M12.5 3.5h3v3M7.5 16.5H4.5v-3M12.5 16.5h3v-3');
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke', 'currentColor');
     path.setAttribute('stroke-width', '1.4');

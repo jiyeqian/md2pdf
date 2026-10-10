@@ -26,7 +26,7 @@
     "demo:pdf": "node src/md2pdf.mjs examples/general.md -o /tmp/md2pdf-general.pdf",
     "start": "node src/server.mjs",
     "test:skill": "node --test ci/skill-install-checks.mjs",
-    "test:web": "node ci/editor-core-checks.mjs && node --test ci/server-checks.mjs ci/web-options-checks.mjs ci/preview-checks.mjs ci/editor-position-checks.mjs ci/editor-analysis-checks.mjs ci/editor-images-checks.mjs ci/editor-layout-checks.mjs ci/editor-zoom-checks.mjs ci/editor-files-checks.mjs ci/web-colophon-checks.mjs ci/editor-academic-checks.mjs ci/webapp-command-checks.mjs ci/doi-checks.mjs ci/doi-integration-checks.mjs ci/editor-doi-checks.mjs ci/editor-doi-dialog-checks.mjs",
+    "test:web": "node ci/editor-core-checks.mjs && node --test ci/server-checks.mjs ci/web-options-checks.mjs ci/preview-checks.mjs ci/editor-position-checks.mjs ci/editor-analysis-checks.mjs ci/editor-images-checks.mjs ci/editor-layout-checks.mjs ci/editor-zoom-checks.mjs ci/editor-files-checks.mjs ci/document-header-checks.mjs ci/web-colophon-checks.mjs ci/editor-academic-checks.mjs ci/webapp-command-checks.mjs ci/doi-checks.mjs ci/doi-integration-checks.mjs ci/editor-doi-checks.mjs ci/editor-doi-dialog-checks.mjs",
     "test:browser": "node ci/browser-checks.mjs"
   },
   "publishConfig": {
