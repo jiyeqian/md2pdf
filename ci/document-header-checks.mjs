@@ -60,3 +60,24 @@ test('TOC pagination respects explicit disabling of page footers', async () => {
   const result = await web('# 标题\n\n## 小节', {toc:true,footer:false});
   assert.ok(!result.html.includes('@bottom-center'));
 });
+
+import { stampPagedLists, finalizePagedCounters } from '../src/paged-counters.mjs';
+test('paged lists preserve start, explicit values and reversed numbering, excluding references', () => {
+  const node = (attrs = {}) => ({tagName:'LI', attrs:{...attrs}, getAttribute(k){return this.attrs[k] ?? null;}, setAttribute(k,v){this.attrs[k]=v;}});
+  const a = [node(), node({value:'7'}), node()];
+  const b = [node(), node()];
+  const excluded = [node()];
+  const ol = (children, attrs = {}, skip = false) => ({children, closest:()=>skip, hasAttribute:k=>k in attrs, getAttribute:k=>attrs[k] ?? null});
+  stampPagedLists({querySelectorAll:()=>[ol(a,{start:'3'}),ol(b,{reversed:''}),ol(excluded,{},true)]});
+  assert.deepEqual(a.map(n=>n.attrs['data-md2pdf-n']), ['3','7','8']);
+  assert.deepEqual(b.map(n=>n.attrs['data-md2pdf-n']), ['2','1']);
+  assert.equal(excluded[0].attrs['data-md2pdf-n'], undefined);
+});
+test('paged footers receive actual nonzero page counts after pagination', () => {
+  const footers = Array.from({length:4},()=>({classList:{add(){}},textContent:''}));
+  const styles = [];
+  const root = {createElement:()=>({}),head:{appendChild:s=>styles.push(s)},querySelectorAll:()=>footers.map(f=>({querySelector:()=>f}))};
+  finalizePagedCounters(true,root);
+  assert.deepEqual(footers.map(f=>f.textContent), ['1 / 4','2 / 4','3 / 4','4 / 4']);
+  assert.ok(styles[0].textContent.includes('content: attr(data-md2pdf-n)'));
+});

@@ -275,7 +275,7 @@ if (fs.existsSync(demo)) {
   ok('渲染：有目录文档注入 Paged.js 以计算条目页码', /pagedjs/.test(html));
   ok('封面：非 gb 类型不引用 GB 标志', !/gb-logo\./.test(html));
   ok('gb 元数据：非 gb 类型不透传 gb: meta', !/<meta name="gb:/.test(html));
-  ok('渲染：无 undefined/NaN 泄漏', !/undefined|NaN/.test(html));
+  ok('渲染：无 undefined/NaN 泄漏', !/undefined|NaN/.test(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')));
   ok('渲染：页脚页码模板交给浏览器而非 HTML',
     !/class="pageNumber"/.test(html));
   ok('渲染：数学公式注入 MathJax（demo 含公式）',

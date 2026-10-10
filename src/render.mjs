@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import { detectProfile } from './profiles.mjs';
 import { resolveNumberScheme } from './numbering.mjs';
 import { defaultOptions } from './options.mjs';
+import { stampPagedLists, finalizePagedCounters } from './paged-counters.mjs';
 export { defaultOptions } from './options.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Web 落款占位文件名（document.md）指向的官方仓库。预览点击时按同一常量精确校验 href。
@@ -783,7 +784,7 @@ export async function render(src, options = {}, context = {}) {
     '<script src="' + mathUrl + '" id="MathJax-script"></script>',
   ].join('\n') : '';
 
-  // Paged.js：PDF 渲染路径仅 GB 类型启用（@page 命名页 / 奇偶页眉 / target-counter，
+  // Paged.js：PDF 渲染路径在 GB 或有目录时启用（@page / target-counter，
   // 见 docs/gb-template.md）。--paged-html 时脚本改注入 paged-html 产物（见下方 pagedOut），
   // 两份 HTML 必须分离 —— 否则非 gb 的 PDF 会被 Paged.js 二次分页。
   // 时序：必须等 MathJax / Mermaid 渲染完成再分页，否则按错误尺寸切页。
@@ -793,6 +794,8 @@ export async function render(src, options = {}, context = {}) {
     '<script src="' + pagedUrl + '"></script>',
     '<script>',
     'window.__md2pdfPagedReady = false;',
+    profile.gbDoc ? '' : stampPagedLists.toString(),
+    profile.gbDoc ? '' : finalizePagedCounters.toString(),
     '(function () {',
     '  function depsReady() {',
     '    return window.__md2pdfMathReady !== false && window.__md2pdfMermaidReady !== false;',
@@ -800,8 +803,9 @@ export async function render(src, options = {}, context = {}) {
     '  function run() {',
     '    if (!depsReady()) { setTimeout(run, 50); return; }',
     '    try {',
+    profile.gbDoc ? '' : '      stampPagedLists();',
     '      window.PagedPolyfill.preview()',
-    '        .then(function () { window.__md2pdfPagedReady = true; })',
+    '        .then(function () { ' + (profile.gbDoc ? '' : 'finalizePagedCounters(' + (opts.footer !== false) + '); ') + 'window.__md2pdfPagedReady = true; })',
     '        .catch(function () { window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedReady = true; }',
     '  }',
