@@ -353,7 +353,7 @@
   }
 
   // 复用 app.css 的共享直尺结构：.ruler-control（轨道行）内放滑块与数值 bubble，
-  // 下面是 .ruler-scale（.ruler-label 端点 + .ruler-ticks 刻度）。
+  // 下面是 .ruler-scale（与轨道端点对齐的最小最大值）。
   function makeZoomControl(label, onZoom) {
     var root = make('div', { class: 'md-wt-zoom', role: 'group', 'aria-label': label });
     var control = make('div', { class: 'ruler-control' });
@@ -366,7 +366,6 @@
     var output = make('output', { class: 'md-wt-zoom-value', 'aria-hidden': 'true' }, ZOOM_DEFAULT + '%');
     var scale = make('div', { class: 'ruler-scale', 'aria-hidden': 'true' });
     var minLabel = make('span', { class: 'ruler-label ruler-label--min' }, ZOOM_MIN + '%');
-    var ticks = make('span', { class: 'ruler-ticks' });
     var maxLabel = make('span', { class: 'ruler-label ruler-label--max' }, ZOOM_MAX + '%');
 
     function render(percent) {
@@ -389,7 +388,6 @@
     control.appendChild(input);
     control.appendChild(output);
     scale.appendChild(minLabel);
-    scale.appendChild(ticks);
     scale.appendChild(maxLabel);
     root.appendChild(control);
     root.appendChild(scale);

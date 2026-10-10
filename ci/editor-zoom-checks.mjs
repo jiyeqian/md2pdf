@@ -33,7 +33,6 @@ test('滑块使用共享外观类，容器带专用类', () => {
     "class: 'ruler-scale'",
     "class: 'ruler-label ruler-label--min'",
     "class: 'ruler-label ruler-label--max'",
-    "class: 'ruler-ticks'",
     "class: 'md-wt-zoom-value'",
   ]) assert.ok(wsJs.includes(token), '缺少：' + token);
 });
@@ -315,4 +314,11 @@ test('行为：mdEditor 无 requestMeasure 时退回厂商 EditorView.findFromDO
   md.input.dispatch('input', { type: 'input', target: md.input });
   assert.equal(env.cmEditor.style.fontSize, '14.3px');
   assert.ok(env.measure.calls >= 1, '应经 vendored EditorView 触发度量');
+});
+
+test("sliders omit ticks and character count belongs to the footer", async () => {
+  assert.ok(!wsJs.includes("class: 'ruler-ticks'"));
+  const html = await read("web/index.html");
+  assert.match(html, /class="editor-footer"[^>]*>.*id="count"/);
+  assert.ok(!html.includes("ruler-ticks"));
 });

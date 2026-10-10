@@ -65,7 +65,7 @@ test('下载按钮移入预览 panel-heading，保留 id/disabled/aria-label 与
 
 test('两侧标题栏提供动作区：Markdown 侧计数，预览侧仅下载与全屏', () => {
   const editor = indexHtml.match(/<section class="editor-panel"[\s\S]*?<\/section>/)[0];
-  assert.match(editor, /<div class="panel-actions">\s*<span id="count">0 字符<\/span>\s*<\/div>/);
+  assert.match(editor, /<div class="editor-footer">.*<span id="count">0 字符<\/span>/);
   const preview = indexHtml.match(/<section class="preview-panel"[\s\S]*?<\/section>/)[0];
   assert.ok(!indexHtml.includes('document-type'), 'index 不应再有 #document-type');
   assert.ok(!preview.includes('document-type'), '预览标题不应再显示文档类型文本');

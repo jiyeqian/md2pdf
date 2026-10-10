@@ -59,20 +59,21 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .range-pop[open] .range-trigger{border-color:#6f93bc;box-shadow:0 0 0 1px #6f93bc}
 .range-popover{position:absolute;z-index:30;top:calc(100% + 6px);left:0;width:max(260px,100%);max-width:calc(100vw - 24px);box-sizing:border-box;display:flex;flex-direction:column;gap:10px;padding:12px;background:#fff;border:1px solid #d9e0e9;border-radius:10px;box-shadow:0 10px 30px rgba(36,51,72,.16)}
 /* 直尺滑块（.ruler-control / .ruler-slider / .ruler-scale 为共享类，可供面板缩放等复用）：
- * 细灰轨道 + 等距刻度，端点显示 min/max，中间刻度无数值；thumb 中性灰且不填充进度。 */
+ * 细灰轨道与淡色端点，端点下方显示 min/max；thumb 中性灰且不填充进度。 */
 .ruler-control{display:flex;align-items:center;gap:8px;width:100%}
 .ruler-slider{-webkit-appearance:none;appearance:none;flex:1 1 auto;min-width:0;width:auto;height:20px;margin:0;padding:0;background:transparent;border:0;box-shadow:none;cursor:pointer}
-.ruler-slider::-webkit-slider-runnable-track{height:2px;border-radius:1px;background:#cdd4de}
-.ruler-slider::-moz-range-track{height:2px;border-radius:1px;background:#cdd4de}
-.ruler-slider::-moz-range-progress{height:2px;border-radius:1px;background:#cdd4de}
-.ruler-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:8px;height:16px;margin-top:-7px;border:0;border-radius:3px;background:#8a94a3}
+.ruler-slider::-webkit-slider-runnable-track{height:8px;border-radius:1px;background:radial-gradient(circle at 4px 50%,#d9dfe7 0 3px,transparent 3.5px),radial-gradient(circle at calc(100% - 4px) 50%,#d9dfe7 0 3px,transparent 3.5px),linear-gradient(#cdd4de,#cdd4de) center/ calc(100% - 8px) 2px no-repeat}
+.ruler-slider::-moz-range-track{height:8px;border-radius:1px;background:radial-gradient(circle at 4px 50%,#d9dfe7 0 3px,transparent 3.5px),radial-gradient(circle at calc(100% - 4px) 50%,#d9dfe7 0 3px,transparent 3.5px),linear-gradient(#cdd4de,#cdd4de) center/ calc(100% - 8px) 2px no-repeat}
+.ruler-slider::-moz-range-progress{height:2px;border-radius:1px;background:radial-gradient(circle at 4px 50%,#d9dfe7 0 3px,transparent 3.5px),radial-gradient(circle at calc(100% - 4px) 50%,#d9dfe7 0 3px,transparent 3.5px),linear-gradient(#cdd4de,#cdd4de) center/ calc(100% - 8px) 2px no-repeat}
+.ruler-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:8px;height:16px;margin-top:-4px;border:0;border-radius:3px;background:#8a94a3}
 .ruler-slider::-moz-range-thumb{width:8px;height:16px;border:0;border-radius:3px;background:#8a94a3}
 .ruler-slider:focus{outline:none}
 .ruler-slider:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px #fff,0 0 0 4px #6f93bc}
 .ruler-slider:focus-visible::-moz-range-thumb{box-shadow:0 0 0 2px #fff,0 0 0 4px #6f93bc}
 .ruler-scale{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:0;width:100%;height:14px;padding:0 4px;color:#9aa5b3;font-size:10px;line-height:1}
-.ruler-label{flex:0 0 auto;font-variant-numeric:tabular-nums}
-.ruler-ticks{position:absolute;left:4px;right:4px;top:0;height:5px;background-image:repeating-linear-gradient(to right,#d3d9e2 0,#d3d9e2 1px,transparent 1px,transparent 10%)}
+.ruler-label{position:absolute;bottom:0;font-variant-numeric:tabular-nums;transform:translateX(-50%)}
+.ruler-label--min{left:4px}
+.ruler-label--max{left:calc(100% - 4px)}
 .range-default{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:0;border-radius:6px;background:transparent;color:#8290a2;line-height:0;cursor:pointer}
 .range-default:hover{background:#eef2f8;color:#42648b}
 .range-default:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}

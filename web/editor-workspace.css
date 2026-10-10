@@ -134,7 +134,7 @@
 
 /* ---------------- 标题栏缩放滑块（Markdown / 预览各自独立） ----------------
  * 只负责容器框架与数值 bubble 的定位；轨道、刻度、小 thumb、端点标签的外观来自
- * app.css 的共享类 .ruler-control / .ruler-slider / .ruler-scale / .ruler-label / .ruler-ticks。
+ * app.css 的共享类 .ruler-control / .ruler-slider / .ruler-scale / .ruler-label。
  * 标题栏改为三列网格（标题 | 缩放 | 动作），缩放居中且不侵占两侧，窄屏也不溢出。 */
 .workspace.md-editor-workspace .panel-heading {
   display: grid;
@@ -229,5 +229,5 @@
   .md-wt-zoom .md-wt-zoom-value { font-size: 9px; }
 }
 
-.workspace.md-editor-workspace .panel-heading #count{white-space:nowrap}
-@container(max-width:330px){.panel-heading #count{display:none}}
+
+.editor-footer #count{margin-left:auto;white-space:nowrap;text-align:right}
