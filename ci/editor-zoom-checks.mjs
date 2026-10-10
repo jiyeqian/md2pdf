@@ -60,7 +60,7 @@ test('预览缩放经 postMessage 下发且与 Markdown 独立', () => {
 test('CSS：容器居中、bubble 位置随值、窄屏收缩、括号平衡', () => {
   for (const token of [
     '.workspace.md-editor-workspace .panel-heading',
-    'grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)',
+    'grid-template-columns: auto minmax(0, 1fr) auto',
     '.md-wt-zoom {',
     'left: clamp(16px, var(--zoom-pos, 50%), calc(100% - 16px))',
     '.md-wt-zoom .md-wt-zoom-value',

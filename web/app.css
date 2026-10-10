@@ -88,3 +88,17 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 @media(max-width:700px){.topbar{height:94px;padding-bottom:22px}.topbar-tagline{top:auto;bottom:8px;transform:translateX(-50%);font-size:10px;letter-spacing:.8px}}
 
 .range-popover > .ruler-scale{width:calc(100% - 34px);margin-top:-10px}
+
+/* 使用浏览器可定制的选择器，避免系统菜单的深色选中背景。 */
+.toolbar select{color-scheme:light}
+.toolbar select option{background:#fff;color:#26394f}
+@supports (appearance:base-select){
+  .toolbar select,.toolbar select::picker(select){appearance:base-select}
+  .toolbar select{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .toolbar select::picker(select){margin-top:6px;padding:5px;background:#fff;color:#26394f;border:1px solid #d9e0e9;border-radius:10px;box-shadow:0 10px 30px rgba(36,51,72,.16)}
+  .toolbar select option{min-height:32px;padding:7px 9px;border-radius:5px;font-size:13px}
+  .toolbar select option:checked{background:#eef2f8;color:#26394f}
+  .toolbar select option:hover,.toolbar select option:focus{background:#f2f6fb;color:#26394f;outline:none}
+  .toolbar select option::checkmark{color:#6f93bc}
+  .toolbar select::picker-icon{color:#8290a2}
+}
