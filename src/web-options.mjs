@@ -41,7 +41,7 @@ export const MARGIN_RANGE = { min: 10, max: 40 };
 export const WEB_OPTION_SPEC = {
   enums: { type: PROFILE_NAMES.slice(), theme: Object.keys(THEME_LABELS), numbering: Object.keys(NUMBERING_LABELS), numberScheme: SCHEME_NAMES.slice() },
   booleans: ['toc', 'landscape'],
-  numbers: { fontSize: [8, 24], lineHeight: [1, 2.5], marginTop: [10, 40], marginBottom: [10, 40], marginSide: [10, 40], marginLeft: [10, 40], marginRight: [10, 40] },
+  numbers: { tocDepth: [1, 2], fontSize: [8, 24], lineHeight: [1, 2.5], marginTop: [10, 40], marginBottom: [10, 40], marginSide: [10, 40], marginLeft: [10, 40], marginRight: [10, 40] },
 };
 
 /**
@@ -62,7 +62,7 @@ const TYPE_CAPABILITIES = {
 const AUTO_CAPABILITIES = GENERAL_CAPS;
 
 const TYPE_NOTES = {
-  general: ['不含其他类型特征时按通用文档排版；首段自动作为导语，标题层级自动编号。'],
+  general: ['不含其他类型特征时按通用文档排版；一级、二级标题之间的首段作为导言，标题层级自动编号。'],
   skill: ['frontmatter 含 name / description 时自动识别，报头带「技能文档」标识与元信息条。'],
   readme: ['文件名 README.md 自动识别（网页端没有文件名，请手动选择本类型），默认带目录，顶部徽章不参与图表编号。'],
   paper: ['frontmatter 含 abstract / keywords 自动识别，自动生成作者行、摘要与关键词。'],
@@ -110,7 +110,7 @@ export function policyForType(type = '') {
     // 类型选择本身始终可调：它是决定其余控件是否可用的开关。
     type: { name: 'type', label: '文档类型', available: true, values: PROFILE_NAMES.slice(), allowEmpty: true, emptyValue: '', emptyLabel: '自动识别' },
     theme: control('theme', caps.theme, { kind: 'enum', fixedValue: fixed.theme, fixedLabel: THEME_LABELS[fixed.theme] || fixed.theme }),
-    toc: control('toc', caps.toc, { kind: 'tri', allowEmpty: true, fixedValue: type ? Boolean(d.toc ?? WEB_BASELINE.toc) : false, triValues: ['true', 'false'] }),
+    toc: control('toc', caps.toc, { kind: 'tri', allowEmpty: true, fixedValue: type ? Boolean(d.toc ?? WEB_BASELINE.toc) : false, triValues: ['false', '1', '2'] }),
     fontSize: control('fontSize', caps.fontSize, { kind: 'number', allowEmpty: true, unsettable: true, min: FONT_SIZE_RANGE.min, max: FONT_SIZE_RANGE.max, step: FONT_SIZE_RANGE.step, defaultValue: WEB_BASELINE.fontSize, fixedValue: d.fontSize ?? WEB_BASELINE.fontSize }),
     lineHeight: control('lineHeight', caps.lineHeight, { kind: 'number', allowEmpty: true, unsettable: true, min: LINE_HEIGHT_RANGE.min, max: LINE_HEIGHT_RANGE.max, step: LINE_HEIGHT_RANGE.step, defaultValue: WEB_BASELINE.lineHeight, fixedValue: type === 'gb' ? GB_LINE_HEIGHT : (d.lineHeight ?? WEB_BASELINE.lineHeight) }),
     margin: control('margin', caps.margin, { kind: 'enum', allowEmpty: true, values: caps.margin ? MARGIN_OPTIONS.map(o => o.value) : [], fixedValue: `${fixed.marginTop} / ${fixed.marginBottom}`, fixedNote: `左右 ${fixed.marginLeft} / ${fixed.marginRight} mm` }),
@@ -159,6 +159,7 @@ const MARGIN_KEYS = ['margin', 'marginTop', 'marginBottom', 'marginLeft', 'margi
  * @throws 带 status=400 的 Error
  */
 export function assertOptionsAllowed(opts, type) {
+  if (opts.tocDepth !== undefined && ![1, 2].includes(opts.tocDepth)) throw error400('目录层级只能为一级或二级');
   const present = key => Object.hasOwn(opts, key);
   const caps = TYPE_CAPABILITIES[type] ?? AUTO_CAPABILITIES;
   if (type !== 'gb') {

@@ -26,7 +26,7 @@ const wsCss = await read('web/editor-workspace.css');
 test('头部品牌：主标题 md2pdf，副标题编辑器，页面标题 md2pdf', () => {
   assert.match(indexHtml, /<h1 class="brand-logo">md2pdf<\/h1>/);
   assert.match(indexHtml, /<p class="brand-sub">编辑器<\/p>/);
-  assert.match(indexHtml, /<title>md2pdf<\/title>/);
+  assert.match(indexHtml, /<title>make md2pdf great<\/title>/);
   assert.ok(!/Markdown 排版工作台<\/p>/.test(indexHtml), '不应残留旧的描述文案');
 });
 
@@ -44,7 +44,7 @@ test('导航栏示例库入口改为「模板库」，编辑器与库页标题�
   assert.match(indexHtml, /<a id="examples-link-top" class="button-link" href="\/examples">模板库<\/a>/);
   assert.ok(!/示例库/.test(indexHtml), '编辑器不应再残留「示例库」字样');
   // 库页标题 / 副标题同步为「模板库」。
-  assert.match(examplesHtml, /<title>md2pdf · 模板库<\/title>/);
+  assert.match(examplesHtml, /<title>make md2pdf great · 模板库<\/title>/);
   assert.match(examplesHtml, /<h1>md2pdf<\/h1><p>模板库<\/p>/);
   assert.ok(!/示例库/.test(examplesHtml), '库页不应再残留「示例库」标题');
 });
@@ -125,7 +125,7 @@ test('editor-workspace.js：语法有效且不调用浏览器全屏 API', () => 
 test('editor-workspace.js：双全屏契约与默认同步定位', () => {
   for (const token of [
     "var PREVIEW_FOCUS_CLASS = 'preview-focus'", 'function nextFullscreenMode', 'function applyFullscreen',
-    'function buildFullscreenButtons', "setAttribute('aria-pressed', 'true')", "setAttribute('aria-pressed'",
+    'function buildFullscreenButtons', "updateSync(true)", "setAttribute('aria-pressed'",
     "toggleFullscreen('editor')", "toggleFullscreen('preview')",
   ]) assert.ok(wsJs.includes(token), '缺少：' + token);
   // 互斥：applyFullscreen 同时切换两个状态类
@@ -154,7 +154,7 @@ test('editor-workspace.js：工具栏为分组 SVG 图标按钮，title/aria-lab
   // 同步定位：图标开关按钮（aria-pressed）+ .checked 兼容访问器，不是隐藏复选框
   assert.ok(!/type: 'checkbox'/.test(wsJs), '不再使用隐藏复选框冒充按钮');
   assert.match(wsJs, /defineProperty\(button, 'checked'/, '保留 .checked 兼容访问器');
-  assert.match(wsJs, /'aria-pressed', 'true'/, '同步定位默认开启');
+  assert.match(wsJs, /updateSync\(true\)/, '同步定位默认开启');
 });
 
 test('editor-workspace.css：紧凑图标按钮、组间分隔、窄屏不溢出', () => {
@@ -413,7 +413,7 @@ test('index.html：「标题编号」合并菜单替代旧的章节编号 / 编�
   // 六项语义完整的选项：跟随 / 不加 / 自动 / 数字 / 中文 / 章节
   for (const [value, label] of [
     ['', '跟随文档'], ['none', '不加编号'], ['auto', '自动编号'],
-    ['force:arabic', '数字编号 · 1 / 1.1'], ['force:cjk', '中文编号 · 一、/（一）'], ['force:chapter', '章节编号 · 第 1 章'],
+    ['force:arabic', '数字编号'], ['force:cjk', '中文编号'], ['force:chapter', '章节编号'],
   ]) assert.match(indexHtml, new RegExp('<option value="' + value + '">' + label.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&') + '</option>'), '缺少选项：' + label);
 });
 

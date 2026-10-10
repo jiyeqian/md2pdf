@@ -29,7 +29,7 @@ const RANGE_FALLBACK = {
   lineHeight: { min: 1, max: 2.5, step: 0.05, defaultValue: 1.9 },
 };
 const HEADING_SCHEMES = ['arabic', 'cjk', 'chapter'];
-const HEADING_SCHEME_LABELS = { arabic: '数字编号 · 1 / 1.1', cjk: '中文编号 · 一、/（一）', chapter: '章节编号 · 第 1 章' };
+const HEADING_SCHEME_LABELS = { arabic: '数字编号', cjk: '中文编号', chapter: '章节编号' };
 // 范围控件的单位与无障碍标签：触发器默认「跟随文档」，显式值形如「12 pt / 25 mm / 2.1 倍」。
 const RANGE_META = {
   fontSize: { unit: 'pt', label: '字号' },
@@ -228,7 +228,8 @@ function applyPolicy(policy) {
       // 空值 = 跟随文档（不发送覆盖），始终保留该选项。
       fillSelect(field, enumEntries(name, control), '跟随文档');
     } else if (control.kind === 'tri' && field.tagName === 'SELECT') {
-      fillSelect(field, [['true', '显示'], ['false', '隐藏']], '跟随文档');
+      if (field.value === 'true') field.value = '1';
+      fillSelect(field, [['false', '隐藏目录'], ['1', '一级目录'], ['2', '二级目录']], '跟随文档');
     } else if (control.kind === 'number') {
       if (control.min != null) field.min = control.min;
       if (control.max != null) field.max = control.max;
@@ -341,6 +342,7 @@ function reflectRangeValue(name, value) {
 function applyStoredOptions(stored) {
   if (!stored) return;
   const adjusted = { ...stored };
+  if (adjusted.toc === 'true') adjusted.toc = '1';
   // 旧草稿存的是分开的 numbering / numberScheme，这里合并回菜单 token 后再恢复。
   if ('numbering' in adjusted || 'numberScheme' in adjusted) {
     adjusted.numbering = headingDraftToken(adjusted.numbering, adjusted.numberScheme);
@@ -376,7 +378,7 @@ function collectedOptions() {
     if (value === '') continue;
     if (name === 'margin') { const n = rangeOptionValue(name, value); if (n !== undefined) { options.marginTop = options.marginBottom = options.marginLeft = options.marginRight = n; } }
     else if (name === 'fontSize' || name === 'lineHeight') { const n = rangeOptionValue(name, value); if (n !== undefined) options[name] = n; }
-    else if (name === 'toc') options.toc = value === 'true';
+    else if (name === 'toc') { options.toc = value !== 'false'; if (options.toc) options.tocDepth = value === '2' ? 2 : 1; }
     else if (name === 'numbering') Object.assign(options, headingOptionsFromToken(value, controls));
     else options[name] = value;
   }

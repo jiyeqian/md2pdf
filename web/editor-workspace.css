@@ -73,8 +73,7 @@
 .md-wt-snippets select:focus-visible { outline: 2px solid #6f93bc; outline-offset: 2px; }
 .md-wt-toolbar button:disabled,
 .md-wt-snippets button:disabled { opacity: .5; cursor: not-allowed; }
-.md-wt-toolbar button[aria-pressed="true"],
-.md-wt-toolbar button[aria-pressed="true"]:hover:not(:disabled) { background: #fff; border-color: #233e60; color: #33465e; }
+
 
 .md-editor-workspace .md-editor-toolbar { display: none; }
 

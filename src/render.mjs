@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import { detectProfile } from './profiles.mjs';
 import { resolveNumberScheme } from './numbering.mjs';
 import { defaultOptions } from './options.mjs';
+import { stampPagedLists, finalizePagedCounters } from './paged-counters.mjs';
 export { defaultOptions } from './options.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Web 落款占位文件名（document.md）指向的官方仓库。预览点击时按同一常量精确校验 href。
@@ -615,15 +616,18 @@ export async function render(src, options = {}, context = {}) {
     if (!title) title = t;
     html = html.replace(h1[0], '');
   }
-  if (!title) title = path.basename(mdPath, path.extname(mdPath));
+  if (!title && !h1) title = context.webSafe ? '设置一级标题为文档标题' : path.basename(mdPath, path.extname(mdPath));
 
-  // 导语：移除 H1 后的第一段
+  // 导言仅取首个一级标题与后续首个二级标题之间的第一段。
   let lead = '';
-  if (effLead) {
-    const p = /<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/.exec(html);
-    if (p && stripTags(p[1]).length > 12 && p.index < 2000) {
+  if (effLead && h1) {
+    const afterTitle = html.slice(h1.index);
+    const h2 = /<h2(?:\s[^>]*)?>/.exec(afterTitle);
+    const p = /<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/.exec(afterTitle);
+    if (p && h2 && p.index < h2.index) {
       lead = p[1];
-      html = html.replace(p[0], '');
+      const offset = h1.index + p.index;
+      html = html.slice(0, offset) + html.slice(offset + p[0].length);
     }
   }
 
@@ -643,32 +647,24 @@ export async function render(src, options = {}, context = {}) {
     return `<img ${pre}src="${pathToFileURL(abs).href}"${post}>`;
   });
 
-  // 章节锚点：给二级标题补 id，供目录内链与（Chrome 生成的）PDF 书签定位
+  // 目录从 H2–H6 中实际存在的最高层级开始，H1 不进入目录。
   const secIds = [];
-  html = html.replace(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>/g, (m, attrs = '', inner = '') => {
-    // front：GB 前置部分（前言/引言），目次里显示罗马页码
+  html = html.replace(/<h([2-6])(\s[^>]*)?>([\s\S]*?)<\/h\1>/g, (m, level, attrs = '', inner = '') => {
     const front = /\bclass="[^"]*\bfront\b/.test(attrs);
-    const has = /\sid="/.test(attrs);
-    if (has) {
-      secIds.push({ id: /\sid="([^"]+)"/.exec(attrs)[1], text: stripTags(inner), front });
-      return m;
-    }
-    const id = `sec-${secIds.length + 1}`;
-    secIds.push({ id, text: stripTags(inner), front });
-    return `<h2${attrs} id="${id}">${inner}</h2>`;
+    const existing = /\sid="([^"]+)"/.exec(attrs);
+    const id = existing ? existing[1] : `sec-${secIds.length + 1}`;
+    secIds.push({ id, text: stripTags(inner), front, level: +level });
+    return existing ? m : `<h${level}${attrs} id="${id}">${inner}</h${level}>`;
   });
-
-  // 目录：文首一张可点击的目录页（仅当二级标题多于一个才值得排）
-  // toc 为三态：CLI 显式指定优先，否则用 profile 默认（readme 默认开），最后兜底 false
   let toc = '';
-  if (useToc && secIds.length > 1) {
-    // GB 目次：条目「标题 + 点线 + 右对齐页码」。页码由 Paged.js 的
-    // target-counter(attr(href), page) 在分页后填入，所以这里只放结构。
-    const tocItem = profile.gbDoc
-      ? s => `<li><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
-      : s => `<li><a href="#${s.id}">${esc(s.text)}</a></li>`;
-    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目 录'}</div><ol>` +
-      secIds.map(tocItem).join('') + `</ol></div>`;
+  if (useToc && secIds.length) {
+    const levels = [...new Set(secIds.map(s => s.level))].sort((a, b) => a - b);
+    const included = levels.slice(0, opts.tocDepth === 2 ? 2 : 1);
+    const items = secIds.filter(s => included.includes(s.level));
+    const tocItem = s => profile.gbDoc
+      ? `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
+      : `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`;
+    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目  录'}</div><ol>` + items.map(tocItem).join('') + '</ol></div>';
   }
 
   html = sectionize(html);
@@ -726,7 +722,7 @@ export async function render(src, options = {}, context = {}) {
   // 把它换成仓库超链接；CLI 文件名落款、显式 colophon、技能 SKILL 落款一律保持原样。
   const colophonRepoLink = context.webSafe && !opts.colophon && colophonLeft === 'document.md';
   const colophonLeftHtml = colophonRepoLink
-    ? `<a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a>`
+    ? `make <a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a> great`
     : esc(colophonLeft);
   // GB 标准没有文末落款；且落款元素会干扰 Paged.js 的命名页分页（多出空白页），故整体不输出
   const colophonHtml = profile.gbDoc ? '' :
@@ -788,7 +784,7 @@ export async function render(src, options = {}, context = {}) {
     '<script src="' + mathUrl + '" id="MathJax-script"></script>',
   ].join('\n') : '';
 
-  // Paged.js：PDF 渲染路径仅 GB 类型启用（@page 命名页 / 奇偶页眉 / target-counter，
+  // Paged.js：PDF 渲染路径在 GB 或有目录时启用（@page / target-counter，
   // 见 docs/gb-template.md）。--paged-html 时脚本改注入 paged-html 产物（见下方 pagedOut），
   // 两份 HTML 必须分离 —— 否则非 gb 的 PDF 会被 Paged.js 二次分页。
   // 时序：必须等 MathJax / Mermaid 渲染完成再分页，否则按错误尺寸切页。
@@ -798,6 +794,8 @@ export async function render(src, options = {}, context = {}) {
     '<script src="' + pagedUrl + '"></script>',
     '<script>',
     'window.__md2pdfPagedReady = false;',
+    profile.gbDoc ? '' : stampPagedLists.toString(),
+    profile.gbDoc ? '' : finalizePagedCounters.toString(),
     '(function () {',
     '  function depsReady() {',
     '    return window.__md2pdfMathReady !== false && window.__md2pdfMermaidReady !== false;',
@@ -805,8 +803,9 @@ export async function render(src, options = {}, context = {}) {
     '  function run() {',
     '    if (!depsReady()) { setTimeout(run, 50); return; }',
     '    try {',
+    profile.gbDoc ? '' : '      stampPagedLists();',
     '      window.PagedPolyfill.preview()',
-    '        .then(function () { window.__md2pdfPagedReady = true; })',
+    '        .then(function () { ' + (profile.gbDoc ? '' : 'finalizePagedCounters(' + (opts.footer !== false) + '); ') + 'window.__md2pdfPagedReady = true; })',
     '        .catch(function () { window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedReady = true; }',
     '  }',
@@ -837,6 +836,7 @@ export async function render(src, options = {}, context = {}) {
   }
   const out = fill(shell, {
     '{{TITLE}}': esc(title),
+    '{{MASTHEAD_CLASS}}': h1 && !title ? ' title-omitted' : '',
     '{{CSS}}': finalCss,
     '{{KICKER}}': esc(kicker),
     '{{LEAD}}': lead,
@@ -855,15 +855,15 @@ export async function render(src, options = {}, context = {}) {
 
   // 分页 HTML（--paged-html）：浏览器打开与 PDF 同款分页/页码。
   // gb 的 out 已含 Paged.js 与分侧页码规则；其他类型在此注入页码/页脚 margin box 与观感样式。
-  // 这些 CSS 只追加进 paged-html 产物，不影响 PDF 渲染路径。
+  // 有目录时 PDF 同样使用分页产物，确保目录页码基于实际分页计算。
   let pagedOut = null;
-  if (opts.pagedHtml) {
+  if (opts.pagedHtml || toc) {
     const footFont = 'font: 8pt/1 -apple-system, "PingFang SC", sans-serif; color: #8a8578; letter-spacing: .5px;';
     const pageBoxes = profile.gbDoc ? '' : [
       '@page {',
-      '  @bottom-center { content: counter(page) " / " counter(pages); ' + footFont + ' }',
-      opts.footerLeft ? '  @bottom-left { content: ' + JSON.stringify(opts.footerLeft) + '; ' + footFont + ' }' : '',
-      opts.footerRight ? '  @bottom-right { content: ' + JSON.stringify(opts.footerRight) + '; ' + footFont + ' }' : '',
+      opts.footer === false ? '' : '  @bottom-center { content: counter(page) " / " counter(pages); ' + footFont + ' }',
+      opts.footer !== false && opts.footerLeft ? '  @bottom-left { content: ' + JSON.stringify(opts.footerLeft) + '; ' + footFont + ' }' : '',
+      opts.footer !== false && opts.footerRight ? '  @bottom-right { content: ' + JSON.stringify(opts.footerRight) + '; ' + footFont + ' }' : '',
       '}',
     ].filter(Boolean).join('\n');
     const screenCss = [
@@ -889,11 +889,11 @@ export async function render(src, options = {}, context = {}) {
 
   // GB：页眉/页码改由 Paged.js 的 @page margin box 绘制（奇偶页位置不同、前置罗马/正文阿拉伯），
   // 必须关掉 Chrome 原生的 headerTemplate/footerTemplate，否则同页会出现两套页码。
-  const usePaged = !!profile.gbDoc;
+  const usePaged = !!profile.gbDoc || !!toc;
   const headerTemplate = '<span></span>';
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
-  return { title, html: assetHtml(out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
+  return { title, html: assetHtml(toc && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
     printOptions: { footer: usePaged ? false : opts.footer, footerTemplate, header: false, headerTemplate,
       landscape: opts.landscape, outline: opts.outline, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
 }

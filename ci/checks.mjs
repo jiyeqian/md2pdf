@@ -263,7 +263,7 @@ if (fs.existsSync(demo)) {
   ok('渲染：有序与无序列表都在', /<ol>/.test(html) && /<ul>/.test(html));
   ok('渲染：H2 已分节', /<section>/.test(html));
   ok('渲染：--toc 生效', /class="toc"/.test(html));
-  ok('渲染：目录项是可点击内链', /<li><a href="#sec-\d+">/.test(html));
+  ok('渲染：目录项是可点击内链', /<li(?: class="toc-level-[01]")?><a href="#sec-\d+">/.test(html));
   const tocIds = [...html.matchAll(/<a href="#(sec-\d+)"/g)].map(m => m[1]);
   const h2Ids = [...html.matchAll(/<h2 id="(sec-\d+)"/g)].map(m => m[1]);
   ok('渲染：目录锚点与标题 id 一一对应',
@@ -272,10 +272,10 @@ if (fs.existsSync(demo)) {
   ok('渲染：标题 id 不重复', new Set(h2Ids).size === h2Ids.length);
   ok('渲染：--link-urls 生效', /class="link-url"/.test(html));
   ok('渲染：无占位符残留', !/\{\{[A-Z_]+\}\}/.test(html));
-  ok('渲染：非 gb 类型不注入 Paged.js（行为零回归）', !/pagedjs/.test(html));
+  ok('渲染：有目录文档注入 Paged.js 以计算条目页码', /pagedjs/.test(html));
   ok('封面：非 gb 类型不引用 GB 标志', !/gb-logo\./.test(html));
   ok('gb 元数据：非 gb 类型不透传 gb: meta', !/<meta name="gb:/.test(html));
-  ok('渲染：无 undefined/NaN 泄漏', !/undefined|NaN/.test(html));
+  ok('渲染：无 undefined/NaN 泄漏', !/undefined|NaN/.test(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')));
   ok('渲染：页脚页码模板交给浏览器而非 HTML',
     !/class="pageNumber"/.test(html));
   ok('渲染：数学公式注入 MathJax（demo 含公式）',
