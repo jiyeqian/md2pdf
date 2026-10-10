@@ -272,7 +272,7 @@ if (fs.existsSync(demo)) {
   ok('渲染：标题 id 不重复', new Set(h2Ids).size === h2Ids.length);
   ok('渲染：--link-urls 生效', /class="link-url"/.test(html));
   ok('渲染：无占位符残留', !/\{\{[A-Z_]+\}\}/.test(html));
-  ok('渲染：非 gb 类型不注入 Paged.js（行为零回归）', !/pagedjs/.test(html));
+  ok('渲染：有目录文档注入 Paged.js 以计算条目页码', /pagedjs/.test(html));
   ok('封面：非 gb 类型不引用 GB 标志', !/gb-logo\./.test(html));
   ok('gb 元数据：非 gb 类型不透传 gb: meta', !/<meta name="gb:/.test(html));
   ok('渲染：无 undefined/NaN 泄漏', !/undefined|NaN/.test(html));

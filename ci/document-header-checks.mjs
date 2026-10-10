@@ -27,6 +27,36 @@ test('TOC excludes H1 and selects highest one or two actual levels with live anc
 });
 test('TOC keeps the chosen heading numbering, and colophon only links md2pdf', async () => {
   const html = (await web('# 标题\n\n## 小节', {toc:true,numbering:'force',numberScheme:'arabic'})).html;
-  assert.match(toc(html), />1 小节<\/a>/);
+  assert.match(toc(html), /class="toc-text">1 小节<\/span>/);
   assert.match(html, /make <a[^>]*>md2pdf<\/a> great/);
+});
+
+
+test('empty H1 removes the masthead rule and TOC titles preserve two spaces', async () => {
+  const html = (await web('#\n\n## 小节', {toc:true})).html;
+  assert.match(html, /<header class="masthead title-omitted">/);
+  assert.match(html, /class="toc-title">目  录<\/div>/);
+  assert.match(html, /class="toc-text">小节<\/span><span class="toc-dots"><\/span>/);
+});
+
+
+test('TOC PDF uses Paged.js and disables duplicate native page footers', async () => {
+  const result = await web('# 标题\n\n## 小节', {toc:true});
+  assert.equal(result.printOptions.waitPaged, true);
+  assert.equal(result.printOptions.footer, false);
+  assert.match(result.html, /window.__md2pdfPagedReady/);
+  assert.match(result.html, /target-counter\(attr\(href\), page\)/);
+});
+
+
+test('documents without TOC retain native PDF printing', async () => {
+  const result = await web('# 标题\n\n## 小节', {toc:false});
+  assert.equal(result.printOptions.waitPaged, false);
+  assert.ok(!result.html.includes('window.__md2pdfPagedReady'));
+});
+
+
+test('TOC pagination respects explicit disabling of page footers', async () => {
+  const result = await web('# 标题\n\n## 小节', {toc:true,footer:false});
+  assert.ok(!result.html.includes('@bottom-center'));
 });

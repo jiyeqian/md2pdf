@@ -98,13 +98,13 @@ h1 {
   border: 1px solid var(--rule);
 }
 .toc-title {
-  font-size: 9.5pt; text-align: center; color: var(--accent);
+  font-size: 9.5pt; text-align: center; white-space: pre; color: var(--accent);
   font-weight: 600; margin-bottom: 8px;
 }
 .toc ol { margin: 0; padding-left: 0; list-style: none; }
 .toc li { position: relative; margin: 3px 0; font-size: 9.5pt; }
 .toc li::before { content: none; }
-.toc li.toc-level-1 { padding-left: 1.5em; }
+.toc li.toc-level-1 > a { margin-left: 1.5em; }
 .toc a { color: var(--ink); text-decoration: none; border: none; }
 
 /* ---------- 章节 ---------- */
@@ -279,3 +279,10 @@ tr, li, pre, blockquote, img { break-inside: avoid; }
 section { break-inside: auto; }
 
 .masthead h1:empty { display: none; }
+
+.masthead.title-omitted { border-bottom: none; }
+.toc li a { display: flex; align-items: baseline; }
+.toc .toc-text { flex: 0 1 auto; }
+.toc .toc-dots { flex: 1 1 auto; min-width: 1em; margin: 0 .4em; border-bottom: 1px dotted var(--rule); }
+.toc li a::after { content: target-counter(attr(href), page); flex: 0 0 auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.colophon > span, .colophon a { font-size: inherit; }

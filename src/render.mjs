@@ -662,8 +662,8 @@ export async function render(src, options = {}, context = {}) {
     const items = secIds.filter(s => included.includes(s.level));
     const tocItem = s => profile.gbDoc
       ? `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
-      : `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}">${esc(s.text)}</a></li>`;
-    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目录'}</div><ol>` + items.map(tocItem).join('') + '</ol></div>';
+      : `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`;
+    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目  录'}</div><ol>` + items.map(tocItem).join('') + '</ol></div>';
   }
 
   html = sectionize(html);
@@ -832,6 +832,7 @@ export async function render(src, options = {}, context = {}) {
   }
   const out = fill(shell, {
     '{{TITLE}}': esc(title),
+    '{{MASTHEAD_CLASS}}': h1 && !title ? ' title-omitted' : '',
     '{{CSS}}': finalCss,
     '{{KICKER}}': esc(kicker),
     '{{LEAD}}': lead,
@@ -850,15 +851,15 @@ export async function render(src, options = {}, context = {}) {
 
   // 分页 HTML（--paged-html）：浏览器打开与 PDF 同款分页/页码。
   // gb 的 out 已含 Paged.js 与分侧页码规则；其他类型在此注入页码/页脚 margin box 与观感样式。
-  // 这些 CSS 只追加进 paged-html 产物，不影响 PDF 渲染路径。
+  // 有目录时 PDF 同样使用分页产物，确保目录页码基于实际分页计算。
   let pagedOut = null;
-  if (opts.pagedHtml) {
+  if (opts.pagedHtml || toc) {
     const footFont = 'font: 8pt/1 -apple-system, "PingFang SC", sans-serif; color: #8a8578; letter-spacing: .5px;';
     const pageBoxes = profile.gbDoc ? '' : [
       '@page {',
-      '  @bottom-center { content: counter(page) " / " counter(pages); ' + footFont + ' }',
-      opts.footerLeft ? '  @bottom-left { content: ' + JSON.stringify(opts.footerLeft) + '; ' + footFont + ' }' : '',
-      opts.footerRight ? '  @bottom-right { content: ' + JSON.stringify(opts.footerRight) + '; ' + footFont + ' }' : '',
+      opts.footer === false ? '' : '  @bottom-center { content: counter(page) " / " counter(pages); ' + footFont + ' }',
+      opts.footer !== false && opts.footerLeft ? '  @bottom-left { content: ' + JSON.stringify(opts.footerLeft) + '; ' + footFont + ' }' : '',
+      opts.footer !== false && opts.footerRight ? '  @bottom-right { content: ' + JSON.stringify(opts.footerRight) + '; ' + footFont + ' }' : '',
       '}',
     ].filter(Boolean).join('\n');
     const screenCss = [
@@ -884,11 +885,11 @@ export async function render(src, options = {}, context = {}) {
 
   // GB：页眉/页码改由 Paged.js 的 @page margin box 绘制（奇偶页位置不同、前置罗马/正文阿拉伯），
   // 必须关掉 Chrome 原生的 headerTemplate/footerTemplate，否则同页会出现两套页码。
-  const usePaged = !!profile.gbDoc;
+  const usePaged = !!profile.gbDoc || !!toc;
   const headerTemplate = '<span></span>';
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
-  return { title, html: assetHtml(out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
+  return { title, html: assetHtml(toc && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
     printOptions: { footer: usePaged ? false : opts.footer, footerTemplate, header: false, headerTemplate,
       landscape: opts.landscape, outline: opts.outline, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
 }
