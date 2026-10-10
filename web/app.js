@@ -271,6 +271,7 @@ function applyRangeControl(name, control) {
   const range = resolveRange(name, control);
   rangeMeta[name] = range;
   field.min = range.min; field.max = range.max; field.step = range.step; field.placeholder = '默认';
+  updateRangeScale(name, range);
   updateRangeNote(name, control);
   const slider = rangeSlider(name);
   if (slider) { slider.min = range.min; slider.max = range.max; slider.step = range.step; }
@@ -280,6 +281,16 @@ function applyRangeControl(name, control) {
 
 const rangeMeta = {};
 function rangeSlider(name) { const group = controlWrap(name); return group ? group.querySelector('[data-range-slider="' + name + '"]') : null; }
+function rangeScale(name) { const group = controlWrap(name); return group ? group.querySelector('[data-range-scale="' + name + '"]') : null; }
+// 直尺端点：把策略区间显示在刻度条左右两侧（字号 8/24、边距 10/40、行距 1/2.5）。
+function updateRangeScale(name, range) {
+  const scale = rangeScale(name);
+  if (!scale) return;
+  const min = scale.querySelector('.ruler-label--min');
+  const max = scale.querySelector('.ruler-label--max');
+  if (min) min.textContent = String(range.min);
+  if (max) max.textContent = String(range.max);
+}
 function rangeSummary(name) { const group = controlWrap(name); return group ? group.querySelector('summary.range-trigger') : null; }
 function rangeNote(name) { const group = controlWrap(name); return group ? group.querySelector('[data-range-note="' + name + '"]') : null; }
 function currentRange(name) { return rangeMeta[name] || resolveRange(name, null); }
@@ -393,7 +404,8 @@ function injectRevision(html, rev) {
     .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`)
     .replaceAll("type:'md2pdf-source'", `type:'md2pdf-source',revision:${rev}`)
     .replaceAll("type:'md2pdf-exit-fullscreen'", `type:'md2pdf-exit-fullscreen',revision:${rev}`)
-    .replaceAll("type:'md2pdf-open-repo'", `type:'md2pdf-open-repo',revision:${rev}`);
+    .replaceAll("type:'md2pdf-open-repo'", `type:'md2pdf-open-repo',revision:${rev}`)
+    .replaceAll("type:'md2pdf-preview-pointerdown'", `type:'md2pdf-preview-pointerdown',revision:${rev}`);
 }
 
 async function resolveDocument(signal) {
@@ -460,6 +472,8 @@ async function renderPreview() {
 
 window.addEventListener('message', event => {
   if (event.source !== preview.contentWindow || !event.data || event.data.revision !== previewRevision) return;
+  // 跨 sandbox iframe 预览的 pointerdown 不会冒泡到父文档：预览内按下指针时由其上报，关闭已打开的调整浮层。
+  if (event.data.type === 'md2pdf-preview-pointerdown') { closeRangePopovers(); return; }
   if (event.data.type === 'md2pdf-exit-fullscreen') {
     document.dispatchEvent(new CustomEvent('md-preview-exit-fullscreen'));
     return;
@@ -607,6 +621,12 @@ document.addEventListener('click', event => {
   const open = form.querySelector('details.range-pop[open]');
   if (!open || open.contains(event.target)) return;
   open.open = false;
+});
+// 兜底：跨 sandbox iframe 预览未就绪或未上报 pointerdown 时，点击预览会让父文档失焦且 activeElement 落到 iframe。
+// 仅在焦点确实进入预览时关闭浮层——正在编辑浮层（焦点在其内部元素）或切换到其它窗口/应用时不会误关。
+window.addEventListener('blur', () => {
+  if (document.activeElement !== preview) return;
+  closeRangePopovers();
 });
 document.addEventListener('keydown', event => {
   if (event.key !== 'Escape') return;

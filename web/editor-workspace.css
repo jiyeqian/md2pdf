@@ -73,7 +73,8 @@
 .md-wt-snippets select:focus-visible { outline: 2px solid #6f93bc; outline-offset: 2px; }
 .md-wt-toolbar button:disabled,
 .md-wt-snippets button:disabled { opacity: .5; cursor: not-allowed; }
-.md-wt-toolbar button[aria-pressed="true"] { background: #233e60; border-color: #233e60; color: #fff; }
+.md-wt-toolbar button[aria-pressed="true"],
+.md-wt-toolbar button[aria-pressed="true"]:hover:not(:disabled) { background: #fff; border-color: #233e60; color: #33465e; }
 
 .md-editor-workspace .md-editor-toolbar { display: none; }
 
@@ -132,6 +133,56 @@
 .md-wt-divider:focus-visible { outline: 2px solid #6f93bc; outline-offset: -2px; }
 .md-wt-divider.md-wt-dragging { cursor: col-resize; }
 
+/* ---------------- 标题栏缩放滑块（Markdown / 预览各自独立） ----------------
+ * 只负责容器框架与数值 bubble 的定位；轨道、刻度、小 thumb、端点标签的外观来自
+ * app.css 的共享类 .ruler-control / .ruler-slider / .ruler-scale / .ruler-label。
+ * 标题栏改为三列网格（标题 | 缩放 | 动作），缩放居中且不侵占两侧，窄屏也不溢出。 */
+.workspace.md-editor-workspace .panel-heading {
+  display: grid;
+  container-type: inline-size;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.workspace.md-editor-workspace .panel-heading h2 { justify-self: start; min-width: 0; }
+.workspace.md-editor-workspace .panel-heading .panel-actions { justify-self: end; }
+
+.md-wt-zoom {
+  position: relative;
+  align-self: stretch;
+  width: clamp(64px, calc(100cqw - 260px), 200px);
+  min-width: 0;
+  height: 100%;
+  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+.md-wt-zoom > .ruler-control { position: absolute; left: 27px; right: 30px; bottom: 6px; width: auto; }
+.md-wt-zoom > .ruler-scale { position: absolute; inset: 0; width: 100%; height: auto; margin: 0; pointer-events: none; }
+/* 端点标签沿用共享外观，仅收紧字号以适配 48px 标题栏。 */
+.md-wt-zoom .ruler-label { top: calc(100% - 16px); bottom: auto; transform: translateY(-50%); font-size: 9px; color: #9aa5b3; }
+.md-wt-zoom .ruler-label--min { left: 5px; }
+.md-wt-zoom .ruler-label--max { left: auto; right: 4px; }
+/* 当前值 bubble：横向随滑块值移动（--zoom-pos 由 JS 写入），纵向浮在轨道上方，
+ * clamp 保证到端点时也不越出容器，因此不会挡住左侧标题或右侧动作。 */
+.md-wt-zoom .md-wt-zoom-value {
+  position: absolute;
+  top: -11px;
+  left: clamp(16px, var(--zoom-pos, 50%), calc(100% - 16px));
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 1px 6px;
+  background: transparent;
+  color: #758197;
+  font-size: 10px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* ---------------- 全屏（Markdown / 预览）——同一固定 viewport 面板模式 ----------------
  * 两种全屏只切换工作区上的状态类，隐藏对面面板；iframe 与编辑器实例不被重建，
  * 因此预览与正文状态在进出全屏时都保留。 */
@@ -170,3 +221,16 @@
   .md-wt-toolbar button, .md-wt-toolbar a.md-wt-button, .md-wt-snippets button { width: 26px; height: 26px; }
   .md-wt-icon { width: 15px; height: 15px; }
 }
+/* 窄屏：缩放容器按视口收缩，端点标签与 bubble 同步缩小，避免任何横向溢出。 */
+@media (max-width: 600px) {
+
+  .md-wt-zoom .ruler-label { font-size: 8px; }
+  .md-wt-zoom .md-wt-zoom-value { font-size: 9px; padding: 1px 4px; }
+}
+@media (max-width: 390px) {
+
+  .md-wt-zoom .md-wt-zoom-value { font-size: 9px; }
+}
+
+
+.editor-footer #count{margin-left:auto;white-space:nowrap;text-align:right}

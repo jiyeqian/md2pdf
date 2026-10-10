@@ -27,6 +27,8 @@
   var MIN_PREVIEW = 380;                   // 与 app.css 的 minmax(380px, …) 对齐
   var DIVIDER = 10;                        // 与 CSS 变量 --md-wt-divider 对齐
   var CURSOR_DEBOUNCE = 200;
+  var EDITOR_BASE_FONT = 13;               // 与 editor-core 主题 '&': { fontSize: '13px' } 对齐
+  var ZOOM_MIN = 50, ZOOM_MAX = 150, ZOOM_STEP = 5, ZOOM_DEFAULT = 100;
 
   var workspace = document.querySelector('.workspace');
   var editorPanel = workspace && workspace.querySelector('.editor-panel');
@@ -43,6 +45,10 @@
   var cursorTimer = null;
   var suppressUntil = 0;       // 预览→编辑器跳转期间，抑制光标回传，避免回环
   var currentType = 'general';
+  var cmEditor = null;                     // CodeMirror 根元素；缩放只改它的 font-size，不动渲染字号
+  var markdownZoom = ZOOM_DEFAULT;         // 百分比
+  var previewZoom = ZOOM_DEFAULT;          // 百分比，发往 iframe；与 Markdown 缩放相互独立
+  var markdownZoomControl = null, previewZoomControl = null;
 
   // ---------------------------------------------------------------- 工具
   function make(tag, attrs, text) {
@@ -330,6 +336,109 @@
     });
   }
 
+  // ---------------------------------------------------------------- 缩放（Markdown / 预览）
+  // 两侧 panel-heading 各放一个缩放滑块，互不影响：
+  //   * Markdown 缩放只改 .cm-editor 的显示字号（基准 13px × 比例），不动文档渲染
+  //     字号、工具栏与标题栏；CodeMirror 活动时用 requestMeasure 重算度量，
+  //     编辑器未挂载则回退到 textarea 字号。
+  //   * 预览缩放通过 postMessage 把百分比发进 iframe，由 src/preview.mjs 在
+  //     自适应 fit() 结果上再乘 zoom/100；100% 即原始效果。
+  // 共享外观类 .ruler-control / .ruler-scale / .ruler-slider 由 app.css 统一提供，
+  // 本模块只负责容器布局与数值 bubble 的定位。
+  function clampZoom(value) {
+    var n = Number(value);
+    if (!isFinite(n)) return ZOOM_DEFAULT;
+    n = Math.round(n / ZOOM_STEP) * ZOOM_STEP;
+    return clamp(n, ZOOM_MIN, ZOOM_MAX);
+  }
+
+  // 复用 app.css 的共享直尺结构：.ruler-control（轨道行）内放滑块与数值 bubble，
+  // 下面是 .ruler-scale（与轨道端点对齐的最小最大值）。
+  function makeZoomControl(label, onZoom) {
+    var root = make('div', { class: 'md-wt-zoom', role: 'group', 'aria-label': label });
+    var control = make('div', { class: 'ruler-control' });
+    var input = make('input', {
+      type: 'range', class: 'ruler-slider',
+      min: String(ZOOM_MIN), max: String(ZOOM_MAX), step: String(ZOOM_STEP),
+      'aria-label': label, 'aria-valuetext': ZOOM_DEFAULT + '%',
+    });
+    input.value = String(ZOOM_DEFAULT);
+    var output = make('output', { class: 'md-wt-zoom-value', 'aria-hidden': 'true' }, ZOOM_DEFAULT + '%');
+    var scale = make('div', { class: 'ruler-scale', 'aria-hidden': 'true' });
+    var minLabel = make('span', { class: 'ruler-label ruler-label--min' }, ZOOM_MIN + '%');
+    var maxLabel = make('span', { class: 'ruler-label ruler-label--max' }, ZOOM_MAX + '%');
+
+    function render(percent) {
+      output.textContent = percent + '%';
+      input.setAttribute('aria-valuetext', percent + '%');
+      var pos = (percent - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN) * 100;
+      root.style.setProperty('--zoom-pos', pos + '%');
+    }
+
+    function set(percent) {
+      var pct = clampZoom(percent);
+      input.value = String(pct);
+      render(pct);
+      onZoom(pct);
+    }
+
+    input.addEventListener('input', function () { set(input.value); });
+    input.addEventListener('change', function () { set(input.value); });
+
+    control.appendChild(input);
+    control.appendChild(output);
+    scale.appendChild(minLabel);
+    scale.appendChild(maxLabel);
+    root.appendChild(control);
+    root.appendChild(scale);
+    render(ZOOM_DEFAULT);
+    return { root: root, input: input, output: output, set: set };
+  }
+
+  // 只用现有 window.mdEditor 接口；缺失时退回厂商 EditorView.findFromDOM，
+  // 避免去改 editor-core。字体尺寸变化后由 CodeMirror 重新度量，
+  // 保证选中高亮、光标与滚动位置对齐。
+  function measureEditor() {
+    try {
+      if (window.mdEditor && typeof window.mdEditor.requestMeasure === 'function') { window.mdEditor.requestMeasure(); return; }
+      var V = window.MDEditorVendor;
+      if (cmEditor && V && V.EditorView && typeof V.EditorView.findFromDOM === 'function') {
+        var view = V.EditorView.findFromDOM(cmEditor);
+        if (view && typeof view.requestMeasure === 'function') view.requestMeasure();
+      }
+    } catch (e) { /* 度量失败不影响缩放显示 */ }
+  }
+
+  function applyMarkdownZoom(percent) {
+    markdownZoom = clampZoom(percent);
+    var size = (EDITOR_BASE_FONT * markdownZoom / 100) + 'px';
+    cmEditor = editorPanel.querySelector('.cm-editor');
+    var target = cmEditor || editorPanel.querySelector('textarea');
+    if (target && target.style) target.style.fontSize = size;
+    measureEditor();
+  }
+
+  function sendPreviewZoom() {
+    if (!previewFrame || !previewFrame.contentWindow) return;
+    try { previewFrame.contentWindow.postMessage({ type: 'md2pdf-preview-zoom', zoom: previewZoom }, '*'); }
+    catch (e) { /* 跨源异常忽略 */ }
+  }
+
+  function buildZoomControls() {
+    var editorHeading = editorPanel.querySelector('.panel-heading');
+    var previewHeading = previewPanel.querySelector('.panel-heading');
+    markdownZoomControl = makeZoomControl('Markdown 缩放', function (pct) { applyMarkdownZoom(pct); });
+    previewZoomControl = makeZoomControl('排版预览缩放', function (pct) { previewZoom = clampZoom(pct); sendPreviewZoom(); });
+    insertZoom(editorHeading, markdownZoomControl);
+    insertZoom(previewHeading, previewZoomControl);
+  }
+
+  function insertZoom(heading, control) {
+    if (!heading || !control) return;
+    var actions = heading.querySelector('.panel-actions');
+    heading.insertBefore(control.root, actions || null);
+  }
+
   // ---------------------------------------------------------------- 分隔条
   function buildDivider() {
     divider = make('div', {
@@ -541,6 +650,7 @@
     if (ready) return;
     ready = true;
     setEnabled(true);
+    applyMarkdownZoom(markdownZoom); // 编辑器就绪后套用当前缩放（含 textarea 兜底）
   }
 
   function wireEvents() {
@@ -552,6 +662,12 @@
       if (typeof type === 'string' && type) { currentType = type; workspace.setAttribute('data-document-type', type); }
     });
     document.addEventListener('keydown', onKeydown, true);
+    // 预览就绪后重新下发当前缩放：iframe 重载会丢失状态；只接受预览窗口的消息。
+    window.addEventListener('message', function (event) {
+      if (!previewFrame || event.source !== previewFrame.contentWindow) return;
+      if (!event.data || event.data.type !== 'md2pdf-ready') return;
+      sendPreviewZoom();
+    });
     window.addEventListener('resize', function () {
       if (ratio == null || isNarrow()) return;
       var rect = workspace.getBoundingClientRect();
@@ -564,6 +680,7 @@
   buildToolbar();
   buildDivider();
   buildFullscreenButtons();
+  buildZoomControls();
   restoreRatio();
   wireEvents();
   setEnabled(ready);
