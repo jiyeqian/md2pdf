@@ -159,7 +159,7 @@
   gap: 2px;
 }
 .md-wt-zoom > .ruler-control { width: 100%; }
-.md-wt-zoom > .ruler-scale { width: 100%; }
+.md-wt-zoom > .ruler-scale { width: 100%; margin-top: -4px; }
 /* 端点标签沿用共享外观，仅收紧字号以适配 48px 标题栏。 */
 .md-wt-zoom .ruler-label { font-size: 9px; color: #9aa5b3; }
 /* 当前值 bubble：横向随滑块值移动（--zoom-pos 由 JS 写入），纵向浮在轨道上方，

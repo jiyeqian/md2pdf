@@ -62,15 +62,15 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
  * 细灰轨道与淡色端点，端点下方显示 min/max；thumb 中性灰且不填充进度。 */
 .ruler-control{display:flex;align-items:center;gap:8px;width:100%}
 .ruler-slider{-webkit-appearance:none;appearance:none;flex:1 1 auto;min-width:0;width:auto;height:20px;margin:0;padding:0;background:transparent;border:0;box-shadow:none;cursor:pointer}
-.ruler-slider::-webkit-slider-runnable-track{height:8px;border-radius:1px;background:radial-gradient(circle at 4px 50%,#d9dfe7 0 3px,transparent 3.5px),radial-gradient(circle at calc(100% - 4px) 50%,#d9dfe7 0 3px,transparent 3.5px),linear-gradient(#cdd4de,#cdd4de) center/ calc(100% - 8px) 2px no-repeat}
-.ruler-slider::-moz-range-track{height:8px;border-radius:1px;background:radial-gradient(circle at 4px 50%,#d9dfe7 0 3px,transparent 3.5px),radial-gradient(circle at calc(100% - 4px) 50%,#d9dfe7 0 3px,transparent 3.5px),linear-gradient(#cdd4de,#cdd4de) center/ calc(100% - 8px) 2px no-repeat}
-.ruler-slider::-moz-range-progress{height:2px;border-radius:1px;background:radial-gradient(circle at 4px 50%,#d9dfe7 0 3px,transparent 3.5px),radial-gradient(circle at calc(100% - 4px) 50%,#d9dfe7 0 3px,transparent 3.5px),linear-gradient(#cdd4de,#cdd4de) center/ calc(100% - 8px) 2px no-repeat}
+.ruler-slider::-webkit-slider-runnable-track{height:8px;border-radius:1px;background:linear-gradient(#b8c2cf,#b8c2cf) 4px center/1px 4px no-repeat,linear-gradient(#b8c2cf,#b8c2cf) calc(100% - 4px) center/1px 4px no-repeat,linear-gradient(#cdd4de,#cdd4de) center/calc(100% - 8px) 2px no-repeat}
+.ruler-slider::-moz-range-track{height:8px;border-radius:1px;background:linear-gradient(#b8c2cf,#b8c2cf) 4px center/1px 4px no-repeat,linear-gradient(#b8c2cf,#b8c2cf) calc(100% - 4px) center/1px 4px no-repeat,linear-gradient(#cdd4de,#cdd4de) center/calc(100% - 8px) 2px no-repeat}
+.ruler-slider::-moz-range-progress{height:2px;border-radius:1px;background:#cdd4de}
 .ruler-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:8px;height:16px;margin-top:-4px;border:0;border-radius:3px;background:#8a94a3}
 .ruler-slider::-moz-range-thumb{width:8px;height:16px;border:0;border-radius:3px;background:#8a94a3}
 .ruler-slider:focus{outline:none}
 .ruler-slider:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px #fff,0 0 0 4px #6f93bc}
 .ruler-slider:focus-visible::-moz-range-thumb{box-shadow:0 0 0 2px #fff,0 0 0 4px #6f93bc}
-.ruler-scale{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:0;width:100%;height:14px;padding:0 4px;color:#9aa5b3;font-size:10px;line-height:1}
+.ruler-scale{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:0;width:100%;height:10px;padding:0 4px;color:#9aa5b3;font-size:10px;line-height:1}
 .ruler-label{position:absolute;bottom:0;font-variant-numeric:tabular-nums;transform:translateX(-50%)}
 .ruler-label--min{left:4px}
 .ruler-label--max{left:calc(100% - 4px)}
@@ -87,4 +87,4 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .topbar-tagline{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;color:#9aa5b3;font-size:11px;font-weight:400;letter-spacing:1px;white-space:nowrap;pointer-events:none}
 @media(max-width:700px){.topbar{height:94px;padding-bottom:22px}.topbar-tagline{top:auto;bottom:8px;transform:translateX(-50%);font-size:10px;letter-spacing:.8px}}
 
-.range-popover > .ruler-scale{width:calc(100% - 34px)}
+.range-popover > .ruler-scale{width:calc(100% - 34px);margin-top:-10px}
