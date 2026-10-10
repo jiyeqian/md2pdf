@@ -290,7 +290,7 @@ test('行为：双全屏互斥、再次点击退出、Esc 退出（vm 执行真�
   const { workspace, editorActions, previewActions, downloadNode, buttonIn, document } = env;
 
   // 模块应把全屏按钮注入到动作区：Markdown 侧最右、预览侧在下载之后。
-  const editorBtn = buttonIn(editorActions);
+  const editorBtn = editorActions.children.find(n => n.getAttribute('aria-label') === 'Markdown 全屏写作');
   const previewBtn = previewActions.children.filter(c => c.tagName === 'BUTTON').find(b => b !== downloadNode);
   assert.ok(editorBtn, '应注入 Markdown 全屏按钮');
   assert.ok(previewBtn, '应注入预览全屏按钮');
@@ -346,7 +346,7 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   const all = walk(env.editorPanel, []);
   const toolbar = all.find(n => n.classList && n.classList.contains('md-wt-toolbar'));
   assert.ok(toolbar, '应生成工作台工具条');
-  assert.ok(!all.some(n => n.tagName === 'INPUT'), '工具栏不应再含隐藏复选框 input');
+  assert.ok(!all.some(n => n.tagName === 'INPUT' && n.getAttribute('type') === 'checkbox'), '工具栏不应再含隐藏复选框 input');
 
   const buttons = all.filter(n => n.tagName === 'BUTTON' && n.classList.contains('md-wt-button'));
   assert.ok(buttons.length >= 15, '图标按钮数量偏少：' + buttons.length);
@@ -373,7 +373,7 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
 
   const templateLink = env.editorActions.children.find(n => n.getAttribute && n.getAttribute('id') === 'browse-examples');
   assert.ok(templateLink, '标题栏应含「从模板创建」锚点');
-  assert.equal(env.editorActions.children.at(-2), templateLink, '模板入口应紧邻全屏按钮左侧');
+  assert.equal(env.editorActions.children.at(-3), templateLink, '模板入口应位于保存按钮左侧');
   assert.equal(templateLink.className, 'icon-button');
   assert.ok(!walk(toolbar, []).includes(templateLink), '工具条不再重复模板入口');
   assert.equal(templateLink.tagName, 'A', '从模板创建应是锚点而非命令按钮');
@@ -406,7 +406,7 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
 
 // ---------------------------------------------------------------- 选项模型（index.html 静态）
 test('index.html：「标题编号」合并菜单替代旧的章节编号 / 编号方案两个控件', () => {
-  assert.match(indexHtml, /<label data-control="numbering">标题编号<select name="numbering">/);
+  assert.match(indexHtml, /<label data-control="numbering">编号<select name="numbering">/);
   assert.ok(!indexHtml.includes('name="numberScheme"'), '不应再有独立的编号方案控件');
   assert.ok(!/data-control="numberScheme"/.test(indexHtml), '不应再有独立的编号方案控件外壳');
   assert.ok(!indexHtml.includes('编号方案'), '旧「编号方案」控件文案应已移除');
@@ -653,4 +653,12 @@ test('预览点击关闭浮层仅接受当前 iframe 与当前 revision 的消�
   emit({ source: env.preview.contentWindow, data: { type: 'md2pdf-preview-pointerdown', revision: 7 } });
   assert.equal(popover.open, false);
   assert.match(env.sandbox.injectRevision("type:'md2pdf-preview-pointerdown'", 7), /revision:7/);
+});
+
+
+test('heading file buttons follow open, template, save, fullscreen order', () => {
+  const env = fakeEnvironment();
+  vm.runInContext(wsJs, env.sandbox);
+  const labels = env.editorActions.children.filter(n => ['BUTTON', 'A'].includes(n.tagName)).map(n => n.getAttribute('aria-label'));
+  assert.deepEqual(labels, ['打开 Markdown 文件', '从模板创建', '保存 Markdown 文件', 'Markdown 全屏写作']);
 });

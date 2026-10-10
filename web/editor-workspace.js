@@ -95,6 +95,8 @@
   // 默认开启的同步定位是一个带 aria-pressed 的图标开关按钮。
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var ICONS = {
+    open: [{ d: 'M3 6h5l2 2h7v7H3z' }, { d: 'M3 6V4h5l2 2h5v2' }],
+    save: [{ d: 'M4 3h10l3 3v11H4z' }, { d: 'M7 3v5h6V3M7 17v-6h7v6' }],
     undo: [{ d: 'M7 5.2 3.6 8.6 7 12' }, { d: 'M3.6 8.6H12a4.4 4.4 0 0 1 0 8.8H9.4' }],
     redo: [{ d: 'M13 5.2 16.4 8.6 13 12' }, { d: 'M16.4 8.6H8a4.4 4.4 0 0 0 0 8.8h2.6' }],
     find: [{ circle: [8.8, 8.8, 4.8] }, { d: 'M12.5 12.5 16.4 16.4' }],
@@ -562,6 +564,50 @@
     return button;
   }
 
+  var markdownFilename = 'document.md';
+
+  function fileStatus(message, error) {
+    var status = document.querySelector('#status');
+    if (status) { status.textContent = message; status.setAttribute('data-error', String(!!error)); }
+  }
+
+  function makeFileButton(label, icon, action) {
+    var button = make('button', { type: 'button', class: 'icon-button', 'aria-label': label, title: label });
+    button.appendChild(iconSvg(icon));
+    button.addEventListener('click', action);
+    return button;
+  }
+
+  function buildFileButtons(actions) {
+    var input = make('input', { type: 'file', accept: '.md,.markdown,.mdown,text/markdown,text/plain', hidden: '' });
+    actions.appendChild(input);
+    input.addEventListener('change', async function () {
+      var file = input.files && input.files[0];
+      input.value = ''; // 允许再次打开同一文件。
+      if (!file) return;
+      if (!/\.(md|markdown|mdown)$/i.test(file.name)) { fileStatus('请选择 Markdown 文件（.md）。', true); return; }
+      try {
+        var text = await file.text();
+        if (!window.mdEditor || typeof window.mdEditor.setValue !== 'function') throw new Error('editor unavailable');
+        window.mdEditor.setValue(text.replace(/^\uFEFF/, ''));
+        markdownFilename = file.name;
+        focusEditor();
+      } catch (e) { fileStatus('无法读取 Markdown 文件，请重试。', true); }
+    });
+    actions.appendChild(makeFileButton('打开 Markdown 文件', 'open', function () { input.click(); }));
+  }
+
+  function saveMarkdown() {
+    if (!window.mdEditor || typeof window.mdEditor.getValue !== 'function') return;
+    var blob = new Blob([window.mdEditor.getValue()], { type: 'text/markdown;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var link = make('a', { href: url, download: markdownFilename });
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
   // 在两侧 panel-heading 的动作区注入全屏按钮：Markdown 侧位于最右，
   // 预览侧追加在下载按钮之后，全屏始终位于该栏最右。
   function buildFullscreenButtons() {
@@ -573,8 +619,10 @@
     editorFullscreenBtn = makeFullscreenButton('Markdown 全屏写作', '全屏写作（Esc 退出）');
     editorFullscreenBtn.addEventListener('click', function () { toggleFullscreen('editor'); });
     if (editorActions) {
+      buildFileButtons(editorActions);
       var templateLink = appendItem(editorActions, { icon: 'template', label: '从模板创建', hint: '从模板创建', href: '/examples', id: 'browse-examples' });
       templateLink.className = 'icon-button';
+      editorActions.appendChild(makeFileButton('保存 Markdown 文件', 'save', saveMarkdown));
       editorActions.appendChild(editorFullscreenBtn);
     }
 
