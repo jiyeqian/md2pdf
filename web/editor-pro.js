@@ -171,7 +171,7 @@ function transformLines(sel, kind) {
         : headingPrefix + line;
     }
     if (listMark) {
-      if (!line.trim()) return line;
+      if (!line.trim()) return block.length === 1 ? listMark : line;
       return ANY_LIST_MARK.test(line) ? line.replace(ANY_LIST_MARK, listMark) : listMark + line;
     }
     return quoting ? line.replace(/^\s*>\s?/, '') : '> ' + line;
@@ -289,6 +289,7 @@ function insert(name) {
     switch (name) {
       case 'bold': wrapSelection(sel, '**', '**', '加粗文字'); break;
       case 'italic': wrapSelection(sel, '*', '*', '斜体文字'); break;
+      case 'strikethrough': wrapSelection(sel, '~~', '~~', '删除线文字'); break;
       case 'code': wrapSelection(sel, '\u0060', '\u0060', 'code'); break;
       case 'link': insertLink(sel); break;
       case 'inline-math': wrapSelection(sel, '$', '$', '公式'); break;

@@ -159,7 +159,7 @@ test('editor-workspace.js：工具栏为分组 SVG 图标按钮，title/aria-lab
   for (const token of ['md-wt-group--history', 'md-wt-group--format', 'md-wt-group--insert', 'md-wt-group--academic', 'md-wt-group--view']) {
     assert.ok(wsJs.includes(token), '缺少分组：' + token);
   }
-  for (const token of ["label: '撤销'", "action: 'undo'", "label: '查找与替换'", "iconButton('basicFormat', '基础格式'", "label: '一级标题'", "label: '二级标题'", "label: '三级标题'", "label: '粗体'", "label: '斜体'", "label: '无序列表（*）'", "label: '无序列表（-）'", "label: '有序列表'", "label: '链接'", "label: '引用块'", "label: '行内代码'", "label: '行内公式'", "label: '参考文献'", "label: 'BibTeX参考文献'", "label: 'DOI参考文献'", "label: '公式块'", "label: '图表引用'", "label: '公式引用'", "SHORTCUTS = {"]) {
+  for (const token of ["label: '撤销'", "action: 'undo'", "label: '查找与替换'", "iconButton('basicFormat', '基础格式'", "label: '一级标题'", "label: '二级标题'", "label: '三级标题'", "label: '粗体'", "label: '斜体'", "label: '无序列表'", "label: '有序列表'", "label: '链接'", "label: '引用块'", "label: '行内代码'", "label: '行内公式'", "label: '参考文献'", "label: 'BibTeX参考文献'", "label: 'DOI参考文献'", "label: '公式块'", "label: '图表引用'", "label: '公式引用'", "SHORTCUTS = {"]) {
     assert.ok(wsJs.includes(token), '缺少按钮文案：' + token);
   }
   // 插入组挂载点（图片按钮由图片模块挂入）
@@ -395,7 +395,7 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   const basicMenu = all.find(n => n.getAttribute && n.getAttribute('role') === 'menu');
   assert.ok(basicMenu && basicMenu.hidden === true, '第二级面板默认隐藏');
   const menuLabels = (basicMenu.children || []).reduce((out, row) => out.concat((row.children || []).map(c => c.getAttribute('aria-label'))), []);
-  for (const label of ['一级标题', '二级标题', '三级标题', '粗体', '斜体', '无序列表（*）', '无序列表（-）', '有序列表', '链接', '引用块', '行内代码', '行内公式']) assert.ok(menuLabels.includes(label), '第二级缺少：' + label);
+  for (const label of ['一级标题', '二级标题', '三级标题', '粗体', '斜体', '无序列表', '有序列表', '链接', '引用块', '行内代码', '行内公式']) assert.ok(menuLabels.includes(label), '第二级缺少：' + label);
   basicButton.dispatch('click', { preventDefault() {} });
   assert.equal(basicButton.getAttribute('aria-expanded'), 'true', '点击应展开第二级面板');
   assert.equal(basicMenu.hidden, false);
@@ -476,6 +476,11 @@ test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执�
   assert.equal(basicMenu.hidden, true, '插入后面板应关闭');
   assert.ok(focused.length >= 1, '插入后应把焦点交还编辑器');
 
+  itemFor('删除线').dispatch('click', {});
+  itemFor('分割线').dispatch('click', {});
+  assert.deepEqual(inserted.slice(-2), ['strikethrough', 'rule']);
+  assert.ok(itemFor('无序列表'));
+
   itemFor('行内公式').dispatch('click', {});
   topButton('图表引用').dispatch('click', {});
   topButton('公式引用').dispatch('click', {});
@@ -498,7 +503,7 @@ test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执�
   // Shift 会改变 event.key（US 布局 '&' '*' '('），须用 event.code 命中物理数字。
   inserted.length = 0;
   press('&', { metaKey: true, shiftKey: true, code: 'Digit7' });
-  assert.deepEqual(inserted, ['ul-star'], 'Mod+Shift+7（物理键）→ 无序列表（*）');
+  assert.deepEqual(inserted, ['ul-dash'], 'Mod+Shift+7（物理键）→ 无序列表');
   inserted.length = 0;
   press('*', { ctrlKey: true, shiftKey: true, code: 'Digit8' });
   assert.deepEqual(inserted, ['ul-dash'], 'Mod+Shift+8（物理键）→ 无序列表（-）');

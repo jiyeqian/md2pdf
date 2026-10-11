@@ -660,8 +660,8 @@
     button.className = 'md-wt-button md-image-insert';
     // Keep the dynamically mounted button in its group's arrow-key navigation.
     button.tabIndex = container.closest('[role="group"]') ? -1 : 0;
-    button.setAttribute('aria-label', '插入图片');
-    button.title = '插入图片';
+    button.setAttribute('aria-label', '图片');
+    button.title = '图片';
     button.appendChild(imageIcon());
     button.addEventListener('click', function () { ensurePicker().click(); });
     container.append(button);

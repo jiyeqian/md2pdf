@@ -105,6 +105,8 @@
     heading1: [{ d: 'M3.5 5v10M10 5v10M3.5 10H10' }, { d: 'M13 9l2-2v8M13 15h4' }],
     heading3: [{ d: 'M3.5 5v10M10 5v10M3.5 10H10' }, { d: 'M13 7h4l-3 4h1a2 2 0 0 1 0 4h-2' }],
     bold: [{ d: 'M7 5.2h3.6a2.4 2.4 0 0 1 0 4.8H7z' }, { d: 'M7 10h4a2.4 2.4 0 0 1 0 4.8H7z' }],
+    strikethrough: [{ d: 'M14 6c-1-2-7-2-7 1 0 1.5 2 2 3 2M7 14c1 2 7 2 7-1 0-1-1-1.5-2-2M3 10h14' }],
+    rule: [{ d: 'M3 10h14' }],
     italic: [{ d: 'M9.6 5.2h4.4' }, { d: 'M6 14.8h4.4' }, { d: 'M11.6 5.2 8.4 14.8' }],
     link: [{ d: 'M8.4 11.6a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-1 1' }, { d: 'M11.6 8.4a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l1-1' }],
     quote: [{ d: 'M6.2 7.4h2.6v2.6a2.6 2.6 0 0 1-2.6 2.6' }, { d: 'M11.6 7.4h2.6v2.6a2.6 2.6 0 0 1-2.6 2.6' }],
@@ -203,7 +205,7 @@
     bold: 'Mod-B', italic: 'Mod-I', link: 'Mod-K',
     code: 'Mod-Shift-E', 'inline-math': 'Mod-Shift-X', quote: 'Mod-Shift-.',
     h1: 'Mod-Alt-1', h2: 'Mod-Alt-2', h3: 'Mod-Alt-3',
-    'ul-star': 'Mod-Shift-7', 'ul-dash': 'Mod-Shift-8', ol: 'Mod-Shift-9'
+    'ul-dash': 'Mod-Shift-8', ol: 'Mod-Shift-9'
   };
   var IS_MAC = (function () {
     try {
@@ -250,11 +252,12 @@
     ] },
     { label: '强调', items: [
       { icon: 'bold', label: '粗体', action: 'bold', insert: 'bold' },
-      { icon: 'italic', label: '斜体', action: 'italic', insert: 'italic' }
+      { icon: 'italic', label: '斜体', action: 'italic', insert: 'italic' },
+      { icon: 'strikethrough', label: '删除线', action: 'strikethrough', insert: 'strikethrough' },
+      { icon: 'rule', label: '分割线', action: 'rule', insert: 'rule' }
     ] },
     { label: '列表', items: [
-      { icon: 'listStar', label: '无序列表（*）', action: 'ul-star', insert: 'ul-star' },
-      { icon: 'listDash', label: '无序列表（-）', action: 'ul-dash', insert: 'ul-dash' },
+      { icon: 'listDash', label: '无序列表', action: 'ul-dash', insert: 'ul-dash' },
       { icon: 'listOl', label: '有序列表', action: 'ol', insert: 'ol' }
     ] },
     { label: '行内元素', items: [
@@ -885,7 +888,7 @@
     }
     if (shift && !alt) {
       var shiftDigit = digitFromEvent(event);
-      if (shiftDigit === '7') return 'ul-star';
+      if (shiftDigit === '7') return 'ul-dash';
       if (shiftDigit === '8') return 'ul-dash';
       if (shiftDigit === '9') return 'ol';
       if (key === 'e') return 'code';
