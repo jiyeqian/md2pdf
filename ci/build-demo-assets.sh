@@ -6,7 +6,7 @@
 # 产物：
 #   examples/general-elegant.pdf / general-minimal.pdf（general.md 用各主题渲染）
 #   docs/theme-<theme>.png            （上面 PDF 的第 1 页，供 README 展示）
-#   examples/skill.pdf / paper.pdf / README.pdf / gb.pdf（各类型样例）
+#   examples/skill.pdf / paper.pdf / gb.pdf（各类型样例）
 #
 # 增量策略（项目约定）：只在输入（源 md / 主题与样式 / 渲染器）比产物新时才重渲，
 # 无关样例自动跳过 —— 避免 PDF 时间戳带来的无意义 diff。
@@ -64,7 +64,6 @@ build_sample() { # <name> <md> [额外依赖...]
 }
 build_sample skill   examples/skill.md   templates/skill.md
 build_sample paper   examples/paper.md   templates/paper.md examples/control-loop.png examples/grasp-pose.svg
-build_sample README  examples/README.md  templates/readme.md
 build_sample gb      examples/gb.md      templates/gb.md
 
 # README 国家标准效果图：使用已有 GB 示例 PDF 的封面。
@@ -75,4 +74,4 @@ else
   report "skip" docs/theme-gb.png
 fi
 
-echo "✓ examples 产物已同步（general-elegant/minimal、skill、paper、README、gb 与 docs/theme-*.png）"
+echo "✓ examples 产物已同步（general-elegant/minimal、skill、paper、gb 与 docs/theme-*.png）"

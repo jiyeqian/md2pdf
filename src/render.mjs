@@ -136,10 +136,8 @@ function highlightCode(html, hljs) {
 
 // 图：<p><img></p> → <figure> + 题注「图 N：…」；表格前的「表：…」段 → <caption>「表 N：…」
 // 题注里可带 {#fig:x} / {#tab:x} 标签，供 \ref{} 引用
-const BADGE_HOSTS = ['shields.io', 'badgen.net', 'badge.fury.io', 'travis-ci.org', 'travis-ci.com', 'codecov.io', 'coveralls.io', 'appveyor.com', 'codacy.com', 'sonarcloud.io', 'buildkite.com', 'badge.svg'];
-const isBadgeUrl = (src) => BADGE_HOSTS.some(h => src.includes(h));
 
-function numberFloats(html, o = {}) {
+function numberFloats(html) {
   const refs = new Map();
   let figN = 0, tabN = 0;
 
@@ -149,9 +147,6 @@ function numberFloats(html, o = {}) {
     let caption = '', label = '', body = '';
     if (m.indexOf('<img') >= 0) {
       let tag = /<img\b[^>]*>/.exec(m)[0];
-      const srcM = /\bsrc="([^"]*)"/.exec(tag);
-      // 徽章图（shields.io 等）不编号、不包 figure（README 顶部常见）
-      if (o.skipBadges && srcM && isBadgeUrl(srcM[1])) return m;
       const altM = /\balt="([^"]*)"/.exec(tag);
       caption = altM ? altM[1] : '';
       const labM = /\s*\{#(fig:[\w.-]+)\}\s*/.exec(caption);
@@ -585,7 +580,7 @@ export async function render(src, options = {}, context = {}) {
   // 图/表自动编号与题注（收集标签）
   const floats = opts.floatNumbering === false
     ? { html, refs: new Map() }
-    : numberFloats(html, { skipBadges: profile.skipBadges });
+    : numberFloats(html);
   html = floats.html;
   // The editor accepts ordinary Mermaid fences without requiring a CLI figure caption.
   if (context.webSafe) html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>');

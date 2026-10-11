@@ -1,5 +1,8 @@
 # md2pdf 在线应用评估与实现路径
 
+> 当前支持 general、skill、paper、gb 四类；README 专属类型已移除。下文五类验收数据为移除前的历史记录。
+
+
 > 目标：把 md2pdf 从 CLI 扩展为在线应用——输入 Markdown，实时预览 HTML 排版，并可下载 PDF。
 > 参考形态：https://md-to.com/zh-cn/markdown-to-pdf/
 > 目标地址：https://md2pdf.app.workbuddy.host/
@@ -25,10 +28,10 @@
 ### 2.1 可复用资产
 
 - `src/md2pdf.mjs`：Markdown 解析、文档预设、章节编号、图表题注、参考文献、HTML 生成及 Chrome/CDP 打印。
-- `src/profiles.mjs`、`src/numbering.mjs`：五类文档预设和编号方案。
+- `src/profiles.mjs`、`src/numbering.mjs`：四类文档预设和编号方案。
 - `assets/`：页面模板、主题 CSS、GB 标志。
 - `vendor/`：marked、MathJax、Mermaid、highlight.js、Paged.js，支持现有 CLI 零 npm 运行时依赖。
-- `templates/`、`examples/`：五类文档的模板与示例。
+- `templates/`、`examples/`：四类文档的模板与示例。
 - `ci/validate.sh`、`ci/checks.mjs`：结构、语法、源码一致性和 HTML 行为校验；`ci/inspect-pdf.mjs` 用于检查 PDF 书签与内链。
 
 ### 2.2 尚需拆分的职责
@@ -156,7 +159,7 @@ npm start
 ```bash
 npm test                  # CLI 与 HTML 回归检查，无需浏览器
 npm run test:web          # HTTP、安全边界、队列及恢复检查
-npm run test:browser      # 真实 Chrome：五类 PDF、预览、书签、内链及错误恢复
+npm run test:browser      # 真实 Chrome：四类 PDF、预览、书签、内链及错误恢复
 ```
 
 HTML 在内存中渲染，受控脚本和 GB 标志以 data URL 提供，不访问外部资源。服务浏览器使用临时隐私会话，成功任务后清空当前页面；失败时重启浏览器，正常退出时删除临时目录。强制杀进程后的临时目录不保证自动清理。

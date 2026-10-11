@@ -11,7 +11,7 @@ const gb = PROFILES.gb.defaults;
 test('policy document exposes every type and the auto policy', () => {
   const doc = webPolicyDocument();
   assert.equal(doc.version, 1);
-  assert.deepEqual(doc.types.map(t => t.id), ['general', 'readme', 'skill', 'paper', 'gb']);
+  assert.deepEqual(doc.types.map(t => t.id), ['general', 'skill', 'paper', 'gb']);
   for (const id of doc.types.map(t => t.id)) assert.ok(doc.policy[id], '缺少类型策略：' + id);
   assert.equal(doc.autoPolicy.type, 'auto');
 });
@@ -79,7 +79,7 @@ test('assertOptionsAllowed rejects forbidden overrides', () => {
   const bad = (opts, type) => assert.throws(() => assertOptionsAllowed(opts, type), { status: 400 });
   // 非 gb 类型不得使用 gb 专属取值
   bad({ theme: 'gb' }, 'general');
-  bad({ numberScheme: 'gb' }, 'readme');
+  bad({ numberScheme: 'gb' }, 'general');
   // 未开放的编号方案（paper 无 cjk）
   bad({ numberScheme: 'cjk' }, 'paper');
   // gb：除 toc 外全部锁定，哪怕取值恰好等于模板默认也拒绝覆盖

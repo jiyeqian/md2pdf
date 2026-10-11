@@ -112,7 +112,6 @@ ok('CLI：--version 输出与 package.json 一致', ver.stdout.trim() === pkg.ve
 const TYPE_FILES = {
   general: ['templates/general.md', 'examples/general.md'],
   skill: ['templates/skill.md', 'examples/skill.md'],
-  readme: ['templates/readme.md', 'examples/README.md'],
   paper: ['templates/paper.md', 'examples/paper.md'],
   gb: ['templates/gb.md', 'examples/gb.md'],
 };
@@ -120,9 +119,9 @@ for (const [t, [tpl, ex]] of Object.entries(TYPE_FILES)) {
   ok(`对应关系：${t} → ${tpl} + ${ex}`,
     fs.existsSync(path.join(ROOT, tpl)) && fs.existsSync(path.join(ROOT, ex)));
 }
-// readme 样例自身就是 examples 导览：应同时覆盖五个类型的介绍
+// 示例导览应覆盖全部四个类型
 const exReadme = readIf(path.join(ROOT, 'examples', 'README.md'));
-ok('对应关系：examples/README.md 介绍全部五类示例',
+ok('对应关系：examples/README.md 介绍全部四类示例',
   ['general.md', 'skill.md', 'paper.md', 'gb.md', 'templates'].every(k => exReadme.includes(k)));
 
 // gb 结构化元数据（对齐 SAMR 平台字段）：模板收录 + HTML meta 透传
@@ -143,25 +142,8 @@ const rBad = run(['examples/general.md', '--html-only', '--type', 'nope', '-o', 
 ok('profile：未知 --type 报错且退出非 0', rBad.status !== 0 && /未知文档类型/.test(rBad.stderr || ''),
   `status=${rBad.status}`);
 
-// readme profile：默认加目录 + 徽章不编号（真实插图仍编号）
-const rmDir = path.join(os.tmpdir(), 'md2pdf-ci-readme');
-fs.mkdirSync(rmDir, { recursive: true });
-const realImg = 'file://' + path.join(ROOT, 'examples', 'control-loop.png');
-fs.writeFileSync(path.join(rmDir, 'README.md'), [
-  '# 示例项目', '',
-  '![build](https://img.shields.io/badge/build-passing-green)', '',
-  '## 安装', '',
-  '## 用法', '',
-  '![架构图](' + realImg + ')', ''
-].join('\n'));
-const rReadme = run([path.join(rmDir, 'README.md'), '--html-only', '-o', path.join(rmDir, 'out.html')]);
-const readmeHtml = readIf(path.join(rmDir, 'out.html'));
-ok('profile：README.md 自动探测为 readme（默认加目录）',
-  rReadme.status === 0 && /class="toc"/.test(readmeHtml), `status=${rReadme.status}`);
-ok('profile：readme 徽章不编号（不包 figure）',
-  /<img[^>]*shields\.io/.test(readmeHtml) && !/<figure[^>]*><img[^>]*shields\.io/.test(readmeHtml));
-ok('profile：readme 真实插图仍编号（图 N）',
-  /<figcaption>图 \d+：架构图<\/figcaption>/.test(readmeHtml));
+const rReadmeRemoved = run(['examples/general.md', '--type', 'readme', '--html-only']);
+ok('profile：已移除的 readme 类型明确报错', rReadmeRemoved.status !== 0 && /未知文档类型/.test(rReadmeRemoved.stderr));
 
 // paper profile：frontmatter abstract/keywords → 报头三件套（作者/摘要/关键词）
 const ppDir = path.join(os.tmpdir(), 'md2pdf-ci-paper');

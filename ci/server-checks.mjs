@@ -228,7 +228,7 @@ test('serves policy, example catalog and allowlisted example sources', async t =
   const catalogRes = await fetch(app.url + '/api/examples');
   assert.equal(catalogRes.status, 200);
   const { examples } = await catalogRes.json();
-  assert.deepEqual(examples.map(e => e.id), ['general', 'skill', 'readme', 'paper', 'gb']);
+  assert.deepEqual(examples.map(e => e.id), ['general', 'skill', 'paper', 'gb']);
   for (const e of examples) {
     assert.equal(typeof e.type, 'string');
     assert.ok(e.title && e.description, '目录项需带 id/type/title/description');

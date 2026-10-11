@@ -8,7 +8,7 @@
 ## 1. 背景
 
 md2pdf 是一套**通用** Markdown → 中文 A4 PDF 管线。但不同用途的 md 对版式要求差异很大：
-Agent 技能文档、国家标准、博客文章、README、论文……它们的「报头、编号、区块样式」各不相同。
+Agent 技能文档、国家标准、博客文章、论文……它们的「报头、编号、区块样式」各不相同。
 
 目标：在不破坏通用能力的前提下，让转换**按文档用途自动适配**。
 
@@ -66,7 +66,6 @@ GB/T 1.1-2020 结构：
 
 | 类型 | 特征 | 建议优先级 |
 | --- | --- | --- |
-| README.md | badge（行内小图）、TOC、大量代码块 | **已支持**（`readme` profile：默认目录 + 徽章不编号） |
 | 学术论文 md | 中英文摘要、关键词、章节、参考文献（GB/T 7714 已有） | **已支持**（`paper` profile：作者行/摘要块/关键词行） |
 | 文档站 md（VitePress / Docusaurus / GitBook） | 容器提示块 `::: tip`、层级深 | 高（语法属扩展语法） |
 | Obsidian md | `[[双链]]`、`> [!note]` callout、`#标签` | 中（属扩展语法） |
@@ -124,7 +123,6 @@ GB/T 1.1-2020 结构：
 | --- | --- | --- |
 | **P0** | Profile 骨架 + `--type` + 自动探测；`isSkill` 收编进 `skill` profile | **已完成** |
 | P1 | Jekyll profile（仅 frontmatter 报头，不含 Liquid） | 待办 |
-| P1′ | **`readme` profile**（文件名识别 + 默认目录 + 徽章不编号） | **已完成** |
 | P2 | 编号方案抽象（arabic / gb / cjk / chapter） | **已完成** |
 | P3 | GB 专项（封面、章条编号、规范性引用文件、术语、附录） | **已完成**（`gb` profile + `theme-gb.css` + `docs/gb-template.md`） |
 | P4 | 文档站扩展语法（admonition / callout / wikilink） | 待办（已决策延后） |

@@ -26,7 +26,7 @@ const NO_COMPLIANCE = '本面板仅做 Markdown 书写一致性检查（大纲�
 const GB_ADVISORY = '手写章节号提示为书写一致性建议，仅供参考；不会改动你的原文。';
 
 const TYPE_LABELS = {
-  auto: '自动识别', general: '通用文档', readme: 'README', skill: '技能文档',
+  auto: '自动识别', general: '通用文档', skill: '技能文档',
   paper: '论文', gb: '国家标准', '': '自动识别',
 };
 
@@ -84,7 +84,6 @@ function inferType(value, explicit) {
   const fm = frontmatterOf(text);
   if (fm && /^\s*name\s*:/m.test(fm)) return 'skill';
   if (/GB\/T\s|标准号|^#\s*前言/m.test(text)) return 'gb';
-  if (/^#\s*README\b/m.test(text) || /\bREADME\b/.test(text)) return 'readme';
   if (/(?:^|\n)#\s/m.test(text) && /摘要|关键词|Abstract|参考文献/.test(text)) return 'paper';
   return 'general';
 }
