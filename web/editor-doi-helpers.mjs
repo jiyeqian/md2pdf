@@ -1,7 +1,7 @@
 // md2pdf web editor — DOI 引用插入的纯逻辑（无 DOM、无网络、可单测）
 //
 // 归属：把「DOI 规范化 / 脚注扫描与去重 / 插入计划」做成纯函数，供 editor-doi.js
-// （对话框 UI）与 ci/editor-doi-checks.mjs 共用。本模块不碰 DOM、不发请求、
+// （对话框 UI）与 tests/editor-doi-checks.mjs 共用。本模块不碰 DOM、不发请求、
 // 不直接改文档——只产出「一次事务」的 change 列表。
 //
 // 依赖：无（不 import 其它模块，便于在 Node 里直接单测）。

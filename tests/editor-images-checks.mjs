@@ -3,7 +3,7 @@
 // 覆盖：文件格式/容量判定、标题安全转义、唯一图引用 ID、块与段落拼装、
 // base64 折叠范围识别，以及内核扩展接口与折叠实现（非 CSS 截断）的源码契约。
 //
-// Run: node --test ci/editor-images-checks.mjs
+// Run: node --test tests/editor-images-checks.mjs
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

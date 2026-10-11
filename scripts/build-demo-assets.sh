@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # 重新生成 examples 的 PDF 与 README 效果图 —— 源文件与产物必须始终同步。
 #
-#   bash ci/build-demo-assets.sh
+#   bash scripts/build-demo-assets.sh
 #
 # 产物：
 #   examples/general-elegant.pdf / general-minimal.pdf（general.md 用各主题渲染）
 #   docs/theme-<theme>.png            （上面 PDF 的第 1 页，供 README 展示）
-#   examples/skill.pdf / paper.pdf / README.pdf / gb.pdf（各类型样例）
+#   examples/skill.pdf / paper.pdf / gb.pdf（各类型样例）
 #
 # 增量策略（项目约定）：只在输入（源 md / 主题与样式 / 渲染器）比产物新时才重渲，
 # 无关样例自动跳过 —— 避免 PDF 时间戳带来的无意义 diff。
@@ -17,7 +17,7 @@ set -euo pipefail
 ROOT="$(cd -P "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-RENDER_DEPS="src/md2pdf.mjs assets/shell.html assets/base.css assets/theme-elegant.css assets/theme-minimal.css assets/theme-gb.css"
+RENDER_DEPS="src/md2pdf.mjs assets/shell.html assets/base.css assets/themes/elegant.css assets/themes/minimal.css assets/themes/gb.css"
 
 # need_build <output> <input...> ：输出缺失或任一输入比输出新时返回 0
 need_build() {
@@ -35,7 +35,7 @@ report() { # <action> <out>
 # general：elegant / minimal 双主题
 for t in elegant minimal; do
   out="examples/general-$t.pdf"
-  if need_build "$out" examples/general.md "assets/theme-$t.css" $RENDER_DEPS; then
+  if need_build "$out" examples/general.md "assets/themes/$t.css" $RENDER_DEPS; then
     report "→ 生成" "$out"
     node src/md2pdf.mjs examples/general.md --theme "$t" -o "$out"
   else
@@ -64,7 +64,6 @@ build_sample() { # <name> <md> [额外依赖...]
 }
 build_sample skill   examples/skill.md   templates/skill.md
 build_sample paper   examples/paper.md   templates/paper.md examples/control-loop.png examples/grasp-pose.svg
-build_sample README  examples/README.md  templates/readme.md
 build_sample gb      examples/gb.md      templates/gb.md
 
 # README 国家标准效果图：使用已有 GB 示例 PDF 的封面。
@@ -75,4 +74,4 @@ else
   report "skip" docs/theme-gb.png
 fi
 
-echo "✓ examples 产物已同步（general-elegant/minimal、skill、paper、README、gb 与 docs/theme-*.png）"
+echo "✓ examples 产物已同步（general-elegant/minimal、skill、paper、gb 与 docs/theme-*.png）"

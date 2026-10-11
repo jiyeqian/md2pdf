@@ -3,10 +3,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROFILE_NAMES } from './profiles.mjs';
 import { SCHEME_NAMES } from './numbering.mjs';
-const ASSETS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../assets');
+const THEMES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../assets/themes');
 function listThemes() {
   try {
-    return readdirSync(ASSETS).filter(f => /^theme-.+\.css$/.test(f)).map(f => f.slice(6, -4)).sort();
+    return readdirSync(THEMES).filter(f => /\.css$/.test(f)).map(f => f.replace(/\.css$/, '')).sort();
   } catch { return []; }
 }
 

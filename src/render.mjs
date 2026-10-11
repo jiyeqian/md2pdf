@@ -12,7 +12,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Web 落款占位文件名（document.md）指向的官方仓库。预览点击时按同一常量精确校验 href。
 export const REPO_URL = 'https://github.com/jiyeqian/md2pdf';
 const ASSETS = path.join(ROOT, 'assets');
-const listThemes = () => readdirSync(ASSETS).filter(f => /^theme-.+\.css$/.test(f)).map(f => f.slice(6, -4)).sort();
+const THEMES = path.join(ASSETS, 'themes');
+const listThemes = () => readdirSync(THEMES).filter(f => /\.css$/.test(f)).map(f => f.replace(/\.css$/, '')).sort();
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const stripTags = s => String(s).replace(/<[^>]+>/g, '').trim();
 // 给标签属性串追加 class（属性串可能已有 class="…"，也可能为空）
@@ -136,10 +137,8 @@ function highlightCode(html, hljs) {
 
 // 图：<p><img></p> → <figure> + 题注「图 N：…」；表格前的「表：…」段 → <caption>「表 N：…」
 // 题注里可带 {#fig:x} / {#tab:x} 标签，供 \ref{} 引用
-const BADGE_HOSTS = ['shields.io', 'badgen.net', 'badge.fury.io', 'travis-ci.org', 'travis-ci.com', 'codecov.io', 'coveralls.io', 'appveyor.com', 'codacy.com', 'sonarcloud.io', 'buildkite.com', 'badge.svg'];
-const isBadgeUrl = (src) => BADGE_HOSTS.some(h => src.includes(h));
 
-function numberFloats(html, o = {}) {
+function numberFloats(html) {
   const refs = new Map();
   let figN = 0, tabN = 0;
 
@@ -149,9 +148,6 @@ function numberFloats(html, o = {}) {
     let caption = '', label = '', body = '';
     if (m.indexOf('<img') >= 0) {
       let tag = /<img\b[^>]*>/.exec(m)[0];
-      const srcM = /\bsrc="([^"]*)"/.exec(tag);
-      // 徽章图（shields.io 等）不编号、不包 figure（README 顶部常见）
-      if (o.skipBadges && srcM && isBadgeUrl(srcM[1])) return m;
       const altM = /\balt="([^"]*)"/.exec(tag);
       caption = altM ? altM[1] : '';
       const labM = /\s*\{#(fig:[\w.-]+)\}\s*/.exec(caption);
@@ -585,7 +581,7 @@ export async function render(src, options = {}, context = {}) {
   // 图/表自动编号与题注（收集标签）
   const floats = opts.floatNumbering === false
     ? { html, refs: new Map() }
-    : numberFloats(html, { skipBadges: profile.skipBadges });
+    : numberFloats(html);
   html = floats.html;
   // The editor accepts ordinary Mermaid fences without requiring a CLI figure caption.
   if (context.webSafe) html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>');
@@ -670,12 +666,12 @@ export async function render(src, options = {}, context = {}) {
   html = sectionize(html);
 
   // CSS
-  const themeFile = path.join(ASSETS, `theme-${effTheme}.css`);
+  const themeFile = path.join(THEMES, `${effTheme}.css`);
   if (!existsSync(themeFile)) throw new Error(`未知主题：${effTheme}（可用：${listThemes().join(', ')}）`);
   const base = await readFile(path.join(ASSETS, 'base.css'), 'utf8');
   const theme = await readFile(themeFile, 'utf8');
   // 正文行距：webapp 选项 opts.lineHeight（有限数字 1.0–2.5，server 已校验范围）。
-  // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 theme-gb.css 的
+  // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 themes/gb.css 的
   // body{line-height:1.62} 直接覆盖，且 server 拒绝为 gb 传入 lineHeight。
   const effLineHeight = Number.isFinite(opts.lineHeight) ? opts.lineHeight : 1.9;
   const css = (base + '\n' + theme)

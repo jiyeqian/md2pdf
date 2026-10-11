@@ -17,7 +17,7 @@ try {
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const url = `http://127.0.0.1:${app.server.address().port}`;
   const post = (route, body) => fetch(url + route, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  for (const [type, example] of [['general', 'general.md'], ['skill', 'skill.md'], ['readme', 'README.md'], ['paper', 'paper.md'], ['gb', 'gb.md']]) {
+  for (const [type, example] of [['general', 'general.md'], ['skill', 'skill.md'], ['paper', 'paper.md'], ['gb', 'gb.md']]) {
     const md = await readFile(new URL('../examples/' + example, import.meta.url), 'utf8');
     const response = await post('/api/pdf', { md, opts: { type, toc: true } });
     assert.equal(response.status, 200, `${type}: ${response.status === 200 ? '' : await response.text()}`);
@@ -69,7 +69,7 @@ try {
   }
   // Online sources must be self-contained and render through the same public API.
   const catalog = await (await fetch(url + '/api/examples')).json();
-  assert.equal(catalog.examples.length, 5);
+  assert.equal(catalog.examples.length, 4);
   for (const item of catalog.examples) {
     const sample = await (await fetch(url + '/api/example?id=' + item.id)).json();
     const rendered = await post('/api/render', { md: sample.md, opts: { type: sample.type } });

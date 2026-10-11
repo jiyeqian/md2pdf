@@ -1,5 +1,8 @@
 # md2pdf 本地在线应用验收记录
 
+> 当前支持 general、skill、paper、gb 四类；README 专属类型已移除。下文五类验收数据为移除前的历史记录。
+
+
 ## 交付范围
 
 2026-10-02 完成计划阶段 0–2：文本渲染内核、受限 Node HTTP 服务、Markdown 编辑器、分页预览与 PDF 下载。仅本地运行，未部署到目标域名；公网环境、安全隔离和容量验收仍未进行。
@@ -44,7 +47,7 @@ npm start
 
 ```bash
 MD2PDF_ACCEPTANCE_DIR=/tmp/md2pdf-web-acceptance npm run test:browser
-node ci/inspect-pdf.mjs /tmp/md2pdf-web-acceptance/general.pdf
+node scripts/inspect-pdf.mjs /tmp/md2pdf-web-acceptance/general.pdf
 ```
 
 验证环境：macOS、Node.js v26.10.0、本机 Chrome 154。Node ≥ 18 的兼容目标保留，但本次没有单独运行 Node 18 测试。

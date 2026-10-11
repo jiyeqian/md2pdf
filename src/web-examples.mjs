@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
  *   不存在「把请求参数拼进文件路径」的路由，因此不会出现任意文件读取。
  * - 示例 Markdown 已适配在线环境：不使用本机相对图片或远程图片，
  *   需要插图时统一内嵌受支持的 data raster（PNG）。
- * - type 显式给定（README 依赖文件名才能自动识别，网页端没有文件名）。
+ * - type 显式给定，确保模板使用对应类型。
  */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -28,13 +28,6 @@ export const EXAMPLES = [
     summary: '技能文档：frontmatter 的 name / description 触发自动识别，报头带「技能文档」标识、参数表与输出说明。',
     tags: ['frontmatter 识别', '参数表', '命令示例'],
     file: 'web/examples/skill.md',
-  },
-  {
-    id: 'readme', type: 'readme',
-    title: '项目 README 导览',
-    summary: 'README：默认带目录，多级标题、链接与表格混排；在线版本不放远程徽章，避免出现未加载占位。',
-    tags: ['默认目录', '链接与表格'],
-    file: 'web/examples/readme.md',
   },
   {
     id: 'paper', type: 'paper',

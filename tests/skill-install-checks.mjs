@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const source = readFileSync(path.join(root, 'skill/SKILL.md'), 'utf8');
+const source = readFileSync(path.join(root, 'integrations/skills/md2pdf/SKILL.md'), 'utf8');
 const targets = { codex: '.codex', workbuddy: '.workbuddy', codebuddy: '.codebuddy', claude: '.claude', agents: '.agents' };
 function fixture(t) {
   const home = mkdtempSync(path.join(os.tmpdir(), 'md2pdf-skill-test-'));
@@ -75,5 +75,5 @@ test('filesystem failures return nonzero and do not follow file symlinks', t => 
 test('package has no automatic install hook', () => {
   const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
   assert.equal(pkg.scripts.postinstall, undefined);
-  assert.ok(pkg.files.includes('skill'));
+  assert.ok(pkg.files.includes('integrations'));
 });

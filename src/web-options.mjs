@@ -24,7 +24,7 @@ export const WEB_BASELINE = {
   fontSize: 10.5, lineHeight: 1.9, marginTop: 20, marginBottom: 18, marginLeft: 18, marginRight: 18,
 };
 
-export const TYPE_LABELS = { general: '通用文档', skill: '技能文档', readme: 'README', paper: '论文', gb: '国家标准' };
+export const TYPE_LABELS = { general: '通用文档', skill: '技能文档', paper: '论文', gb: '国家标准' };
 export const THEME_LABELS = { elegant: '雅致 · 墨蓝', minimal: '简洁 · 黑白', gb: '国家标准' };
 export const SCHEME_LABELS = { arabic: '1 / 1.1', gb: 'GB 章条', cjk: '一、/（一）', chapter: '第 1 章' };
 export const NUMBERING_LABELS = { auto: '自动识别', force: '强制编号', none: '不编号' };
@@ -33,7 +33,7 @@ export const OPTION_LABELS = { type: '文档类型', theme: '主题', toc: '目�
 export const FONT_SIZE_RANGE = { min: 8, max: 24, step: 0.5 };
 // 正文行距：有限数字 1.0–2.5（step 0.05），省略时保持正文默认 1.9。
 export const LINE_HEIGHT_RANGE = { min: 1, max: 2.5, step: 0.05 };
-// GB 国家标准版式的固定正文行距，须与 assets/theme-gb.css 的 body{line-height:1.62} 保持一致。
+// GB 国家标准版式的固定正文行距，须与 assets/themes/gb.css 的 body{line-height:1.62} 保持一致。
 export const GB_LINE_HEIGHT = 1.62;
 export const MARGIN_RANGE = { min: 10, max: 40 };
 
@@ -53,7 +53,6 @@ export const WEB_OPTION_SPEC = {
 const GENERAL_CAPS = { theme: ['elegant', 'minimal'], numberScheme: ['arabic', 'cjk', 'chapter'], numbering: ['auto', 'force', 'none'], toc: true, margin: true, fontSize: true, lineHeight: true };
 const TYPE_CAPABILITIES = {
   general: GENERAL_CAPS,
-  readme: GENERAL_CAPS,
   skill: GENERAL_CAPS,
   paper: { theme: ['elegant', 'minimal'], numberScheme: ['arabic', 'chapter'], numbering: ['auto', 'force', 'none'], toc: true, margin: true, fontSize: true, lineHeight: true },
   // GB：仅目录可调；主题 / 编号方案 / 编号行为 / 字号 / 版式全部锁定（应用内置国家标准模板）
@@ -64,7 +63,6 @@ const AUTO_CAPABILITIES = GENERAL_CAPS;
 const TYPE_NOTES = {
   general: ['不含其他类型特征时按通用文档排版；一级、二级标题之间的首段作为导言，标题层级自动编号。'],
   skill: ['frontmatter 含 name / description 时自动识别，报头带「技能文档」标识与元信息条。'],
-  readme: ['文件名 README.md 自动识别（网页端没有文件名，请手动选择本类型），默认带目录，顶部徽章不参与图表编号。'],
   paper: ['frontmatter 含 abstract / keywords 自动识别，自动生成作者行、摘要与关键词。'],
   gb: [
     '国家标准版式应用内置国家标准模板：封面与页眉、GB 章条编号、订口式页边距均按模板输出，不能在线修改。',
@@ -186,7 +184,7 @@ export function assertOptionsAllowed(opts, type) {
 /**
  * 由 Markdown 原文与可选的显式类型判定「生效类型」。
  * 复用 render 的 frontmatter 解析与 profiles 的 detectProfile，不另起一套启发式判定。
- * 网页端无文件名，basename 固定为空（README 需显式选择类型）。
+ * 网页端无文件名，basename 固定为空。
  */
 export function resolveWebType(md, explicit = '') {
   const { fm } = splitFrontmatter(String(md ?? ''));
@@ -231,7 +229,7 @@ export function effectiveOptions(opts = {}, type = 'general') {
     numbering: pick('numbering', WEB_BASELINE.numbering),
     toc: pick('toc', WEB_BASELINE.toc),
     fontSize: pick('fontSize', WEB_BASELINE.fontSize),
-    // GB 行距固定为内置模板值（theme-gb.css 1.62），不接受在线覆盖。
+    // GB 行距固定为内置模板值（themes/gb.css 1.62），不接受在线覆盖。
     lineHeight: type === 'gb' ? GB_LINE_HEIGHT : pick('lineHeight', WEB_BASELINE.lineHeight),
     landscape: pick('landscape', false),
     marginTop: pick('marginTop', WEB_BASELINE.marginTop),

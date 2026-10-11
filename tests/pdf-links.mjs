@@ -7,7 +7,7 @@
  *   2. 把每个 /Link 注解归类为 internal / uri / none；
  *   3. 校验 internal 目标指向的确实是一个存在的 Page 对象。
  *
- *   node ci/pdf-links.mjs <file.pdf> [<file.pdf> ...]
+ *   node tests/pdf-links.mjs <file.pdf> [<file.pdf> ...]
  *
  * 有 qpdf 时先用 qpdf --qdf 展开对象流，兼容性最好；没有也能读 Chrome/Skia
  * 直接产出的未压缩文件。
@@ -120,7 +120,7 @@ export function summarize(r) {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === realpathSync(process.argv[1])) {
   const files = process.argv.slice(2);
-  if (!files.length) { console.error('用法：node ci/pdf-links.mjs <file.pdf> ...'); process.exit(2); }
+  if (!files.length) { console.error('用法：node tests/pdf-links.mjs <file.pdf> ...'); process.exit(2); }
   for (const f of files) {
     const s = summarize(analyze(f));
     console.log('\n' + path.basename(f) + '  ' + s.pageCount + ' 页  链接 ' + s.total + '（内链 ' + s.internal + ' / 外链 ' + s.uri + ' / 无目标 ' + s.none + '）  命名目标 ' + s.namedDestinations);

@@ -1,5 +1,5 @@
 ![render](https://img.shields.io/badge/tool-%40jiyeqian%2Fmd2pdf-blue)
-![types](https://img.shields.io/badge/types-general%20%7C%20skill%20%7C%20readme%20%7C%20paper%20%7C%20gb-green)
+![types](https://img.shields.io/badge/types-general%20%7C%20skill%20%7C%20paper%20%7C%20gb-green)
 
 # md2pdf 示例导览
 
@@ -13,7 +13,6 @@
 | --- | --- | --- | --- |
 | general | [`../templates/general.md`](../templates/general.md) | [`general.md`](general.md) | [general-elegant.pdf](general-elegant.pdf) / [general-minimal.pdf](general-minimal.pdf) |
 | skill | [`../templates/skill.md`](../templates/skill.md) | [`skill.md`](skill.md) | [skill.pdf](skill.pdf) |
-| readme | [`../templates/readme.md`](../templates/readme.md) | 本文件（README.md） | [README.pdf](README.pdf) |
 | paper | [`../templates/paper.md`](../templates/paper.md) | [`paper.md`](paper.md) | [paper.pdf](paper.pdf) |
 | gb | [`../templates/gb.md`](../templates/gb.md) | [`gb.md`](gb.md) | [gb.pdf](gb.pdf) |
 
@@ -29,11 +28,6 @@
 
 frontmatter 含 name/description 即自动识别。演示技能文档的推荐结构：何时使用、快速开始、
 参数表、输出说明；报头自动带「技能文档」标识与元信息条。
-
-### README.md（本文件）—— 项目 README
-
-文件名为 README.md 即自动识别：默认加目录，顶部徽章（shields.io）自动识别且**不参与**图表编号，
-正文中的真实插图仍正常编号。你现在看到的这份排版就是渲染效果。
 
 ### paper.md —— 学术论文
 
@@ -62,6 +56,6 @@ frontmatter 含「标准号」自动识别。自动生成封面（GB 标志、�
 改了任何示例或样式后，在仓库根目录执行：
 
 ```bash
-bash ci/build-demo-assets.sh    # 按输入时间增量重渲，无关样例自动跳过
+bash scripts/build-demo-assets.sh    # 按输入时间增量重渲，无关样例自动跳过
 ```
 

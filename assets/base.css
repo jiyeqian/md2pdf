@@ -26,7 +26,7 @@ body {
   font-family: var(--font-body);
   font-size: var(--doc-font-size);
   /* 普通正文（段落 / 列表 / 引用等无独立 line-height 的元素）继承此行距；
-     标题、表格、代码、脚注、题注等各自声明行距，不受影响。GB 由 theme-gb.css 固定 1.62。 */
+     标题、表格、代码、脚注、题注等各自声明行距，不受影响。GB 由 themes/gb.css 固定 1.62。 */
   line-height: var(--doc-line-height);
   /* 中文正文不加字间距：否则 PDF 复制/检索时会被拆成单字 */
   letter-spacing: 0;

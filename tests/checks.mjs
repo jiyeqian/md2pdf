@@ -1,7 +1,7 @@
 /**
  * md2pdf 静态校验（不需要浏览器）
  *
- * 用法：node ci/checks.mjs [项目根]
+ * 用法：node tests/checks.mjs [项目根]
  *
  * 校验对象是"会真正影响输出"的约定，而不是文件是否存在这类表面项：
  *   1. 版本号一致（package.json ↔ src 里的 VERSION）
@@ -34,8 +34,8 @@ const readIf = p => (fs.existsSync(p) ? read(p) : '');
 const srcFile = path.join(ROOT, 'src', 'md2pdf.mjs');
 const shellFile = path.join(ROOT, 'assets', 'shell.html');
 const baseCssFile = path.join(ROOT, 'assets', 'base.css');
-const themeDir = path.join(ROOT, 'assets');
-const themes = fs.readdirSync(themeDir).filter(f => /^theme-.+\.css$/.test(f)).sort()
+const themeDir = path.join(ROOT, 'assets', 'themes');
+const themes = fs.readdirSync(themeDir).filter(f => /\.css$/.test(f)).sort()
   .map(f => path.join(themeDir, f));
 
 console.log(`校验目标：${ROOT}`);
@@ -112,7 +112,6 @@ ok('CLI：--version 输出与 package.json 一致', ver.stdout.trim() === pkg.ve
 const TYPE_FILES = {
   general: ['templates/general.md', 'examples/general.md'],
   skill: ['templates/skill.md', 'examples/skill.md'],
-  readme: ['templates/readme.md', 'examples/README.md'],
   paper: ['templates/paper.md', 'examples/paper.md'],
   gb: ['templates/gb.md', 'examples/gb.md'],
 };
@@ -120,9 +119,9 @@ for (const [t, [tpl, ex]] of Object.entries(TYPE_FILES)) {
   ok(`对应关系：${t} → ${tpl} + ${ex}`,
     fs.existsSync(path.join(ROOT, tpl)) && fs.existsSync(path.join(ROOT, ex)));
 }
-// readme 样例自身就是 examples 导览：应同时覆盖五个类型的介绍
+// 示例导览应覆盖全部四个类型
 const exReadme = readIf(path.join(ROOT, 'examples', 'README.md'));
-ok('对应关系：examples/README.md 介绍全部五类示例',
+ok('对应关系：examples/README.md 介绍全部四类示例',
   ['general.md', 'skill.md', 'paper.md', 'gb.md', 'templates'].every(k => exReadme.includes(k)));
 
 // gb 结构化元数据（对齐 SAMR 平台字段）：模板收录 + HTML meta 透传
@@ -133,7 +132,7 @@ ok('gb 元数据：模板 frontmatter 收录 SAMR 全部字段（键名与平台
 ok('gb 元数据：模板字段不采用注释形式（留空即可）',
   !/^#\s*[^:\n]+:\s*\S/m.test(gbTplFm[0]));
 const tmpOut = (n) => path.join(os.tmpdir(), 'md2pdf-ci-' + n + '.html');
-const rSkill = run(['skill/SKILL.md', '--html-only', '-o', tmpOut('skill')]);
+const rSkill = run(['integrations/skills/md2pdf/SKILL.md', '--html-only', '-o', tmpOut('skill')]);
 ok('profile：SKILL.md 自动探测为 skill', rSkill.status === 0 && /<div class="kicker">技能文档<\/div>/.test(readIf(tmpOut('skill'))),
   `status=${rSkill.status}`);
 const rForce = run(['examples/general.md', '--html-only', '--type', 'skill', '-o', tmpOut('force')]);
@@ -143,25 +142,8 @@ const rBad = run(['examples/general.md', '--html-only', '--type', 'nope', '-o', 
 ok('profile：未知 --type 报错且退出非 0', rBad.status !== 0 && /未知文档类型/.test(rBad.stderr || ''),
   `status=${rBad.status}`);
 
-// readme profile：默认加目录 + 徽章不编号（真实插图仍编号）
-const rmDir = path.join(os.tmpdir(), 'md2pdf-ci-readme');
-fs.mkdirSync(rmDir, { recursive: true });
-const realImg = 'file://' + path.join(ROOT, 'examples', 'control-loop.png');
-fs.writeFileSync(path.join(rmDir, 'README.md'), [
-  '# 示例项目', '',
-  '![build](https://img.shields.io/badge/build-passing-green)', '',
-  '## 安装', '',
-  '## 用法', '',
-  '![架构图](' + realImg + ')', ''
-].join('\n'));
-const rReadme = run([path.join(rmDir, 'README.md'), '--html-only', '-o', path.join(rmDir, 'out.html')]);
-const readmeHtml = readIf(path.join(rmDir, 'out.html'));
-ok('profile：README.md 自动探测为 readme（默认加目录）',
-  rReadme.status === 0 && /class="toc"/.test(readmeHtml), `status=${rReadme.status}`);
-ok('profile：readme 徽章不编号（不包 figure）',
-  /<img[^>]*shields\.io/.test(readmeHtml) && !/<figure[^>]*><img[^>]*shields\.io/.test(readmeHtml));
-ok('profile：readme 真实插图仍编号（图 N）',
-  /<figcaption>图 \d+：架构图<\/figcaption>/.test(readmeHtml));
+const rReadmeRemoved = run(['examples/general.md', '--type', 'readme', '--html-only']);
+ok('profile：已移除的 readme 类型明确报错', rReadmeRemoved.status !== 0 && /未知文档类型/.test(rReadmeRemoved.stderr));
 
 // paper profile：frontmatter abstract/keywords → 报头三件套（作者/摘要/关键词）
 const ppDir = path.join(os.tmpdir(), 'md2pdf-ci-paper');
@@ -360,7 +342,7 @@ ok('书签：帮助文本写明 --no-outline', /--no-outline\s+不生成 PDF 书
 // 实测：macOS 自带的 bash 3.2（/bin/sh）会把这个字符的首字节并进变量名 ——
 //   sh -c 'R=abc; echo "X：$R（y）"'   →   X：<乱码>y）
 // 变量展开成空、还吐出半个字符的字节。相邻处必须写 ${VAR}。
-const SHELL_FILES = ['bin/md2pdf', 'ci/validate.sh'];
+const SHELL_FILES = ['bin/md2pdf', 'scripts/validate.sh'];
 const bareThenCjk = /\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]|\$[0-9@*#?!][^\x00-\x7F]/;
 for (const f of SHELL_FILES) {
   const text = readIf(path.join(ROOT, f));
@@ -377,9 +359,9 @@ for (const f of SHELL_FILES) {
 /* ---------- 8. 技能说明书（Agent 那一层的分发） ---------- */
 // 技能包只是"说明书"，实现是 CLI —— 两层各自分发。说明书必须随仓库走，
 // 否则换了机器装好命令，Agent 仍然不认识它。
-const skillMd = readIf(path.join(ROOT, 'skill', 'SKILL.md'));
+const skillMd = readIf(path.join(ROOT, 'integrations', 'skills', 'md2pdf', 'SKILL.md'));
 const installSkill = readIf(path.join(ROOT, 'src', 'install-skill.mjs'));
-ok('技能：skill/SKILL.md 存在（说明书随仓库分发）', skillMd.length > 0);
+ok('技能：integrations/skills/md2pdf/SKILL.md 存在（说明书随仓库分发）', skillMd.length > 0);
 if (skillMd) {
   const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(skillMd);
   ok('技能：有 YAML frontmatter', !!fm);
@@ -391,9 +373,9 @@ if (skillMd) {
 }
 ok('技能：npm 不再自动安装说明书', !pkg.scripts?.postinstall);
 ok('技能：显式安装实现随包分发', installSkill.length > 0);
-ok('技能：npm 包会把 skill/ 一并发布（files 含 skill）',
-  Array.isArray(pkg.files) && pkg.files.includes('skill'),
-  'files 不含 skill 的话，装出来的包里没有 SKILL.md，显式安装无源可复制');
+ok('技能：npm 包会把 integrations/ 一并发布（files 含 integrations）',
+  Array.isArray(pkg.files) && pkg.files.includes('integrations'),
+  'files 不含 integrations 的话，装出来的包里没有 SKILL.md，显式安装无源可复制');
 
 /* ---------- 汇总 ---------- */
 console.log(`\n结果：${pass} 项通过，${fail} 项失败`);

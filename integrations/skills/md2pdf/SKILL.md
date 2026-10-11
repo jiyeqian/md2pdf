@@ -22,7 +22,7 @@ md2pdf 文件名.md --theme minimal --toc
 - **命令入口**：npm 全局 bin 目录里的 `md2pdf`
 - **程序本体**：npm 全局包 `@jiyeqian/md2pdf`（`node_modules/@jiyeqian/md2pdf/`）
 - **源码仓库**：https://github.com/jiyeqian/md2pdf
-- **本说明书**：仓库里的 `skill/SKILL.md`，通过 `md2pdf skill install` 显式安装。
+- **本说明书**：仓库里的 `integrations/skills/md2pdf/SKILL.md`，通过 `md2pdf skill install` 显式安装。
 
 **没装过 / 换了机器**：
 
@@ -74,10 +74,10 @@ md2pdf skill install --target workbuddy
 验一份 PDF 到底有没有书签：
 
 ```bash
-node ci/inspect-pdf.mjs out.pdf   # 打印书签树、内链/外链数量
+node scripts/inspect-pdf.mjs out.pdf   # 打印书签树、内链/外链数量
 ```
 
-改样式：`assets/base.css`（骨架）与 `assets/theme-*.css`（配色）。
+改样式：`assets/base.css`（骨架）与 `assets/themes/*.css`（配色）。
 用户态改 npm 全局包里的 `assets/`；开发态（见下）改仓库即时生效。
 
 ## 开发这个工具
@@ -93,7 +93,7 @@ cd md2pdf && npm link           # 切到开发态：命令指回仓库，改代�
 改完代码跑校验（几秒钟、无需浏览器）：
 
 ```bash
-bash ci/validate.sh              # 本地与 CNB 云原生构建跑的是同一套
+bash scripts/validate.sh              # 本地与 CNB 云原生构建跑的是同一套
 ```
 
 推送后 CNB 自动跑同一套校验；打 tag 则自动 `npm publish` 发新版，用户 `npm update -g` 即可拿到。

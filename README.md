@@ -19,13 +19,13 @@
 - **图表编号与引用**：支持 mermaid 图、普通图片、矢量图（SVG）三类图与表格，统一自动编号为题注「图 N / 表 N：…」，正文用 `\ref{fig:x}` / `\ref{tab:x}` 交叉引用并链接到原图（类 LaTeX）。
 - **代码语法高亮**：代码块按语言自动着色（内置 highlight.js，支持 Python、JavaScript、Bash 等常见语言）。
 - **相对路径图片自动解析（CLI）**：Markdown 里的相对路径图片自动转成绝对地址，正常嵌入 PDF。
-- **五类文档与类型约束**：支持通用文档、README、技能文档、论文和国家标准；按类型应用模板，在线工作台只显示该类型可配置的选项，国家标准的主题、字号、页边距与编号规则按模板固定。
+- **四类文档与类型约束**：支持通用文档、技能文档、论文和国家标准；按类型应用模板，在线工作台只显示该类型可配置的选项，国家标准的主题、字号、页边距与编号规则按模板固定。
 - **国家标准专用版式**：根据 frontmatter 生成标准封面和页眉，支持章条编号、前言、引言、目次与附录结构；示例使用演示元数据，不代表正式发布的标准。
 - **高效 Markdown 编辑**：语法高亮、行号、撤销重做、查找替换、折叠展开、快捷键与分组图标工具栏；一键插入表格、公式、脚注、BibTeX 和专业片段。
 - **专业助手**：展示标题大纲与公式、图表、脚注引用信息，提供交叉引用补全及跳转，提示缺失目标、重复标识、不受支持的引用和手写章节号不一致；提示不代表标准合规结论。
 - **便捷插图**：直接粘贴截图、拖入图片或点击「插入图片」，自动生成带唯一图号标识的 Base64 Markdown；支持 PNG、JPEG、GIF、WebP，并将长图片数据折叠显示，保持编辑区整洁。
 - **逐页预览与专注模式**：A4 纸张分隔预览、按标题章节近似同步定位，编辑区与预览区可分别全屏；预览和 PDF 支持文内引用跳转，预览栏直接下载 PDF。
-- **专业示例库**：浏览五类文档的 Markdown 源码及对应分页效果，一键载入工作台继续编辑。
+- **专业示例库**：浏览四类文档的 Markdown 源码及对应分页效果，一键载入工作台继续编辑。
 - **浏览器会话草稿**：在当前浏览器会话中保存正文和选项，刷新或往返示例库可恢复；存储额度不足时提示保存失败，建议另存重要内容。
 
 | elegant（默认，墨蓝 + 古铜） | gb（国家标准版式） |
@@ -83,7 +83,7 @@ md2pdf webapp --port 3001 # 自定义端口
 
 仅监听 `127.0.0.1`，按 `Ctrl+C` 停止。端口被占用时会明确报错，可换用其他端口；推荐使用 1024 以上的端口。在源码仓库仍可用 `npm start` 启动。
 
-打开 `http://127.0.0.1:3000`，左侧编辑 Markdown，右侧分页预览，点击「下载 PDF」导出。支持五类文档，按类型提供主题、目录、字号、页边距和章节编号选项；国家标准使用固定版式。默认加载完整示例，包含公式、Mermaid 和参考文献。
+打开 `http://127.0.0.1:3000`，左侧编辑 Markdown，右侧分页预览，点击「下载 PDF」导出。支持四类文档，按类型提供主题、目录、字号、页边距和章节编号选项；国家标准使用固定版式。默认加载完整示例，包含公式、Mermaid 和参考文献。
 
 ```bash
 PORT=3100 npm start                         # 更换端口
@@ -119,7 +119,7 @@ md2pdf 文件名.md --theme minimal --toc
 | --- | --- |
 | `-o, --output <path>` | 输出路径；多文件或目标是目录时作为输出目录 |
 | `--theme <name>` | `elegant`（默认）｜ `minimal`｜ `gb`（国标版式） |
-| `--type <name>` | 文档类型：`general`｜`skill`｜`readme`｜`paper`｜`gb`；**默认自动探测**，`--type` 可显式覆盖 |
+| `--type <name>` | 文档类型：`general`｜`skill`｜`paper`｜`gb`；**默认自动探测**，`--type` 可显式覆盖 |
 | `--title <text>` / `--kicker <text>` | 覆盖标题 / 报头小标题 |
 | `--no-meta` / `--no-lead` | 不要元信息条 / 首段不作为导语 |
 | `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
@@ -135,7 +135,7 @@ md2pdf 文件名.md --theme minimal --toc
 | `--keep-html` / `--html-only` | 留中间 HTML 调样式 / 只出 HTML（CI 校验用） |
 | `--open` | 完成后打开 PDF |
 
-文档类型默认**自动探测**，优先级：`--type` 显式指定 > 文件名 `SKILL.md`（`skill`）／`README.md`（`readme`）> frontmatter 含 `name`（`skill`）> 兜底 `general`。`readme` 默认加目录，且顶部徽章（shields.io 等）不参与图表编号；frontmatter 含 `abstract` 或 `keywords` 判为 `paper`（作者行 +「摘要」块 +「关键词」行）；含 `标准号`/`standard` 判为 `gb`（国标版式：封面 + 奇偶页眉 + 章条/附录编号 + 目次真实页码，由内置 Paged.js 接管分页，仅 gb 启用）。详见 `docs/gb-template.md`。
+文档类型默认**自动探测**，优先级：`--type` 显式指定 > 文件名 `SKILL.md`（`skill`）> frontmatter 含 `name`（`skill`）> 兜底 `general`。frontmatter 含 `abstract` 或 `keywords` 判为 `paper`（作者行 +「摘要」块 +「关键词」行）；含 `标准号`/`standard` 判为 `gb`（国标版式：封面 + 奇偶页眉 + 章条/附录编号 + 目次真实页码，由内置 Paged.js 接管分页，仅 gb 启用）。详见 `docs/gb-template.md`。
 
 布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
 
@@ -149,7 +149,7 @@ md2pdf 文件名.md --theme minimal --toc
 书签由 Chrome 按 `h1`–`h6` 结构生成，无需额外配置。验一份 PDF 的书签与内链：
 
 ```bash
-node ci/inspect-pdf.mjs out.pdf
+node scripts/inspect-pdf.mjs out.pdf
 ```
 
 ## 排版规则
@@ -164,7 +164,7 @@ node ci/inspect-pdf.mjs out.pdf
 - 图表：三类图统一编号为题注「图 N：…」——普通图片与矢量图（SVG）的题注写在 alt 里，mermaid 图写在代码块上一行「图：说明」；表格前一行写「表：说明」即编号「表 N：…」。`\ref{fig:x}` / `\ref{tab:x}` 交叉引用并链接到原图。
 - 相对路径图片自动解析进 PDF。
 
-改样式：`assets/base.css`（骨架）与 `assets/theme-*.css`（配色），改完重跑命令即生效。
+改样式：`assets/base.css`（骨架）与 `assets/themes/*.css`（配色），改完重跑命令即生效。
 
 ## 模板与示例
 
@@ -174,7 +174,6 @@ node ci/inspect-pdf.mjs out.pdf
 | --- | --- | --- |
 | general | [templates/general.md](templates/general.md) | [examples/general.md](examples/general.md) |
 | skill | [templates/skill.md](templates/skill.md) | [examples/skill.md](examples/skill.md) |
-| readme | [templates/readme.md](templates/readme.md) | [examples/README.md](examples/README.md)（即示例目录导览） |
 | paper | [templates/paper.md](templates/paper.md) | [examples/paper.md](examples/paper.md) |
 | gb | [templates/gb.md](templates/gb.md) | [examples/gb.md](examples/gb.md) |
 
@@ -193,7 +192,7 @@ node ci/inspect-pdf.mjs out.pdf
 git clone https://github.com/jiyeqian/md2pdf.git
 cd md2pdf
 npm link              # 命令指向仓库，改代码立即生效
-bash ci/validate.sh   # 本地与 CI 同一套校验（无需浏览器）
+bash scripts/validate.sh   # 本地与 CI 同一套校验（无需浏览器）
 ```
 
 发版：同步 `src/md2pdf.mjs` 的 `VERSION` 与 `package.json` 的 `version`，然后 `git tag v1.x.x && git push origin v1.x.x`，CNB 流水线会自动 `npm publish`（需配置 `NPM_TOKEN`）。

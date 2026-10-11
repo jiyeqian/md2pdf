@@ -44,7 +44,7 @@ export async function installSkill(args) {
   const home = process.env.HOME || os.homedir();
   const destination = path.resolve(dir || path.join(home, TARGETS[target], 'md-to-pdf'));
   const file = path.join(destination, 'SKILL.md');
-  const source = await readFile(new URL('../skill/SKILL.md', import.meta.url));
+  const source = await readFile(new URL('../integrations/skills/md2pdf/SKILL.md', import.meta.url));
   let existing;
   try {
     const stat = await lstat(file);

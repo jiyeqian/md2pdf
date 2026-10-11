@@ -342,6 +342,7 @@ function reflectRangeValue(name, value) {
 function applyStoredOptions(stored) {
   if (!stored) return;
   const adjusted = { ...stored };
+  if (adjusted.type === 'readme') adjusted.type = 'general';
   if (adjusted.toc === 'true') adjusted.toc = '1';
   // 旧草稿存的是分开的 numbering / numberScheme，这里合并回菜单 token 后再恢复。
   if ('numbering' in adjusted || 'numberScheme' in adjusted) {
@@ -543,7 +544,7 @@ async function boot() {
   if (revision === startedAt && draft && typeof draft.md === 'string') {
     editor.value = draft.md;
     applyStoredOptions(draft.opts);
-    const restoredType = draft.opts && draft.opts.type;
+    const restoredType = form.elements.type.value;
     if (restoredType && policyDoc && policyDoc.policy && policyDoc.policy[restoredType]) applyPolicy(policyDoc.policy[restoredType]);
   }
 

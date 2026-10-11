@@ -4,7 +4,7 @@
 // Covers: vendor bundle API surface, pure helper behavior, JS syntax, and
 // contract-level source assertions (bridge, events, API, no eval/unsafe HTML).
 //
-// Run: node ci/editor-core-checks.mjs
+// Run: node tests/editor-core-checks.mjs
 
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';

@@ -115,8 +115,8 @@
 
 - **字体**：优先 `方正书宋_GBK` / `方正黑体_GBK`，缺失时回退 `Songti SC` / `Heiti SC`（本机通常回退，观感接近）。
 - **封面**：独立一页、无页眉页码；坐标按正式发布版实测还原——ICS/CCS 左上（≈10mm）、
-  **GB 标志右上**（内置矢量 assets/gb-logo.svg，由 tools/trace-gb-logo.mjs 从官方封面 600dpi 渲染描迹生成，
-  源位图 tools/gb-logo.src.png 留档可复现）、「中华人民共和国国家标准」撑满两边距（≈41mm）、
+  **GB 标志右上**（内置矢量 assets/gb-logo.svg，由 scripts/assets/trace-gb-logo.mjs 从官方封面 600dpi 渲染描迹生成，
+  源位图 scripts/assets/gb-logo.src.png 留档可复现）、「中华人民共和国国家标准」撑满两边距（≈41mm）、
   标准号右对齐（≈60mm，代替标准紧随其下，**下方一根全宽横线**）、
   中文名称居中（≈115mm，**方正小标宋**）、英文名称居中（≈134mm，**Times 衬线**；标准编号为黑体）、
   日期行「发布靠左 / 实施靠右」（≈250mm，**行下一根全宽横线**）、
@@ -169,7 +169,7 @@ md2pdf 标准.md --theme minimal # 换回普通主题（不走 GB 版式）
 **样例产物策略**
 
 - `examples/*.pdf` 是提交到仓库的产物；**只在对应输入（md/主题/CSS/渲染逻辑）变动时才重新生成**，无关样例不重渲，减少无意义 diff。
-- `ci/build-demo-assets.sh` 目前是全量重建，未来可按输入文件 mtime/哈希做增量跳过。
+- `scripts/build-demo-assets.sh` 目前是全量重建，未来可按输入文件 mtime/哈希做增量跳过。
 - PDF 字节永不逐位一致（见 CODEBUDDY.md「Known issues」：/CreationDate 时间戳），比对以内容为准。
 
 ### 其他
