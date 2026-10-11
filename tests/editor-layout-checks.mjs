@@ -72,6 +72,22 @@ test('两侧标题栏提供动作区：Markdown 侧计数，预览侧仅下载�
   assert.match(preview, /<button id="download" class="icon-button panel-download"/);
 });
 
+test('预览页脚承载 #status（span 左、p 右，role=status/live），且不再有 .status-row', () => {
+  assert.ok(!indexHtml.includes('status-row'), 'index 不应再残留 .status-row');
+  const preview = indexHtml.match(/<section class="preview-panel"[\s\S]*?<\/section>/)[0];
+  const footer = preview.match(/<div class="preview-footer">([\s\S]*?)<\/div>/);
+  assert.ok(footer, '预览面板应有 .preview-footer');
+  assert.match(footer[1], /<span>预览分页与 PDF 可能略有差异<\/span>/);
+  assert.match(footer[1], /<p id="status" role="status" aria-live="polite">/);
+  assert.ok(footer[1].indexOf('<span>') < footer[1].indexOf('<p id="status"'), 'span 在左，p#status 在右');
+  // 页脚属于面板结构，不进入预览 iframe / PDF。
+  assert.ok(preview.indexOf('preview-footer') > preview.indexOf('preview-surface'), '页脚在预览区之后');
+  assert.ok(preview.indexOf('preview-footer') > preview.indexOf('</iframe>'), '页脚不在 iframe 内');
+  for (const token of ['.preview-footer', '.preview-footer #status']) assert.ok(appCss.includes(token), '缺少样式：' + token);
+  assert.ok(!/\.status-row/.test(appCss), 'app.css 不应残留 .status-row 样式');
+  assert.match(appJs, /\.preview-footer/, '草稿告警应挂到预览页脚');
+});
+
 test('editor-workspace.js 在两侧动作区注入全屏图标按钮（外壳职责）', () => {
   assert.match(wsJs, /function buildFullscreenButtons/);
   assert.match(wsJs, /function makeFullscreenButton/);
@@ -143,7 +159,7 @@ test('editor-workspace.js：工具栏为分组 SVG 图标按钮，title/aria-lab
   for (const token of ['md-wt-group--history', 'md-wt-group--format', 'md-wt-group--insert', 'md-wt-group--academic', 'md-wt-group--view']) {
     assert.ok(wsJs.includes(token), '缺少分组：' + token);
   }
-  for (const token of ["label: '撤销'", "hint: '撤销（Ctrl/⌘+Z）'", "label: '查找与替换'", "label: '粗体'", "label: '链接'", "label: '脚注'", "label: '公式'"]) {
+  for (const token of ["label: '撤销'", "action: 'undo'", "label: '查找与替换'", "iconButton('basicFormat', '基础格式'", "label: '一级标题'", "label: '二级标题'", "label: '三级标题'", "label: '粗体'", "label: '斜体'", "label: '无序列表（*）'", "label: '无序列表（-）'", "label: '有序列表'", "label: '链接'", "label: '引用块'", "label: '行内代码'", "label: '行内公式'", "label: '参考文献'", "label: 'BibTeX参考文献'", "label: 'DOI参考文献'", "label: '公式块'", "label: '图表引用'", "label: '公式引用'", "SHORTCUTS = {"]) {
     assert.ok(wsJs.includes(token), '缺少按钮文案：' + token);
   }
   // 插入组挂载点（图片按钮由图片模块挂入）
@@ -228,6 +244,7 @@ function fakeEnvironment() {
     dispatch(type, event) { (this.listeners[type] || []).forEach(fn => fn(event || { type })); }
     focus() {}
     closest() { return null; }
+    contains(node) { return node === this || this.children.some(child => child.contains && child.contains(node)); }
     getBoundingClientRect() { return { left: 0, top: 0, width: 1000, height: 600 }; }
     setPointerCapture() {}
     releasePointerCapture() {}
@@ -281,7 +298,8 @@ function fakeEnvironment() {
   sandbox.window = sandbox;
   vm.createContext(sandbox);
   const buttonIn = node => node.children.find(child => child.tagName === 'BUTTON');
-  return { sandbox, workspace, editorPanel, previewPanel, editorActions, previewActions, downloadNode, buttonIn, document };
+  const dispatchWindow = (type, event) => (winListeners[type] || []).forEach(fn => fn(event || { type }));
+  return { sandbox, workspace, editorPanel, previewPanel, editorActions, previewActions, downloadNode, buttonIn, document, dispatchWindow };
 }
 
 test('行为：双全屏互斥、再次点击退出、Esc 退出（vm 执行真实逻辑）', () => {
@@ -357,7 +375,7 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
     assert.ok(icon, '每个按钮需内含 SVG 图标');
     if (icon.tagName === 'SVG') assert.equal(icon.getAttribute('viewBox'), '0 0 20 20');
     else {
-      const src = button.getAttribute('aria-label') === 'BibTeX 参考文献' ? '/icons/bibtex.svg' : '/icons/doi.svg';
+      const src = button.getAttribute('aria-label') === 'BibTeX参考文献' ? '/icons/bibtex.svg' : '/icons/doi.svg';
       assert.equal(icon.getAttribute('src'), src);
       assert.equal(icon.getAttribute('alt'), '');
       assert.equal(icon.getAttribute('aria-hidden'), 'true');
@@ -366,10 +384,24 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   assert.equal(all.filter(n => n.classList && n.classList.contains('md-wt-group')).length, 5, '应有 5 个操作分组');
   assert.equal(buttons.filter(b => b.getAttribute('aria-label') === '查找与替换').length, 1);
   assert.equal(buttons.filter(b => ['查找', '替换'].includes(b.getAttribute('aria-label'))).length, 0);
-  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === 'DOI 引用').length, 1);
-  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === 'BibTeX 参考文献').length, 1);
-  const headingButton = buttons.find(b => b.getAttribute('aria-label') === '二级标题');
-  assert.ok(headingButton && headingButton.getAttribute('title').includes('H2'));
+  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === 'DOI参考文献').length, 1);
+  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === 'BibTeX参考文献').length, 1);
+  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === '图表引用').length, 1);
+  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === '公式引用').length, 1);
+  // 第一级只保留一个「基础格式」入口；第二级面板默认隐藏，aria-expanded=false。
+  const basicButton = buttons.find(b => b.getAttribute('aria-label') === '基础格式');
+  assert.ok(basicButton, '应有基础格式入口');
+  assert.equal(basicButton.getAttribute('aria-expanded'), 'false');
+  const basicMenu = all.find(n => n.getAttribute && n.getAttribute('role') === 'menu');
+  assert.ok(basicMenu && basicMenu.hidden === true, '第二级面板默认隐藏');
+  const menuLabels = (basicMenu.children || []).reduce((out, row) => out.concat((row.children || []).map(c => c.getAttribute('aria-label'))), []);
+  for (const label of ['一级标题', '二级标题', '三级标题', '粗体', '斜体', '无序列表（*）', '无序列表（-）', '有序列表', '链接', '引用块', '行内代码', '行内公式']) assert.ok(menuLabels.includes(label), '第二级缺少：' + label);
+  basicButton.dispatch('click', { preventDefault() {} });
+  assert.equal(basicButton.getAttribute('aria-expanded'), 'true', '点击应展开第二级面板');
+  assert.equal(basicMenu.hidden, false);
+  env.document.dispatch('keydown', { key: 'Escape', defaultPrevented: false, isComposing: false, keyCode: 0, preventDefault() {} });
+  assert.equal(basicMenu.hidden, true, 'Esc 应关闭第二级面板并保持可访问性状态');
+  assert.equal(basicButton.getAttribute('aria-expanded'), 'false');
 
   const templateLink = env.editorActions.children.find(n => n.getAttribute && n.getAttribute('id') === 'browse-examples');
   assert.ok(templateLink, '标题栏应含「从模板创建」锚点');
@@ -385,6 +417,11 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   const mount = all.find(n => n.getAttribute && n.getAttribute('data-md-wt-mount') === 'images');
   assert.ok(mount, '插入组应暴露图片按钮挂载点');
   assert.notEqual(mount.getAttribute('aria-hidden'), 'true', '图片挂载点不能隐藏其子按钮的可访问名称');
+  // 表格不重复：插入组只保留左侧一个表格按钮，图片挂载点位于其右侧。
+  assert.equal(buttons.filter(b => b.getAttribute('aria-label') === '表格').length, 1, '插入组应只有一个表格按钮');
+  const insertGroup = all.find(n => n.classList && n.classList.contains('md-wt-group--insert'));
+  const tableButton = buttons.find(b => b.getAttribute('aria-label') === '表格');
+  assert.ok(insertGroup.children.indexOf(tableButton) < insertGroup.children.indexOf(mount), '表格在左，图片在右');
 
   const syncBtn = all.find(n => n.getAttribute && n.getAttribute('id') === 'md-wt-sync');
   assert.ok(syncBtn, '应存在 #md-wt-sync');
@@ -403,6 +440,124 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   assert.deepEqual(calls, ['toggleFold'], '折叠按钮应调用 toggleFold 命令');
 });
 
+
+test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执行，非正则）', () => {
+  const env = fakeEnvironment();
+  const inserted = [];
+  const focused = [];
+  env.sandbox.mdEditor = { focus() { focused.push(1); }, getSelection() { return { from: 0, to: 0 }; }, runCommand() { return true; }, getCursorLine() { return 1; } };
+  env.sandbox.mdEditorTools = { insert(name) { inserted.push(name); } };
+  vm.runInContext(wsJs, env.sandbox, { filename: 'editor-workspace.js' });
+
+  const walk = (node, out) => { out.push(node); (node.children || []).forEach(child => walk(child, out)); return out; };
+  const all = walk(env.editorPanel, []);
+  const basicButton = all.find(n => n.tagName === 'BUTTON' && n.getAttribute && n.getAttribute('aria-label') === '基础格式');
+  const basicMenu = all.find(n => n.getAttribute && n.getAttribute('role') === 'menu');
+  const menuButtons = (basicMenu.children || []).reduce((out, row) => out.concat(row.children || []), []);
+  const itemFor = label => menuButtons.find(b => b.getAttribute('aria-label') === label);
+  const topButton = label => all.find(n => n.tagName === 'BUTTON' && n.getAttribute && n.getAttribute('aria-label') === label);
+  assert.ok(itemFor('二级标题') && itemFor('行内公式'), '第二级应含标题与行内公式');
+  assert.ok(topButton('图表引用') && topButton('公式引用'), '第一级应含图表引用与公式引用');
+
+  // 工具提示：有绑定带平台快捷键，无绑定只显示简洁功能名。
+  assert.match(itemFor('二级标题').getAttribute('title'), /^二级标题（.+2）$/, '有绑定应含快捷键');
+  assert.match(itemFor('行内代码').getAttribute('title'), /^行内代码（.+E）$/, '行内代码应有真实绑定');
+  assert.match(itemFor('行内公式').getAttribute('title'), /^行内公式（.+X）$/, '行内公式应有真实绑定');
+  assert.match(itemFor('引用块').getAttribute('title'), /^引用块（.+\.）$/, '引用块应有真实绑定');
+  // 无绑定项标题必须与功能名完全一致（不得残留冗长说明）。
+  for (const label of ['参考文献', 'BibTeX参考文献', 'DOI参考文献', '代码块', '表格', '公式块', '图表引用', '公式引用', '图表']) {
+    assert.equal(topButton(label).getAttribute('title'), label, label + ' 的 title 应为简洁功能名');
+  }
+
+  basicButton.dispatch('click', { preventDefault() {} });
+  assert.equal(basicButton.getAttribute('aria-expanded'), 'true');
+  itemFor('二级标题').dispatch('click', {});
+  assert.deepEqual(inserted, ['h2'], '菜单项应插入对应命令');
+  assert.equal(basicMenu.hidden, true, '插入后面板应关闭');
+  assert.ok(focused.length >= 1, '插入后应把焦点交还编辑器');
+
+  itemFor('行内公式').dispatch('click', {});
+  topButton('图表引用').dispatch('click', {});
+  topButton('公式引用').dispatch('click', {});
+  assert.deepEqual(inserted.slice(-3), ['inline-math', 'ref', 'eqref']);
+
+  // 复杂插入仍在第一级且可插入（表格 / 代码块 / 公式块）。
+  topButton('表格').dispatch('click', {});
+  topButton('代码块').dispatch('click', {});
+  topButton('公式块').dispatch('click', {});
+  assert.deepEqual(inserted.slice(-3), ['table', 'codeblock', 'formula']);
+
+  // 快捷键：仅编辑器上下文生效，且不拦截浏览器保留键（Mod+L 等）。
+  const editorTarget = env.sandbox.document.createElement('textarea');
+  editorTarget.id = 'markdown';
+  const press = (key, opts) => env.document.dispatch('keydown', Object.assign({ key, defaultPrevented: false, isComposing: false, keyCode: 0, target: editorTarget, preventDefault() {} }, opts));
+  inserted.length = 0;
+  press('2', { metaKey: true, altKey: true, code: 'Digit2' });
+  assert.deepEqual(inserted, ['h2'], 'Mod+Alt+2 → 二级标题');
+  // 列表快捷键对齐备忘录：Mac ⇧⌘7/8/9、Windows Ctrl+Shift+7/8/9；
+  // Shift 会改变 event.key（US 布局 '&' '*' '('），须用 event.code 命中物理数字。
+  inserted.length = 0;
+  press('&', { metaKey: true, shiftKey: true, code: 'Digit7' });
+  assert.deepEqual(inserted, ['ul-star'], 'Mod+Shift+7（物理键）→ 无序列表（*）');
+  inserted.length = 0;
+  press('*', { ctrlKey: true, shiftKey: true, code: 'Digit8' });
+  assert.deepEqual(inserted, ['ul-dash'], 'Mod+Shift+8（物理键）→ 无序列表（-）');
+  inserted.length = 0;
+  press('(', { ctrlKey: true, shiftKey: true, code: 'Digit9' });
+  assert.deepEqual(inserted, ['ol'], 'Mod+Shift+9（物理键）→ 有序列表');
+  // 行内代码 / 行内公式 / 引用块的真实绑定。
+  inserted.length = 0;
+  press('e', { metaKey: true, shiftKey: true });
+  assert.deepEqual(inserted, ['code'], 'Mod+Shift+E → 行内代码');
+  inserted.length = 0;
+  press('x', { metaKey: true, shiftKey: true });
+  assert.deepEqual(inserted, ['inline-math'], 'Mod+Shift+X → 行内公式');
+  inserted.length = 0;
+  press('>', { ctrlKey: true, shiftKey: true, code: 'Period' });
+  assert.deepEqual(inserted, ['quote'], 'Mod+Shift+. → 引用块');
+  inserted.length = 0;
+  press('b', { metaKey: true });
+  assert.deepEqual(inserted, ['bold'], 'Mod+B 保留');
+  inserted.length = 0;
+  press('i', { metaKey: true });
+  press('k', { metaKey: true });
+  assert.deepEqual(inserted, ['italic', 'link'], 'Mod+I / Mod+K 保留');
+  inserted.length = 0;
+  press('l', { metaKey: true });
+  press('p', { metaKey: true });
+  press('t', { metaKey: true });
+  press('w', { metaKey: true });
+  assert.deepEqual(inserted, [], '不得拦截浏览器保留键');
+});
+
+test('行为：基础格式面板的关闭路径（菜单内点击 / 外部点击 / 窗口失焦）', () => {
+  const env = fakeEnvironment();
+  env.sandbox.mdEditor = { focus() {}, getSelection() { return { from: 0, to: 0 }; }, runCommand() { return true; }, getCursorLine() { return 1; } };
+  env.sandbox.mdEditorTools = { insert() {} };
+  vm.runInContext(wsJs, env.sandbox, { filename: 'editor-workspace.js' });
+
+  const walk = (node, out) => { out.push(node); (node.children || []).forEach(child => walk(child, out)); return out; };
+  const all = walk(env.editorPanel, []);
+  const basicButton = all.find(n => n.tagName === 'BUTTON' && n.getAttribute && n.getAttribute('aria-label') === '基础格式');
+  const basicMenu = all.find(n => n.getAttribute && n.getAttribute('role') === 'menu');
+  const menuItem = basicMenu.children[0].children[0];
+  const click = target => env.document.dispatch('click', { target });
+  const open = () => basicButton.dispatch('click', { preventDefault() {} });
+
+  open();
+  assert.equal(basicMenu.hidden, false);
+  click(menuItem); // 面板内部的点击不应关闭
+  assert.equal(basicMenu.hidden, false, '点击面板内部不关闭');
+  click(env.editorActions); // 外部点击关闭
+  assert.equal(basicMenu.hidden, true, '点击面板外部应关闭');
+  assert.equal(basicButton.getAttribute('aria-expanded'), 'false');
+
+  open();
+  assert.equal(basicMenu.hidden, false);
+  // 预览 iframe 的点击不会冒泡到父文档：窗口失焦时关闭。
+  env.dispatchWindow('blur');
+  assert.equal(basicMenu.hidden, true, '窗口失焦（含点击预览 iframe）应关闭面板');
+});
 
 // ---------------------------------------------------------------- 选项模型（index.html 静态）
 test('index.html：「标题编号」合并菜单替代旧的章节编号 / 编号方案两个控件', () => {
@@ -542,7 +697,7 @@ function fakeAppEnvironment() {
       if (sel === '#count') return new FakeNode('span');
       if (sel === '#empty-preview') return new FakeNode('div');
       if (sel === '#browse-examples' || sel === '#examples-link-top') return new FakeNode('a');
-      if (sel === '.status-row') return new FakeNode('div');
+      if (sel === '.preview-footer') return new FakeNode('div');
       return null;
     },
     addEventListener() {},

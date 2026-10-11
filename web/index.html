@@ -29,7 +29,7 @@
   </header>
   <main>
     <form id="options" class="toolbar" aria-label="排版选项">
-      <label>类型<select name="type"><option value="">自动识别</option><option value="general">通用文档</option><option value="skill">技能文档</option><option value="paper">论文</option><option value="gb">国家标准</option></select></label>
+      <label>类型<select name="type"><option value="">自动识别</option><option value="general">通用文档</option><option value="skill">技能文档</option><option value="paper">学术论文</option><option value="gb">国家标准</option></select></label>
       <label data-control="theme">主题<select name="theme"><option value="">跟随文档</option><option value="elegant">雅致 · 墨蓝</option><option value="minimal">简洁 · 黑白</option><option value="gb">国家标准</option></select></label>
       <label data-control="toc">目录<select name="toc"><option value="">跟随文档</option><option value="false">隐藏目录</option><option value="1">一级目录</option><option value="2">二级目录</option></select></label>
       <div class="toolbar-field" data-control="fontSize"><span class="toolbar-field-label">字号 / pt</span><details class="range-pop"><summary class="range-trigger" data-range-trigger="fontSize" aria-label="字号：跟随文档">跟随文档</summary><div class="range-popover"><div class="ruler-control"><input type="range" class="range-slider ruler-slider" data-range-slider="fontSize" min="8" max="24" step="0.5" aria-label="字号滑块"><button type="button" class="range-default" data-range-default="fontSize" aria-label="恢复默认字号" title="恢复默认字号"><svg class="range-default-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button></div><div class="ruler-scale" data-range-scale="fontSize" aria-hidden="true"><span class="ruler-label ruler-label--min">8</span><span class="ruler-label ruler-label--max">24</span></div><input name="fontSize" data-range-number="fontSize" type="hidden" value=""><p class="range-note" data-range-note="fontSize"></p></div></details></div>
@@ -59,9 +59,9 @@
           </div>
         </div>
         <div class="preview-surface"><iframe id="preview" title="Markdown 排版预览" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><div id="empty-preview">在左侧开始书写，预览将在这里呈现。</div></div>
+        <div class="preview-footer"><span>预览分页与 PDF 可能略有差异</span><p id="status" role="status" aria-live="polite">正在加载示例…</p></div>
       </section>
     </div>
-    <div class="status-row"><p id="status" role="status" aria-live="polite">正在加载示例…</p><span>预览分页与 PDF 可能略有差异</span></div>
     <p class="privacy">正文发送至服务器进行排版，服务器不保存正文或编辑历史。草稿与选项仅保存在当前浏览器会话（sessionStorage）中；浏览模板库或刷新页面后草稿会恢复。支持内嵌 PNG / JPEG / GIF / WebP 图片；本机路径和远程图片显示为未加载占位。</p>
   </main>
 </body>

@@ -301,10 +301,11 @@ test('renderSnippet：ID 为 ASCII 安全串，重复插入互不冲突', () => 
   assert.deepEqual(ids.slice(0, 3), ['fig:robot-arm', 'fig:robot-arm-2', 'fig:robot-arm-3']);
 });
 
-test('公式片段自洽：\\label 与 \\eqref 同 ID，回灌解析器无缺失诊断', () => {
+test('公式片段：唯一 \\label，不追加自动引用句，回灌解析器无缺失诊断', () => {
   const { text, id } = renderSnippet('formula');
   assert.ok(text.includes('\\label{' + id + '}'));
-  assert.ok(text.includes('\\eqref{' + id + '}'));
+  assert.ok(!text.includes('\\eqref{'), '不应自动追加 \\eqref 引用句');
+  assert.ok(!text.includes('如式'), '不应自动生成「如式 … 所示」句子');
   const r = analyzeMarkdown(text);
   assert.deepEqual(r.equations.map((e) => e.id), [id]);
   assert.deepEqual(codes(r), []);

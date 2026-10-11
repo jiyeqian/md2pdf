@@ -11,6 +11,7 @@ import { Chrome, findChrome } from './chrome.mjs';
 import { webPolicyDocument, policyForType, effectiveOptions, assertOptionsAllowed, resolveWebType } from './web-options.mjs';
 import { exampleCatalog, findExample, defaultExampleSource } from './web-examples.mjs';
 import { createDoiResolver } from './doi.mjs';
+import { documentDownloadName, sanitizeDownloadFileName } from '../web/editor-files.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LIMIT = 24 * 1024 * 1024;
@@ -123,7 +124,7 @@ export function imageBudget(md) {
 const formatMiB = bytes => (bytes / (1024 * 1024)).toFixed(1); // 仅用于错误提示的粗略显示
 
 export function validateInput(body) {
-  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(k => !['md', 'opts'].includes(k))) throw error(400, '请求必须包含 md 和可选 opts');
+  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(k => !['md', 'opts', 'filename'].includes(k))) throw error(400, '请求必须包含 md 和可选 opts');
   if (typeof body.md !== 'string' || !body.md.trim()) throw error(400, '请输入 Markdown 正文');
   // 合法内嵌图片的 Data URL 不计入正文字符预算；其余（含代码内假图片、非图片/非法 Data URL）照常计入。
   const images = imageBudget(body.md);
@@ -145,7 +146,15 @@ export function validateInput(body) {
     else if (Object.hasOwn(numbers, key)) { if (typeof value !== 'number' || !Number.isFinite(value) || value < numbers[key][0] || value > numbers[key][1]) throw error(400, `无效选项：${key}`); }
     else throw error(400, `不支持的选项：${key}`);
   }
-  return { md: body.md, opts: { ...opts, pagedHtml: true } };
+  // 可选：前端提交的下载基名（filename_version.pdf）。只接受字符串，服务端再次净化；
+  // 非法 / 空值直接拒绝，避免把任意文本带进 Content-Disposition。
+  let filename = '';
+  if (body.filename !== undefined) {
+    if (typeof body.filename !== 'string') throw error(400, 'filename 必须是字符串');
+    filename = sanitizeDownloadFileName(body.filename, 'pdf');
+    if (!filename) throw error(400, 'filename 非法');
+  }
+  return { md: body.md, opts: { ...opts, pagedHtml: true }, filename };
 }
 
 async function readBody(req, limit = LIMIT) {
@@ -285,7 +294,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       }
       if (!['/api/render', '/api/pdf', '/api/resolve'].includes(req.url)) { json(404, { error: '页面不存在' }); return; }
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); json(405, { error: '请使用 POST' }); return; }
-      const { md, opts } = validateInput(await readBody(req));
+      const { md, opts, filename } = validateInput(await readBody(req));
       // 先由原文判定生效类型，再按类型策略强制校验，最后才渲染（不把默认编号方案塞进 opts）。
       const type = resolveWebType(md, opts.type);
       if (req.url === '/api/resolve') { json(200, { type, policy: policyForType(type) }); return; }
@@ -301,9 +310,11 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         return;
       }
       const pdf = await pdfTask(await webDocument(rendered.html), rendered.printOptions);
-      const name = Array.from(Buffer.from(rendered.title.replace(/[\x00-\x1f\x7f\/\\]/g, '_')).toString('utf8')).slice(0, 100).join('') || 'document';
+      // 与 Markdown 下载共用同一命名：客户端提交的 filename 优先（共享浏览器时间戳），
+      // 否则服务端按同一 helper 从正文推导，保证直接调用 API 的命名同样合理。
+      const name = filename || documentDownloadName(md, new Date(), 'pdf');
       const encodedName = encodeURIComponent(name).replace(/[!'()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());
-      res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="document.pdf"; filename*=UTF-8''${encodedName}.pdf` }); res.end(pdf);
+      res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="document.pdf"; filename*=UTF-8''${encodedName}` }); res.end(pdf);
     } catch (e) {
       if (!res.headersSent && !res.destroyed) json(e.status || 500, { error: e.status ? e.message : req.url === '/api/doi' ? 'DOI 查询失败，请稍后重试' : '渲染失败，请检查文档或 Chrome 配置后重试' });
     }

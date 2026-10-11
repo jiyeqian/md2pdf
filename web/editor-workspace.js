@@ -38,6 +38,7 @@
 
   var previewFrame = document.querySelector('#preview');
   var toolbar, divider, editorFullscreenBtn, previewFullscreenBtn, syncInput, snippetSelect, insertSnippetBtn, details;
+  var basicWrap, basicButton, basicMenu;
   var commandButtons = [];
   var ready = false;
   var dragging = false;
@@ -101,6 +102,8 @@
     redo: [{ d: 'M13 5.2 16.4 8.6 13 12' }, { d: 'M16.4 8.6H8a4.4 4.4 0 0 0 0 8.8h2.6' }],
     find: [{ circle: [8.8, 8.8, 4.8] }, { d: 'M12.5 12.5 16.4 16.4' }],
     heading: [{ d: 'M3.5 5v10M10 5v10M3.5 10H10' }, { d: 'M13 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2.5-5 6h5' }],
+    heading1: [{ d: 'M3.5 5v10M10 5v10M3.5 10H10' }, { d: 'M13 9l2-2v8M13 15h4' }],
+    heading3: [{ d: 'M3.5 5v10M10 5v10M3.5 10H10' }, { d: 'M13 7h4l-3 4h1a2 2 0 0 1 0 4h-2' }],
     bold: [{ d: 'M7 5.2h3.6a2.4 2.4 0 0 1 0 4.8H7z' }, { d: 'M7 10h4a2.4 2.4 0 0 1 0 4.8H7z' }],
     italic: [{ d: 'M9.6 5.2h4.4' }, { d: 'M6 14.8h4.4' }, { d: 'M11.6 5.2 8.4 14.8' }],
     link: [{ d: 'M8.4 11.6a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-1 1' }, { d: 'M11.6 8.4a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l1-1' }],
@@ -112,6 +115,14 @@
     footnote: [{ d: 'M4.4 7.8h8' }, { d: 'M4.4 10.9h8' }, { d: 'M4.4 14h5' }, { d: 'M13.8 5.4 15.6 4.4v5.4' }],
 
     formula: [{ d: 'M6 5.2h8L9.6 10l4.4 4.8H6' }],
+    // 基础格式（合并的标题 / 强调 / 列表 / 行内入口）与第二级面板使用。
+    basicFormat: [{ d: 'M4 5.6h12' }, { d: 'M4 9.4h12' }, { d: 'M4 13.2h7' }],
+    listStar: [{ circle: [3.6, 6, 1] }, { circle: [3.6, 10, 1] }, { circle: [3.6, 14, 1] }, { d: 'M7.4 6h9' }, { d: 'M7.4 10h9' }, { d: 'M7.4 14h9' }],
+    listDash: [{ d: 'M2.6 6h2M2.6 10h2M2.6 14h2M7.4 6h9M7.4 10h9M7.4 14h9' }],
+    listOl: [{ d: 'M3.2 5.6h1.3v3.2' }, { d: 'M3.2 14.6c1.6 0 1.6 1.3 0 1.3h1.6' }, { d: 'M7.4 6h9' }, { d: 'M7.4 10h9' }, { d: 'M7.4 14h9' }],
+    inlineMath: [{ d: 'M7.2 5.4h6.2L9.6 10l3.8 4.6H7.2' }],
+    ref: [{ d: 'M4.4 10.4 10.4 4.4H16v5.6L10 16z' }, { circle: [12.8, 7.4, 1.1] }],
+    eqref: [{ d: 'M7.4 5.4c-1.5 0-1.9 1.1-1.9 2.5v1c0 .7-.3 1-1 1 .7 0 1 .3 1 1v1c0 1.4.4 2.5 1.9 2.5' }, { d: 'M12.6 5.4c1.5 0 1.9 1.1 1.9 2.5v1c0 .7.3 1 1 1-.7 0-1 .3-1 1v1c0 1.4-.4 2.5-1.9 2.5' }, { d: 'M9.4 8.2 10.7 7.4v5' }],
     foldToggle: [{ d: 'M6.6 8.6 10 5.2l3.4 3.4' }, { d: 'M6.6 11.4 10 14.8l3.4-3.4' }],
     // Tabler arrows-exchange（24 网格）按 0.8333333333 缩放进 20 视图，路径数据未改动。
     unsync: [{ d: 'M7 7h8l-3-3M13 13H5l3 3M3 3l14 14' }],
@@ -124,8 +135,8 @@
   // SVG 文件图标：仅「参考文献」与「DOI 引用」两个按钮使用本地 SVG 资源，
   // 其余按钮仍走下面的内联路径图标，逻辑不受影响。
   var FILE_ICONS = {
-    bibliography: { src: '/icons/bibtex.svg', label: 'BibTeX 参考文献' },
-    doi: { src: '/icons/doi.svg', label: 'DOI 引用' }
+    bibliography: { src: '/icons/bibtex.svg', label: 'BibTeX参考文献' },
+    doi: { src: '/icons/doi.svg', label: 'DOI参考文献' }
   };
 
   function iconSvg(name) {
@@ -183,29 +194,89 @@
     return button;
   }
 
+  // 快捷键映射：仅登记真实存在的绑定（CodeMirror 内核或本模块拦截）。
+  // 工具提示按平台显示 Mac（⌘/⌥/⇧）或 Windows（Ctrl/Alt/Shift）；无绑定的按钮只显示功能说明。
+  // 列表快捷键对齐 macOS 备忘录：Mac ⇧⌘7/8/9、Windows Ctrl+Shift+7/8/9（* / - / 有序）。
+  // 行内代码 / 公式与引用块选用不与浏览器 / 系统保留键冲突的组合：⇧⌘E / ⇧⌘X / ⇧⌘. 。
+  var SHORTCUTS = {
+    undo: 'Mod-Z', redo: 'Mod-Shift-Z', find: 'Mod-F',
+    bold: 'Mod-B', italic: 'Mod-I', link: 'Mod-K',
+    code: 'Mod-Shift-E', 'inline-math': 'Mod-Shift-X', quote: 'Mod-Shift-.',
+    h1: 'Mod-Alt-1', h2: 'Mod-Alt-2', h3: 'Mod-Alt-3',
+    'ul-star': 'Mod-Shift-7', 'ul-dash': 'Mod-Shift-8', ol: 'Mod-Shift-9'
+  };
+  var IS_MAC = (function () {
+    try {
+      var nav = typeof navigator !== 'undefined' ? navigator : null;
+      var flag = nav && (nav.platform || nav.userAgent) || '';
+      return /Mac|iPhone|iPad|iPod/i.test(flag);
+    } catch (e) { return false; }
+  })();
+  function shortcutLabel(action) {
+    var token = SHORTCUTS[action];
+    if (!token) return '';
+    var parts = token.split('-');
+    var mod = parts[0] === 'Mod';
+    var alt = parts.indexOf('Alt') >= 0;
+    var shift = parts.indexOf('Shift') >= 0;
+    var key = parts[parts.length - 1];
+    if (IS_MAC) {
+      return (shift ? '⇧' : '') + (alt ? '⌥' : '') + (mod ? '⌘' : '') + key;
+    }
+    var names = [];
+    if (mod) names.push('Ctrl');
+    if (alt) names.push('Alt');
+    if (shift) names.push('Shift');
+    names.push(key);
+    return names.join('+');
+  }
+  // 工具提示：有绑定 → 功能说明（快捷键）；否则 → 仅功能说明。
+  function actionTitle(label, action) {
+    var sc = action ? shortcutLabel(action) : '';
+    return sc ? label + '（' + sc + '）' : label;
+  }
+
   var HISTORY_ITEMS = [
-    { icon: 'undo', label: '撤销', hint: '撤销（Ctrl/⌘+Z）', command: 'undo' },
-    { icon: 'redo', label: '重做', hint: '重做（Ctrl/⌘+Shift+Z）', command: 'redo' },
-    { icon: 'find', label: '查找与替换', hint: '查找与替换（Ctrl/⌘+F）', command: 'find' }
+    { icon: 'undo', label: '撤销', action: 'undo', command: 'undo' },
+    { icon: 'redo', label: '重做', action: 'redo', command: 'redo' },
+    { icon: 'find', label: '查找与替换', action: 'find', command: 'find' }
   ];
-  var FORMAT_ITEMS = [
-    { icon: 'heading', label: '二级标题', hint: '插入二级标题（H2 / ## 小节）', insert: 'heading' },
-    { icon: 'bold', label: '粗体', hint: '粗体（Ctrl/⌘+B）', insert: 'bold' },
-    { icon: 'italic', label: '斜体', hint: '斜体（Ctrl/⌘+I）', insert: 'italic' }
+  // 第一级只保留一个「基础格式」入口，展开第二级面板（标题 / 强调 / 列表 / 行内）。
+  var BASIC_GROUPS = [
+    { label: '标题', items: [
+      { icon: 'heading1', label: '一级标题', action: 'h1', insert: 'h1' },
+      { icon: 'heading', label: '二级标题', action: 'h2', insert: 'h2' },
+      { icon: 'heading3', label: '三级标题', action: 'h3', insert: 'h3' }
+    ] },
+    { label: '强调', items: [
+      { icon: 'bold', label: '粗体', action: 'bold', insert: 'bold' },
+      { icon: 'italic', label: '斜体', action: 'italic', insert: 'italic' }
+    ] },
+    { label: '列表', items: [
+      { icon: 'listStar', label: '无序列表（*）', action: 'ul-star', insert: 'ul-star' },
+      { icon: 'listDash', label: '无序列表（-）', action: 'ul-dash', insert: 'ul-dash' },
+      { icon: 'listOl', label: '有序列表', action: 'ol', insert: 'ol' }
+    ] },
+    { label: '行内元素', items: [
+      { icon: 'link', label: '链接', action: 'link', insert: 'link' },
+      { icon: 'quote', label: '引用块', action: 'quote', insert: 'quote' },
+      { icon: 'code', label: '行内代码', action: 'code', insert: 'code' },
+      { icon: 'inlineMath', label: '行内公式', action: 'inline-math', insert: 'inline-math' }
+    ] }
   ];
+  // 复杂插入保留在第一级：代码块 / 表格 / 图片（图片模块挂载）/ 图表 / 脚注 / 文献 / 公式块。
   var INSERT_ITEMS = [
-    { icon: 'link', label: '链接', hint: '链接（Ctrl/⌘+K）', insert: 'link' },
-    { icon: 'quote', label: '引用', hint: '引用块 > …', insert: 'quote' },
-    { icon: 'code', label: '行内代码', hint: '行内代码（反引号包裹）', insert: 'code' },
-    { icon: 'codeblock', label: '代码块', hint: '插入带语言标识的代码块', insert: 'codeblock' },
-    { icon: 'table', label: '表格', hint: '插入 Markdown 表格', insert: 'table' },
-    { icon: 'figure', label: '图表', hint: '图表块（自动编号 图 N）', insert: 'figure' }
+    { icon: 'codeblock', label: '代码块', insert: 'codeblock' },
+    { icon: 'table', label: '表格', insert: 'table' },
+    { icon: 'figure', label: '图表', insert: 'figure' }
   ];
   var ACADEMIC_ITEMS = [
-    { icon: 'footnote', label: '脚注', hint: '脚注定义 [^id]', insert: 'footnote' },
-    { icon: 'bibliography', label: 'BibTeX 参考文献', hint: '插入 BibTeX 条目（自动著录为参考文献）', insert: 'bibliography' },
-    { icon: 'doi', label: 'DOI 引用', hint: '按 DOI 或 DOI 链接查询文献，插入引用与 BibTeX 定义' },
-    { icon: 'formula', label: '公式', hint: '行内或独立公式', insert: 'formula' }
+    { icon: 'footnote', label: '参考文献', insert: 'footnote' },
+    { icon: 'bibliography', label: 'BibTeX参考文献', insert: 'bibliography' },
+    { icon: 'doi', label: 'DOI参考文献' },
+    { icon: 'formula', label: '公式块', insert: 'formula' },
+    { icon: 'ref', label: '图表引用', insert: 'ref' },
+    { icon: 'eqref', label: '公式引用', insert: 'eqref' }
   ];
   var SNIPPETS = [
     { name: 'gb-scope', label: '标准范围（gb-scope）' },
@@ -217,16 +288,21 @@
   // 图片按钮挂载点：图片模块只把按钮挂到这里（不改导入管线）；找不到时回落到工具条。
   var IMAGE_MOUNT_ATTR = 'data-md-wt-mount';
 
+  // 顶部提示统一为「功能（快捷键）」或「功能」：不再保留各条目的冗长说明文案。
+  function itemTitle(item) {
+    return actionTitle(item.label, item.action);
+  }
+
   function appendItem(group, item) {
     // 锚点项（从模板创建）：沿用图标按钮外观，但用 <a> 自带导航行为，
     // 不注册编辑器命令，也不参与启用/禁用（编辑器未就绪时也能进入模板库）。
     var button;
     if (item.href) {
-      button = make('a', { class: 'md-wt-button', href: item.href, 'aria-label': item.label, title: item.hint });
+      button = make('a', { class: 'md-wt-button', href: item.href, 'aria-label': item.label, title: item.hint || item.title || item.label });
       if (item.id) button.setAttribute('id', item.id);
       button.appendChild(iconSvg(item.icon));
     } else {
-      button = iconButton(item.icon, item.label, item.hint);
+      button = iconButton(item.icon, item.label, itemTitle(item));
       if (item.insert) button.addEventListener('click', function () { runInsert(item.insert); });
       // DOI 按钮由 web/editor-doi.js 实现界面：这里只派发事件，不耦合实现。
       else if (item.icon === 'doi') button.addEventListener('click', function () {
@@ -250,6 +326,100 @@
     });
     wireRovingTabindex(group);
     return group;
+  }
+
+  // ---------------- 基础格式：第一级单入口 + 第二级多行面板 ----------------
+  // 把标题 / 强调 / 列表 / 行内元素收敛到一个「基础格式」按钮；点击展开浅色多行面板。
+  // 面板用 fixed 定位（不会撑高工具条、不被面板 overflow:hidden 裁剪），
+  // 支持点击外部与 Esc 关闭、Esc 归还焦点、方向键导航。
+  function buildBasicMenuRow(entry) {
+    var row = make('div', { class: 'md-wt-menu-row', role: 'group', 'aria-label': entry.label });
+    entry.items.forEach(function (item) {
+      var button = make('button', { type: 'button', class: 'md-wt-button md-wt-menu-item', role: 'menuitem', title: itemTitle(item), 'aria-label': item.label, tabindex: '-1' });
+      button.appendChild(iconSvg(item.icon));
+      button.addEventListener('click', function () {
+        runInsert(item.insert);
+        closeBasicMenu(false); // 让 runInsert 的 focusEditor 保持焦点
+      });
+      commandButtons.push(button);
+      row.appendChild(button);
+    });
+    return row;
+  }
+
+  function buildBasicFormatControl() {
+    var group = make('div', { class: 'md-wt-group md-wt-group--format', role: 'group', 'aria-label': '基础格式' });
+    basicWrap = make('div', { class: 'md-wt-basic' });
+    basicButton = iconButton('basicFormat', '基础格式', actionTitle('基础格式'));
+    basicButton.setAttribute('id', 'md-wt-basic-format');
+    basicButton.setAttribute('aria-haspopup', 'true');
+    basicButton.setAttribute('aria-expanded', 'false');
+    basicButton.setAttribute('aria-controls', 'md-wt-basic-menu');
+    basicMenu = make('div', { class: 'md-wt-basic-menu', role: 'menu', 'aria-label': '基础格式', id: 'md-wt-basic-menu' });
+    basicMenu.hidden = true;
+    BASIC_GROUPS.forEach(function (entry) { basicMenu.appendChild(buildBasicMenuRow(entry)); });
+    basicButton.addEventListener('click', function (event) {
+      event.preventDefault();
+      if (basicMenu.hidden) openBasicMenu(); else closeBasicMenu(true);
+    });
+    basicMenu.addEventListener('keydown', onBasicMenuKeydown);
+    basicWrap.appendChild(basicButton);
+    basicWrap.appendChild(basicMenu);
+    group.appendChild(basicWrap);
+    commandButtons.push(basicButton);
+    wireRovingTabindex(group);
+    return group;
+  }
+
+  function menuItems() {
+    return Array.prototype.slice.call(basicMenu.querySelectorAll('.md-wt-menu-item'));
+  }
+
+  function openBasicMenu() {
+    basicMenu.hidden = false;
+    basicButton.setAttribute('aria-expanded', 'true');
+    basicWrap.classList.add('is-open');
+    positionBasicMenu();
+    var items = menuItems();
+    if (items.length) items[0].focus();
+  }
+
+  function closeBasicMenu(restoreFocus) {
+    if (!basicMenu || basicMenu.hidden) return;
+    basicMenu.hidden = true;
+    basicButton.setAttribute('aria-expanded', 'false');
+    basicWrap.classList.remove('is-open');
+    if (restoreFocus) basicButton.focus();
+  }
+
+  function positionBasicMenu() {
+    if (!basicMenu || basicMenu.hidden) return;
+    if (!basicButton.getBoundingClientRect || !basicMenu.getBoundingClientRect) return;
+    var viewport = (typeof window !== 'undefined' && window.innerWidth) || 1024;
+    var anchor = basicButton.getBoundingClientRect();
+    var rect = basicMenu.getBoundingClientRect();
+    var width = basicMenu.offsetWidth || (rect && rect.width) || 360;
+    var left = Math.max(8, Math.min(anchor.left, viewport - width - 8));
+    basicMenu.style.left = left + 'px';
+    basicMenu.style.top = (anchor.bottom + 6) + 'px';
+  }
+
+  function onBasicMenuKeydown(event) {
+    var items = menuItems();
+    if (!items.length) return;
+    var current = items.indexOf(document.activeElement);
+    var next = null;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') next = current + 1;
+    else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') next = current - 1;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = items.length - 1;
+    else if (event.key === 'Escape') { event.preventDefault(); closeBasicMenu(true); return; }
+    else if (event.key === 'Tab') { closeBasicMenu(false); return; }
+    else return;
+    event.preventDefault();
+    if (next < 0) next = items.length - 1;
+    if (next >= items.length) next = 0;
+    items[next].focus();
   }
 
   function buildSyncButton() {
@@ -282,12 +452,12 @@
     toolbar = make('div', { class: 'md-wt-toolbar', role: 'toolbar', 'aria-label': 'Markdown 格式与操作工具条', 'aria-orientation': 'horizontal' });
 
     toolbar.appendChild(buildGroup('撤销重做与查找替换', 'md-wt-group--history', HISTORY_ITEMS));
-    toolbar.appendChild(buildGroup('文字格式', 'md-wt-group--format', FORMAT_ITEMS));
+    toolbar.appendChild(buildBasicFormatControl());
     toolbar.appendChild(buildGroup('插入', 'md-wt-group--insert', INSERT_ITEMS, 'images'));
     toolbar.appendChild(buildGroup('学术', 'md-wt-group--academic', ACADEMIC_ITEMS));
 
     var view = make('div', { class: 'md-wt-group md-wt-group--view', role: 'group', 'aria-label': '视图' });
-    var foldButton = iconButton('foldToggle', '折叠或展开', '折叠 / 展开当前位置（Ctrl+Shift+[ / ]；Mac：⌘+Option+[ / ]）');
+    var foldButton = iconButton('foldToggle', '折叠或展开', actionTitle('折叠或展开'));
     foldButton.addEventListener('click', function () { runCommand('toggleFold'); });
     commandButtons.push(foldButton);
     view.appendChild(foldButton);
@@ -327,9 +497,10 @@
   }
 
   // 键盘工具条：左右方向键在按钮间移动，Home/End 到首尾。
+  var ROVING_SELECTOR = 'button:not(.md-wt-menu-item), a.md-wt-button';
   function wireRovingTabindex(group) {
-    var buttons = function () { return Array.prototype.filter.call(group.querySelectorAll('button, a.md-wt-button'), function (b) { return !b.disabled; }); };
-    Array.prototype.forEach.call(group.querySelectorAll('button, a.md-wt-button'), function (b, i) { b.tabIndex = i === 0 ? 0 : -1; });
+    var buttons = function () { return Array.prototype.filter.call(group.querySelectorAll(ROVING_SELECTOR), function (b) { return !b.disabled; }); };
+    Array.prototype.forEach.call(group.querySelectorAll(ROVING_SELECTOR), function (b, i) { b.tabIndex = i === 0 ? 0 : -1; });
     group.addEventListener('keydown', function (event) {
       var key = event.key;
       if (key !== 'ArrowRight' && key !== 'ArrowLeft' && key !== 'Home' && key !== 'End') return;
@@ -678,6 +849,8 @@
   // ---------------------------------------------------------------- 快捷键
   function inEditorTarget(target) {
     if (!target || !target.closest) return false;
+    // 基础格式面板属于编辑器上下文：焦点在菜单里时快捷键仍作用于编辑器选区。
+    if (target.closest('.md-wt-basic-menu')) return true;
     if (target.closest('.md-wt-toolbar, .md-wt-details')) return false;
     var tag = (target.tagName || '').toUpperCase();
     if (tag === 'INPUT' || tag === 'SELECT') return false;
@@ -685,17 +858,56 @@
     return !!target.closest('.editor-panel');
   }
 
+  // 物理键位判定：Shift 会改变 event.key（US 布局 ⇧7 → '&'、⇧. → '>'），
+  // 因此数字与句点优先用 event.code，保证 Mac / Windows 各布局都命中同一动作。
+  function digitFromEvent(event) {
+    var match = /^Digit([0-9])$/.exec(event.code || '');
+    if (match) return match[1];
+    var key = event.key || '';
+    return key >= '0' && key <= '9' ? key : null;
+  }
+
+  // 快捷键动作映射：沿用 CodeMirror / 浏览器既有约定（Mod+B/I/K；撤销重做与查找由内核 keymap
+  // 提供），新增组合都刻意避开浏览器 / 系统保留键（Mod+L/P/T/W、⇧⌘4/5 截图、Firefox ⇧⌘M 等）。
+  function shortcutAction(event) {
+    var alt = event.altKey;
+    var shift = event.shiftKey;
+    var key = (event.key || '').toLowerCase();
+    if (!alt && !shift) {
+      if (key === 'b') return 'bold';
+      if (key === 'i') return 'italic';
+      if (key === 'k') return 'link';
+      return null;
+    }
+    if (alt && !shift) {
+      var digit = digitFromEvent(event);
+      return digit === '1' || digit === '2' || digit === '3' ? 'h' + digit : null;
+    }
+    if (shift && !alt) {
+      var shiftDigit = digitFromEvent(event);
+      if (shiftDigit === '7') return 'ul-star';
+      if (shiftDigit === '8') return 'ul-dash';
+      if (shiftDigit === '9') return 'ol';
+      if (key === 'e') return 'code';
+      if (key === 'x') return 'inline-math';
+      if (key === '.' || key === '>' || event.code === 'Period') return 'quote';
+      return null;
+    }
+    return null;
+  }
+
   function onKeydown(event) {
     if (event.defaultPrevented) return;
     if (event.isComposing || event.keyCode === 229) return;   // 输入法组合中不拦截
+    if (event.key === 'Escape' && basicMenu && !basicMenu.hidden) { event.preventDefault(); closeBasicMenu(true); return; }
     if (event.key === 'Escape' && fullscreenMode()) { applyFullscreen(null); return; }
     var mod = event.ctrlKey || event.metaKey;
-    if (!mod || event.altKey || event.shiftKey) return;
-    var key = (event.key || '').toLowerCase();
-    if (key !== 'b' && key !== 'i' && key !== 'k') return;
+    if (!mod) return;
+    var action = shortcutAction(event);
+    if (!action) return;
     if (!hasTools() || !inEditorTarget(event.target)) return;
     event.preventDefault();
-    runInsert(key === 'b' ? 'bold' : key === 'i' ? 'italic' : 'link');
+    runInsert(action);
   }
 
   // Escape in the sandboxed iframe cannot bubble into the parent document.
@@ -726,7 +938,17 @@
       if (!event.data || event.data.type !== 'md2pdf-ready') return;
       sendPreviewZoom();
     });
+    // 点击面板外部关闭「基础格式」面板；面板内部与触发器不触发。
+    document.addEventListener('click', function (event) {
+      if (!basicMenu || basicMenu.hidden) return;
+      var target = event && event.target;
+      if (basicWrap && basicWrap.contains && target && basicWrap.contains(target)) return;
+      closeBasicMenu(false);
+    });
+    // 点击预览 iframe（独立文档）不会冒泡到父文档：窗口失焦时同样关闭面板。
+    window.addEventListener('blur', function () { closeBasicMenu(false); });
     window.addEventListener('resize', function () {
+      if (basicMenu && !basicMenu.hidden) positionBasicMenu();
       if (ratio == null || isNarrow()) return;
       var rect = workspace.getBoundingClientRect();
       applyWidth(ratio * rect.width, rect.width, false);

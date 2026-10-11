@@ -353,6 +353,29 @@ test('publicHost mode allows the configured Origin and denies others', async t =
   assert.equal(malformed, 403);
 });
 
+test('PDF download names filename_version.pdf and shares logic with the Markdown name', async t => {
+  const app = await fixture(t, { chromeFactory: () => ({ async start() {}, async stop() {}, async printHtml() { return Buffer.from('%PDF-test'); } }) });
+  const md = '---\nversion: 9.9\n---\n# 报告标题';
+  const marker = "filename*=UTF-8''";
+  const nameFrom = response => decodeURIComponent(response.headers.get('content-disposition').slice(response.headers.get('content-disposition').indexOf(marker) + marker.length));
+  const owned = await app.post('/api/pdf', { md, filename: '报告标题_9.9.pdf' });
+  assert.equal(owned.status, 200);
+  assert.match(owned.headers.get('content-disposition'), /filename\*=UTF-8''/);
+  assert.equal(nameFrom(owned), '报告标题_9.9.pdf');
+  // 直接 API（未提交 filename）也按同一 helper 从正文与 version 推导。
+  assert.equal(nameFrom(await app.post('/api/pdf', { md })), '报告标题_9.9.pdf');
+  // 版本缺失 → 时间戳；命名与 Markdown 同源。
+  const noVersion = await app.post('/api/pdf', { md: '# 无版本标题' });
+  assert.match(nameFrom(noVersion), /^无版本标题_\d{8}_\d{6}\.pdf$/);
+  // 非法 filename 一律拒绝（控制字符 / 错误类型），路径穿越被净化。
+  assert.equal((await app.post('/api/pdf', { md, filename: 'a' + String.fromCharCode(10) + 'b.pdf' })).status, 400);
+  assert.equal((await app.post('/api/pdf', { md, filename: 42 })).status, 400);
+  assert.equal(validateInput({ md, filename: '../x.pdf' }).filename, 'x.pdf');
+  // 超长名不得截断扩展名：Content-Disposition 的 filename* 仍以 .pdf 结尾。
+  const long = validateInput({ md, filename: 'x'.repeat(400) + '.pdf' }).filename;
+  assert.ok(long.endsWith('.pdf') && long.length <= 200, '长名应保留 .pdf 且受限：' + long.length);
+});
+
 test('a stopped browser cannot launch later during shutdown', async () => {
   const browser = new Chrome('never-launch-this-path', '/tmp');
   await browser.stop();
