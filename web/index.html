@@ -46,7 +46,7 @@
         </div>
         <label class="sr-only" for="markdown">Markdown 正文</label>
         <textarea id="markdown" spellcheck="false" placeholder="正在加载示例…"></textarea>
-        <div class="editor-footer"><span>输入后自动更新预览</span><span id="count">0 字符</span></div>
+        <div class="editor-footer"><span><math aria-label="即时预览"><mrow><munder><mo>lim</mo><mrow><mi>Δt</mi><mo>→</mo><msup><mn>0</mn><mo>+</mo></msup></mrow></munder><mtext>Preview</mtext><mo>(</mo><mi>t</mi><mo>+</mo><mi>Δt</mi><mo>)</mo><mo>=</mo><mi mathvariant="normal">render</mi><mo>(</mo><mtext>Markdown</mtext><mo>(</mo><mi>t</mi><mo>)</mo><mo>)</mo></mrow></math></span><span id="count">0 字符</span></div>
       </section>
       <section class="preview-panel" aria-labelledby="preview-title">
         <div class="panel-heading">
@@ -59,10 +59,10 @@
           </div>
         </div>
         <div class="preview-surface"><iframe id="preview" title="Markdown 排版预览" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><div id="empty-preview">在左侧开始书写，预览将在这里呈现。</div></div>
-        <div class="preview-footer"><span>预览分页与 PDF 可能略有差异</span><p id="status" role="status" aria-live="polite">正在加载示例…</p></div>
+        <div class="preview-footer"><span><math aria-label="持续改进预览与 PDF 一致性"><mrow><munder><mo>lim</mo><mrow><mtext>effort</mtext><mo>→</mo><mo>+</mo><mo>∞</mo></mrow></munder><mtext>Preview</mtext><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><mtext>PDF</mtext><mo>(</mo><mi>t</mi><mo>)</mo></mrow></math></span><p id="status" role="status" aria-live="polite">正在加载示例…</p></div>
       </section>
     </div>
-    <p class="privacy">正文发送至服务器进行排版，服务器不保存正文或编辑历史。草稿与选项仅保存在当前浏览器会话（sessionStorage）中；浏览模板库或刷新页面后草稿会恢复。支持内嵌 PNG / JPEG / GIF / WebP 图片；本机路径和远程图片显示为未加载占位。</p>
+    <p class="privacy">Markdown 发送至服务器排版，草稿仅暂存于当前标签页，请及时下载保存。</p>
   </main>
 </body>
 </html>

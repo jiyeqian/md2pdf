@@ -127,8 +127,8 @@
     eqref: [{ d: 'M4 5h7l-4 5 4 5H4' }, { d: 'M12 10h5m-2-2 2 2-2 2' }],
     foldToggle: [{ d: 'M6.6 8.6 10 5.2l3.4 3.4' }, { d: 'M6.6 11.4 10 14.8l3.4-3.4' }],
     // Tabler arrows-exchange（24 网格）按 0.8333333333 缩放进 20 视图，路径数据未改动。
-    unsync: [{ d: 'M7 7h8l-3-3M13 13H5l3 3M3 3l14 14' }],
-    sync: [{ g: 'scale(0.8333333333)', d: 'M7 10h14l-4 -4M17 14h-14l4 4' }],
+    unsync: [{ d: 'M1 4h5v12H1zM14 4h5v12h-5zM6 10h2M12 10h2' }],
+    sync: [{ d: 'M1 4h5v12H1zM14 4h5v12h-5zM6 10h8' }],
     insert: [{ rect: [4, 4, 12, 12], rx: 2 }, { d: 'M10 7v6' }, { d: 'M7 10h6' }],
     // 从模板创建：文档轮廓（折角）+ 加号，与其它按钮同为 20×20 线性描边。
     template: [{ d: 'M11.2 3.6H6.2a1.4 1.4 0 0 0-1.4 1.4v10a1.4 1.4 0 0 0 1.4 1.4h7.6a1.4 1.4 0 0 0 1.4-1.4V7.4z' }, { d: 'M11.2 3.6v3.8h3.4' }, { d: 'M7.8 11h4.4' }, { d: 'M10 8.8v4.4' }]
@@ -433,7 +433,7 @@
     function updateSync(on) {
       button.setAttribute('aria-pressed', String(on));
       button.textContent = '';
-      button.appendChild(iconSvg(on ? 'unsync' : 'sync'));
+      button.appendChild(iconSvg(on ? 'sync' : 'unsync'));
       button.title = on ? '断开同步定位' : '开启同步定位';
     }
     updateSync(true); // 默认开启；图标表示点击后的动作。
@@ -454,6 +454,10 @@
   function buildToolbar() {
     toolbar = make('div', { class: 'md-wt-toolbar', role: 'toolbar', 'aria-label': 'Markdown 格式与操作工具条', 'aria-orientation': 'horizontal' });
 
+    var files = make('div', { class: 'md-wt-group', role: 'group', 'aria-label': '打开与模板' });
+    buildFileButtons(files);
+    appendItem(files, { icon: 'template', label: '从模板创建', href: '/examples', id: 'browse-examples' });
+    toolbar.appendChild(files);
     toolbar.appendChild(buildGroup('撤销重做与查找替换', 'md-wt-group--history', HISTORY_ITEMS));
     var formatGroup = buildBasicFormatControl();
     appendItem(formatGroup, { icon: 'codeblock', label: '代码块', action: 'codeblock', insert: 'codeblock' });
@@ -461,16 +465,6 @@
     toolbar.appendChild(formatGroup);
     toolbar.appendChild(buildGroup('插入', 'md-wt-group--insert', INSERT_ITEMS, 'images'));
     toolbar.appendChild(buildGroup('学术', 'md-wt-group--academic', ACADEMIC_ITEMS));
-
-    var view = make('div', { class: 'md-wt-group md-wt-group--view', role: 'group', 'aria-label': '视图' });
-    var foldButton = iconButton('foldToggle', '折叠或展开', actionTitle('折叠或展开'));
-    foldButton.addEventListener('click', function () { runCommand('toggleFold'); });
-    commandButtons.push(foldButton);
-    view.appendChild(foldButton);
-    syncInput = buildSyncButton();
-    view.appendChild(syncInput);
-    wireRovingTabindex(view);
-    toolbar.appendChild(view);
 
     var heading = editorPanel.querySelector('.panel-heading');
     // insertBefore(node, null/undefined) 追加到末尾，避免依赖 after()。
@@ -634,6 +628,9 @@
       'aria-valuetext': '编辑区 50%',
     });
     workspace.insertBefore(divider, previewPanel);
+    syncInput = buildSyncButton();
+    syncInput.className += ' md-panel-sync';
+    workspace.appendChild(syncInput);
 
     divider.addEventListener('pointerdown', function (event) {
       if (fullscreenMode()) return;
@@ -779,7 +776,7 @@
         focusEditor();
       } catch (e) { fileStatus('无法读取 Markdown 文件，请重试。', true); }
     });
-    actions.appendChild(makeFileButton('打开 Markdown 文件', 'open', function () { input.click(); }));
+    actions.appendChild(makeFileButton('打开 Markdown', 'open', function () { input.click(); }));
   }
 
   async function saveMarkdown() {
@@ -806,10 +803,7 @@
     editorFullscreenBtn = makeFullscreenButton('Markdown 全屏写作', '全屏写作（Esc 退出）');
     editorFullscreenBtn.addEventListener('click', function () { toggleFullscreen('editor'); });
     if (editorActions) {
-      buildFileButtons(editorActions);
-      var templateLink = appendItem(editorActions, { icon: 'template', label: '从模板创建', hint: '从模板创建', href: '/examples', id: 'browse-examples' });
-      templateLink.className = 'icon-button';
-      editorActions.appendChild(makeFileButton('保存 Markdown 文件', 'save', saveMarkdown));
+      editorActions.appendChild(makeFileButton('下载 Markdown', 'save', saveMarkdown));
       editorActions.appendChild(editorFullscreenBtn);
     }
 
