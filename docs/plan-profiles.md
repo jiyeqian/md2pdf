@@ -124,7 +124,7 @@ GB/T 1.1-2020 结构：
 | **P0** | Profile 骨架 + `--type` + 自动探测；`isSkill` 收编进 `skill` profile | **已完成** |
 | P1 | Jekyll profile（仅 frontmatter 报头，不含 Liquid） | 待办 |
 | P2 | 编号方案抽象（arabic / gb / cjk / chapter） | **已完成** |
-| P3 | GB 专项（封面、章条编号、规范性引用文件、术语、附录） | **已完成**（`gb` profile + `theme-gb.css` + `docs/gb-template.md`） |
+| P3 | GB 专项（封面、章条编号、规范性引用文件、术语、附录） | **已完成**（`gb` profile + `assets/themes/gb.css` + `docs/gb-template.md`） |
 | P4 | 文档站扩展语法（admonition / callout / wikilink） | 待办（已决策延后） |
 | P5 | 论文 / 简历 / 书籍等更多 profile | 部分完成（**论文 `paper` 已做**；简历/书籍待办） |
 

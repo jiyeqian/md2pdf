@@ -1,7 +1,7 @@
 /**
  * md2pdf 静态校验（不需要浏览器）
  *
- * 用法：node ci/checks.mjs [项目根]
+ * 用法：node tests/checks.mjs [项目根]
  *
  * 校验对象是"会真正影响输出"的约定，而不是文件是否存在这类表面项：
  *   1. 版本号一致（package.json ↔ src 里的 VERSION）
@@ -34,8 +34,8 @@ const readIf = p => (fs.existsSync(p) ? read(p) : '');
 const srcFile = path.join(ROOT, 'src', 'md2pdf.mjs');
 const shellFile = path.join(ROOT, 'assets', 'shell.html');
 const baseCssFile = path.join(ROOT, 'assets', 'base.css');
-const themeDir = path.join(ROOT, 'assets');
-const themes = fs.readdirSync(themeDir).filter(f => /^theme-.+\.css$/.test(f)).sort()
+const themeDir = path.join(ROOT, 'assets', 'themes');
+const themes = fs.readdirSync(themeDir).filter(f => /\.css$/.test(f)).sort()
   .map(f => path.join(themeDir, f));
 
 console.log(`校验目标：${ROOT}`);
@@ -132,7 +132,7 @@ ok('gb 元数据：模板 frontmatter 收录 SAMR 全部字段（键名与平台
 ok('gb 元数据：模板字段不采用注释形式（留空即可）',
   !/^#\s*[^:\n]+:\s*\S/m.test(gbTplFm[0]));
 const tmpOut = (n) => path.join(os.tmpdir(), 'md2pdf-ci-' + n + '.html');
-const rSkill = run(['skill/SKILL.md', '--html-only', '-o', tmpOut('skill')]);
+const rSkill = run(['integrations/skills/md2pdf/SKILL.md', '--html-only', '-o', tmpOut('skill')]);
 ok('profile：SKILL.md 自动探测为 skill', rSkill.status === 0 && /<div class="kicker">技能文档<\/div>/.test(readIf(tmpOut('skill'))),
   `status=${rSkill.status}`);
 const rForce = run(['examples/general.md', '--html-only', '--type', 'skill', '-o', tmpOut('force')]);
@@ -342,7 +342,7 @@ ok('书签：帮助文本写明 --no-outline', /--no-outline\s+不生成 PDF 书
 // 实测：macOS 自带的 bash 3.2（/bin/sh）会把这个字符的首字节并进变量名 ——
 //   sh -c 'R=abc; echo "X：$R（y）"'   →   X：<乱码>y）
 // 变量展开成空、还吐出半个字符的字节。相邻处必须写 ${VAR}。
-const SHELL_FILES = ['bin/md2pdf', 'ci/validate.sh'];
+const SHELL_FILES = ['bin/md2pdf', 'scripts/validate.sh'];
 const bareThenCjk = /\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]|\$[0-9@*#?!][^\x00-\x7F]/;
 for (const f of SHELL_FILES) {
   const text = readIf(path.join(ROOT, f));
@@ -359,9 +359,9 @@ for (const f of SHELL_FILES) {
 /* ---------- 8. 技能说明书（Agent 那一层的分发） ---------- */
 // 技能包只是"说明书"，实现是 CLI —— 两层各自分发。说明书必须随仓库走，
 // 否则换了机器装好命令，Agent 仍然不认识它。
-const skillMd = readIf(path.join(ROOT, 'skill', 'SKILL.md'));
+const skillMd = readIf(path.join(ROOT, 'integrations', 'skills', 'md2pdf', 'SKILL.md'));
 const installSkill = readIf(path.join(ROOT, 'src', 'install-skill.mjs'));
-ok('技能：skill/SKILL.md 存在（说明书随仓库分发）', skillMd.length > 0);
+ok('技能：integrations/skills/md2pdf/SKILL.md 存在（说明书随仓库分发）', skillMd.length > 0);
 if (skillMd) {
   const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(skillMd);
   ok('技能：有 YAML frontmatter', !!fm);
@@ -373,9 +373,9 @@ if (skillMd) {
 }
 ok('技能：npm 不再自动安装说明书', !pkg.scripts?.postinstall);
 ok('技能：显式安装实现随包分发', installSkill.length > 0);
-ok('技能：npm 包会把 skill/ 一并发布（files 含 skill）',
-  Array.isArray(pkg.files) && pkg.files.includes('skill'),
-  'files 不含 skill 的话，装出来的包里没有 SKILL.md，显式安装无源可复制');
+ok('技能：npm 包会把 integrations/ 一并发布（files 含 integrations）',
+  Array.isArray(pkg.files) && pkg.files.includes('integrations'),
+  'files 不含 integrations 的话，装出来的包里没有 SKILL.md，显式安装无源可复制');
 
 /* ---------- 汇总 ---------- */
 console.log(`\n结果：${pass} 项通过，${fail} 项失败`);

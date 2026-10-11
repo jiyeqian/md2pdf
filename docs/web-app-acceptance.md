@@ -47,7 +47,7 @@ npm start
 
 ```bash
 MD2PDF_ACCEPTANCE_DIR=/tmp/md2pdf-web-acceptance npm run test:browser
-node ci/inspect-pdf.mjs /tmp/md2pdf-web-acceptance/general.pdf
+node scripts/inspect-pdf.mjs /tmp/md2pdf-web-acceptance/general.pdf
 ```
 
 验证环境：macOS、Node.js v26.10.0、本机 Chrome 154。Node ≥ 18 的兼容目标保留，但本次没有单独运行 Node 18 测试。

@@ -32,7 +32,7 @@
 - `assets/`：页面模板、主题 CSS、GB 标志。
 - `vendor/`：marked、MathJax、Mermaid、highlight.js、Paged.js，支持现有 CLI 零 npm 运行时依赖。
 - `templates/`、`examples/`：四类文档的模板与示例。
-- `ci/validate.sh`、`ci/checks.mjs`：结构、语法、源码一致性和 HTML 行为校验；`ci/inspect-pdf.mjs` 用于检查 PDF 书签与内链。
+- `scripts/validate.sh`、`tests/checks.mjs`：结构、语法、源码一致性和 HTML 行为校验；`scripts/inspect-pdf.mjs` 用于检查 PDF 书签与内链。
 
 ### 2.2 尚需拆分的职责
 
@@ -88,7 +88,7 @@ MathJax、Mermaid、Paged.js 和 GB 标志目前使用本机文件 URL，相对�
 - [x] 抽取接受 Markdown 文本及上下文的渲染模块，返回 HTML、标题、类型及打印所需信息。
 - [x] 抽取 Chrome/CDP 模块，保留 CLI 入口及参数行为。
 - [x] CLI 继续承担文件读写、相对资源解析、输出路径和批处理。
-- [x] 调整 `ci/checks.mjs` 中直接扫描 `src/md2pdf.mjs` 的模板、占位符及打印参数检查，保持检查含义，不通过删除断言获得通过。
+- [x] 调整 `tests/checks.mjs` 中直接扫描 `src/md2pdf.mjs` 的模板、占位符及打印参数检查，保持检查含义，不通过删除断言获得通过。
 - [x] 运行 `npm test`，验证五类文档、选项默认值及 HTML 行为。
 
 验收：现有检查通过，CLI 行为保持兼容。拆分前后均通过现有 112 项检查及 6 项守卫自测；五类文档的普通/分页 HTML 共 10 组在归一化资源路径后完全一致。

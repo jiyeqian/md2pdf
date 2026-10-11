@@ -5,7 +5,7 @@
  * CI 里没有浏览器，渲不出 PDF，所以 outline 相关的断言只能钉"接线"；
  * 真正的书签结构要靠这个脚本在看得到 Chrome 的机器上验一遍。
  *
- *   node ci/inspect-pdf.mjs out.pdf
+ *   node scripts/inspect-pdf.mjs out.pdf
  *
  * 纯 Node 实现：只解析未压缩的对象字典，不依赖任何 PDF 库。
  */
@@ -14,7 +14,7 @@ import { basename } from 'node:path';
 
 const file = process.argv[2];
 if (!file) {
-  console.error('用法：node ci/inspect-pdf.mjs <file.pdf>');
+  console.error('用法：node scripts/inspect-pdf.mjs <file.pdf>');
   process.exit(2);
 }
 

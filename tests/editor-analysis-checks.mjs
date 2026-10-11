@@ -6,7 +6,7 @@
 // 与渲染层（src/render.mjs）支持字符集不一致的地方只在 docs/md-editor-iteration.md 报告，
 // 不在本文件里把断言改成“现状即正确”。
 //
-// Run: node --test ci/editor-analysis-checks.mjs
+// Run: node --test tests/editor-analysis-checks.mjs
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

@@ -33,7 +33,7 @@ test('gb policy locks everything except toc and inherits original profile defaul
   assert.equal(policy.fixed.marginLeft, gb.marginLeft);
   assert.equal(policy.fixed.marginRight, gb.marginRight);
   assert.equal(policy.controls.fontSize.fixedValue, 10.5);
-  // GB 行距固定为内置模板值，与 theme-gb.css 的 1.62 一致
+  // GB 行距固定为内置模板值，与 themes/gb.css 的 1.62 一致
   assert.equal(policy.controls.lineHeight.fixedValue, GB_LINE_HEIGHT);
   assert.equal(policy.controls.lineHeight.fixedValue, 1.62);
   assert.equal(policy.controls.toc.available, true);

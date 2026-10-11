@@ -149,7 +149,7 @@ md2pdf 文件名.md --theme minimal --toc
 书签由 Chrome 按 `h1`–`h6` 结构生成，无需额外配置。验一份 PDF 的书签与内链：
 
 ```bash
-node ci/inspect-pdf.mjs out.pdf
+node scripts/inspect-pdf.mjs out.pdf
 ```
 
 ## 排版规则
@@ -164,7 +164,7 @@ node ci/inspect-pdf.mjs out.pdf
 - 图表：三类图统一编号为题注「图 N：…」——普通图片与矢量图（SVG）的题注写在 alt 里，mermaid 图写在代码块上一行「图：说明」；表格前一行写「表：说明」即编号「表 N：…」。`\ref{fig:x}` / `\ref{tab:x}` 交叉引用并链接到原图。
 - 相对路径图片自动解析进 PDF。
 
-改样式：`assets/base.css`（骨架）与 `assets/theme-*.css`（配色），改完重跑命令即生效。
+改样式：`assets/base.css`（骨架）与 `assets/themes/*.css`（配色），改完重跑命令即生效。
 
 ## 模板与示例
 
@@ -192,7 +192,7 @@ node ci/inspect-pdf.mjs out.pdf
 git clone https://github.com/jiyeqian/md2pdf.git
 cd md2pdf
 npm link              # 命令指向仓库，改代码立即生效
-bash ci/validate.sh   # 本地与 CI 同一套校验（无需浏览器）
+bash scripts/validate.sh   # 本地与 CI 同一套校验（无需浏览器）
 ```
 
 发版：同步 `src/md2pdf.mjs` 的 `VERSION` 与 `package.json` 的 `version`，然后 `git tag v1.x.x && git push origin v1.x.x`，CNB 流水线会自动 `npm publish`（需配置 `NPM_TOKEN`）。

@@ -8,7 +8,7 @@
 //   * 预览 ready 后按 event.source === previewFrame.contentWindow 校验并重发当前缩放；
 //   * 数值 bubble/端点标签的位置 CSS 与窄屏不溢出。
 //
-// Run: node --test ci/editor-zoom-checks.mjs
+// Run: node --test tests/editor-zoom-checks.mjs
 
 import test from 'node:test';
 import assert from 'node:assert/strict';

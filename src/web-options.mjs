@@ -33,7 +33,7 @@ export const OPTION_LABELS = { type: '文档类型', theme: '主题', toc: '目�
 export const FONT_SIZE_RANGE = { min: 8, max: 24, step: 0.5 };
 // 正文行距：有限数字 1.0–2.5（step 0.05），省略时保持正文默认 1.9。
 export const LINE_HEIGHT_RANGE = { min: 1, max: 2.5, step: 0.05 };
-// GB 国家标准版式的固定正文行距，须与 assets/theme-gb.css 的 body{line-height:1.62} 保持一致。
+// GB 国家标准版式的固定正文行距，须与 assets/themes/gb.css 的 body{line-height:1.62} 保持一致。
 export const GB_LINE_HEIGHT = 1.62;
 export const MARGIN_RANGE = { min: 10, max: 40 };
 
@@ -229,7 +229,7 @@ export function effectiveOptions(opts = {}, type = 'general') {
     numbering: pick('numbering', WEB_BASELINE.numbering),
     toc: pick('toc', WEB_BASELINE.toc),
     fontSize: pick('fontSize', WEB_BASELINE.fontSize),
-    // GB 行距固定为内置模板值（theme-gb.css 1.62），不接受在线覆盖。
+    // GB 行距固定为内置模板值（themes/gb.css 1.62），不接受在线覆盖。
     lineHeight: type === 'gb' ? GB_LINE_HEIGHT : pick('lineHeight', WEB_BASELINE.lineHeight),
     landscape: pick('landscape', false),
     marginTop: pick('marginTop', WEB_BASELINE.marginTop),

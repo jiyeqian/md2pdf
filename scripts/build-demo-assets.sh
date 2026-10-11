@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 重新生成 examples 的 PDF 与 README 效果图 —— 源文件与产物必须始终同步。
 #
-#   bash ci/build-demo-assets.sh
+#   bash scripts/build-demo-assets.sh
 #
 # 产物：
 #   examples/general-elegant.pdf / general-minimal.pdf（general.md 用各主题渲染）
@@ -17,7 +17,7 @@ set -euo pipefail
 ROOT="$(cd -P "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-RENDER_DEPS="src/md2pdf.mjs assets/shell.html assets/base.css assets/theme-elegant.css assets/theme-minimal.css assets/theme-gb.css"
+RENDER_DEPS="src/md2pdf.mjs assets/shell.html assets/base.css assets/themes/elegant.css assets/themes/minimal.css assets/themes/gb.css"
 
 # need_build <output> <input...> ：输出缺失或任一输入比输出新时返回 0
 need_build() {
@@ -35,7 +35,7 @@ report() { # <action> <out>
 # general：elegant / minimal 双主题
 for t in elegant minimal; do
   out="examples/general-$t.pdf"
-  if need_build "$out" examples/general.md "assets/theme-$t.css" $RENDER_DEPS; then
+  if need_build "$out" examples/general.md "assets/themes/$t.css" $RENDER_DEPS; then
     report "→ 生成" "$out"
     node src/md2pdf.mjs examples/general.md --theme "$t" -o "$out"
   else

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * trace-gb-logo —— 把 GB 标志源位图（tools/gb-logo.src.png）描迹成矢量 SVG。
+ * trace-gb-logo —— 把 GB 标志源位图（scripts/assets/gb-logo.src.png）描迹成矢量 SVG。
  *
  * 源位图的来历（一次性取证，勿删）：
  *   pdftoppm -r 600 -gray -f 1 -l 1 官方GB封面.pdf /tmp/hi
@@ -9,7 +9,7 @@
  * 步骤：解析 PNG（灰度 8bit）→ 3×3 多数投票去噪 → 黑域轮廓追踪（有向边法，
  * 外轮廓顺时针/白洞逆时针自动区分）→ Douglas–Peucker 简化 → 单 path + evenodd。
  *
- * 用法：node tools/trace-gb-logo.mjs  （写 assets/gb-logo.svg）
+ * 用法：node scripts/assets/trace-gb-logo.mjs  （写 assets/gb-logo.svg）
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.join(HERE, 'gb-logo.src.png');
-const OUT = path.join(HERE, '..', 'assets', 'gb-logo.svg');
+const OUT = path.join(HERE, '..', '..', 'assets', 'gb-logo.svg');
 const EPS = 2;
 const DENOISE_PASSES = 2;          // Douglas-Peucker 简化阈值（像素）
 const MIN_AREA = 40;    // 丢弃小于该面积（像素²）的碎屑轮廓

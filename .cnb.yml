@@ -20,7 +20,7 @@
             echo "node: $(node -v 2>/dev/null || echo '未预装，校验脚本会自动安装')"
         - name: 运行校验
           script: |
-            bash ci/validate.sh
+            bash scripts/validate.sh
 
   pull_request:
     - name: 校验
@@ -29,7 +29,7 @@
       stages:
         - name: 运行校验
           script: |
-            bash ci/validate.sh
+            bash scripts/validate.sh
 
   tag_push:
     - name: 发布
@@ -41,7 +41,7 @@
       stages:
         - name: 发布前校验
           script: |
-            bash ci/validate.sh
+            bash scripts/validate.sh
         - name: 发布到 npm
           script: |
             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc

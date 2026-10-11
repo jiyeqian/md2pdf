@@ -12,7 +12,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Web 落款占位文件名（document.md）指向的官方仓库。预览点击时按同一常量精确校验 href。
 export const REPO_URL = 'https://github.com/jiyeqian/md2pdf';
 const ASSETS = path.join(ROOT, 'assets');
-const listThemes = () => readdirSync(ASSETS).filter(f => /^theme-.+\.css$/.test(f)).map(f => f.slice(6, -4)).sort();
+const THEMES = path.join(ASSETS, 'themes');
+const listThemes = () => readdirSync(THEMES).filter(f => /\.css$/.test(f)).map(f => f.replace(/\.css$/, '')).sort();
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const stripTags = s => String(s).replace(/<[^>]+>/g, '').trim();
 // 给标签属性串追加 class（属性串可能已有 class="…"，也可能为空）
@@ -665,12 +666,12 @@ export async function render(src, options = {}, context = {}) {
   html = sectionize(html);
 
   // CSS
-  const themeFile = path.join(ASSETS, `theme-${effTheme}.css`);
+  const themeFile = path.join(THEMES, `${effTheme}.css`);
   if (!existsSync(themeFile)) throw new Error(`未知主题：${effTheme}（可用：${listThemes().join(', ')}）`);
   const base = await readFile(path.join(ASSETS, 'base.css'), 'utf8');
   const theme = await readFile(themeFile, 'utf8');
   // 正文行距：webapp 选项 opts.lineHeight（有限数字 1.0–2.5，server 已校验范围）。
-  // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 theme-gb.css 的
+  // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 themes/gb.css 的
   // body{line-height:1.62} 直接覆盖，且 server 拒绝为 gb 传入 lineHeight。
   const effLineHeight = Number.isFinite(opts.lineHeight) ? opts.lineHeight : 1.9;
   const css = (base + '\n' + theme)

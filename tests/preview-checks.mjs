@@ -1,5 +1,5 @@
 // 预览增强的结构性检查（无需浏览器）：只断言 enhancePreview 产出的 HTML/脚本文本，
-// 与真实浏览器行为解耦；浏览器集成验证在 ci/browser-checks.mjs 之后单独进行。
+// 与真实浏览器行为解耦；浏览器集成验证在 tests/browser-checks.mjs 之后单独进行。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { enhancePreview, previewCss, PREVIEW_MARKER } from '../src/preview.mjs';

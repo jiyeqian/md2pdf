@@ -56,6 +56,6 @@ frontmatter 含「标准号」自动识别。自动生成封面（GB 标志、�
 改了任何示例或样式后，在仓库根目录执行：
 
 ```bash
-bash ci/build-demo-assets.sh    # 按输入时间增量重渲，无关样例自动跳过
+bash scripts/build-demo-assets.sh    # 按输入时间增量重渲，无关样例自动跳过
 ```
 

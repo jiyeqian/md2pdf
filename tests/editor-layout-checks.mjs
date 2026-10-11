@@ -7,7 +7,7 @@
 //   * editor-workspace.css 的共享固定 viewport 全屏模式；
 //   * 用最小 fake DOM 在 vm 中真实执行 editor-workspace.js，验证互斥与 Esc 行为。
 //
-// Run: node --test ci/editor-layout-checks.mjs
+// Run: node --test tests/editor-layout-checks.mjs
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
