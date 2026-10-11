@@ -77,7 +77,7 @@ test('预览页脚承载 #status（span 左、p 右，role=status/live），且�
   const preview = indexHtml.match(/<section class="preview-panel"[\s\S]*?<\/section>/)[0];
   const footer = preview.match(/<div class="preview-footer">([\s\S]*?)<\/div>/);
   assert.ok(footer, '预览面板应有 .preview-footer');
-  assert.match(footer[1], /<span>预览分页与 PDF 可能略有差异<\/span>/);
+  assert.match(footer[1], /<span><math[\s\S]*?<\/math><\/span>/);
   assert.match(footer[1], /<p id="status" role="status" aria-live="polite">/);
   assert.ok(footer[1].indexOf('<span>') < footer[1].indexOf('<p id="status"'), 'span 在左，p#status 在右');
   // 页脚属于面板结构，不进入预览 iframe / PDF。
@@ -156,7 +156,7 @@ test('editor-workspace.js：工具栏为分组 SVG 图标按钮，title/aria-lab
   for (const token of ['var ICONS = {', 'function iconSvg', 'function iconButton', "createElementNS(SVG_NS, 'svg')", "class: 'md-wt-button'"]) {
     assert.ok(wsJs.includes(token), '缺少图标基础设施：' + token);
   }
-  for (const token of ['md-wt-group--history', 'md-wt-group--format', 'md-wt-group--insert', 'md-wt-group--academic', 'md-wt-group--view']) {
+  for (const token of ['md-wt-group--history', 'md-wt-group--format', 'md-wt-group--insert', 'md-wt-group--academic']) {
     assert.ok(wsJs.includes(token), '缺少分组：' + token);
   }
   for (const token of ["label: '撤销'", "action: 'undo'", "label: '查找与替换'", "iconButton('basicFormat', '基础格式'", "label: '一级标题'", "label: '二级标题'", "label: '三级标题'", "label: '粗体'", "label: '斜体'", "label: '无序列表'", "label: '有序列表'", "label: '链接'", "label: '引用块'", "label: '行内代码'", "label: '行内公式'", "label: '参考文献'", "label: 'BibTeX参考文献'", "label: 'DOI参考文献'", "label: '公式块'", "label: '图表引用'", "label: '公式引用'", "SHORTCUTS = {"]) {
@@ -166,7 +166,7 @@ test('editor-workspace.js：工具栏为分组 SVG 图标按钮，title/aria-lab
   assert.match(wsJs, /'data-md-wt-mount': mount/, '插入组应暴露图片挂载点');
   assert.match(wsJs, /IMAGE_MOUNT_ATTR = 'data-md-wt-mount'/);
   // 折叠/展开共用一个命令按钮，不猜状态
-  assert.ok(wsJs.includes("runCommand('toggleFold')"), '折叠按钮应调用 toggleFold');
+  assert.ok(!wsJs.includes("runCommand('toggleFold')"), '工具条不再提供折叠按钮');
   // 同步定位：图标开关按钮（aria-pressed）+ .checked 兼容访问器，不是隐藏复选框
   assert.ok(!/type: 'checkbox'/.test(wsJs), '不再使用隐藏复选框冒充按钮');
   assert.match(wsJs, /defineProperty\(button, 'checked'/, '保留 .checked 兼容访问器');
@@ -403,11 +403,10 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   assert.equal(basicMenu.hidden, true, 'Esc 应关闭第二级面板并保持可访问性状态');
   assert.equal(basicButton.getAttribute('aria-expanded'), 'false');
 
-  const templateLink = env.editorActions.children.find(n => n.getAttribute && n.getAttribute('id') === 'browse-examples');
+  const templateLink = all.find(n => n.getAttribute && n.getAttribute('id') === 'browse-examples');
   assert.ok(templateLink, '标题栏应含「从模板创建」锚点');
-  assert.equal(env.editorActions.children.at(-3), templateLink, '模板入口应位于保存按钮左侧');
-  assert.equal(templateLink.className, 'icon-button');
-  assert.ok(!walk(toolbar, []).includes(templateLink), '工具条不再重复模板入口');
+  assert.ok(walk(toolbar, []).includes(templateLink), '模板入口应移到工具条');
+  assert.ok(!env.editorActions.children.includes(templateLink));
   assert.equal(templateLink.tagName, 'A', '从模板创建应是锚点而非命令按钮');
   assert.equal(templateLink.getAttribute('href'), '/examples');
   assert.equal(templateLink.getAttribute('aria-label'), '从模板创建');
@@ -423,7 +422,7 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   const tableButton = buttons.find(b => b.getAttribute('aria-label') === '表格');
   assert.ok(insertGroup.children.indexOf(tableButton) < insertGroup.children.indexOf(mount), '表格在左，图片在右');
 
-  const syncBtn = all.find(n => n.getAttribute && n.getAttribute('id') === 'md-wt-sync');
+  const syncBtn = walk(env.workspace, []).find(n => n.getAttribute && n.getAttribute('id') === 'md-wt-sync');
   assert.ok(syncBtn, '应存在 #md-wt-sync');
   assert.equal(syncBtn.tagName, 'BUTTON', '同步定位应是按钮而非复选框');
   assert.equal(syncBtn.getAttribute('aria-pressed'), 'true', '同步定位默认开启');
@@ -434,10 +433,8 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   syncBtn.dispatch('click');
   assert.equal(syncBtn.getAttribute('aria-pressed'), 'true', '再次点击应开启');
 
-  const foldBtn = buttons.find(b => b.getAttribute('aria-label') === '折叠或展开');
-  assert.ok(foldBtn, '应有折叠 / 展开共用按钮');
-  foldBtn.dispatch('click');
-  assert.deepEqual(calls, ['toggleFold'], '折叠按钮应调用 toggleFold 命令');
+  assert.ok(!buttons.some(b => b.getAttribute('aria-label') === '折叠或展开'));
+  assert.ok(!walk(toolbar, []).includes(syncBtn), '同步开关不在工具条');
 });
 
 
@@ -835,9 +832,12 @@ test('预览点击关闭浮层仅接受当前 iframe 与当前 revision 的消�
 });
 
 
-test('heading file buttons follow open, template, save, fullscreen order', () => {
+test('标题栏保留下载与全屏，打开与模板位于工具条最前', () => {
   const env = fakeEnvironment();
   vm.runInContext(wsJs, env.sandbox);
   const labels = env.editorActions.children.filter(n => ['BUTTON', 'A'].includes(n.tagName)).map(n => n.getAttribute('aria-label'));
-  assert.deepEqual(labels, ['打开 Markdown 文件', '从模板创建', '保存 Markdown 文件', 'Markdown 全屏写作']);
+  assert.deepEqual(labels, ['下载 Markdown', 'Markdown 全屏写作']);
+  const toolbar = env.editorPanel.children.find(n => n.getAttribute && n.getAttribute('role') === 'toolbar');
+  const first = toolbar.children[0].children.filter(n => ['BUTTON', 'A'].includes(n.tagName));
+  assert.deepEqual(first.map(n => n.getAttribute('aria-label')), ['打开 Markdown', '从模板创建']);
 });

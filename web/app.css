@@ -101,3 +101,9 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
   .toolbar select option::checkmark{color:#6f93bc}
   .toolbar select::picker-icon{color:#8290a2}
 }
+
+.topbar-actions .button-link{width:76px;height:38px;justify-content:center;padding:0 10px}
+.editor-footer,.preview-footer{font-size:11px;min-height:42px;gap:8px}
+.editor-footer math,.preview-footer math,.preview-footer #status{font-size:11px}
+.editor-footer>span:first-child,.preview-footer>span{min-width:0;overflow-x:auto}
+#count{white-space:nowrap;flex-shrink:0}

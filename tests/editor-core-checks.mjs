@@ -31,7 +31,7 @@ const REQUIRED_VENDOR = [
   'history', 'historyKeymap', 'defaultKeymap', 'undo', 'redo', 'indentWithTab',
   'searchKeymap', 'openSearchPanel', 'replaceAll', 'search',
   'autocompletion', 'closeBrackets', 'closeBracketsKeymap', 'completionKeymap',
-  'foldKeymap', 'foldCode', 'unfoldCode', 'codeFolding',
+  'foldKeymap', 'foldCode', 'unfoldCode', 'foldGutter', 'codeFolding',
   'indentOnInput', 'bracketMatching', 'syntaxHighlighting', 'defaultHighlightStyle', 'HighlightStyle', 'tags',
   'markdown', 'markdownKeymap', 'markdownLanguage',
   'javascriptLanguage', 'typescriptLanguage', 'jsxLanguage', 'tsxLanguage',
@@ -103,6 +103,7 @@ async function checkSourceContract() {
   for (const name of REQUIRED_API) assert(source.includes(name + ':'), 'api method ' + name);
   for (const event of ['md-editor-ready', 'md-editor-change', 'md-editor-cursor']) assert(source.includes(event), 'event ' + event);
   for (const command of ['undo', 'redo', 'find', 'replace', 'fold', 'unfold', 'toggleFold']) assert(source.includes(command + ':'), 'command ' + command);
+  assert(source.includes('V.foldGutter()'), 'editor enables clickable folding gutter');
   assert(source.includes('toggleFold: function () { return V.unfoldCode(view) || V.foldCode(view); }'), 'toggleFold prefers unfold then fold at the current position');
   assert(source.includes("aria-label': 'Markdown 正文编辑器'"), 'content aria-label (Chinese)');
   const activeLine = /'\.cm-activeLine':\s*\{\s*backgroundColor:\s*'rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)'/.exec(source);

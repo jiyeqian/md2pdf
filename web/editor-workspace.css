@@ -267,3 +267,23 @@
 
 
 .editor-footer #count{margin-left:auto;white-space:nowrap;text-align:right}
+
+.md-wt-group + .md-wt-group{margin-left:0;padding-left:0;border-left:0}
+.workspace.md-editor-workspace{position:relative}
+.workspace.md-editor-workspace>.editor-panel{grid-area:1/1}
+.workspace.md-editor-workspace>.md-wt-divider{grid-area:1/2}
+.workspace.md-editor-workspace>.preview-panel{grid-area:1/3}
+.md-panel-sync{grid-area:1/2;position:relative;top:8px;justify-self:center;align-self:start;z-index:5;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:transparent;color:#677389;padding:6px;cursor:pointer}
+.md-panel-sync:hover{background:#eef2f8}
+.md-panel-sync:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
+.workspace.editor-focus .md-panel-sync,.workspace.preview-focus .md-panel-sync{display:none}
+.workspace.md-editor-workspace .panel-heading{position:relative;display:flex;justify-content:space-between}
+.md-wt-zoom{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:200px;height:40px;align-self:auto}
+.md-wt-zoom > .ruler-control{top:50%;bottom:auto;transform:translateY(-50%)}
+.md-wt-zoom .ruler-label{top:50%}
+.md-wt-zoom-value{opacity:0}
+.md-wt-zoom .ruler-slider:hover + .md-wt-zoom-value,.md-wt-zoom.md-zoom-keyboard .md-wt-zoom-value{opacity:1}
+@media(max-width:900px){.workspace.md-editor-workspace>.preview-panel{grid-area:3/1}.md-panel-sync{grid-area:2/1;position:static;justify-self:center}.md-wt-zoom{width:180px}}
+@media(max-width:480px){.md-wt-zoom{width:130px}}
+.workspace.md-editor-workspace.editor-focus>.editor-panel,
+.workspace.md-editor-workspace.preview-focus>.preview-panel{grid-area:1/1}

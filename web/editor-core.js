@@ -335,6 +335,7 @@
         'Completions': '补全建议',
       }),
       V.lineNumbers(),
+      V.foldGutter(),
       V.highlightActiveLineGutter(),
       V.highlightActiveLine(),
       V.highlightSpecialChars(),

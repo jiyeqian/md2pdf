@@ -322,3 +322,18 @@ test("sliders omit ticks and character count belongs to the footer", async () =>
   assert.match(html, /class="editor-footer"[^>]*>.*id="count"/);
   assert.ok(!html.includes("ruler-ticks"));
 });
+
+test('鼠标离开滑块后数值不受焦点滞留影响，键盘操作仍可显示数值', () => {
+  const env = fakeEnvironment();
+  vm.runInContext(wsJs, env.sandbox);
+  const root = zoomControls(env.editorHeading)[0];
+  const { input } = zoomParts(root);
+  input.dispatch('keydown', { key: 'ArrowRight' });
+  assert.ok(root.classList.contains('md-zoom-keyboard'));
+  input.dispatch('pointerleave', {});
+  assert.ok(!root.classList.contains('md-zoom-keyboard'));
+  assert.ok(!wsCss.includes('.md-wt-zoom:focus-within'));
+  input.dispatch('keydown', { key: 'ArrowLeft' });
+  input.dispatch('blur', {});
+  assert.ok(!root.classList.contains('md-zoom-keyboard'));
+});
