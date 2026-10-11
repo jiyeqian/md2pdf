@@ -146,7 +146,8 @@ function saveDraft() {
     warning.id = 'draft-warning';
     warning.className = 'draft-warning';
     warning.setAttribute('role', 'alert');
-    document.querySelector('.status-row').after(warning);
+    const footer = document.querySelector('.preview-footer');
+    if (footer) footer.after(warning);
   }
   if (warning) {
     warning.hidden = saved;
@@ -655,6 +656,15 @@ document.addEventListener('click', event => {
 }, true);
 window.addEventListener('pagehide', saveDraft);
 
+// 与 Markdown 下载共用命名：把浏览器端算出的基名随请求发送，PDF 与 Markdown 同文档同版本
+// 得到完全一致的基名（无版本时共享同一浏览器时间戳）。失败时留空，由服务端自行推导。
+async function downloadNameFor(md, ext) {
+  try {
+    const files = await import('./editor-files.mjs');
+    return files.documentDownloadName(md, new Date(), ext);
+  } catch { return ''; }
+}
+
 download.addEventListener('click', async () => {
   if (!form.reportValidity()) return;
   downloading = true;
@@ -664,6 +674,7 @@ download.addEventListener('click', async () => {
   const exportRevision = revision;
   const exportMd = editor.value;
   const exportOptions = collectedOptions();
+  let exportName = '';
   try {
     if (!exportOptions.type) {
       const resolved = await (await request('/api/resolve', { md: exportMd, opts: {} })).json();
@@ -674,7 +685,10 @@ download.addEventListener('click', async () => {
         if (control && (control.available === false || (!key.startsWith('margin') && Array.isArray(control.values) && !control.values.includes(exportOptions[key])))) delete exportOptions[key];
       }
     }
-    const response = await request('/api/pdf', { md: exportMd, opts: exportOptions });
+    exportName = await downloadNameFor(exportMd, 'pdf');
+    const pdfBody = { md: exportMd, opts: exportOptions };
+    if (exportName) pdfBody.filename = exportName;
+    const response = await request('/api/pdf', pdfBody);
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -684,7 +698,7 @@ download.addEventListener('click', async () => {
     const at = disposition.indexOf(marker);
     const encoded = at >= 0 ? disposition.slice(at + marker.length) : '';
     const decoded = encoded ? decodeURIComponent(encoded) : '';
-    anchor.download = decoded || 'document.pdf';
+    anchor.download = decoded || exportName || 'document.pdf';
     document.body.append(anchor);
     anchor.click();
     anchor.remove();

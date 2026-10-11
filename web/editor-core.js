@@ -425,6 +425,9 @@
         view.dispatch({ effects: externalCompartment.reconfigure(externalExtensions) });
         return true;
       },
+      startCompletion: function () {
+        return V.startCompletion(view);
+      },
       setCompletions: function (provider) {
         completionProvider = typeof provider === 'function' ? provider : null;
         view.dispatch({ effects: completionCompartment.reconfigure(V.autocompletion({ override: completionProvider ? [completionSource] : [], activateOnTyping: true })) });

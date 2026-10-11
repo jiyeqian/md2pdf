@@ -24,7 +24,7 @@ export const WEB_BASELINE = {
   fontSize: 10.5, lineHeight: 1.9, marginTop: 20, marginBottom: 18, marginLeft: 18, marginRight: 18,
 };
 
-export const TYPE_LABELS = { general: '通用文档', skill: '技能文档', paper: '论文', gb: '国家标准' };
+export const TYPE_LABELS = { general: '通用文档', skill: '技能文档', paper: '学术论文', gb: '国家标准' };
 export const THEME_LABELS = { elegant: '雅致 · 墨蓝', minimal: '简洁 · 黑白', gb: '国家标准' };
 export const SCHEME_LABELS = { arabic: '1 / 1.1', gb: 'GB 章条', cjk: '一、/（一）', chapter: '第 1 章' };
 export const NUMBERING_LABELS = { auto: '自动识别', force: '强制编号', none: '不编号' };

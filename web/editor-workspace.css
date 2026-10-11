@@ -44,6 +44,39 @@
 }
 .md-wt-mount { display: inline-flex; align-items: center; gap: 4px; }
 
+/* ---------------- 基础格式：第一级单入口 + 第二级多行面板 ----------------
+ * 第一级只有一个「基础格式」按钮；点击展开 fixed 定位的浅色多行面板
+ * （标题 / 强调 / 列表 / 行内元素）。fixed 不撑高工具条、不被面板 overflow 裁剪；
+ * z-index 高于调整浮层与全屏面板，面板内按钮沿用工具条图标按钮外观。 */
+.md-wt-basic { position: relative; display: inline-flex; align-items: center; }
+.md-wt-basic-menu {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px;
+  min-width: 220px;
+  max-width: min(92vw, 380px);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(36, 51, 72, .14);
+  animation: md-wt-menu-in .12s ease-out;
+}
+.md-wt-basic-menu[hidden] { display: none; }
+.md-wt-menu-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.md-wt-menu-row + .md-wt-menu-row { margin-top: 4px; padding-top: 4px; border-top: 1px solid #f0f3f7; }
+.md-wt-basic-menu .md-wt-menu-item { width: 30px; height: 30px; flex: 0 0 auto; }
+.md-wt-basic.is-open > button { border-color: #6f93bc; background: #eef2f8; color: #233e60; }
+@keyframes md-wt-menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .md-wt-basic-menu { animation: none; } }
+@media (max-width: 480px) {
+  .md-wt-basic-menu { padding: 6px; min-width: 200px; }
+  .md-wt-basic-menu .md-wt-menu-item { width: 28px; height: 28px; }
+}
+
+
 /* 固定紧凑的图标按钮：工具条内所有按钮尺寸一致，仅图标随颜色变化。
  * 「从模板创建」是 <a> 锚点，沿用同一外观（文字按钮语义，随 currentColor）。 */
 .md-wt-toolbar button,

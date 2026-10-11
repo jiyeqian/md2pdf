@@ -71,7 +71,7 @@ function setMessage(tone, text) {
   els.message.hidden = !text;
 }
 
-// 持久状态：与 .status-row 里的 #status 并列，不会被应用的 setStatus 覆盖。
+// 持久状态：与 .preview-footer 里的 #status 并列，不会被应用的 setStatus 覆盖。
 function setStatus(tone, text) {
   if (!statusEl) return;
   statusEl.textContent = text || '';
@@ -230,7 +230,7 @@ function mountDialog() {
 
 function ensureStatus() {
   if (statusEl && statusEl.isConnected) return statusEl;
-  var row = document.querySelector('.status-row');
+  var row = document.querySelector('.preview-footer');
   if (!row) return null;
   statusEl = el('p', { class: 'md-doi-status', role: 'status', 'aria-live': 'polite' });
   row.appendChild(statusEl);

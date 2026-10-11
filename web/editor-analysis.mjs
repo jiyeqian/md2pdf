@@ -535,17 +535,18 @@ export const SNIPPETS = {
     },
   },
   formula: {
-    title: '公式',
-    // 公式命名空间为 eq:（MathJax \label / \eqref），ID 已含前缀，模板不再补
-    text: '$$\n\\begin{aligned}\nx &= y \\\\\n\\end{aligned}\n\\label{{{id}}}\n$$\n'
-      + '\n如式 $\\eqref{{{id}}}$ 所示。\n',
+    title: '公式块',
+    // 公式命名空间为 eq:（MathJax \label / \eqref），ID 已含前缀，模板不再补。
+    // 只插入公式块与唯一标签，不追加「如式 \eqref{…} 所示」等自动引用句，避免污染正文。
+    text: '$$\n\\begin{aligned}\nx &= y \\\\\n\\end{aligned}\n\\label{{{id}}}\n$$\n',
     idPrefix: 'eq:',
   },
+  rule: { title: '分割线', text: '\n\n---\n\n' },
   figure: {
     title: '图（题注 + 标签）',
     // 图命名空间为 fig:（渲染器 {#fig:id} / \ref），ID 已含前缀，模板不再补
     text: '图：{{title}} {#{{id}}}\n\n' + FENCE + 'mermaid\ngraph LR\n  A[开始] --> B[结束]\n' + FENCE
-      + '\n\n如图 \\ref{{{id}}} 所示。\n',
+      + '\n',
     idPrefix: 'fig:',
     idFrom: 'title',
   },

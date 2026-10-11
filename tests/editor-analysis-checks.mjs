@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
 // 纯解析模块 web/editor-analysis.mjs 的行为检查（无需浏览器）。
 //
 // 覆盖：大纲上下文（frontmatter / 围栏）、交叉引用目标与诊断、脚注与 BibTeX、
@@ -301,10 +303,11 @@ test('renderSnippet：ID 为 ASCII 安全串，重复插入互不冲突', () => 
   assert.deepEqual(ids.slice(0, 3), ['fig:robot-arm', 'fig:robot-arm-2', 'fig:robot-arm-3']);
 });
 
-test('公式片段自洽：\\label 与 \\eqref 同 ID，回灌解析器无缺失诊断', () => {
+test('公式片段：唯一 \\label，不追加自动引用句，回灌解析器无缺失诊断', () => {
   const { text, id } = renderSnippet('formula');
   assert.ok(text.includes('\\label{' + id + '}'));
-  assert.ok(text.includes('\\eqref{' + id + '}'));
+  assert.ok(!text.includes('\\eqref{'), '不应自动追加 \\eqref 引用句');
+  assert.ok(!text.includes('如式'), '不应自动生成「如式 … 所示」句子');
   const r = analyzeMarkdown(text);
   assert.deepEqual(r.equations.map((e) => e.id), [id]);
   assert.deepEqual(codes(r), []);
@@ -440,4 +443,45 @@ test('超长单行：无灾难性回溯，耗时可控', () => {
   assert.ok(dt < 2000, '耗时 ' + dt + 'ms（上限 2000ms）');
   assert.equal(r.occurrences.length, 8000);
   assert.equal(r.diagnostics.length, MAX_DIAGNOSTICS);
+});
+
+test('图表片段不追加引用例句，分割线使用独立段落', () => {
+  assert.ok(!SNIPPETS.figure.text.includes('如图'));
+  assert.equal(SNIPPETS.rule.text, '\n\n---\n\n');
+});
+
+test('列表操作在空白行插入标记，同时保留多行中的空段', () => {
+  const source = fs.readFileSync(new URL('../web/editor-pro.js', import.meta.url), 'utf8');
+  const fn = source.slice(source.indexOf('function transformLines('), source.indexOf('\nfunction ', source.indexOf('function transformLines(') + 1));
+  for (const [value, kind, expected] of [['', 'ul-dash', '- '], ['   ', 'ol', '1. '], ['甲\n\n乙', 'ul-dash', '- 甲\n\n- 乙']]) {
+    let result;
+    const lines = value.split('\n');
+    const sandbox = {
+      getApi: () => ({ getValue: () => value, replaceRange: (a, b, text) => { result = value.slice(0, a) + text + value.slice(b); } }),
+      coreHelpers: () => ({ offsetToLine: (text, pos) => text.slice(0, pos).split('\n').length, lineToOffset: (text, line) => text.split('\n').slice(0, line - 1).reduce((n, x) => n + x.length + 1, 0) }),
+      HEADING_PREFIX: {}, LIST_MARK: { 'ul-dash': '- ', ol: '1. ' }, ANY_LIST_MARK: /^\s*(?:[-*+] |\d+\. )/, selectRange() {},
+    };
+    vm.runInNewContext(fn + `\n;transformLines({from:0,to:${lines.length > 1 ? value.length : 0}},'${kind}');`, sandbox);
+    assert.equal(result, expected);
+  }
+});
+
+test('引用插入展示候选而不自动选定；无候选保留占位并提示', () => {
+  const source = fs.readFileSync(new URL('../web/editor-pro.js', import.meta.url), 'utf8');
+  const start = source.indexOf('function insertReference(');
+  const fn = source.slice(start, source.indexOf('\nfunction ', start + 1));
+  for (const mode of ['ref', 'eqref']) for (const candidates of [true, false]) {
+    let inserted, selection, opened = 0;
+    const status = { textContent: '' };
+    const sandbox = {
+      getApi: () => ({ getValue: () => '', getSelection: () => ({ from: 0, to: 0 }), replaceRange: (a, b, text) => { inserted = text; }, startCompletion: () => { opened++; } }),
+      analyzeValue: () => ({}), provideCompletions: () => ({ options: candidates ? [{ label: 'existing' }] : [] }),
+      selectRange: (a, b) => { selection = [a, b]; }, document: { getElementById: () => status },
+    };
+    vm.runInNewContext(fn + `\n;insertReference('${mode}');`, sandbox);
+    assert.equal(inserted, '\\' + mode + '{' + (candidates ? '' : mode === 'ref' ? 'fig:name' : 'eq:name') + '}');
+    assert.equal(opened, candidates ? 1 : 0);
+    assert.equal(selection[0] === selection[1], candidates);
+    assert.equal(!!status.textContent, !candidates);
+  }
 });

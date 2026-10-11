@@ -27,7 +27,7 @@ const GB_ADVISORY = '手写章节号提示为书写一致性建议，仅供参�
 
 const TYPE_LABELS = {
   auto: '自动识别', general: '通用文档', skill: '技能文档',
-  paper: '论文', gb: '国家标准', '': '自动识别',
+  paper: '学术论文', gb: '国家标准', '': '自动识别',
 };
 
 // 片段：插入时的可选默认占位值与插入后要选中的占位正文。
@@ -45,6 +45,10 @@ const BLOCK_SELECT = {
 };
 
 const HEADING_MARK = /^(#{1,6})[ \t]+/;
+// 标题层级（H1/H2/H3）与列表标记：由两级工具条的「基础格式」面板与快捷键使用。
+const HEADING_PREFIX = { heading: '## ', h1: '# ', h2: '## ', h3: '### ' };
+const LIST_MARK = { 'ul-star': '* ', 'ul-dash': '- ', 'ol': '1. ' };
+const ANY_LIST_MARK = /^(?:[ \t]*(?:[*+-]|\d+[.)])[ \t]+)/;
 
 let api = null;
 let initialized = false;
@@ -155,14 +159,20 @@ function transformLines(sel, kind) {
 
   const lines = value.split('\n');
   const block = lines.slice(startLine - 1, endLine);
+  const headingPrefix = HEADING_PREFIX[kind] || null;
+  const listMark = LIST_MARK[kind] || null;
   const quoting = kind === 'quote'
     && block.some(function (line) { return /^\s*>\s?/.test(line); });
 
   const transformed = block.map(function (line) {
-    if (kind === 'heading') {
+    if (headingPrefix) {
       return HEADING_MARK.test(line)
-        ? '## ' + line.replace(HEADING_MARK, '')
-        : '## ' + line;
+        ? headingPrefix + line.replace(HEADING_MARK, '')
+        : headingPrefix + line;
+    }
+    if (listMark) {
+      if (!line.trim()) return block.length === 1 ? listMark : line;
+      return ANY_LIST_MARK.test(line) ? line.replace(ANY_LIST_MARK, listMark) : listMark + line;
     }
     return quoting ? line.replace(/^\s*>\s?/, '') : '> ' + line;
   });
@@ -175,8 +185,29 @@ function transformLines(sel, kind) {
   if (sel.to > sel.from) {
     selectRange(from, from + transformed.join('\n').length);
   } else {
-    const marker = kind === 'heading' ? 3 : 2; // '## ' / '> '
+    const marker = headingPrefix ? headingPrefix.length : listMark ? listMark.length : 2; // 标题 / 列表前缀 / '> '
     selectRange(from + marker, from + marker);
+  }
+}
+
+// 图表引用（\ref）/ 公式引用（\eqref）：优先复用现有补全目标，无目标时给出可编辑占位。
+function insertReference(mode) {
+  const editor = getApi();
+  const sel = editor.getSelection();
+  const open = mode === 'eqref' ? '\\eqref{' : '\\ref{';
+  let candidates = false;
+  try {
+    const result = provideCompletions({ text: open, pos: open.length }, analyzeValue(editor.getValue()));
+    candidates = !!(result && Array.isArray(result.options) && result.options.length);
+  } catch (err) { /* 分析失败时退回占位 */ }
+  const id = candidates ? '' : mode === 'eqref' ? 'eq:name' : 'fig:name';
+  editor.replaceRange(sel.from, sel.to, open + id + '}');
+  const at = sel.from + open.length;
+  selectRange(at, at + id.length);
+  if (candidates && editor.startCompletion) editor.startCompletion();
+  if (!candidates) {
+    const status = document.getElementById('status');
+    if (status) status.textContent = mode === 'eqref' ? '请先为公式添加标签，再选择公式引用。' : '请先为图表添加标签，再选择图表引用。';
   }
 }
 
@@ -263,9 +294,19 @@ function insert(name) {
     switch (name) {
       case 'bold': wrapSelection(sel, '**', '**', '加粗文字'); break;
       case 'italic': wrapSelection(sel, '*', '*', '斜体文字'); break;
+      case 'strikethrough': wrapSelection(sel, '~~', '~~', '删除线文字'); break;
       case 'code': wrapSelection(sel, '\u0060', '\u0060', 'code'); break;
       case 'link': insertLink(sel); break;
+      case 'inline-math': wrapSelection(sel, '$', '$', '公式'); break;
       case 'heading': transformLines(sel, 'heading'); break;
+      case 'h1': transformLines(sel, 'h1'); break;
+      case 'h2': transformLines(sel, 'h2'); break;
+      case 'h3': transformLines(sel, 'h3'); break;
+      case 'ul-star': transformLines(sel, 'ul-star'); break;
+      case 'ul-dash': transformLines(sel, 'ul-dash'); break;
+      case 'ol': transformLines(sel, 'ol'); break;
+      case 'ref': insertReference('ref'); break;
+      case 'eqref': insertReference('eqref'); break;
       case 'quote': transformLines(sel, 'quote'); break;
       case 'footnote': insertDefinition('footnote', sel, '注释内容'); break;
       case 'bibliography': insertDefinition('bibliography', sel, '文献标题'); break;
