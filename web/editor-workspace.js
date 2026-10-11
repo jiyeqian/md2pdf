@@ -198,11 +198,12 @@
 
   // 快捷键映射：仅登记真实存在的绑定（CodeMirror 内核或本模块拦截）。
   // 工具提示按平台显示 Mac（⌘/⌥/⇧）或 Windows（Ctrl/Alt/Shift）；无绑定的按钮只显示功能说明。
-  // 列表快捷键对齐 macOS 备忘录：Mac ⇧⌘7/8/9、Windows Ctrl+Shift+7/8/9（* / - / 有序）。
+  // 无序 / 有序列表使用 Mod+Shift+8/9；Mod+Shift+7 保留为无序列表兼容键。
   // 行内代码 / 公式与引用块选用不与浏览器 / 系统保留键冲突的组合：⇧⌘E / ⇧⌘X / ⇧⌘. 。
   var SHORTCUTS = {
     undo: 'Mod-Z', redo: 'Mod-Shift-Z', find: 'Mod-F',
     bold: 'Mod-B', italic: 'Mod-I', link: 'Mod-K',
+    strikethrough: 'Mod-Alt-S', codeblock: 'Mod-Alt-E', formula: 'Mod-Alt-M',
     code: 'Mod-Shift-E', 'inline-math': 'Mod-Shift-X', quote: 'Mod-Shift-.',
     h1: 'Mod-Alt-1', h2: 'Mod-Alt-2', h3: 'Mod-Alt-3',
     'ul-dash': 'Mod-Shift-8', ol: 'Mod-Shift-9'
@@ -217,6 +218,7 @@
   function shortcutLabel(action) {
     var token = SHORTCUTS[action];
     if (!token) return '';
+    if (action === 'redo' && !IS_MAC) return 'Ctrl+Y / Ctrl+Shift+Z';
     var parts = token.split('-');
     var mod = parts[0] === 'Mod';
     var alt = parts.indexOf('Alt') >= 0;
@@ -454,8 +456,8 @@
 
     toolbar.appendChild(buildGroup('撤销重做与查找替换', 'md-wt-group--history', HISTORY_ITEMS));
     var formatGroup = buildBasicFormatControl();
-    appendItem(formatGroup, { icon: 'codeblock', label: '代码块', insert: 'codeblock' });
-    appendItem(formatGroup, { icon: 'formula', label: '公式块', insert: 'formula' });
+    appendItem(formatGroup, { icon: 'codeblock', label: '代码块', action: 'codeblock', insert: 'codeblock' });
+    appendItem(formatGroup, { icon: 'formula', label: '公式块', action: 'formula', insert: 'formula' });
     toolbar.appendChild(formatGroup);
     toolbar.appendChild(buildGroup('插入', 'md-wt-group--insert', INSERT_ITEMS, 'images'));
     toolbar.appendChild(buildGroup('学术', 'md-wt-group--academic', ACADEMIC_ITEMS));
@@ -884,6 +886,9 @@
       return null;
     }
     if (alt && !shift) {
+      if (key === 's') return 'strikethrough';
+      if (key === 'e') return 'codeblock';
+      if (key === 'm') return 'formula';
       var digit = digitFromEvent(event);
       return digit === '1' || digit === '2' || digit === '3' ? 'h' + digit : null;
     }
@@ -905,6 +910,12 @@
     if (event.isComposing || event.keyCode === 229) return;   // 输入法组合中不拦截
     if (event.key === 'Escape' && basicMenu && !basicMenu.hidden) { event.preventDefault(); closeBasicMenu(true); return; }
     if (event.key === 'Escape' && fullscreenMode()) { applyFullscreen(null); return; }
+    if (event.getModifierState && event.getModifierState('AltGraph')) return;
+    if (!IS_MAC && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && (event.key || '').toLowerCase() === 'y' && inEditorTarget(event.target)) {
+      event.preventDefault();
+      runCommand('redo');
+      return;
+    }
     var mod = event.ctrlKey || event.metaKey;
     if (!mod) return;
     var action = shortcutAction(event);

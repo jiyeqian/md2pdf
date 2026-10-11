@@ -464,8 +464,10 @@ test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执�
   assert.match(itemFor('行内代码').getAttribute('title'), /^行内代码（.+E）$/, '行内代码应有真实绑定');
   assert.match(itemFor('行内公式').getAttribute('title'), /^行内公式（.+X）$/, '行内公式应有真实绑定');
   assert.match(itemFor('引用块').getAttribute('title'), /^引用块（.+\.）$/, '引用块应有真实绑定');
+  assert.match(topButton('代码块').getAttribute('title'), /代码块（.+E）/);
+  assert.match(topButton('公式块').getAttribute('title'), /公式块（.+M）/);
   // 无绑定项标题必须与功能名完全一致（不得残留冗长说明）。
-  for (const label of ['参考文献', 'BibTeX参考文献', 'DOI参考文献', '代码块', '表格', '公式块', '图表引用', '公式引用', '图表']) {
+  for (const label of ['参考文献', 'BibTeX参考文献', 'DOI参考文献', '表格', '图表引用', '公式引用', '图表']) {
     assert.equal(topButton(label).getAttribute('title'), label, label + ' 的 title 应为简洁功能名');
   }
 
@@ -510,6 +512,23 @@ test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执�
   inserted.length = 0;
   press('(', { ctrlKey: true, shiftKey: true, code: 'Digit9' });
   assert.deepEqual(inserted, ['ol'], 'Mod+Shift+9（物理键）→ 有序列表');
+  inserted.length = 0;
+  for (const mod of [{ metaKey: true }, { ctrlKey: true }]) {
+    press('s', { ...mod, altKey: true });
+    press('e', { ...mod, altKey: true });
+    press('m', { ...mod, altKey: true });
+  }
+  assert.deepEqual(inserted, ['strikethrough', 'codeblock', 'formula', 'strikethrough', 'codeblock', 'formula']);
+  inserted.length = 0;
+  press('s', { ctrlKey: true, altKey: true, getModifierState: () => true });
+  assert.deepEqual(inserted, [], 'AltGr 输入不得触发格式操作');
+  assert.equal(topButton('重做').getAttribute('title'), '重做（Ctrl+Y / Ctrl+Shift+Z）');
+  let redoCalls = 0;
+  env.sandbox.mdEditor.runCommand = name => { if (name === 'redo') redoCalls++; return true; };
+  press('y', { ctrlKey: true });
+  assert.equal(redoCalls, 1, 'Windows Ctrl+Y 执行重做');
+  assert.equal(itemFor('粗体').getAttribute('title'), '粗体（Ctrl+B）');
+  assert.equal(itemFor('删除线').getAttribute('title'), '删除线（Ctrl+Alt+S）');
   // 行内代码 / 行内公式 / 引用块的真实绑定。
   inserted.length = 0;
   press('e', { metaKey: true, shiftKey: true });
