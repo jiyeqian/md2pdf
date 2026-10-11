@@ -127,8 +127,8 @@
     eqref: [{ d: 'M4 5h7l-4 5 4 5H4' }, { d: 'M12 10h5m-2-2 2 2-2 2' }],
     foldToggle: [{ d: 'M6.6 8.6 10 5.2l3.4 3.4' }, { d: 'M6.6 11.4 10 14.8l3.4-3.4' }],
     // Tabler arrows-exchange（24 网格）按 0.8333333333 缩放进 20 视图，路径数据未改动。
-    unsync: [{ d: 'M1 4h5v12H1zM14 4h5v12h-5zM6 10h2M12 10h2' }],
-    sync: [{ d: 'M1 4h5v12H1zM14 4h5v12h-5zM6 10h8' }],
+    unsync: [{ d: 'M7 12l-2 2a3 3 0 0 1-4-4l2-2M13 8l2-2a3 3 0 0 1 4 4l-2 2M7 3l1 2M12 15l1 2' }],
+    sync: [{ d: 'M8 12l-2 2a3 3 0 0 1-4-4l3-3a3 3 0 0 1 4 0M12 8l2-2a3 3 0 0 1 4 4l-3 3a3 3 0 0 1-4 0M7 13l6-6' }],
     insert: [{ rect: [4, 4, 12, 12], rx: 2 }, { d: 'M10 7v6' }, { d: 'M7 10h6' }],
     // 从模板创建：文档轮廓（折角）+ 加号，与其它按钮同为 20×20 线性描边。
     template: [{ d: 'M11.2 3.6H6.2a1.4 1.4 0 0 0-1.4 1.4v10a1.4 1.4 0 0 0 1.4 1.4h7.6a1.4 1.4 0 0 0 1.4-1.4V7.4z' }, { d: 'M11.2 3.6v3.8h3.4' }, { d: 'M7.8 11h4.4' }, { d: 'M10 8.8v4.4' }]
@@ -562,6 +562,12 @@
       onZoom(pct);
     }
 
+    input.addEventListener('pointerdown', function () { root.classList.remove('md-zoom-keyboard'); });
+    input.addEventListener('pointerleave', function () { root.classList.remove('md-zoom-keyboard'); });
+    input.addEventListener('keydown', function (event) {
+      if (/^(ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Home|End|PageUp|PageDown)$/.test(event.key)) root.classList.add('md-zoom-keyboard');
+    });
+    input.addEventListener('blur', function () { root.classList.remove('md-zoom-keyboard'); });
     input.addEventListener('input', function () { set(input.value); });
     input.addEventListener('change', function () { set(input.value); });
 
