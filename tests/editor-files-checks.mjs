@@ -101,3 +101,20 @@ test('frontmatterVersion：null / 布尔 / 对象 / 列表 / 块 / 未闭合一�
   assert.equal(frontmatterVersion('---\nversion: 1.2.3\n# T'), '');
   assert.equal(frontmatterVersion('---\nversion: {a: 1}\n---\n# T'), '');
 });
+
+test('frontmatter title takes precedence over H1 for both download formats', () => {
+  for (const heading of ['', '\n# 正文标题']) {
+    const md = '---\ntitle: "元数据标题" # 文档标题\nversion: v2\n---\n正文' + heading;
+    assert.equal(markdownDownloadName(md, date), '元数据标题_v2.md');
+    assert.equal(documentDownloadName(md, date, 'pdf'), '元数据标题_v2.pdf');
+  }
+});
+
+test('invalid or nested frontmatter title falls back to H1 or the default title', () => {
+  for (const field of ['title:', 'title: null', 'title: {}', 'metadata:\n  title: 嵌套标题']) {
+    const md = '---\n' + field + '\nversion: v2\n---\n';
+    assert.equal(markdownDownloadName(md + '# 正文标题', date), '正文标题_v2.md');
+    assert.equal(documentDownloadName(md, date, 'pdf'), 'md2pdf_设置一级标题为文档标题_v2.pdf');
+  }
+  assert.equal(markdownDownloadName('---\ntitle: "标题/测试"\nversion: v2\n---\n', date), '标题_测试_v2.md');
+});

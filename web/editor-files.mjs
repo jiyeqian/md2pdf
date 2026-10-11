@@ -1,5 +1,5 @@
 // 统一的下载命名：filename_version.ext。
-// 标题取正文首个一级标题（ATX / Setext，忽略 front matter 与代码块）；没有一级标题时
+// 标题优先取 front matter 的 title，其次正文首个一级标题（ATX / Setext）；没有有效标题时
 // 回落到 md2pdf_设置一级标题为文档标题。版本优先取 front matter 的 version 标量；缺失 /
 // 空 / 非法（对象 / 列表 / 纯符号）时回落到本地时间戳 YYYYMMDD_HHmmss。
 // Markdown 与 PDF 共用本模块，保证同一文档 / 版本得到完全相同的基名。
@@ -95,7 +95,7 @@ function unquoteScalar(text) {
 
 // 极小的单行 YAML 标量解析（不引入 YAML 依赖）：剥离行内注释与引号，
 // 拒绝对象 / 列表 / 锚点 / 别名 / 块标量 / null / 布尔；不可用时返回 null。
-function parseVersionScalar(raw) {
+function parseFrontmatterScalar(raw) {
   let text = String(raw == null ? '' : raw).trim();
   if (!text) return null;
   const first = text[0];
@@ -117,11 +117,11 @@ function parseVersionScalar(raw) {
 }
 
 /**
- * front matter 的顶层 version 标量：支持带引号（'1.2.3' / "1.2.3"，含转义）与未加引号的
- * 数字 / 文本，并正确剥离行内注释；只认顶层键（嵌套 other.version 不算）。
- * 缺失 / 未闭合 front matter / 对象 / 列表 / 块 / null / 布尔一律返回 ''（调用方回落时间戳）。
+ * front matter 的顶层 title / version 标量：支持带引号（'1.2.3' / "1.2.3"，含转义）与未加引号的
+ * 数字 / 文本，并正确剥离行内注释；只认顶层键（嵌套字段不算）。
+ * 缺失 / 未闭合 front matter / 对象 / 列表 / 块 / null / 布尔一律返回 ''（调用方采用回退值）。
  */
-export function frontmatterVersion(markdown) {
+function frontmatterScalar(markdown, key) {
   const lines = stripBom(markdown).split(/\r?\n/);
   const open = lines[0];
   if (open !== '---' && open !== '+++') return '';
@@ -130,13 +130,16 @@ export function frontmatterVersion(markdown) {
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     if (/^(---|\.\.\.|\+\+\+)\s*$/.test(line)) { closed = true; break; }
-    // 顶层键行首无缩进；带缩进的 version 属于嵌套结构，不参与文档版本。
-    const match = /^version[ \t]*:[ \t]*(.*)$/.exec(line);
-    if (match && raw === null) raw = match[1];
+    // 只读取顶层字段，忽略嵌套元数据。
+    const match = /^(title|version)[ \t]*:[ \t]*(.*)$/.exec(line);
+    if (match && match[1] === key && raw === null) raw = match[2];
   }
-  if (!closed || raw === null) return ''; // front matter 未闭合 / 无顶层 version
-  const value = parseVersionScalar(raw);
-  return value === null ? '' : sanitizeVersion(value);
+  if (!closed || raw === null) return ''; // front matter 未闭合 / 无指定顶层字段
+  return parseFrontmatterScalar(raw) || '';
+}
+
+export function frontmatterVersion(markdown) {
+  return sanitizeVersion(frontmatterScalar(markdown, 'version'));
 }
 
 /**
@@ -147,7 +150,7 @@ export function frontmatterVersion(markdown) {
  * @returns {string}
  */
 export function documentDownloadName(markdown, date = new Date(), ext = 'md') {
-  const title = sanitizeStem(firstHeadingTitle(markdown)) || TITLE_FALLBACK;
+  const title = sanitizeStem(frontmatterScalar(markdown, 'title')) || sanitizeStem(firstHeadingTitle(markdown)) || TITLE_FALLBACK;
   const version = frontmatterVersion(markdown) || timestamp(date);
   const suffix = String(ext == null ? '' : ext).replace(/[^A-Za-z0-9]/g, '').slice(0, 8) || 'md';
   return title + '_' + version + '.' + suffix;
