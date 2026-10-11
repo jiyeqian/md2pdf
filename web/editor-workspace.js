@@ -123,8 +123,8 @@
     listDash: [{ d: 'M2.6 6h2M2.6 10h2M2.6 14h2M7.4 6h9M7.4 10h9M7.4 14h9' }],
     listOl: [{ d: 'M3.2 5.6h1.3v3.2' }, { d: 'M3.2 14.6c1.6 0 1.6 1.3 0 1.3h1.6' }, { d: 'M7.4 6h9' }, { d: 'M7.4 10h9' }, { d: 'M7.4 14h9' }],
     inlineMath: [{ d: 'M7.2 5.4h6.2L9.6 10l3.8 4.6H7.2' }],
-    ref: [{ d: 'M4.4 10.4 10.4 4.4H16v5.6L10 16z' }, { circle: [12.8, 7.4, 1.1] }],
-    eqref: [{ d: 'M7.4 5.4c-1.5 0-1.9 1.1-1.9 2.5v1c0 .7-.3 1-1 1 .7 0 1 .3 1 1v1c0 1.4.4 2.5 1.9 2.5' }, { d: 'M12.6 5.4c1.5 0 1.9 1.1 1.9 2.5v1c0 .7.3 1 1 1-.7 0-1 .3-1 1v1c0 1.4-.4 2.5-1.9 2.5' }, { d: 'M9.4 8.2 10.7 7.4v5' }],
+    ref: [{ d: 'M3 4h9v11H3zM4 12l3-4 3 3' }, { d: 'M12 8h5m-2-2 2 2-2 2' }],
+    eqref: [{ d: 'M4 5h7l-4 5 4 5H4' }, { d: 'M12 10h5m-2-2 2 2-2 2' }],
     foldToggle: [{ d: 'M6.6 8.6 10 5.2l3.4 3.4' }, { d: 'M6.6 11.4 10 14.8l3.4-3.4' }],
     // Tabler arrows-exchange（24 网格）按 0.8333333333 缩放进 20 视图，路径数据未改动。
     unsync: [{ d: 'M7 7h8l-3-3M13 13H5l3 3M3 3l14 14' }],
@@ -269,7 +269,6 @@
   ];
   // 复杂插入保留在第一级：代码块 / 表格 / 图片（图片模块挂载）/ 图表 / 脚注 / 文献 / 公式块。
   var INSERT_ITEMS = [
-    { icon: 'codeblock', label: '代码块', insert: 'codeblock' },
     { icon: 'table', label: '表格', insert: 'table' },
     { icon: 'figure', label: '图表', insert: 'figure' }
   ];
@@ -277,7 +276,6 @@
     { icon: 'footnote', label: '参考文献', insert: 'footnote' },
     { icon: 'bibliography', label: 'BibTeX参考文献', insert: 'bibliography' },
     { icon: 'doi', label: 'DOI参考文献' },
-    { icon: 'formula', label: '公式块', insert: 'formula' },
     { icon: 'ref', label: '图表引用', insert: 'ref' },
     { icon: 'eqref', label: '公式引用', insert: 'eqref' }
   ];
@@ -455,7 +453,10 @@
     toolbar = make('div', { class: 'md-wt-toolbar', role: 'toolbar', 'aria-label': 'Markdown 格式与操作工具条', 'aria-orientation': 'horizontal' });
 
     toolbar.appendChild(buildGroup('撤销重做与查找替换', 'md-wt-group--history', HISTORY_ITEMS));
-    toolbar.appendChild(buildBasicFormatControl());
+    var formatGroup = buildBasicFormatControl();
+    appendItem(formatGroup, { icon: 'codeblock', label: '代码块', insert: 'codeblock' });
+    appendItem(formatGroup, { icon: 'formula', label: '公式块', insert: 'formula' });
+    toolbar.appendChild(formatGroup);
     toolbar.appendChild(buildGroup('插入', 'md-wt-group--insert', INSERT_ITEMS, 'images'));
     toolbar.appendChild(buildGroup('学术', 'md-wt-group--academic', ACADEMIC_ITEMS));
 

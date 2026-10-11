@@ -195,15 +195,20 @@ function insertReference(mode) {
   const editor = getApi();
   const sel = editor.getSelection();
   const open = mode === 'eqref' ? '\\eqref{' : '\\ref{';
-  let id = mode === 'eqref' ? 'eq:name' : 'fig:name';
+  let candidates = false;
   try {
-    const analysis = analyzeValue(editor.getValue());
-    const result = provideCompletions({ text: open, pos: open.length }, analysis);
-    if (result && Array.isArray(result.options) && result.options.length) id = result.options[0].label;
+    const result = provideCompletions({ text: open, pos: open.length }, analyzeValue(editor.getValue()));
+    candidates = !!(result && Array.isArray(result.options) && result.options.length);
   } catch (err) { /* 分析失败时退回占位 */ }
+  const id = candidates ? '' : mode === 'eqref' ? 'eq:name' : 'fig:name';
   editor.replaceRange(sel.from, sel.to, open + id + '}');
   const at = sel.from + open.length;
   selectRange(at, at + id.length);
+  if (candidates && editor.startCompletion) editor.startCompletion();
+  if (!candidates) {
+    const status = document.getElementById('status');
+    if (status) status.textContent = mode === 'eqref' ? '请先为公式添加标签，再选择公式引用。' : '请先为图表添加标签，再选择图表引用。';
+  }
 }
 
 function insertBlock(name, sel) {

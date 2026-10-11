@@ -465,3 +465,23 @@ test('列表操作在空白行插入标记，同时保留多行中的空段', ()
     assert.equal(result, expected);
   }
 });
+
+test('引用插入展示候选而不自动选定；无候选保留占位并提示', () => {
+  const source = fs.readFileSync(new URL('../web/editor-pro.js', import.meta.url), 'utf8');
+  const start = source.indexOf('function insertReference(');
+  const fn = source.slice(start, source.indexOf('\nfunction ', start + 1));
+  for (const mode of ['ref', 'eqref']) for (const candidates of [true, false]) {
+    let inserted, selection, opened = 0;
+    const status = { textContent: '' };
+    const sandbox = {
+      getApi: () => ({ getValue: () => '', getSelection: () => ({ from: 0, to: 0 }), replaceRange: (a, b, text) => { inserted = text; }, startCompletion: () => { opened++; } }),
+      analyzeValue: () => ({}), provideCompletions: () => ({ options: candidates ? [{ label: 'existing' }] : [] }),
+      selectRange: (a, b) => { selection = [a, b]; }, document: { getElementById: () => status },
+    };
+    vm.runInNewContext(fn + `\n;insertReference('${mode}');`, sandbox);
+    assert.equal(inserted, '\\' + mode + '{' + (candidates ? '' : mode === 'ref' ? 'fig:name' : 'eq:name') + '}');
+    assert.equal(opened, candidates ? 1 : 0);
+    assert.equal(selection[0] === selection[1], candidates);
+    assert.equal(!!status.textContent, !candidates);
+  }
+});
