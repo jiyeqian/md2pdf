@@ -40,8 +40,5 @@
     "chinese",
     "typography"
   ],
-  "license": "MIT",
-  "dependencies": {
-    "yaml": "2.8.1"
-  }
+  "license": "MIT"
 }

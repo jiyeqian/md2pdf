@@ -252,3 +252,31 @@ test('修复后普通元数据保持：null / 合法多行 / 数组不被破坏'
   assert.deepEqual(r.fm.keywords, ['甲', '乙']);
   assert.equal(r.fm.description, '第一行\n第二行\n');
 });
+
+test('vendored YAML has verified provenance and no declared runtime dependencies', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { createHash } = await import('node:crypto');
+  const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(Object.keys(packageJson.dependencies || {}).length, 0);
+  const provenance = JSON.parse(await readFile(new URL('../vendor/yaml/provenance.json', import.meta.url), 'utf8'));
+  assert.equal(provenance.version, '2.8.1');
+  assert.equal(provenance.license, 'ISC');
+  const bundle = await readFile(new URL('../vendor/yaml/yaml.mjs', import.meta.url));
+  assert.equal(createHash('sha256').update(bundle).digest('hex'), provenance.sha256);
+  assert.match(await readFile(new URL('../vendor/yaml/LICENSE', import.meta.url), 'utf8'), /Permission to use/);
+});
+
+test('vendored parser runs from an isolated directory without node_modules', async t => {
+  const { mkdtemp, copyFile, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { pathToFileURL } = await import('node:url');
+  const dir = await mkdtemp(join(tmpdir(), 'md2pdf-yaml-isolated-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const target = join(dir, 'yaml.mjs');
+  await copyFile(new URL('../vendor/yaml/yaml.mjs', import.meta.url), target);
+  const yaml = await import(pathToFileURL(target).href);
+  assert.deepEqual(yaml.parseDocument('title: "验收"\nenable: [outline]').toJS(), {title:'验收', enable:['outline']});
+  assert.ok(yaml.isMap(yaml.parseDocument('title: x').contents));
+  assert.ok(yaml.isSeq(yaml.parseDocument('- x').contents));
+});

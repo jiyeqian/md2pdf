@@ -16,7 +16,7 @@
  * 安全：解析结果经 sanitize 深拷贝，剔除 __proto__ / prototype / constructor，
  * 防止 YAML 反序列化污染原型；解析设置 maxAliasCount 上限，避免别名炸弹。
  */
-import YAML from 'yaml';
+import * as YAML from '../vendor/yaml/yaml.mjs';
 import { GLOBAL_OPTION_DEFAULTS, FEATURES, RUNTIME_FEATURES, listThemes } from './options.mjs';
 import { PROFILE_NAMES } from './profiles.mjs';
 import { SCHEME_NAMES } from './numbering.mjs';

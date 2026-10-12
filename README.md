@@ -189,7 +189,6 @@ node scripts/inspect-pdf.mjs out.pdf
 ```bash
 git clone https://github.com/jiyeqian/md2pdf.git
 cd md2pdf
-npm ci                # 安装锁定的 YAML 运行依赖
 npm link              # 命令指向仓库，改代码立即生效
 bash scripts/validate.sh   # 本地与 CI 同一套校验（无需浏览器）
 ```
@@ -206,4 +205,4 @@ bash scripts/validate.sh   # 本地与 CI 同一套校验（无需浏览器）
 
 ## License
 
-MIT。第三方组件：`vendor/marked.esm.js`（marked，MIT）、`vendor/mathjax/tex-svg.js`（MathJax，Apache-2.0），均随仓库分发；frontmatter 解析使用 `yaml`（ISC），由 npm 安装固定版本依赖。
+MIT。第三方组件：`vendor/marked.esm.js`（marked，MIT）、`vendor/mathjax/tex-svg.js`（MathJax，Apache-2.0），均随仓库分发。frontmatter 解析使用 `vendor/yaml/` 中的 `yaml`（ISC），无需安装外部运行依赖；维护者可运行 `node scripts/build-yaml.mjs` 重新构建固定版本资源。
