@@ -88,6 +88,7 @@
 }
 
 .md-editor-host .cm-panel.cm-search label {
+  font-size: 90%;
   color: #677389;
   display: inline-flex;
   align-items: center;
