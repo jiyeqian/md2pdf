@@ -48,7 +48,7 @@ good "node $(node -v)"
 # ------------------------------------------------------- 结构与可执行位
 head2 "结构与可执行位"
 REQUIRED="bin/md2pdf src/md2pdf.mjs src/render.mjs src/chrome.mjs src/options.mjs src/profiles.mjs src/ws.mjs src/install-skill.mjs assets/shell.html assets/base.css assets/gb-logo.svg scripts/assets/trace-gb-logo.mjs scripts/assets/gb-logo.src.png
-assets/themes/elegant.css assets/themes/minimal.css assets/themes/gb.css vendor/marked.esm.js vendor/mathjax/tex-svg.js vendor/highlight/highlight.cjs vendor/mermaid/mermaid.min.js vendor/pagedjs/paged.polyfill.min.js
+assets/themes/elegant.css assets/themes/minimal.css assets/themes/gb.css vendor/yaml/yaml.mjs vendor/yaml/LICENSE vendor/yaml/provenance.json vendor/marked.esm.js vendor/mathjax/tex-svg.js vendor/highlight/highlight.cjs vendor/mermaid/mermaid.min.js vendor/pagedjs/paged.polyfill.min.js
 examples/general.md examples/skill.md examples/paper.md examples/README.md examples/gb.md
 templates/general.md templates/skill.md templates/paper.md templates/gb.md
 docs/gb-template.md package.json README.md LICENSE
@@ -88,6 +88,7 @@ else
 fi
 
 ( cd "$TARGET" && node --test tests/skill-install-checks.mjs ) || FAIL=1
+( cd "$TARGET" && npm run test:config ) || FAIL=1
 
 # ------------------------------------------------- 反向自测（守卫真的会失败）
 # 只会"全绿"的校验等于没有校验：故意破坏一份副本，确认校验确实报错。
@@ -97,6 +98,10 @@ if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
   mkdir -p "$TMP/proj"
   # 只复制校验会用到的部分
   ( cd "$TARGET" && tar cf - --exclude=.git --exclude=node_modules . ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
+  if ! ( cd "$TMP/proj" && node tests/checks.mjs "$TMP/proj" >"$TMP/pristine.log" 2>&1 ); then
+    bad "未破坏副本校验失败，守卫自测结果不可作为验证依据"
+    tail -n 8 "$TMP/pristine.log"
+  fi
   if [ ! -f "$TMP/proj/assets/shell.html" ]; then
     bad "副本准备失败，跳过了守卫自测"
   else

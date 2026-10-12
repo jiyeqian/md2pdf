@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+// 前端 UI 行为测试（配置错误提示条 / 保留上次预览 / 禁止导出 / 乱序响应）单独成文件；
+// 这里显式加载，使其随本文件一起被 `npm run test:web` 执行（package.json 由他人维护，不在此改动）。
+
 import { PROFILES } from '../src/profiles.mjs';
 import {
   webPolicyDocument, policyForType, effectiveOptions, assertOptionsAllowed, resolveWebType,
-  LINE_HEIGHT_RANGE, GB_LINE_HEIGHT, WEB_OPTION_SPEC,
+  frontmatterOverrides, LINE_HEIGHT_RANGE, GB_LINE_HEIGHT, WEB_OPTION_SPEC,
 } from '../src/web-options.mjs';
 
 const gb = PROFILES.gb.defaults;
@@ -133,5 +136,42 @@ test('effectiveOptions reports lineHeight; GB is fixed at the template value', (
   assert.equal(effectiveOptions({}, 'paper').lineHeight, 1.9);
   assert.equal(effectiveOptions({}, 'gb').lineHeight, GB_LINE_HEIGHT);
   // 即便调用方误传 GB 行距，有效值仍是模板固定值（服务端会先拒绝该请求）
-  assert.equal(effectiveOptions({ lineHeight: 2 }, 'gb').lineHeight, GB_LINE_HEIGHT);
+  assert.throws(() => effectiveOptions({ lineHeight: 2 }, 'gb'), { status: 400 });
+});
+
+// ---------- frontmatter 覆盖与类型策略联动（防 GB 绕过 / 回显反映 FM） ----------
+
+test('frontmatterOverrides 映射 kebab/camel 字段与 enable/disable 功能名', () => {
+  assert.deepEqual(frontmatterOverrides({ theme: 'minimal', 'number-scheme': 'cjk' }), { theme: 'minimal', numberScheme: 'cjk' });
+  assert.deepEqual(frontmatterOverrides({ fontSize: 12, lineHeight: 2.1 }), { fontSize: 12, lineHeight: 2.1 });
+  assert.deepEqual(frontmatterOverrides({ enable: ['landscape', 'toc'] }), { landscape: true, toc: true });
+  assert.deepEqual(frontmatterOverrides({ disable: ['outline'] }), { outline: false });
+  assert.deepEqual(frontmatterOverrides({ 未知字段: 1 }), {}, '无关元数据被忽略');
+});
+
+test('assertOptionsAllowed 把 frontmatter 覆盖与显式覆盖同等约束', () => {
+  const bad = (opts, type, fm) => assert.throws(() => assertOptionsAllowed(opts, type, fm), { status: 400 });
+  bad({}, 'gb', frontmatterOverrides({ 'font-size': 12 }));
+  bad({}, 'gb', frontmatterOverrides({ enable: ['landscape'] }));
+  bad({}, 'gb', frontmatterOverrides({ theme: 'elegant' }));
+  bad({}, 'general', frontmatterOverrides({ theme: 'gb' }));
+  assert.doesNotThrow(() => assertOptionsAllowed({}, 'general', frontmatterOverrides({ theme: 'minimal', 'number-scheme': 'cjk' })));
+  assert.doesNotThrow(() => assertOptionsAllowed({}, 'gb', frontmatterOverrides({ toc: true })));
+});
+
+test('policyForType 回显生效值（含 frontmatter），不再灌默认', () => {
+  const fromFm = policyForType('general', { theme: 'minimal', numberScheme: 'cjk', numbering: 'force', toc: true });
+  assert.equal(fromFm.controls.theme.fixedValue, 'minimal');
+  assert.equal(fromFm.controls.numberScheme.fixedValue, 'cjk');
+  assert.equal(fromFm.controls.toc.fixedValue, true);
+  assert.equal(fromFm.fixed.theme, 'minimal');
+  assert.equal(policyForType('general').controls.theme.fixedValue, 'elegant');
+});
+
+test('effectiveOptions 反映 frontmatter，且显式优先', () => {
+  const fm = { theme: 'minimal', 'font-size': 12 };
+  assert.equal(effectiveOptions({}, 'general', fm).theme, 'minimal');
+  assert.equal(effectiveOptions({}, 'general', fm).fontSize, 12);
+  assert.equal(effectiveOptions({ theme: 'elegant' }, 'general', fm).theme, 'elegant');
+  assert.throws(() => effectiveOptions({}, 'gb', { 'line-height': 2 }), { status: 400 });
 });

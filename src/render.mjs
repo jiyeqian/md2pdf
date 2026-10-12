@@ -5,8 +5,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import { detectProfile } from './profiles.mjs';
 import { resolveNumberScheme } from './numbering.mjs';
-import { defaultOptions } from './options.mjs';
+import { parseFrontmatter, resolveDocumentOptions } from './config.mjs';
 import { stampPagedLists, finalizePagedCounters } from './paged-counters.mjs';
+// 对外仍导出 defaultOptions（运行选项的空壳），方便旧调用方继续引用。
 export { defaultOptions } from './options.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Web 落款占位文件名（document.md）指向的官方仓库。预览点击时按同一常量精确校验 href。
@@ -21,55 +22,62 @@ const addClass = (attrs, cls) => /\sclass="/.test(attrs)
   ? attrs.replace(/\sclass="([^"]*)"/, (m, c) => ` class="${c} ${cls}"`)
   : `${attrs} class="${cls}"`;
 
-export function splitFrontmatter(src) {
-  const m = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(src);
-  if (!m) return { fm: {}, body: src };
-  const fm = {};
-  // 值的形态：标量字符串，或 YAML 块式数组 / 行内 [a, b] 数组（Obsidian 风格）。
-  // 约定：留空的键不解析（等同未写）；# 注释行与 <!-- --> 说明行忽略。
-  const toValue = (raw) => {
-    const trimmed = raw.trim();
-    // Parser exports use JSON-compatible YAML quoting; decode escapes and arrays.
-    if (trimmed.startsWith('"') || trimmed.startsWith('[')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (typeof parsed === 'string' || (Array.isArray(parsed) && parsed.every(v => typeof v === 'string'))) {
-          return parsed;
-        }
-      } catch { /* Preserve the existing unquoted YAML subset below. */ }
-    }
-    let v = trimmed.replace(/^["']|["']$/g, '');
-    if (/^\[.*\]$/.test(v)) {
-      const items = v.slice(1, -1).split(/[,，]/).map(s => s.trim()).filter(Boolean);
-      return items.length ? items : undefined;
-    }
-    return v === '' ? undefined : v;
-  };
-  for (const line of m[1].split(/\r?\n/)) {
-    if (/^\s*(#|<)/.test(line)) continue;  // 注释/说明行
-    // 列表项：上级键的块式数组（- 项）
-    const li = /^\s+-\s+(.*)$/.exec(line);
-    if (li) {
-      const k = Object.keys(fm).at(-1);
-      if (k != null && !li[1].trim()) continue;
-      if (k != null) {
-        if (!Array.isArray(fm[k])) fm[k] = fm[k] ? [fm[k]] : [];
-        fm[k].push(toValue(li[1]) ?? '');
-      }
+// 文末落款右侧：本次渲染的生成时间（本机时区，带 ±HH:mm 偏移；整篇只取一次）。
+function formatStamp(d) {
+  const p = n => String(n).padStart(2, '0');
+  const off = -d.getTimezoneOffset();
+  const sign = off >= 0 ? '+' : '-';
+  const hh = p(Math.floor(Math.abs(off) / 60));
+  const mm = p(Math.abs(off) % 60);
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())} ${sign}${hh}:${mm}`;
+}
+
+// 导语识别：取正文里第一个「顶层普通段落」。用标签栈扫描，而不是正则硬抓 <p>，
+// 以免把 blockquote / 列表项里的段落误当导语。
+const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+// 出现在这些容器内部的 <p> 不算顶层（含引用块、列表项、表格单元等）。
+const LEAD_CONTAINERS = new Set(['blockquote', 'li', 'td', 'th', 'figure', 'figcaption', 'div', 'section', 'table', 'thead', 'tbody', 'tr', 'ul', 'ol', 'pre', 'main', 'article', 'aside', 'details', 'summary', 'nav', 'header', 'footer', 'p']);
+function isOrdinaryParagraph(inner) {
+  const raw = inner.trim();
+  if (!raw) return false;
+  if (/^\$\$[\s\S]*\$\$$/.test(raw)) return false;          // 块级公式段
+  if (/^\$[^$]+\$$/.test(raw)) return false;                    // 纯行内公式段
+  if (/^<img\b[^>]*>\s*$/.test(raw)) return false;              // 仅图片段
+  if (!stripTags(raw).trim()) return false;                      // 只剩标签（如仅图标）
+  return true;
+}
+function extractLead(html) {
+  const tagRe = /<\/?([a-zA-Z][\w-]*)(?:\s[^>]*?)?\/?>/g;
+  const stack = [];
+  let m;
+  while ((m = tagRe.exec(html))) {
+    const name = m[1].toLowerCase();
+    if (html[m.index + 1] === '/') {                 // 闭合标签：弹出到匹配处
+      const at = stack.lastIndexOf(name);
+      if (at >= 0) stack.length = at;
       continue;
     }
-    // 键名允许中文（GB 用「标准号/全部代替标准」等中文键）
-    const kv = /^([A-Za-z_\u4e00-\u9fff][\w\u4e00-\u9fff-]*)[ \t]*:[ \t]*(.*)$/.exec(line);
-    if (kv) {
-      const v = toValue(kv[2]);
-      if (v !== undefined) fm[kv[1]] = v;
-      else if (kv[2].trim() === '') fm[kv[1]] = '';  // 显式留空：占位但不计内容（消费方按空值跳过）
-    } else if (/^\s+/.test(line) && Object.keys(fm).length) {
-      const k = Object.keys(fm).at(-1);
-      if (typeof fm[k] === 'string' && fm[k] !== '') fm[k] = (fm[k] + ' ' + line.trim()).trim();
+    const selfClose = /\/>$/.test(m[0]) || VOID_TAGS.has(name);
+    if (name === 'p') {
+      const end = html.indexOf('</p>', tagRe.lastIndex);
+      const inner = end < 0 ? html.slice(tagRe.lastIndex) : html.slice(tagRe.lastIndex, end);
+      const topLevel = !stack.some(t => LEAD_CONTAINERS.has(t));
+      if (topLevel && isOrdinaryParagraph(inner)) {
+        const full = end < 0 ? html.slice(m.index) : html.slice(m.index, end + 4);
+        return { lead: inner, html: html.slice(0, m.index) + html.slice(m.index + full.length) };
+      }
+      if (end >= 0) tagRe.lastIndex = end + 4;       // 跳过整段，继续找下一个顶层段
+      continue;
     }
+    if (!selfClose) stack.push(name);
   }
-  return { fm, body: src.slice(m[0].length) };
+  return null;
+}
+
+export function splitFrontmatter(src) {
+  // 兼容旧调用方：对外只暴露 { fm, body }；配置解析与校验统一交给 config.parseFrontmatter。
+  const { fm, body } = parseFrontmatter(src);
+  return { fm, body };
 }
 
 // frontmatter 值统一成字符串（数组以顿号连接），供渲染/meta 使用
@@ -378,8 +386,8 @@ function formatGB7714(entry) {
   }
 }
 
-// 渲染脚注列表；bibliography=true 时作为「参考文献」章节
-function renderFootnotes(footnotes, bibliography, marked) {
+// 渲染脚注列表，统一作为「参考文献」章节；title 为空串时只去标题、保留条目与链接。
+function renderFootnotes(footnotes, title, marked) {
   if (!footnotes.length) return '';
   const items = footnotes.map((fn, i) => {
     const num = i + 1;
@@ -392,9 +400,8 @@ function renderFootnotes(footnotes, bibliography, marked) {
     }
     return '<li id="fn-' + num + '"><a href="#fnref-' + num + '" class="fnref-back">[' + num + ']</a> ' + content + '</li>';
   }).join('\n');
-  const cls = bibliography ? 'references' : 'footnotes';
-  const list = '<ol class="' + cls + '">\n' + items + '\n</ol>';
-  return '<h2>' + (bibliography ? '参考文献' : '脚注') + '</h2>\n' + list;
+  const list = '<ol class="references">\n' + items + '\n</ol>';
+  return (title ? '<h2>' + title + '</h2>\n' : '') + list;
 }
 
 /* ---------------- Chrome ---------------- */
@@ -499,7 +506,6 @@ function buildCover(fm, title, useDefaults = true) {
 }
 
 export async function render(src, options = {}, context = {}) {
-  const opts = { ...defaultOptions(), ...options };
   const mdPath = context.filename || 'document.md';
   const { Marked } = await import(pathToFileURL(path.join(ROOT, 'vendor', 'marked.esm.js')).href);
   const marked = new Marked({ gfm: true });
@@ -515,21 +521,24 @@ export async function render(src, options = {}, context = {}) {
     },
     link(token) { const label = this.parser.parseInline(token.tokens); return /^(https?:|mailto:|#)/i.test(token.href) ? `<a href="${esc(token.href)}">${label}</a>` : label; },
   } });
-  const { fm, body: rawBody } = splitFrontmatter(src);
-  const profile = detectProfile({ basename: path.basename(mdPath), fm, explicit: opts.type });
-  // 生效选项：CLI 显式 > profile 默认 > 内置兜底（三态，见 parseArgs）
-  const effTheme = opts.theme ?? profile.defaults.theme ?? 'elegant';
-  const effLead = opts.lead ?? profile.defaults.lead ?? true;
-  const effNumbering = opts.numbering ?? profile.defaults.numbering ?? 'auto';
-  const effScheme = opts.numberScheme ?? profile.defaults.numberScheme ?? 'arabic';
-  const useToc = opts.toc ?? profile.defaults.toc ?? false;
-  // 页边距：CLI 显式 > profile 默认 > 内置兜底（左右各自取值，gb 为左宽右窄）
-  const effMarginTop = opts.marginTop ?? profile.defaults.marginTop ?? 20;
-  const effMarginBottom = opts.marginBottom ?? profile.defaults.marginBottom ?? 18;
-  const effMarginLeft = opts.marginLeft ?? profile.defaults.marginLeft
-    ?? opts.marginSide ?? profile.defaults.marginSide ?? 18;
-  const effMarginRight = opts.marginRight ?? profile.defaults.marginRight
-    ?? opts.marginSide ?? profile.defaults.marginSide ?? 18;
+  // 配置解析与校验统一走 config 模块：YAML 语法/重复键/类型冲突在此抛 ConfigError。
+  const { fm, body: rawBody, positions } = parseFrontmatter(src);
+  const profile = detectProfile({ basename: path.basename(mdPath), fm, explicit: options.type || fm.type });
+  // 有效配置：explicit(CLI/Web) > FM > profile.defaults > 全局默认，统一由 config.resolveDocumentOptions 合并。
+  const eff = resolveDocumentOptions(options, fm, profile, { ...context, positions });
+  const effTheme = eff.theme ?? profile.defaults.theme ?? 'elegant';
+  // GB 强制版式：国家标准不用导语，enable/disable 与 FM 都不能绕过。
+  const effLead = profile.gbDoc ? false : (eff.lead ?? profile.defaults.lead ?? true);
+  const effNumbering = eff.numbering ?? profile.defaults.numbering ?? 'auto';
+  const effScheme = eff.numberScheme ?? profile.defaults.numberScheme ?? 'arabic';
+  const useToc = eff.toc ?? profile.defaults.toc ?? false;
+  // 页边距：explicit > FM > profile 默认 > 内置兜底（左右各自取值，gb 为左宽右窄）
+  const effMarginTop = eff.marginTop ?? profile.defaults.marginTop ?? 20;
+  const effMarginBottom = eff.marginBottom ?? profile.defaults.marginBottom ?? 18;
+  const effMarginLeft = eff.marginLeft ?? profile.defaults.marginLeft
+    ?? eff.marginSide ?? profile.defaults.marginSide ?? 18;
+  const effMarginRight = eff.marginRight ?? profile.defaults.marginRight
+    ?? eff.marginSide ?? profile.defaults.marginSide ?? 18;
 
   // 数学公式：检测 $...$ 或 $...$，命中则注入 MathJax（SVG 输出，零字体依赖）
   const hasMath = /\$\$|\$[^$\n]+\$/.test(rawBody);
@@ -579,7 +588,7 @@ export async function render(src, options = {}, context = {}) {
   if (context.webSafe) html = html.replace(/\u0003FOOTNOTE(\d+)\u0003/g, (m, i) => fnMarkup[+i] ?? m);
 
   // 图/表自动编号与题注（收集标签）
-  const floats = opts.floatNumbering === false
+  const floats = eff.floatNumbering === false
     ? { html, refs: new Map() }
     : numberFloats(html);
   html = floats.html;
@@ -598,33 +607,31 @@ export async function render(src, options = {}, context = {}) {
   // 代码高亮：对带语言标记的代码块做 highlight.js 着色
   html = highlightCode(html, hljs);
 
-  // 脚注/参考文献：先追加到正文末尾，再编号，使参考文献章节纳入编号体系
-  html += renderFootnotes(orderedFootnotes, opts.bibliography, marked);
+  // 脚注/参考文献：先追加到正文末尾，再编号，使参考文献章节纳入编号体系。
+  // bibliographyTitle 默认「参考文献」；显式空串时只去掉标题，条目与链接保留；无引用则不生成。
+  const bibTitle = eff.bibliographyTitle !== undefined ? eff.bibliographyTitle : '参考文献';
+  html += renderFootnotes(orderedFootnotes, bibTitle, marked);
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
   html = numberHeadings(html, effNumbering, effScheme);
 
-  // 标题：正文首个 H1 → 报头
-  let title = opts.title || fm['中文名称'] || fm.title || '';
+  // 标题：显式 title（含显式空串）优先，空串即隐藏文档标题、不再回退 H1/文件名；否则取首个 H1 → GB 中文名称 → 文件名/网页提示。
   const h1 = /<h1(?:\s[^>]*)?>([\s\S]*?)<\/h1>/.exec(html);
-  if (h1) {
-    const t = stripTags(h1[1]);
-    if (!title) title = t;
-    html = html.replace(h1[0], '');
+  let title;
+  if (eff.title !== undefined) {
+    title = eff.title;                                  // 显式（含显式空串）：空串即隐藏，不再回退
+  } else if (h1) {
+    title = fmStr(fm['中文名称']) || stripTags(h1[1]);  // 有 H1：GB 中文名称优先，其次 H1（空 H1 保持空 = 隐藏）
+  } else {
+    title = fmStr(fm['中文名称']) || (context.webSafe ? '设置一级标题为文档标题' : path.basename(mdPath, path.extname(mdPath)));
   }
-  if (!title && !h1) title = context.webSafe ? '设置一级标题为文档标题' : path.basename(mdPath, path.extname(mdPath));
+  if (h1) html = html.replace(h1[0], '');
 
-  // 导言仅取首个一级标题与后续首个二级标题之间的第一段。
+  // 导语：正文里第一个顶层普通段落（可位于章节下），跳过标题/代码/列表/引用/表格/块公式/仅图片段/参考文献定义。
   let lead = '';
-  if (effLead && h1) {
-    const afterTitle = html.slice(h1.index);
-    const h2 = /<h2(?:\s[^>]*)?>/.exec(afterTitle);
-    const p = /<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/.exec(afterTitle);
-    if (p && h2 && p.index < h2.index) {
-      lead = p[1];
-      const offset = h1.index + p.index;
-      html = html.slice(0, offset) + html.slice(offset + p[0].length);
-    }
+  if (effLead) {
+    const r = extractLead(html);
+    if (r) { lead = r.lead; html = r.html; }
   }
 
   // 链接 / 图片
@@ -632,7 +639,7 @@ export async function render(src, options = {}, context = {}) {
     const cls = /\sclass=/.test(rest) ? '' : ' class="ref"';
     return `<a href="${href}"${cls}${rest}>`;
   });
-  if (opts.linkUrls) {
+  if (eff.linkUrls) {
     html = html.replace(/<a\s+href="(https?:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/g,
       (m, href, text) => `${m} <span class="link-url">(${esc(href)})</span>`);
   }
@@ -655,7 +662,7 @@ export async function render(src, options = {}, context = {}) {
   let toc = '';
   if (useToc && secIds.length) {
     const levels = [...new Set(secIds.map(s => s.level))].sort((a, b) => a - b);
-    const included = levels.slice(0, opts.tocDepth === 2 ? 2 : 1);
+    const included = levels.slice(0, eff.tocDepth === 2 ? 2 : 1);
     const items = secIds.filter(s => included.includes(s.level));
     const tocItem = s => profile.gbDoc
       ? `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
@@ -673,14 +680,14 @@ export async function render(src, options = {}, context = {}) {
   // 正文行距：webapp 选项 opts.lineHeight（有限数字 1.0–2.5，server 已校验范围）。
   // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 themes/gb.css 的
   // body{line-height:1.62} 直接覆盖，且 server 拒绝为 gb 传入 lineHeight。
-  const effLineHeight = Number.isFinite(opts.lineHeight) ? opts.lineHeight : 1.9;
+  const effLineHeight = Number.isFinite(eff.lineHeight) ? eff.lineHeight : 1.9;
   const css = (base + '\n' + theme)
-    .replace(/\{\{PAGE_SIZE\}\}/g, opts.landscape ? 'A4 landscape' : 'A4')
+    .replace(/\{\{PAGE_SIZE\}\}/g, eff.landscape ? 'A4 landscape' : 'A4')
     .replace(/\{\{MARGIN_TOP\}\}/g, `${effMarginTop}mm`)
     .replace(/\{\{MARGIN_BOTTOM\}\}/g, `${effMarginBottom}mm`)
     .replace(/\{\{MARGIN_LEFT\}\}/g, `${effMarginLeft}mm`)
     .replace(/\{\{MARGIN_RIGHT\}\}/g, `${effMarginRight}mm`)
-    .replace(/\{\{FONT_SIZE\}\}/g, `${opts.fontSize}pt`)
+    .replace(/\{\{FONT_SIZE\}\}/g, `${eff.fontSize ?? 10.5}pt`)
     .replace(/\{\{LINE_HEIGHT\}\}/g, `${effLineHeight}`);
 
   // GB 页眉标准号：奇数页靠右、偶数页靠左。Chrome 原生 headerTemplate 只有单一模板，
@@ -689,7 +696,8 @@ export async function render(src, options = {}, context = {}) {
   const pageCss = profile.gbDoc ? gbHeaderCss(stdno) : '';
   let finalCss = pageCss ? css + '\n' + pageCss : css;
 
-  const kicker = opts.kicker || fm.kicker || fm.category || (profile.kicker ?? '');
+  const kicker = eff.kicker !== undefined ? eff.kicker
+    : (fmStr(fm.kicker) || fmStr(fm.category) || (profile.kicker ?? ''));
 
   // 学术论文：报头三件套（作者行 + 「摘要」块 + 「关键词」行）
   const authorsHtml = profile.paperHeader && (fm.author || fm.affiliation)
@@ -699,7 +707,7 @@ export async function render(src, options = {}, context = {}) {
       '</p>'
     : '';
   const sourceCover = fm.gb_source_cover === true || fm.gb_source_cover === 'true';
-  const coverHtml = profile.gbDoc && opts.gbCover !== false && !sourceCover ? buildCover(fm, title, opts.gbDefaults) : '';
+  const coverHtml = profile.gbDoc && eff.gbCover !== false && !sourceCover ? buildCover(fm, title, eff.gbDefaults !== false) : '';
   if (profile.gbDoc && !coverHtml) {
     // Unsectioned source evidence uses the body page without a generated cover.
     const header = stdno ? '@top-right { content: ' + cssString(stdno) + '; font: 9pt/1 var(--font-head); }' : '';
@@ -712,17 +720,13 @@ export async function render(src, options = {}, context = {}) {
         fm.keywords ? '<div class="keywords"><span class="paper-label">关键词</span><span>' + esc(fm.keywords) + '</span></div>' : '',
       ].filter(Boolean).join('\n')
     : '';
-  const colophonLeft = opts.colophon ?? (profile.skillMeta && fm.name ? `SKILL · ${fm.name}` : path.basename(mdPath));
-  const colophonRight = opts.colophon ? '' : title;
-  // 仅 Web（context.webSafe）默认落款左侧是占位文件名 document.md、且无显式 --colophon 时，
-  // 把它换成仓库超链接；CLI 文件名落款、显式 colophon、技能 SKILL 落款一律保持原样。
-  const colophonRepoLink = context.webSafe && !opts.colophon && colophonLeft === 'document.md';
-  const colophonLeftHtml = colophonRepoLink
-    ? `make <a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a> great`
-    : esc(colophonLeft);
-  // GB 标准没有文末落款；且落款元素会干扰 Paged.js 的命名页分页（多出空白页），故整体不输出
+  // 文末落款：CLI 与 Web 默认一致 —— 左侧官方仓库口号，右侧本次渲染生成时间（本机时区，带偏移）。
+  // colophon 仅覆盖左侧；显式空串只清空左侧，右侧时间保留；GB 不输出落款。
+  const stamp = formatStamp(context.generatedAt instanceof Date ? context.generatedAt : new Date());
+  const colophonLeftDefault = `make <a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a> great`;
+  const colophonLeftHtml = eff.colophon === undefined ? colophonLeftDefault : esc(eff.colophon);
   const colophonHtml = profile.gbDoc ? '' :
-    `<div class="colophon">\n  <span>${colophonLeftHtml}</span>\n  <span>${esc(colophonRight)}</span>\n</div>`;
+    `<div class="colophon">\n  <span>${colophonLeftHtml}</span>\n  <span>${esc(stamp)}</span>\n</div>`;
 
   // 用函数形式替换：既支持多处占位符，也避免用户文本里的 $& 被当作替换模式
   const fill = (tpl, map) => Object.entries(map).reduce(
@@ -801,7 +805,7 @@ export async function render(src, options = {}, context = {}) {
     '    try {',
     profile.gbDoc ? '' : '      stampPagedLists();',
     '      window.PagedPolyfill.preview()',
-    '        .then(function () { ' + (profile.gbDoc ? '' : 'finalizePagedCounters(' + (opts.footer !== false) + '); ') + 'window.__md2pdfPagedReady = true; })',
+    '        .then(function () { ' + (profile.gbDoc ? '' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
     '        .catch(function () { window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedReady = true; }',
     '  }',
@@ -818,12 +822,15 @@ export async function render(src, options = {}, context = {}) {
     '发布日期', 'date', '实施日期', '全部代替标准', '代替标准',
     '采标国际标准', '采标英文名称', '采标中文名称', '采标程度',
     '发布单位', '发布机构', '发布机构2', '文件类别', 'kicker', 'category', 'author']);
-  const headMeta = profile.gbDoc
+  const gbMeta = profile.gbDoc
     ? Object.entries(fm)
         .filter(([k, v]) => fmStr(v).trim() && !GB_COVER_KEYS.has(k))
         .map(([k, v]) => '<meta name="gb:' + esc(k) + '" content="' + esc(fmStr(v)) + '">')
         .join('\n')
     : '';
+  // 预览的页码修正也必须尊重自定义/隐藏的中间页脚。
+  const headMeta = gbMeta + '\n<meta name="md2pdf-page-count" content="' +
+    (!profile.gbDoc && eff.footer !== false && eff.footerCenter === undefined ? 'auto' : 'off') + '">';
 
   let shell = await readFile(path.join(ASSETS, 'shell.html'), 'utf8');
   if (profile.gbDoc && !coverHtml) {
@@ -836,7 +843,7 @@ export async function render(src, options = {}, context = {}) {
     '{{CSS}}': finalCss,
     '{{KICKER}}': esc(kicker),
     '{{LEAD}}': lead,
-    '{{META}}': opts.meta ? buildMeta(fm, profile.skillMeta) : '',
+    '{{META}}': eff.meta !== false ? buildMeta(fm, profile.skillMeta) : '',
     '{{TOC}}': toc,
     '{{BODY}}': html,
     '{{COLOPHON}}': colophonHtml,
@@ -853,13 +860,20 @@ export async function render(src, options = {}, context = {}) {
   // gb 的 out 已含 Paged.js 与分侧页码规则；其他类型在此注入页码/页脚 margin box 与观感样式。
   // 有目录时 PDF 同样使用分页产物，确保目录页码基于实际分页计算。
   let pagedOut = null;
-  if (opts.pagedHtml || toc) {
+  if (options.pagedHtml || toc) {
     const footFont = 'font: 8pt/1 -apple-system, "PingFang SC", sans-serif; color: #8a8578; letter-spacing: .5px;';
+    // 页脚三栏：footer=false 关整栏；center 未指定=当前页/总页数，显式字符串替换，空串清空；左右独立。
+    const showFooter = eff.footer !== false;
+    const centerCustom = eff.footerCenter !== undefined;
+    const centerCss = !showFooter ? ''
+      : centerCustom
+        ? (eff.footerCenter === '' ? '' : '  @bottom-center { content: ' + JSON.stringify(eff.footerCenter) + '; ' + footFont + ' }')
+        : '  @bottom-center { content: counter(page) " / " counter(pages); ' + footFont + ' }';
     const pageBoxes = profile.gbDoc ? '' : [
       '@page {',
-      opts.footer === false ? '' : '  @bottom-center { content: counter(page) " / " counter(pages); ' + footFont + ' }',
-      opts.footer !== false && opts.footerLeft ? '  @bottom-left { content: ' + JSON.stringify(opts.footerLeft) + '; ' + footFont + ' }' : '',
-      opts.footer !== false && opts.footerRight ? '  @bottom-right { content: ' + JSON.stringify(opts.footerRight) + '; ' + footFont + ' }' : '',
+      centerCss,
+      showFooter && eff.footerLeft ? '  @bottom-left { content: ' + JSON.stringify(eff.footerLeft) + '; ' + footFont + ' }' : '',
+      showFooter && eff.footerRight ? '  @bottom-right { content: ' + JSON.stringify(eff.footerRight) + '; ' + footFont + ' }' : '',
       '}',
     ].filter(Boolean).join('\n');
     const screenCss = [
@@ -877,10 +891,15 @@ export async function render(src, options = {}, context = {}) {
   }
 
 
+  // Chrome 打印路径的页脚：与 Paged 路径保持同一套 center 语义。
+  let footerCenterHtml;
+  if (eff.footer === false) footerCenterHtml = '';
+  else if (eff.footerCenter !== undefined) footerCenterHtml = esc(eff.footerCenter);
+  else footerCenterHtml = '<span class="pageNumber"></span> / <span class="totalPages"></span>';
   const footerTemplate = `<div style="width:100%;font-size:8px;color:#8a8578;font-family:-apple-system,'PingFang SC',sans-serif;letter-spacing:.5px;display:flex;justify-content:space-between;padding:0 12mm;">
-      <span style="flex:1;text-align:left;">${esc(opts.footerLeft || '')}</span>
-      <span style="flex:1;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></span>
-      <span style="flex:1;text-align:right;">${esc(opts.footerRight || '')}</span>
+      <span style="flex:1;text-align:left;">${esc(eff.footerLeft || '')}</span>
+      <span style="flex:1;text-align:center;">${footerCenterHtml}</span>
+      <span style="flex:1;text-align:right;">${esc(eff.footerRight || '')}</span>
     </div>`;
 
   // GB：页眉/页码改由 Paged.js 的 @page margin box 绘制（奇偶页位置不同、前置罗马/正文阿拉伯），
@@ -890,6 +909,6 @@ export async function render(src, options = {}, context = {}) {
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
   return { title, html: assetHtml(toc && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
-    printOptions: { footer: usePaged ? false : opts.footer, footerTemplate, header: false, headerTemplate,
-      landscape: opts.landscape, outline: opts.outline, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
+    printOptions: { footer: usePaged ? false : eff.footer !== false, footerTemplate, header: false, headerTemplate,
+      landscape: eff.landscape, outline: eff.outline !== false, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
 }

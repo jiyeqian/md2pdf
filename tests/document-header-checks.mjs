@@ -10,11 +10,26 @@ test('missing H1 prompts; empty H1 suppresses fallback without overriding explic
   assert.equal((await web('#\n', {title:'显式标题'})).title, '显式标题');
   assert.equal((await web('---\ntitle: 元数据标题\n---\n#\n')).title, '元数据标题');
 });
-test('lead requires H1 and cannot promote text beneath H2, with no length threshold', async () => {
+test('lead 取第一个顶层普通段落，跳过标题/代码/列表/引用/表格/块公式/仅图片段', async () => {
   assert.equal(lead((await web('# 标题\n\n短导言。\n\n## 小节\n\n正文。')).html), '短导言。');
-  assert.equal(lead((await web('# 标题\n\n## 小节\n\n较长的正文不会被错误提升为导言。')).html), '');
-  assert.equal(lead((await web('没有一级标题的长段落也不作为导言。')).html), '');
-  assert.equal(lead((await web('# 标题\n\n没有二级标题的段落仍为正文。')).html), '');
+  // 可在章节下提取（不再要求位于 H1 与 H2 之间）
+  assert.equal(lead((await web('# 标题\n\n## 小节\n\n章节下的第一段被提取为导语。')).html), '章节下的第一段被提取为导语。');
+  // 无 H1 也可
+  assert.equal(lead((await web('没有一级标题的第一段也作为导语。')).html), '没有一级标题的第一段也作为导语。');
+  // 引用块内的段落不当作导语
+  assert.equal(lead((await web('# 标题\n\n> 引用段不该被当作导语。\n\n真正的导语。')).html), '真正的导语。');
+  // 跳过列表
+  assert.equal(lead((await web('# 标题\n\n- 列表项\n\n真正的导语。')).html), '真正的导语。');
+  // 跳过代码块
+  assert.equal(lead((await web('# 标题\n\n\`\`\`\ncode\n\`\`\`\n\n真正的导语。')).html), '真正的导语。');
+  // 跳过块级公式段
+  assert.equal(lead((await web('# 标题\n\n$$\na=b\n$$\n\n真正的导语。')).html), '真正的导语。');
+});
+test('lead 关闭时段落留在原位', async () => {
+  assert.equal(lead((await web('# 标题\n\n短导言。\n\n## 小节')).html), '短导言。');
+  const off = (await web('# 标题\n\n短导言。\n\n## 小节', { lead: false })).html;
+  assert.equal(lead(off), '');
+  assert.ok(off.includes('短导言。'), '关闭导语后段落应留在正文原位');
 });
 test('TOC excludes H1 and selects highest one or two actual levels with live anchors', async () => {
   const md = '# 标题\n\n## 顶层\n\n### 次层\n\n#### 三层';

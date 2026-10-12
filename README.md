@@ -121,30 +121,28 @@ md2pdf 文件名.md --theme minimal --toc
 | `--theme <name>` | `elegant`（默认）｜ `minimal`｜ `gb`（国标版式） |
 | `--type <name>` | 文档类型：`general`｜`skill`｜`paper`｜`gb`；**默认自动探测**，`--type` 可显式覆盖 |
 | `--title <text>` / `--kicker <text>` | 覆盖标题 / 报头小标题 |
-| `--no-meta` / `--no-lead` | 不要元信息条 / 首段不作为导语 |
+| `--enable <功能列表>` / `--disable <功能列表>` | 开启 / 关闭功能，支持逗号分隔，例如 `--disable meta,lead` |
 | `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
-| `--no-outline` | 不生成 PDF 书签（默认生成） |
-| `--bibliography [footnote\|bib]` | 参考文献模式，**默认启用**（`footnote`，不加参数也生效）；`bib` 为未来支持 |
-| `--no-bibliography` | 关闭参考文献模式（脚注作为普通脚注） |
+| `--bibliography-title <text>` | 参考文献自动渲染；设置章节标题，默认“参考文献”，空字符串隐藏标题 |
 | `--numbering <mode>` | 章节编号：`auto`（默认，识别到已有编号则不动）｜ `force`（强制）｜ `none`（不加） |
 | `--number-scheme <n>` | 编号方案：`arabic`（默认，`1` / `1.1`）｜ `gb`（章条制）｜ `cjk`（`一、` / `（一）`）｜ `chapter`（`第1章`）
-| `--link-urls` | 正文链接后附 URL（纸质可读） |
-| `--landscape` / `--font-size <pt>` / `--margin <mm>` | 横向 / 字号（默认 10.5）/ 页边距（默认 20；可写 "20,18" = 上下,左右） |
-| `--no-footer` / `--footer-left` / `--footer-right` | 页脚控制 |
-| `--colophon <text>` | 文末落款 |
+| `--enable link-urls` | 正文链接后附 URL（纸质可读） |
+| `--enable landscape` / `--font-size <pt>` / `--margin <mm>` | 横向 / 字号（默认 10.5）/ 页边距（默认 20；可写 "20,18" = 上下,左右） |
+| `--footer-left <text>` / `--footer-center <text>` / `--footer-right <text>` | 设置页脚文字；中间未指定时显示页码；`--disable footer` 关闭整个页脚 |
+| `--colophon <text>` | 只修改文末落款左侧；默认左侧为仓库链接，右侧为生成时间 |
 | `--keep-html` / `--html-only` | 留中间 HTML 调样式 / 只出 HTML（CI 校验用） |
 | `--open` | 完成后打开 PDF |
 
-文档类型默认**自动探测**，优先级：`--type` 显式指定 > 文件名 `SKILL.md`（`skill`）> frontmatter 含 `name`（`skill`）> 兜底 `general`。frontmatter 含 `abstract` 或 `keywords` 判为 `paper`（作者行 +「摘要」块 +「关键词」行）；含 `标准号`/`standard` 判为 `gb`（国标版式：封面 + 奇偶页眉 + 章条/附录编号 + 目次真实页码，由内置 Paged.js 接管分页，仅 gb 启用）。详见 `docs/gb-template.md`。
+文档类型默认**自动探测**，优先级：`--type` 显式指定 > frontmatter 的 `type` > 文件名 `SKILL.md`（`skill`）> frontmatter 含 `name`（`skill`）> 兜底 `general`。frontmatter 含 `abstract` 或 `keywords` 判为 `paper`（作者行 +「摘要」块 +「关键词」行）；含 `标准号`/`standard` 判为 `gb`（国标版式：封面 + 奇偶页眉 + 章条/附录编号 + 目次真实页码，由内置 Paged.js 接管分页，仅 gb 启用）。详见 `docs/gb-template.md`。
 
-布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
+文档配置支持 frontmatter，优先级为 CLI/Web 显式设置 → frontmatter → 文档类型默认 → 全局默认。文本参数传 `""` 明确清空，缺值报错；旧布尔参数保留兼容。详见[配置与迁移说明](docs/configuration.md)。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
 
 ### 目录与书签是两件事
 
 | | 是什么 | 在哪看 | 怎么开 |
 | --- | --- | --- | --- |
 | **目录页** | 文首一张目录，条目是**可点击内链** | 文档第 1 页 | `-t / --toc`（默认关） |
-| **PDF 书签** | 阅读器侧栏的**章节大纲树** | 阅读器侧栏 | **默认开**，`--no-outline` 关 |
+| **PDF 书签** | 阅读器侧栏的**章节大纲树** | 阅读器侧栏 | **默认开**，`--disable outline` 关 |
 
 书签由 Chrome 按 `h1`–`h6` 结构生成，无需额外配置。验一份 PDF 的书签与内链：
 
@@ -154,13 +152,13 @@ node scripts/inspect-pdf.mjs out.pdf
 
 ## 排版规则
 
-- 首个 H1 提升为报头大标题；其后的首段自动成为导语。
+- 首个 H1 提升为报头大标题；第一段顶层普通段落作为导语，开启 lead 时移到标题下，原位置不重复。
 - YAML frontmatter 的 `name` / `description` 生成元信息条；「适用于…/不用于…」自动拆两栏。
 - H2 自动分节加色块；表格深色表头＋隔行浅底；有序列表圆形序号。
 - 章节编号分两维：是否编号与格式由 `--numbering` 与 `--number-scheme` 控制。
 - 代码块按语言自动语法高亮（内置 highlight.js，支持 Python/JS/Bash 等常见语言）。
 - 数学公式：`$...$`（行内）与 `$$...$$`（独立成行）由内置 MathJax 渲染；独立公式自动编号，`\label{eq:x}` 定义、`\eqref{eq:x}` 引用（SVG 输出，零字体依赖）。
-- 脚注：`[^id]` 引用 + `[^id]: 内容` 定义；BibTeX 脚注（`@article{...}` 等）按 GB/T 7714-2025 著录，默认收集为「参考文献」章节（`--no-bibliography` 关闭）。编号按正文首次引用顺序自动排列。
+- 脚注：`[^id]` 引用 + `[^id]: 内容` 定义；BibTeX 脚注（`@article{...}` 等）按 GB/T 7714-2025 著录，默认收集为「参考文献」章节，标题由 `--bibliography-title` 配置。编号按正文首次引用顺序自动排列。
 - 图表：三类图统一编号为题注「图 N：…」——普通图片与矢量图（SVG）的题注写在 alt 里，mermaid 图写在代码块上一行「图：说明」；表格前一行写「表：说明」即编号「表 N：…」。`\ref{fig:x}` / `\ref{tab:x}` 交叉引用并链接到原图。
 - 相对路径图片自动解析进 PDF。
 
@@ -207,4 +205,4 @@ bash scripts/validate.sh   # 本地与 CI 同一套校验（无需浏览器）
 
 ## License
 
-MIT。第三方组件：`vendor/marked.esm.js`（marked，MIT）、`vendor/mathjax/tex-svg.js`（MathJax，Apache-2.0），均随仓库分发以便零依赖安装。
+MIT。第三方组件：`vendor/marked.esm.js`（marked，MIT）、`vendor/mathjax/tex-svg.js`（MathJax，Apache-2.0），均随仓库分发。frontmatter 解析使用 `vendor/yaml/` 中的 `yaml`（ISC），无需安装外部运行依赖；维护者可运行 `node scripts/build-yaml.mjs` 重新构建固定版本资源。

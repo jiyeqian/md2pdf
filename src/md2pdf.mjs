@@ -5,21 +5,23 @@
  * 用法：md2pdf <file.md> [file2.md ...] [选项]
  *
  * 选项：
- *   -o, --output <path>   输出 PDF（单文件时可用；多文件时忽略）
+ *   -o, --output <path>   输出路径（多文件时为输出目录）
  *       --theme <name>    elegant（默认）| minimal
- *       --title <text>    覆盖标题（默认取正文首个 H1，其次 frontmatter.title，其次文件名）
+ *       --title <text>    覆盖标题（默认取 frontmatter.title，其次正文首个 H1，其次文件名）
  *       --kicker <text>   报头小标题（如"专利实务 · 技能文档"）
- *       --no-meta         不生成元信息条
- *       --no-lead         首段不作为导语放大
+ *       --enable <names>  开启功能（逗号分隔）
+ *       --disable <names> 关闭功能（如 meta,lead）
  *   -t, --toc             生成目录（取自 H2）
- *       --link-urls       正文链接后附 URL
- *       --landscape       横向页面
+ *       --enable link-urls 正文链接后附 URL
+ *       --enable landscape 横向页面
  *       --font-size <pt>  正文字号，默认 10.5
  *       --margin <mm>     页边距，默认 20（上下同为 18/20，左右同值）；可写 "20,18"
- *       --no-footer       不输出页脚页码
+ *       --disable footer  不输出整个页脚
  *       --footer-left  <text>   页脚左文字（默认空）
  *       --footer-right <text>   页脚右文字（默认空）
- *       --colophon <text> 文末落款（默认：来源文件名）
+ *       --footer-center <text> 页脚中间文字（默认页码）
+ *       --colophon <text> 文末左侧落款（默认仓库口号，右侧为生成时间）
+ *       --bibliography-title <text> 参考文献章节标题
  *       --keep-html       保留中间 HTML，便于调样式
  *       --open            完成后打开 PDF
  *   -h, --help
@@ -40,7 +42,7 @@ import { SCHEME_NAMES } from './numbering.mjs';
 import { parseArgs, expandArgs } from './options.mjs';
 import { render } from './render.mjs';
 import { Chrome, findChrome } from './chrome.mjs';
-const VERSION = '1.14.8';
+const VERSION = '1.14.9';
 
 const HELP = `
 md2pdf ${VERSION} —— Markdown → 优雅 PDF
@@ -53,26 +55,22 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
 选项：
   -o, --output <path>      输出路径（默认与输入同目录同名 .pdf）
       --theme <name>       elegant（默认，墨蓝+古铜）| minimal（黑白公文）
-      --type <name>       文档类型（默认自动探测）：${PROFILE_NAMES.join('|')}
-      --title <text>       覆盖标题
-      --kicker <text>      报头小标题
-      --no-float-numbering 不为源图像/表格添加自动编号和题注
-      --no-gb-cover        不生成 GB 封面（使用原始封面图或无封面文件）
-      --no-gb-defaults     GB 封面缺失字段保持空白，不补默认机构或类别
-      --no-meta            不生成元信息条
-      --no-lead            首段不作为导语
-  -t, --toc                在文首插入目录页（取自二级标题，可点击跳转）
-      --no-outline         不生成 PDF 书签（默认生成，阅读器侧边栏按标题成树）
-      --bibliography [footnote|bib]  将脚注收集为「参考文献」章节（默认 footnote；bib 为未来支持）
-      --numbering <mode>    章节编号：auto（默认，识别到已有编号则不动）| force（强制）| none（不加）
-      --number-scheme <n>  编号方案：${SCHEME_NAMES.join('|')}（默认 arabic）；配合 --numbering force 使用
-      --link-urls          正文链接后附 URL
-      --landscape          横向
+      --type <name>        文档类型（默认自动探测）：${PROFILE_NAMES.join('|')}
+      --title <text>       覆盖标题（显式空串 "" 隐藏文档标题）
+      --kicker <text>      报头小标题（显式空串 "" 隐藏）
+      --enable <names>     开启功能，逗号分隔、可重复：
+                           footer,meta,lead,toc,outline,float-numbering,gb-cover,gb-defaults,link-urls,landscape
+      --disable <names>    关闭功能，逗号分隔、可重复（同 --enable）
+  -t, --toc                --enable toc 的便捷别名
+      --numbering <mode>   章节编号：auto（默认，识别到已有编号则不动）| force（强制）| none（不加）
+      --number-scheme <n>  编号方案：${SCHEME_NAMES.join('|')}（默认 arabic）
       --font-size <pt>     正文字号（默认 10.5）
       --margin <mm>        页边距（默认 20；可写 "20,18" = 上下,左右；gb 类型默认 25/20/25/19）
-      --no-footer          不要页脚页码
-      --footer-left/--footer-right <text>
-      --colophon <text>    文末落款
+      --footer-left <text>   页脚左文字（显式空串 "" 清空）
+      --footer-center <text> 页脚中文字（默认 当前页 / 总页数；显式空串 "" 清空）
+      --footer-right <text>  页脚右文字（显式空串 "" 清空）
+      --colophon <text>    文末落款左侧文字（默认官方仓库口号；显式空串 "" 仅清空左侧）
+      --bibliography-title <text> 参考文献标题（默认「参考文献」；显式空串 "" 只去标题）
       --keep-html          保留中间 HTML
       --paged-html [path]  输出分页 HTML：浏览器打开与 PDF 同款分页/页码
                            （Paged.js；gb 类型含封面/奇偶页眉；缺省路径 = 同名 .html）
@@ -80,9 +78,15 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --open               完成后打开 PDF
   -h, --help
 
+说明：
+  • 文档类型 / 主题 / 字号 / 行距 / 页边距 / 章节编号 / 编号方案 / 目录深度等也可写在 frontmatter，CLI 优先于 frontmatter。
+  • 功能开关使用 --enable / --disable；兼容迁移说明见 README。
+  • 参考文献一律自动生成，使用 --bibliography-title 设置章节标题。
+  • 文本类选项写空串（如 --title ""）表示清空该字段，且不再回退到 frontmatter 或文件名。
+
 示例：
   md2pdf SKILL.md
-  md2pdf notes.md --theme minimal --toc --open
+  md2pdf notes.md --theme minimal --enable toc --open
   md2pdf a.md b.md -o /tmp/   # 多文件时 -o 视为输出目录
 `;
 
@@ -120,11 +124,26 @@ function resolveOutput(mdPath, opts) {
   return o;
 }
 
+// 统一的错误输出：ConfigError 带 frontmatter 行号，其余给可读消息；不写任何无效输出。
+function reportConfigError(e, input) {
+  const errs = e && Array.isArray(e.configErrors) ? e.configErrors : null;
+  if (errs && errs.length) {
+    for (const c of errs) {
+      const loc = [input, c && c.line, c && c.column].filter(v => v !== undefined && v !== null && v !== '').join(':');
+      console.error(`✗ ${loc ? loc + ' ' : ''}${(c && c.message) || '配置无效'}`);
+    }
+    return;
+  }
+  console.error(`✗ ${input ? input + '：' : ''}${e.message}`);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   if (args[0] === 'webapp') { const { runWebapp } = await import('./webapp.mjs'); await runWebapp(args.slice(1)); return; }
   if (args[0] === 'skill') { await installSkill(args.slice(1)); return; }
-  const opts = parseArgs(expandArgs(args));
+  let opts;
+  try { opts = parseArgs(expandArgs(args)); }
+  catch (e) { reportConfigError(e); process.exitCode = 1; return; }
   if (opts.help) { console.log(HELP); return; }
   if (opts.version) { console.log(VERSION); return; }
   if (!opts.inputs.length) { console.log(HELP); process.exitCode = 1; return; }
@@ -161,7 +180,7 @@ async function main() {
           spawn(cmd, [out], { stdio: 'ignore' });
         }
       } catch (e) {
-        console.error(`✗ ${input}：${e.message}`);
+        reportConfigError(e, input);
         failed = true;
       }
     }
@@ -172,4 +191,4 @@ async function main() {
   if (failed) process.exitCode = 1;
 }
 
-main().catch(e => { console.error('md2pdf 失败：', e.message); process.exit(1); });
+main().catch(e => { reportConfigError(e); process.exit(1); });

@@ -1,6 +1,7 @@
 import { PROFILES, PROFILE_NAMES, detectProfile } from './profiles.mjs';
 import { SCHEME_NAMES } from './numbering.mjs';
-import { splitFrontmatter } from './render.mjs';
+import { parseFrontmatter, resolveDocumentOptions } from './config.mjs';
+import { FEATURES } from './options.mjs';
 
 /**
  * web-options —— 在线工作台的「选项策略」前端与后端共用同一份声明。
@@ -66,7 +67,7 @@ const TYPE_NOTES = {
   paper: ['frontmatter 含 abstract / keywords 自动识别，自动生成作者行、摘要与关键词。'],
   gb: [
     '国家标准版式应用内置国家标准模板：封面与页眉、GB 章条编号、订口式页边距均按模板输出，不能在线修改。',
-    '标准号、发布日期、实施日期与发布单位取自文档自身 frontmatter —— 在线不合成任何元数据。',
+    '标准元数据来自 frontmatter；缺失值按统一默认规则补全，disable: [gb-defaults] 可保持空白。',
     '如需「前言 / 引言 / 目次 / 附录 A」的编号规则，直接按 GB 结构书写标题即可。',
   ],
 };
@@ -91,26 +92,30 @@ function control(name, allowed, meta) {
  * 某个类型的完整策略（前端据此显示/隐藏控件，测试据此断言约束）。
  * @param {string} type 生效类型；'' 表示自动识别阶段
  */
-export function policyForType(type = '') {
+export function policyForType(type = '', effective = null) {
   const profile = PROFILES[type] || PROFILES.general;
   const caps = TYPE_CAPABILITIES[type] ?? AUTO_CAPABILITIES;
-  const d = profile.defaults || {};
+  const d = (profile.defaults) || {};
+  const eff = effective || {};
+  const pick = (key, fallback) => eff[key] ?? d[key] ?? fallback;
+  // 生效值：显式/Web 覆盖 > frontmatter > profile 默认 > 全局兜底（与 render 一致）。
+  // 传入 effective 时策略回显真实生效值（含 frontmatter），否则退回 profile 默认。
   const fixed = {
-    theme: d.theme ?? WEB_BASELINE.theme,
-    numberScheme: d.numberScheme ?? WEB_BASELINE.numberScheme,
-    numbering: d.numbering ?? WEB_BASELINE.numbering,
-    marginTop: d.marginTop ?? WEB_BASELINE.marginTop,
-    marginBottom: d.marginBottom ?? WEB_BASELINE.marginBottom,
-    marginLeft: d.marginLeft ?? d.marginSide ?? WEB_BASELINE.marginLeft,
-    marginRight: d.marginRight ?? d.marginSide ?? WEB_BASELINE.marginRight,
+    theme: pick('theme', WEB_BASELINE.theme),
+    numberScheme: pick('numberScheme', WEB_BASELINE.numberScheme),
+    numbering: pick('numbering', WEB_BASELINE.numbering),
+    marginTop: pick('marginTop', WEB_BASELINE.marginTop),
+    marginBottom: pick('marginBottom', WEB_BASELINE.marginBottom),
+    marginLeft: eff.marginLeft ?? d.marginLeft ?? d.marginSide ?? WEB_BASELINE.marginLeft,
+    marginRight: eff.marginRight ?? d.marginRight ?? d.marginSide ?? WEB_BASELINE.marginRight,
   };
   const controls = {
     // 类型选择本身始终可调：它是决定其余控件是否可用的开关。
     type: { name: 'type', label: '文档类型', available: true, values: PROFILE_NAMES.slice(), allowEmpty: true, emptyValue: '', emptyLabel: '自动识别' },
     theme: control('theme', caps.theme, { kind: 'enum', fixedValue: fixed.theme, fixedLabel: THEME_LABELS[fixed.theme] || fixed.theme }),
-    toc: control('toc', caps.toc, { kind: 'tri', allowEmpty: true, fixedValue: type ? Boolean(d.toc ?? WEB_BASELINE.toc) : false, triValues: ['false', '1', '2'] }),
-    fontSize: control('fontSize', caps.fontSize, { kind: 'number', allowEmpty: true, unsettable: true, min: FONT_SIZE_RANGE.min, max: FONT_SIZE_RANGE.max, step: FONT_SIZE_RANGE.step, defaultValue: WEB_BASELINE.fontSize, fixedValue: d.fontSize ?? WEB_BASELINE.fontSize }),
-    lineHeight: control('lineHeight', caps.lineHeight, { kind: 'number', allowEmpty: true, unsettable: true, min: LINE_HEIGHT_RANGE.min, max: LINE_HEIGHT_RANGE.max, step: LINE_HEIGHT_RANGE.step, defaultValue: WEB_BASELINE.lineHeight, fixedValue: type === 'gb' ? GB_LINE_HEIGHT : (d.lineHeight ?? WEB_BASELINE.lineHeight) }),
+    toc: control('toc', caps.toc, { kind: 'tri', allowEmpty: true, fixedValue: type ? Boolean(pick('toc', WEB_BASELINE.toc)) : false, triValues: ['false', '1', '2'] }),
+    fontSize: control('fontSize', caps.fontSize, { kind: 'number', allowEmpty: true, unsettable: true, min: FONT_SIZE_RANGE.min, max: FONT_SIZE_RANGE.max, step: FONT_SIZE_RANGE.step, defaultValue: WEB_BASELINE.fontSize, fixedValue: pick('fontSize', WEB_BASELINE.fontSize) }),
+    lineHeight: control('lineHeight', caps.lineHeight, { kind: 'number', allowEmpty: true, unsettable: true, min: LINE_HEIGHT_RANGE.min, max: LINE_HEIGHT_RANGE.max, step: LINE_HEIGHT_RANGE.step, defaultValue: WEB_BASELINE.lineHeight, fixedValue: type === 'gb' ? GB_LINE_HEIGHT : pick('lineHeight', WEB_BASELINE.lineHeight) }),
     margin: control('margin', caps.margin, { kind: 'enum', allowEmpty: true, values: caps.margin ? MARGIN_OPTIONS.map(o => o.value) : [], fixedValue: `${fixed.marginTop} / ${fixed.marginBottom}`, fixedNote: `左右 ${fixed.marginLeft} / ${fixed.marginRight} mm` }),
     numbering: control('numbering', caps.numbering, { kind: 'enum', fixedValue: fixed.numbering, fixedLabel: NUMBERING_LABELS[fixed.numbering] || fixed.numbering }),
     numberScheme: control('numberScheme', caps.numberScheme, { kind: 'enum', fixedValue: fixed.numberScheme, fixedLabel: SCHEME_LABELS[fixed.numberScheme] || fixed.numberScheme }),
@@ -148,15 +153,75 @@ export function webPolicyDocument() {
 const ENUM_OPTION_KEYS = ['theme', 'numberScheme', 'numbering'];
 const MARGIN_KEYS = ['margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginSide'];
 
+// frontmatter 里与「在线可调选项」同名的字段（kebab/camel 皆可），映射到运行时键名。
+// 用于把 frontmatter 的配置一并纳入类型策略校验，防止绕过 Web 控件锁定（尤其是 GB 强制版式）。
+const FM_OPTION_KEYS = {
+  theme: 'theme',
+  'number-scheme': 'numberScheme', numberScheme: 'numberScheme',
+  numbering: 'numbering',
+  'font-size': 'fontSize', fontSize: 'fontSize',
+  'line-height': 'lineHeight', lineHeight: 'lineHeight',
+  'margin-top': 'marginTop', marginTop: 'marginTop',
+  'margin-bottom': 'marginBottom', marginBottom: 'marginBottom',
+  'margin-left': 'marginLeft', marginLeft: 'marginLeft',
+  'margin-right': 'marginRight', marginRight: 'marginRight',
+  margin: 'margin',
+  landscape: 'landscape',
+  toc: 'toc',
+  'toc-depth': 'tocDepth', tocDepth: 'tocDepth',
+};
+
+// enable/disable 列表里的功能名 → 运行时键名（仅取与策略校验相关的布尔项）。
+const FM_FEATURE_KEYS = {
+  footer: 'footer', meta: 'meta', lead: 'lead', toc: 'toc', outline: 'outline',
+  'float-numbering': 'floatNumbering', 'gb-cover': 'gbCover', 'gb-defaults': 'gbDefaults',
+  'link-urls': 'linkUrls', landscape: 'landscape',
+};
+
+function listify(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') return value.split(',').map(s => s.trim()).filter(Boolean);
+  return [];
+}
+
 /**
- * 依据「生效类型」校验 opts：每个被隐藏 / 锁定的控件都不接受覆盖请求。
+ * 抽取 frontmatter 中会与「类型策略」冲突的配置字段（含 enable/disable 功能开关）。
+ * 只做只读映射：把文档声明过的覆盖项整理成运行时键名，交由 assertOptionsAllowed 统一校验。
+ */
+export function frontmatterOverrides(fm = {}) {
+  const out = {};
+  if (!fm || typeof fm !== 'object') return out;
+  for (const [key, target] of Object.entries(FM_OPTION_KEYS)) {
+    if (Object.hasOwn(fm, key) && fm[key] !== undefined) out[target] = fm[key];
+  }
+  for (const feature of listify(fm.enable)) {
+    const target = FEATURES[feature.trim()];
+    if (target && !Object.hasOwn(out, target)) out[target] = true;
+  }
+  for (const feature of listify(fm.disable)) {
+    const target = FEATURES[feature.trim()];
+    if (target && !Object.hasOwn(out, target)) out[target] = false;
+  }
+  return out;
+}
+
+/**
+ * 依据「生效类型」校验覆盖项：每个被隐藏 / 锁定的控件都不接受覆盖请求。
  * 枚举取值必须落在该类型的允许集合内 —— 由此堵住各处不一致：
  *   - 非 gb 类型不得使用「gb 主题 / gb 编号方案」；
  *   - paper 等类型不得使用未开放的编号方案（如 cjk）；
  *   - gb 除 toc 外全部锁定（含字号与版式），固定值一律由内置国家标准模板给出。
+ * frontmatter 的覆盖经 frontmatterOverrides 汇入 merged，与显式 opts 同等受约束，
+ * 因此 GB 强制版式不会被 `enable: [landscape]` 之类的文档配置绕过。
+ * @param {object} opts 显式覆盖（显式优先）
+ * @param {string} type 生效类型
+ * @param {object} [frontmatter] frontmatter 覆盖（frontmatterOverrides 的产物）
  * @throws 带 status=400 的 Error
  */
-export function assertOptionsAllowed(opts, type) {
+export function assertOptionsAllowed(opts, type, frontmatter = {}) {
+  const merged = { ...frontmatter };
+  for (const [key, value] of Object.entries(opts || {})) merged[key] = value;
+  opts = merged;
   if (opts.tocDepth !== undefined && ![1, 2].includes(opts.tocDepth)) throw error400('目录层级只能为一级或二级');
   const present = key => Object.hasOwn(opts, key);
   const caps = TYPE_CAPABILITIES[type] ?? AUTO_CAPABILITIES;
@@ -187,8 +252,9 @@ export function assertOptionsAllowed(opts, type) {
  * 网页端无文件名，basename 固定为空。
  */
 export function resolveWebType(md, explicit = '') {
-  const { fm } = splitFrontmatter(String(md ?? ''));
-  return detectProfile({ basename: '', fm, explicit: explicit || undefined }).name;
+  const { fm } = parseFrontmatter(String(md ?? ''));
+  // 与 render 一致：显式类型 > frontmatter.type > 自动探测。
+  return detectProfile({ basename: '', fm, explicit: explicit || fm.type || undefined }).name;
 }
 
 /**
@@ -217,24 +283,14 @@ export function normalizeSelections(selections = {}, type = '') {
 }
 
 /**
- * 回显「生效选项」。顺序与 src/render.mjs 一致：显式 opts > profile defaults > 内置兜底。
+ * 回显「生效选项」。顺序与 render 一致：显式 opts/Web 控件 > frontmatter > profile 默认 > 全局兜底。
  * 仅用于界面提示；真正决定排版的是 render 内部同一套顺序。
+ * 传入 frontmatter 时回显会反映文档自身的配置（Web 未显式选择时不灌假覆盖）。
  */
-export function effectiveOptions(opts = {}, type = 'general') {
-  const d = (PROFILES[type] || PROFILES.general).defaults || {};
-  const pick = (key, fallback) => opts[key] ?? d[key] ?? fallback;
-  return {
-    theme: pick('theme', WEB_BASELINE.theme),
-    numberScheme: pick('numberScheme', WEB_BASELINE.numberScheme),
-    numbering: pick('numbering', WEB_BASELINE.numbering),
-    toc: pick('toc', WEB_BASELINE.toc),
-    fontSize: pick('fontSize', WEB_BASELINE.fontSize),
-    // GB 行距固定为内置模板值（themes/gb.css 1.62），不接受在线覆盖。
-    lineHeight: type === 'gb' ? GB_LINE_HEIGHT : pick('lineHeight', WEB_BASELINE.lineHeight),
-    landscape: pick('landscape', false),
-    marginTop: pick('marginTop', WEB_BASELINE.marginTop),
-    marginBottom: pick('marginBottom', WEB_BASELINE.marginBottom),
-    marginLeft: opts.marginLeft ?? d.marginLeft ?? opts.marginSide ?? d.marginSide ?? WEB_BASELINE.marginLeft,
-    marginRight: opts.marginRight ?? d.marginRight ?? opts.marginSide ?? d.marginSide ?? WEB_BASELINE.marginRight,
-  };
+export function effectiveOptions(opts = {}, type = 'general', fm = {}, positions = {}) {
+  const effective = resolveDocumentOptions(opts, fm, PROFILES[type] || PROFILES.general, { positions });
+  const keys = ['theme', 'numberScheme', 'numbering', 'toc', 'fontSize', 'lineHeight', 'landscape', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
+  const result = Object.fromEntries(keys.map(key => [key, effective[key]]));
+  if (type === 'gb') result.lineHeight = GB_LINE_HEIGHT;
+  return result;
 }

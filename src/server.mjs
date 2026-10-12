@@ -8,7 +8,9 @@ import { render } from './render.mjs';
 import { enhancePreview } from './preview.mjs';
 import { attachSourcePositions } from './editor-position.mjs';
 import { Chrome, findChrome } from './chrome.mjs';
-import { webPolicyDocument, policyForType, effectiveOptions, assertOptionsAllowed, resolveWebType } from './web-options.mjs';
+import { webPolicyDocument, policyForType, effectiveOptions, assertOptionsAllowed, frontmatterOverrides } from './web-options.mjs';
+import { parseFrontmatter } from './config.mjs';
+import { PROFILES, PROFILE_NAMES, detectProfile } from './profiles.mjs';
 import { exampleCatalog, findExample, defaultExampleSource } from './web-examples.mjs';
 import { createDoiResolver } from './doi.mjs';
 import { documentDownloadName, sanitizeDownloadFileName } from '../web/editor-files.mjs';
@@ -295,17 +297,23 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       if (!['/api/render', '/api/pdf', '/api/resolve'].includes(req.url)) { json(404, { error: '页面不存在' }); return; }
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); json(405, { error: '请使用 POST' }); return; }
       const { md, opts, filename } = validateInput(await readBody(req));
-      // 先由原文判定生效类型，再按类型策略强制校验，最后才渲染（不把默认编号方案塞进 opts）。
-      const type = resolveWebType(md, opts.type);
-      if (req.url === '/api/resolve') { json(200, { type, policy: policyForType(type) }); return; }
-      assertOptionsAllowed(opts, type);
+      // 文档配置（frontmatter）与 Web 控件走同一套解析：先解析 FM（语法 / 类型无效即 400），
+      // 再定生效类型，然后把「Web 显式 + frontmatter」一并交给类型策略校验（GB 强制版式不可绕过）。
+      const { fm, positions } = parseFrontmatter(md);
+      const explicitType = opts.type ?? fm.type;
+      if (explicitType !== undefined && explicitType !== '' && !PROFILE_NAMES.includes(explicitType)) throw error(400, `未知文档类型：${explicitType}（可用：${PROFILE_NAMES.join(', ')}）`);
+      const type = detectProfile({ basename: '', fm, explicit: explicitType || undefined }).name;
+      const effective = effectiveOptions(opts, type, fm, positions);
+      assertOptionsAllowed(opts, type, frontmatterOverrides(fm));
+      // 生效配置：显式/Web > frontmatter > profile 默认 > 全局兜底，preview 与 pdf 共用同一份。
+      if (req.url === '/api/resolve') { json(200, { type, policy: policyForType(type, effective) }); return; }
       const rendered = await render(md, opts, { webSafe: true });
       if (req.url === '/api/render') {
         json(200, {
           html: await webDocument(attachSourcePositions(rendered.pagedHtml, md), true, rendered.type),
           type: rendered.type,
-          policy: policyForType(rendered.type),
-          effective: effectiveOptions(opts, rendered.type),
+          policy: policyForType(rendered.type, effective),
+          effective,
         });
         return;
       }
@@ -316,7 +324,12 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       const encodedName = encodeURIComponent(name).replace(/[!'()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());
       res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="document.pdf"; filename*=UTF-8''${encodedName}` }); res.end(pdf);
     } catch (e) {
-      if (!res.headersSent && !res.destroyed) json(e.status || 500, { error: e.status ? e.message : req.url === '/api/doi' ? 'DOI 查询失败，请稍后重试' : '渲染失败，请检查文档或 Chrome 配置后重试' });
+      if (!res.headersSent && !res.destroyed) {
+        const payload = { error: e.status ? e.message : req.url === '/api/doi' ? 'DOI 查询失败，请稍后重试' : '渲染失败，请检查文档或 Chrome 配置后重试' };
+        // 配置错误（ConfigError / 文档配置校验）保留逐条行号定位信息，供 Web 端展示与跳转。
+        if (Array.isArray(e.configErrors) && e.configErrors.length) payload.configErrors = e.configErrors;
+        json(e.status || 500, payload);
+      }
     }
   });
   server.requestTimeout = 15000;

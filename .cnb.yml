@@ -9,6 +9,8 @@
 "**":
   push:
     - name: 校验
+      docker:
+        image: node:22
       env:
         LANG: C.UTF-8
       stages:
@@ -24,6 +26,8 @@
 
   pull_request:
     - name: 校验
+      docker:
+        image: node:22
       env:
         LANG: C.UTF-8
       stages:

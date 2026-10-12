@@ -382,3 +382,80 @@ test('a stopped browser cannot launch later during shutdown', async () => {
   await assert.rejects(browser.start(), /startup cancelled/);
   assert.equal(browser.proc, undefined);
 });
+
+// ---------- 文档配置（frontmatter）与类型策略：服务端错误 payload / 优先级 / GB 防绕过 ----------
+
+test('frontmatter 配置错误返回 400 且带 configErrors 行号/字段，不产生 PDF', async t => {
+  let printed = 0;
+  const app = await fixture(t, { chromeFactory: () => ({ async start() {}, async stop() {}, async printHtml() { printed++; return Buffer.from('%PDF-test'); } }) });
+  // 重复字段：YAML 层即报错，line/field 可定位
+  const dupSource = '---\ntitle: a\ntitle: b\n---\n# 标题\n\n## 小节\n\n正文';
+  const dup = await app.post('/api/render', { md: dupSource });
+  assert.equal(dup.status, 400);
+  const dupBody = await dup.json();
+  assert.ok(Array.isArray(dupBody.configErrors) && dupBody.configErrors.length, '应保留逐条配置错误');
+  const first = dupBody.configErrors[0];
+  assert.equal(typeof first.message, 'string');
+  assert.equal(typeof first.line, 'number');
+  assert.ok('field' in first && 'column' in first, 'configErrors 应含 line/column/field');
+  assert.match(first.message, /重复/);
+  // /api/pdf 同样 400，且绝不启动浏览器 / 产出 PDF
+  const pdf = await app.post('/api/pdf', { md: dupSource });
+  assert.equal(pdf.status, 400);
+  assert.ok(Array.isArray((await pdf.json()).configErrors));
+  assert.equal(printed, 0, '配置错误不得渲染 PDF');
+  // 未知功能名（enable 列表）经 render 解析后同样 400 + configErrors
+  const badFeature = await app.post('/api/render', { md: '---\nenable: [nope]\n---\n# 标题\n\n## 小节\n\n正文' });
+  assert.equal(badFeature.status, 400);
+  assert.match((await badFeature.json()).configErrors[0].message, /未知功能名/);
+});
+
+test('frontmatter 配置进入生效回显与策略；显式 Web 值优先于 frontmatter', async t => {
+  const app = await fixture(t);
+  const source = '---\ntheme: minimal\n---\n# 标题\n\n## 小节\n\n正文';
+  const fromFm = await app.post('/api/render', { md: source });
+  assert.equal(fromFm.status, 200);
+  const b1 = await fromFm.json();
+  assert.equal(b1.effective.theme, 'minimal', 'frontmatter 应生效');
+  assert.equal(b1.policy.controls.theme.fixedValue, 'minimal', '策略回显应反映 frontmatter，而非灌默认');
+  // 显式 Web 值优先
+  const explicit = await app.post('/api/render', { md: source, opts: { theme: 'elegant' } });
+  assert.equal((await explicit.json()).effective.theme, 'elegant');
+  // 未显式选择时不灌假值：默认 general 跟随全局默认 elegant
+  const dflt = await app.post('/api/render', { md: '# 标题\n\n## 小节\n\n正文' });
+  assert.equal((await dflt.json()).effective.theme, 'elegant');
+});
+
+test('frontmatter 的 type 决定文档类型与策略', async t => {
+  const app = await fixture(t);
+  const res = await app.post('/api/resolve', { md: '---\ntype: paper\n---\n# 论文\n\n## 方法\n\n正文' });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.type, 'paper');
+  assert.deepEqual(body.policy.controls.numberScheme.values, ['arabic', 'chapter']);
+});
+
+test('GB 强制版式不可被 frontmatter 或 enable 绕过', async t => {
+  const app = await fixture(t);
+  // frontmatter 改字号 → 400
+  const font = await app.post('/api/render', { md: '---\n标准号: GB/T 1\nfont-size: 12\n---\n# 标准\n\n## 范围\n\n正文' });
+  assert.equal(font.status, 400);
+  assert.match((await font.json()).error, /国家标准/);
+  // enable landscape → 400
+  const land = await app.post('/api/render', { md: '---\n标准号: GB/T 1\nenable: [landscape]\n---\n# 标准\n\n## 范围\n\n正文' });
+  assert.equal(land.status, 400);
+  assert.match((await land.json()).error, /国家标准/);
+  // 合法 GB（无覆盖）→ 200，行距为模板固定值
+  const ok = await app.post('/api/render', { md: '---\n标准号: GB/T 1\n---\n# 标准\n\n## 范围\n\n正文' });
+  assert.equal(ok.status, 200);
+  assert.equal((await ok.json()).effective.lineHeight, 1.62);
+});
+
+test('非 GB 类型拒绝 frontmatter 里的 gb 专属取值，未知普通元数据放行', async t => {
+  const app = await fixture(t);
+  for (const md of ['---\ntheme: gb\n---\n# T\n\n## S\n\n正文', '---\nnumber-scheme: gb\n---\n# T\n\n## S\n\n正文']) {
+    assert.equal((await app.post('/api/render', { md })).status, 400, md);
+  }
+  const unknown = await app.post('/api/render', { md: '---\n自定义字段: 值\n备注: 说明\n---\n# T\n\n## S\n\n正文' });
+  assert.equal(unknown.status, 200, '未知普通元数据字段不应被过度拒绝');
+});
