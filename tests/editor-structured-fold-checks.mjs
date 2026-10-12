@@ -15,7 +15,7 @@ function stateFor(doc) {
     V.markdown({ base: V.markdownLanguage, codeLanguages: info => info === 'yaml' ? V.yamlLanguage : null,
       extensions: [H.structuredMarkdownExtension(V),
       H.academicMarkdownExtension(), { props: [folding.props] }] }),
-    folding.service, V.codeFolding()
+    folding.service, H.compactFoldGutter(V), V.codeFolding()
   ] });
 }
 function nodes(state) {
@@ -178,4 +178,10 @@ test('structured parsing preserves math, prose links, ordinary notes and fenced 
   for (let node = V.syntaxTree(state).resolveInner(source.indexOf('one'), 1); node; node = node.parent) codeNodes.push(node.name);
   assert.ok(codeNodes.includes('BlockSequence'), 'fenced YAML retains its mounted language parser');
   assert.equal(H.bibliographyGroups(V, state).length, 0);
+});
+
+test('a group of single-line entries still exposes a fold in the shared column', () => {
+  const source = '[^a]: @article{a,title={A}}\n\n[^b]: @book{b,title={B}}\n\n正文';
+  const state = stateFor(source); nodes(state);
+  assert.deepEqual(foldAt(state, 1), { from: 0, to: source.indexOf('\n\n正文') });
 });
