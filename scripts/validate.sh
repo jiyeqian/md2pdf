@@ -88,6 +88,7 @@ else
 fi
 
 ( cd "$TARGET" && node --test tests/skill-install-checks.mjs ) || FAIL=1
+( cd "$TARGET" && npm run test:config ) || FAIL=1
 
 # ------------------------------------------------- 反向自测（守卫真的会失败）
 # 只会"全绿"的校验等于没有校验：故意破坏一份副本，确认校验确实报错。
@@ -97,6 +98,14 @@ if [ "${MD2PDF_SKIP_SELFTEST:-0}" != "1" ]; then
   mkdir -p "$TMP/proj"
   # 只复制校验会用到的部分
   ( cd "$TARGET" && tar cf - --exclude=.git --exclude=node_modules . ) 2>/dev/null | ( cd "$TMP/proj" && tar xf - ) 2>/dev/null
+  # 副本共享已安装依赖；否则 YAML 依赖缺失会让破坏测试出现假阳性。
+  if [ -d "$TARGET/node_modules" ]; then
+    ln -s "$(cd "$TARGET/node_modules" && pwd)" "$TMP/proj/node_modules"
+  fi
+  if ! ( cd "$TMP/proj" && node tests/checks.mjs "$TMP/proj" >"$TMP/pristine.log" 2>&1 ); then
+    bad "未破坏副本校验失败，守卫自测结果不可作为验证依据"
+    tail -n 8 "$TMP/pristine.log"
+  fi
   if [ ! -f "$TMP/proj/assets/shell.html" ]; then
     bad "副本准备失败，跳过了守卫自测"
   else

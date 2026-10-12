@@ -12,6 +12,7 @@ const statusEl = document.querySelector('#status');
 const download = document.querySelector('#download');
 const countEl = document.querySelector('#count');
 const emptyPreview = document.querySelector('#empty-preview');
+const configErrorsEl = document.querySelector('#config-errors');
 const topExamplesLink = document.querySelector('#examples-link-top');
 
 const DRAFT_KEY = 'md2pdf:draft';
@@ -128,6 +129,9 @@ let previewRevision = -1;
 let policyDoc = null;
 let currentPolicy = null;
 let resolveCache = { key: null, result: null };
+// 上次成功渲染：是否已有一份可用预览，以及当前配置是否无效（无效时禁止导出 PDF）。
+let hasPreview = false;
+let configInvalid = false;
 
 // ---------- 浏览器会话存储（草稿与选项） ----------
 function readStore(key) { try { return sessionStorage.getItem(key); } catch { return null; } }
@@ -171,9 +175,56 @@ function setStatus(message, error = false) {
   statusEl.dataset.error = String(error);
 }
 
+// ---------- 配置错误提示（预览区顶部，iframe 之外） ----------
+// 用 textContent 写入，绝不拼接 HTML —— 错误文案来自服务端，避免 XSS；提示不进 PDF。
+function jumpToLine(line) {
+  const api = window.mdEditor;
+  if (api && typeof api.goToLine === 'function') { try { api.goToLine(line); } catch { /* 忽略 */ } }
+  if (api && typeof api.focus === 'function') { try { api.focus(); } catch { /* 忽略 */ } }
+}
+
+function clearConfigErrors() {
+  configInvalid = false;
+  if (!configErrorsEl) { updateCount(); return; }
+  configErrorsEl.hidden = true;
+  const list = configErrorsEl.querySelector('.config-errors-list');
+  if (list && typeof list.replaceChildren === 'function') list.replaceChildren();
+  updateCount();
+}
+
+function showConfigErrors(errors, hadPreview = hasPreview) {
+  configInvalid = true;
+  if (configErrorsEl) {
+    const list = configErrorsEl.querySelector('.config-errors-list');
+    if (list) {
+      list.replaceChildren();
+      for (const item of errors) {
+        if (!item || typeof item !== 'object') continue;
+        const li = document.createElement('li');
+        // 有原始行号时给出可点击的跳转按钮（第 N 行），点击定位正文并聚焦编辑器。
+        if (Number.isSafeInteger(item.line) && item.line > 0) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'config-error-jump';
+          button.textContent = `第 ${item.line} 行`;
+          button.addEventListener('click', () => jumpToLine(item.line));
+          li.append(button);
+        }
+        const message = document.createElement('span');
+        message.className = 'config-error-message';
+        message.textContent = String(item.message || '配置无效');
+        li.append(message);
+        list.append(li);
+      }
+    }
+    configErrorsEl.hidden = false;
+  }
+  updateCount();
+}
+
 function updateCount() {
   if (countEl) countEl.textContent = `${editor.value.length.toLocaleString('zh-CN')} 字符`;
-  download.disabled = downloading || !editor.value.trim();
+  download.disabled = downloading || !editor.value.trim() || configInvalid;
 }
 
 // 下载按钮加载态：只改状态属性与标签文本，保留内联 SVG 图标不被 textContent 抹除。
@@ -397,7 +448,11 @@ async function request(url, body, signal) {
   });
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}));
-    throw new Error(detail.error || `请求失败（${response.status}）`);
+    const failure = new Error(detail.error || `请求失败（${response.status}）`);
+    failure.status = response.status;
+    // 配置错误：保留逐条行号信息，供顶部提示条展示与跳转。
+    if (Array.isArray(detail.configErrors)) failure.configErrors = detail.configErrors;
+    throw failure;
   }
   return response;
 }
@@ -438,6 +493,8 @@ async function renderPreview() {
   if (!form.reportValidity()) { setStatus('请检查排版选项。', true); return; }
   if (!editor.value.trim()) {
     preview.removeAttribute('srcdoc');
+    hasPreview = false;
+    clearConfigErrors();
     if (emptyPreview) emptyPreview.hidden = false;
     setStatus('输入 Markdown 即可开始排版。');
     return;
@@ -446,7 +503,6 @@ async function renderPreview() {
   setStatus('正在生成预览…');
   try {
     const explicit = form.elements.type.value;
-    let type = explicit;
     if (!explicit) {
       // 自动模式：先轻量识别类型，按识别结果适配控件，再渲染，避免发送被禁用的旧设置。
       let resolved = null;
@@ -454,23 +510,33 @@ async function renderPreview() {
       catch (error) { if (error.name === 'AbortError') throw error; }
       if (current !== revision) return;
       if (resolved && resolved.policy) applyPolicy(resolved.policy);
-      if (resolved && resolved.type) type = resolved.type;
     } else if (policyDoc && policyDoc.policy && policyDoc.policy[explicit]) {
       applyPolicy(policyDoc.policy[explicit]);
     }
+    // 自动识别时不回填 type：让服务端按 frontmatter / 自动探测决定类型，避免灌入假的显式值。
     const opts = collectedOptions();
-    if (!explicit && type) opts.type = type;
     const response = await request('/api/render', { md: editor.value, opts }, controller.signal);
     const result = await response.json();
     if (current !== revision) return;
     if (result.policy) applyPolicy(result.policy);
     if (emptyPreview) emptyPreview.hidden = true;
+    // 成功渲染：清除上次的配置错误提示并恢复导出按钮（修正后自动恢复）。
+    hasPreview = true;
+    clearConfigErrors();
     previewRevision = current;
     preview.srcdoc = injectRevision(result.html, current);
     setStatus('正在加载公式、图表与分页…');
     previewTimer = setTimeout(() => { if (current === revision) setStatus('排版等待超时，请修改内容或重试。', true); }, 60000);
   } catch (error) {
-    if (error.name !== 'AbortError' && current === revision) setStatus(error.message, true);
+    // 乱序响应：已被更新的请求取代（Abort 或 revision 落后）时直接忽略，不让陈旧失败覆盖新成功。
+    if (error.name === 'AbortError' || current !== revision) return;
+    if (Array.isArray(error.configErrors) && error.configErrors.length) {
+      // 配置无效：保留上次成功预览（不重置 iframe），列出错误行号，禁止导出 PDF。
+      showConfigErrors(error.configErrors, hasPreview);
+      setStatus(hasPreview ? '配置无效 · 显示上次成功预览' : '配置无效：请修正文档配置后重试。', true);
+    } else {
+      setStatus(error.message, true);
+    }
   }
 }
 
@@ -666,6 +732,12 @@ async function downloadNameFor(md, ext) {
 }
 
 download.addEventListener('click', async () => {
+  // 双重检查：按钮在配置无效时已被禁用，这里再挡一次，避免旧事件/程序化触发绕过。
+  if (configInvalid) {
+    setStatus('配置无效 · 无法生成 PDF，请先修正文档配置。', true);
+    if (configErrorsEl) configErrorsEl.hidden = false;
+    return;
+  }
   if (!form.reportValidity()) return;
   downloading = true;
   updateCount();
@@ -677,10 +749,9 @@ download.addEventListener('click', async () => {
   let exportName = '';
   try {
     if (!exportOptions.type) {
+      // 自动识别时按探测结果过滤不兼容取值，但不回填 type —— 类型由服务端按 frontmatter 决定。
       const resolved = await (await request('/api/resolve', { md: exportMd, opts: {} })).json();
-      exportOptions.type = resolved.type;
       for (const key of Object.keys(exportOptions)) {
-        if (key === 'type') continue;
         const control = resolved.policy.controls[key.startsWith('margin') ? 'margin' : key];
         if (control && (control.available === false || (!key.startsWith('margin') && Array.isArray(control.values) && !control.values.includes(exportOptions[key])))) delete exportOptions[key];
       }
@@ -706,7 +777,13 @@ download.addEventListener('click', async () => {
     if (revision !== exportRevision) setStatus('PDF 已生成并开始下载（导出的是开始导出时的版本，期间编辑未包含）。');
     else setStatus('PDF 已生成，下载已开始。');
   } catch (error) {
-    setStatus(error.message, true);
+    // 下载请求同样可能因文档配置错误被拒：提示行号并禁用后续导出，Markdown 下载不受影响。
+    if (Array.isArray(error.configErrors) && error.configErrors.length) {
+      showConfigErrors(error.configErrors, hasPreview);
+      setStatus('配置无效 · 无法生成 PDF，请先修正文档配置。', true);
+    } else {
+      setStatus(error.message, true);
+    }
   } finally {
     downloading = false;
     setDownloadState(false);
@@ -716,5 +793,12 @@ download.addEventListener('click', async () => {
 
 // 纯函数出口：供前端测试在 vm 内真实执行后读取选项模型（只读、无副作用）。
 window.md2pdfOptions = { headingChoices, headingDraftToken, decodeHeadingToken, headingOptionsFromToken, headingAvailable, resolveRange, rangeOptionValue, RANGE_FALLBACK };
+
+// 配置错误提示出口：供前端测试在 vm 内直接驱动提示条 / 导出禁用逻辑。
+window.md2pdfConfigErrors = {
+  showConfigErrors, clearConfigErrors, jumpToLine,
+  isInvalid: () => configInvalid, hasPreview: () => hasPreview,
+  setPreviewState: (value) => { hasPreview = !!value; },
+};
 
 boot();

@@ -107,3 +107,13 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .editor-footer math,.preview-footer math,.preview-footer #status{font-size:11px}
 .editor-footer>span:first-child,.preview-footer>span{min-width:0;overflow-x:auto}
 #count{white-space:nowrap;flex-shrink:0}
+
+/* 配置错误提示条：位于预览 iframe 之外、正文上方，不覆盖正文；每条错误带行号跳转按钮。 */
+.config-errors{flex-shrink:0;max-height:38%;overflow:auto;background:#fdecec;border-bottom:1px solid #f3c6c6;color:#8f2f2f;padding:10px 18px}
+.config-errors[hidden]{display:none}
+.config-errors-title{margin:0 0 6px;font-size:12px;font-weight:600;color:#b13d3d}
+.config-errors-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.config-errors-list li{display:flex;align-items:baseline;gap:8px;font-size:12px;line-height:1.5}
+.config-error-jump{flex-shrink:0;border:1px solid #e0a3a3;background:#fff;color:#a83b3b;border-radius:5px;padding:1px 7px;font-size:11px;line-height:1.5}
+.config-error-jump:hover{background:#fbe0e0}
+.config-error-message{min-width:0;word-break:break-word}

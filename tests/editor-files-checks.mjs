@@ -118,3 +118,17 @@ test('invalid or nested frontmatter title falls back to H1 or the default title'
   }
   assert.equal(markdownDownloadName('---\ntitle: "标题/测试"\nversion: v2\n---\n', date), '标题_测试_v2.md');
 });
+
+test('分隔符容忍行尾空白 / CR，标题与版本仍正确解析（兼容成熟服务端配置）', () => {
+  // 成熟 YAML 解析器允许分隔符后跟空白；浏览器侧只做同样的小幅容忍，不引入完整 YAML。
+  const md = '---  \r\ntitle: "带空白的标题"\r\nversion: v1\r\n---  \r\n# 正文标题';
+  assert.equal(markdownDownloadName(md, date), '带空白的标题_v1.md');
+  assert.equal(documentDownloadName(md, date, 'pdf'), '带空白的标题_v1.pdf');
+  assert.equal(firstHeadingTitle(md), '正文标题');
+  assert.equal(frontmatterVersion(md), 'v1');
+});
+
+test('title 显式空字符串视为清空：下载名回落到一级标题 / 默认标题', () => {
+  assert.equal(markdownDownloadName('---\ntitle: ""\nversion: v2\n---\n# 正文标题', date), '正文标题_v2.md');
+  assert.equal(documentDownloadName('---\ntitle: ""\nversion: v2\n---\n', date, 'pdf'), 'md2pdf_设置一级标题为文档标题_v2.pdf');
+});

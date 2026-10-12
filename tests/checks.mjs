@@ -314,8 +314,8 @@ if (fs.existsSync(demo)) {
     rCh.status === 0 && /<h2[^>]*>第1章 总体指标/.test(readIf(outSch('chapter'))),
     `status=${rCh.status}`);
   const rGb = run(['examples/general.md', '--html-only', '--numbering', 'force', '--number-scheme', 'gb', '-o', outSch('gb')]);
-  ok('编号：scheme=gb → 章条点分（与 arabic 同形）',
-    rGb.status === 0 && /<h2[^>]*>1 总体指标/.test(readIf(outSch('gb'))),
+  ok('编号：通用文档拒绝 GB 专用方案（与 Web 类型约束一致）',
+    rGb.status !== 0 && /GB 编号方案/.test(rGb.stderr),
     `status=${rGb.status}`);
   const rBadSch = run(['examples/general.md', '--html-only', '--numbering', 'force', '--number-scheme', 'nope', '-o', outSch('bad')]);
   ok('编号：未知 --number-scheme 报错且退出非 0',
@@ -330,13 +330,14 @@ ok('书签：printToPDF 传入 generateDocumentOutline',
   /generateDocumentOutline:\s*true/.test(src));
 ok('书签：默认开启，可 --no-outline 关闭',
   /outline:\s*true,/.test(src) && /case '--no-outline': o\.outline = false/.test(src));
-ok('书签：开关从 main 传到 chrome.print',
-  /outline:\s*opts\.outline\s*[,}]/.test(src),
+ok('书签：开关从配置传到 chrome.print',
+  /outline:\s*eff\.outline !== false/.test(src),
   '有 --no-outline 分支但没传进渲染，等于没接');
 ok('书签：老版本 Chrome 不认参数时退回无书签渲染',
   /generateDocumentOutline: true \}\);[\s\S]{0,320}printToPDF', base\)/.test(src),
   '直接抛错会让老版本 Chrome 上整个转换失败');
-ok('书签：帮助文本写明 --no-outline', /--no-outline\s+不生成 PDF 书签/.test(src));
+ok('书签：帮助文本以 --enable/--disable 列出 outline',
+  /--enable <names>[\s\S]*outline,float-numbering/.test(src) && /--disable <names>/.test(src));
 
 /* ---------- 7. shell 里「多字节字符紧跟裸变量」的坑 ---------- */
 // 实测：macOS 自带的 bash 3.2（/bin/sh）会把这个字符的首字节并进变量名 ——

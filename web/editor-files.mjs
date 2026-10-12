@@ -39,6 +39,11 @@ function sanitizeVersion(text) {
   return clampUnicode(cleaned.replace(/^[.\s]+|[.\s]+$/g, ''), MAX_VERSION).trim();
 }
 
+// front matter 起始分隔符：容忍行尾空白（与成熟 YAML 解析器保持一致），仅认顶层 ---/+++。
+function isFenceDelimiter(line) {
+  return /^(?:---|\+\+\+)\s*$/.test(line == null ? '' : String(line));
+}
+
 /**
  * 正文首个一级标题（忽略 front matter 与围栏代码块），ATX 与 Setext 都支持。
  * 只返回标题文本，不做文件名转义；未找到时返回 ''。
@@ -46,7 +51,7 @@ function sanitizeVersion(text) {
 export function firstHeadingTitle(markdown) {
   const lines = stripBom(markdown).split(/\r?\n/);
   let fence = null;
-  let frontMatter = lines[0] === '---' || lines[0] === '+++';
+  let frontMatter = isFenceDelimiter(lines[0]);
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (frontMatter) {
@@ -124,7 +129,7 @@ function parseFrontmatterScalar(raw) {
 function frontmatterScalar(markdown, key) {
   const lines = stripBom(markdown).split(/\r?\n/);
   const open = lines[0];
-  if (open !== '---' && open !== '+++') return '';
+  if (!isFenceDelimiter(open)) return '';
   let raw = null;
   let closed = false;
   for (let i = 1; i < lines.length; i++) {
