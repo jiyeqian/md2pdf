@@ -44,29 +44,28 @@ md2pdf skill install --target workbuddy
 | `-o, --output <path>` | 输出路径；多文件或目标是目录时作为输出目录 |
 | `--theme <name>` | `elegant`（默认，墨蓝＋古铜）｜ `minimal`（黑白公文风） |
 | `--title` / `--kicker` | 覆盖标题 / 报头小标题 |
-| `--no-meta` / `--no-lead` | 去掉元信息条 / 首段不作为导语 |
+| `--enable <功能列表>` / `--disable <功能列表>` | 启用 / 禁用文档功能，例如 `--disable meta,lead` |
 | `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
-| `--no-outline` | 不生成 PDF 书签（默认生成） |
-| `--bibliography [footnote\|bib]` | 参考文献模式，默认启用（footnote）；bib 为未来支持。`--no-bibliography` 关闭 |
+| `--bibliography-title <text>` | 参考文献自动渲染，设置章节标题；默认“参考文献”，空字符串隐藏标题 |
 | `--numbering <mode>` | 章节编号：auto（默认）｜ force（强制）｜ none（不加） |
-| `--link-urls` | 链接后附 URL |
-| `--landscape` / `--font-size` / `--margin` | 横向 / 字号（默认 10.5pt）/ 页边距（默认 20mm） |
-| `--no-footer` / `--footer-left` / `--footer-right` | 页脚控制 |
+| `--enable link-urls` | 链接后附 URL |
+| `--enable landscape` / `--font-size` / `--margin` | 横向 / 字号（默认 10.5pt）/ 页边距（默认 20mm） |
+| `--footer-left` / `--footer-center` / `--footer-right` | 页脚文字，中间默认页码；`--disable footer` 关闭全栏 |
 | `--keep-html` / `--open` | 留中间 HTML 调样式 / 转完打开 |
 | `--html-only` | 只出 HTML 不启动浏览器（调样式、CI 校验用） |
 
-布尔选项支持 `--flag=false`。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
+文档配置支持 frontmatter：显式 CLI > frontmatter > 文档类型 > 全局默认。文本传 `""` 清空，缺值报错；旧布尔参数保留隐藏兼容。环境变量：`MD2PDF_CHROME`、`MD2PDF_NODE`、`MD2PDF_WS=mini`。
 完整列表见 `md2pdf --help` 或项目 README。
 
 ## 排版规则（需要解释效果时看这里）
 
-首个 H1 提升为报头大标题、其后首段成为导语；frontmatter 的 name/description 生成元信息条
+首个 H1 提升为报头大标题、第一段顶层普通段落在 lead 开启时成为导语；frontmatter 的 name/description 生成元信息条
 （"适用于…""不用于…"自动拆两栏）；H2 自动分节并加 id 锚点；相对路径图片转 file://；
 页脚页码由 CDP `Page.printToPDF` 生成（CLI `--print-to-pdf` 不支持页眉页脚模板）。
 
 **目录页与书签是两件事**，别混：
 - **目录页**（`-t`，默认关）＝ 文首排的一张目录，条目是文档内可点击的内链
-- **PDF 书签**（默认开，`--no-outline` 关）＝ 阅读器侧边栏的章节大纲树
+- **PDF 书签**（默认开，`--disable outline` 关）＝ 阅读器侧边栏的章节大纲树
   由 Chrome 按 HTML 的 h1–h6 结构生成（报头标题为根，H2/H3 嵌套）；阅读器侧栏
   需用户自己展开（macOS 预览按 ⌘⌥3）。用户问"为什么侧栏是空的"时先确认是不是
   老版本 Chrome 没生成（参数不被支持时会静默退回无书签渲染）。
