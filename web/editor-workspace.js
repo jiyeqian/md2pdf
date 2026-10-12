@@ -812,6 +812,8 @@
       editorActions.appendChild(makeFileButton('下载 Markdown', 'save', saveMarkdown));
       editorActions.appendChild(editorFullscreenBtn);
     }
+    var privacySave = document.querySelector('#privacy-save');
+    if (privacySave) privacySave.addEventListener('click', saveMarkdown);
 
     previewFullscreenBtn = makeFullscreenButton('预览全屏', '全屏预览（Esc 退出）');
     previewFullscreenBtn.addEventListener('click', function () { toggleFullscreen('preview'); });

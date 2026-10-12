@@ -270,6 +270,7 @@ function fakeEnvironment() {
   previewHeading.q['.panel-actions'] = previewActions;
 
   const previewFrame = new FakeNode('iframe');
+  const privacySave = new FakeNode('button');
 
   const docListeners = {};
   const document = {
@@ -278,6 +279,7 @@ function fakeEnvironment() {
     querySelector(sel) {
       if (sel === '.workspace') return workspace;
       if (sel === '#preview') return previewFrame;
+      if (sel === '#privacy-save') return privacySave;
       return null;
     },
     addEventListener(type, fn) { (docListeners[type] || (docListeners[type] = [])).push(fn); },
@@ -299,7 +301,7 @@ function fakeEnvironment() {
   vm.createContext(sandbox);
   const buttonIn = node => node.children.find(child => child.tagName === 'BUTTON');
   const dispatchWindow = (type, event) => (winListeners[type] || []).forEach(fn => fn(event || { type }));
-  return { sandbox, workspace, editorPanel, previewPanel, editorActions, previewActions, downloadNode, buttonIn, document, dispatchWindow };
+  return { sandbox, workspace, editorPanel, previewPanel, editorActions, previewActions, downloadNode, privacySave, buttonIn, document, dispatchWindow };
 }
 
 test('行为：双全屏互斥、再次点击退出、Esc 退出（vm 执行真实逻辑）', () => {
@@ -840,4 +842,14 @@ test('标题栏保留下载与全屏，打开与模板位于工具条最前', ()
   const toolbar = env.editorPanel.children.find(n => n.getAttribute && n.getAttribute('role') === 'toolbar');
   const first = toolbar.children[0].children.filter(n => ['BUTTON', 'A'].includes(n.tagName));
   assert.deepEqual(first.map(n => n.getAttribute('aria-label')), ['打开 Markdown', '从模板创建']);
+});
+
+
+test('privacy 下载保存与标题栏 Markdown 下载使用同一个动作', () => {
+  const env = fakeEnvironment();
+  vm.runInContext(wsJs, env.sandbox, { filename: 'editor-workspace.js' });
+  const download = env.editorActions.children.find(node => node.getAttribute('aria-label') === '下载 Markdown');
+  assert.ok(download);
+  assert.equal(env.privacySave.listeners.click.length, 1);
+  assert.equal(env.privacySave.listeners.click[0], download.listeners.click[0]);
 });
