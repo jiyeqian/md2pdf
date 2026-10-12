@@ -46,9 +46,9 @@ export const PINNED = {
 };
 
 export const ENTRY = `export { EditorState, Compartment, StateEffect, Transaction } from '@codemirror/state';
-export { EditorView, keymap, drawSelection, dropCursor, rectangularSelection, crosshairCursor, lineNumbers, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, placeholder, ViewPlugin, Decoration, WidgetType } from '@codemirror/view';
+export { EditorView, keymap, drawSelection, dropCursor, rectangularSelection, crosshairCursor, lineNumbers, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, placeholder, ViewPlugin, Decoration, WidgetType, gutter, GutterMarker } from '@codemirror/view';
 export { history, historyKeymap, defaultKeymap, indentWithTab, undo, redo, undoDepth, redoDepth } from '@codemirror/commands';
-export { foldKeymap, foldCode, unfoldCode, foldAll, unfoldAll, foldGutter, codeFolding, indentOnInput, bracketMatching, indentUnit, syntaxHighlighting, defaultHighlightStyle, HighlightStyle, LanguageSupport, StreamLanguage, LanguageDescription } from '@codemirror/language';
+export { foldKeymap, foldCode, unfoldCode, foldAll, unfoldAll, foldGutter, codeFolding, foldService, foldNodeProp, foldable, foldEffect, unfoldEffect, foldedRanges, syntaxTree, ensureSyntaxTree, indentOnInput, bracketMatching, indentUnit, syntaxHighlighting, defaultHighlightStyle, HighlightStyle, LanguageSupport, StreamLanguage, LanguageDescription } from '@codemirror/language';
 export { searchKeymap, highlightSelectionMatches, openSearchPanel, closeSearchPanel, findNext, findPrevious, replaceNext, replaceAll, SearchQuery, search, setSearchQuery } from '@codemirror/search';
 export { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap, startCompletion, CompletionContext, completeFromList } from '@codemirror/autocomplete';
 export { markdown, markdownKeymap, markdownLanguage, insertNewlineContinueMarkup } from '@codemirror/lang-markdown';
@@ -64,7 +64,8 @@ export { phpLanguage } from '@codemirror/lang-php';
 export { sql, StandardSQL } from '@codemirror/lang-sql';
 export { xmlLanguage } from '@codemirror/lang-xml';
 export { yamlLanguage } from '@codemirror/lang-yaml';
-export { tags } from '@lezer/highlight';
+export { tags, highlightTree } from '@lezer/highlight';
+export { parseMixed } from '@lezer/common';
 `;
 
 // Walk node_modules and return every installed package (name, version, dir).

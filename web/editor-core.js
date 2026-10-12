@@ -134,7 +134,177 @@
     };
   }
 
-  const helpers = { clamp, normalizeRange, offsetToLine, lineToOffset, lineCount, academicMarkdownExtension };
+  function frontmatterRange(text) {
+    const opening = /^\uFEFF?---[ \t]*\r?\n/.exec(text);
+    if (!opening) return null;
+    const closing = /^---[ \t]*\r?$/gm;
+    closing.lastIndex = opening[0].length;
+    const match = closing.exec(text);
+    return match ? { from: 0, bodyFrom: opening[0].length, bodyTo: match.index,
+      to: match.index + match[0].length } : null;
+  }
+
+  // Only a complete entry with indented continuation lines owns a footnote block.
+  // Incomplete entries fall back to ordinary footnotes rather than swallowing prose.
+  function bibtexFootnoteRange(text, start = 0) {
+    const firstEnd = text.indexOf('\n', start);
+    const headerEnd = firstEnd < 0 ? text.length : firstEnd;
+    const header = /^\[\^[^\]\s]+\]:[ \t]*@[a-z]+\s*\{[^,\s{}]+\s*,/i.exec(text.slice(start, headerEnd));
+    if (!header) return null;
+    let depth = 1, quoted = false, escaped = false;
+    for (let pos = start + header[0].length; pos < text.length; pos++) {
+      const char = text[pos];
+      if (char === '\n') {
+        const nextEnd = text.indexOf('\n', pos + 1);
+        const next = text.slice(pos + 1, nextEnd < 0 ? text.length : nextEnd);
+        if (next.trim() && !/^[ \t]+\S|^\s*}\s*$/.test(next)) return null;
+      }
+      if (escaped) { escaped = false; continue; }
+      if (char === '\\') { escaped = true; continue; }
+      if (char === '"' && depth === 1) { quoted = !quoted; continue; }
+      if (quoted) continue;
+      if (char === '{') depth++;
+      if (char === '}' && --depth === 0) {
+        const newline = text.indexOf('\n', pos);
+        const end = newline < 0 ? text.length : newline;
+        return /^\s*$/.test(text.slice(pos + 1, end)) ? { from: start, to: end } : null;
+      }
+    }
+    return null;
+  }
+
+  function structuredMarkdownExtension(V) {
+    const yamlParser = V.yamlLanguage.parser.configure({ props: [V.foldNodeProp.add({
+      'BlockMapping BlockSequence BlockLiteral FlowMapping FlowSequence': () => null
+    })] });
+    return {
+      defineNodes: ['MdFrontmatter', 'MdFrontmatterBody', 'MdBibtexFootnote', 'MdBibliographyGroup'],
+      parseBlock: [{
+        name: 'MdFrontmatter', before: 'HorizontalRule',
+        parse(cx) {
+          if (cx.lineStart !== 0 || cx.parentType().name !== 'Document') return false;
+          const range = frontmatterRange(cx.input.read(0, cx.input.length));
+          if (!range) return false;
+          while (cx.lineStart <= range.to && cx.nextLine()) { /* consume closing delimiter */ }
+          cx.addElement(cx.elt('MdFrontmatter', range.from, range.to, [
+            cx.elt('MdFrontmatterBody', range.bodyFrom, range.bodyTo)
+          ]));
+          return true;
+        }
+      }, {
+        name: 'MdBibliography', before: 'LinkReference',
+        parse(cx, line) {
+          if (cx.parentType().name !== 'Document' || line.indent >= 4 || !/^\[\^/.test(line.text)) return false;
+          const text = cx.input.read(cx.lineStart, cx.input.length);
+          const first = bibtexFootnoteRange(text);
+          if (!first) return false;
+          const start = cx.lineStart, entries = [first];
+          let end = first.to;
+          while (end < text.length) {
+            const gap = /^\r?\n(?:[ \t]*\r?\n)*/.exec(text.slice(end));
+            if (!gap) break;
+            const next = bibtexFootnoteRange(text, end + gap[0].length);
+            if (!next) break;
+            entries.push(next); end = next.to;
+          }
+          const children = entries.map(range => cx.elt('MdBibtexFootnote', start + range.from, start + range.to));
+          while (cx.lineStart <= start + end && cx.nextLine()) { /* own all continuation lines */ }
+          cx.addElement(entries.length > 1 ? cx.elt('MdBibliographyGroup', start, start + end, children) : children[0]);
+          return true;
+        }
+      }],
+      wrap: V.parseMixed(node => node.name === 'MdFrontmatterBody' ? { parser: yamlParser } : null)
+    };
+  }
+
+  function structuredFolding(V) {
+    const fold = (node, state) => ({ from: state.doc.lineAt(node.from).to, to: node.to });
+    const props = V.foldNodeProp.add({ MdFrontmatter: fold, MdBibtexFootnote: fold });
+    // Fold values at their keys, not the entire YAML mapping at its first field.
+    // Include closing delimiters so flow values also collapse to one row.
+    const service = V.foldService.of((state, start, end) => {
+      return structuredIndex(V, state).fields.get(start) || null;
+    });
+    return { props, service };
+  }
+
+  const structureCache = new WeakMap();
+  function structuredIndex(V, state) {
+    const tree = V.syntaxTree(state), cached = structureCache.get(state);
+    if (cached && cached.tree === tree) return cached;
+    const groups = [], fields = new Map();
+    const first = tree.topNode.firstChild;
+    const fm = first && first.name === 'MdFrontmatter' ? first : null;
+    tree.iterate({ enter(node) {
+      if (node.name === 'MdBibliographyGroup') {
+        let count = 0;
+        for (let child = node.node.firstChild; child; child = child.nextSibling) count++;
+        groups.push({ from: node.from, to: node.to, start: node.from, count });
+      }
+      if (fm && node.name === 'Pair' && node.from < fm.to) {
+        const key = node.node.firstChild;
+        const value = key && key.nextSibling && key.nextSibling.nextSibling;
+        if (!key || key.name !== 'Key' || !value) return;
+        const line = state.doc.lineAt(key.from);
+        if (value.to <= line.to) return;
+        const to = state.doc.lineAt(value.to - 1).to;
+        if (to > line.to) fields.set(line.from, { from: line.to, to });
+      }
+    } });
+    const result = { tree, groups, fields };
+    structureCache.set(state, result);
+    return result;
+  }
+
+  function bibliographyGroups(V, state) {
+    return structuredIndex(V, state).groups;
+  }
+
+  function foldButton(view, text, label, action) {
+    const button = view.dom.ownerDocument.createElement('button');
+    button.type = 'button';
+    button.textContent = text;
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.addEventListener('click', event => { event.preventDefault(); action(event); });
+    // CodeMirror owns Enter/Space inside its content; activate the widget before
+    // those keys reach editor commands, including when focus is on a fold button.
+    button.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault(); event.stopPropagation(); button.click();
+      }
+    });
+    return button;
+  }
+
+  function bibliographyGutter(V) {
+    class GroupMarker extends V.GutterMarker {
+      constructor(range) { super(); this.range = range; }
+      eq(other) { return this.range.from === other.range.from && this.range.to === other.range.to && this.range.count === other.range.count; }
+      toDOM(view) {
+        const button = foldButton(view, '▾', '折叠参考文献组（' + this.range.count + ' 条）', () => {
+          view.dispatch({ effects: V.foldEffect.of(this.range) });
+          view.focus();
+        });
+        button.className = 'md-bibliography-fold';
+        return button;
+      }
+    }
+    return V.gutter({ class: 'md-bibliography-gutter', lineMarker(view, line) {
+      const group = bibliographyGroups(V, view.state).find(range => range.start === line.from);
+      if (!group) return null;
+      let folded = false;
+      V.foldedRanges(view.state).between(group.from, group.from, (from, to) => {
+        if (from === group.from && to === group.to) folded = true;
+      });
+      return folded ? null : new GroupMarker(group);
+    }, lineMarkerChange: update => update.docChanged ||
+      V.syntaxTree(update.startState) !== V.syntaxTree(update.state) ||
+      update.transactions.some(tr => tr.effects.length > 0) });
+  }
+
+  const helpers = { clamp, normalizeRange, offsetToLine, lineToOffset, lineCount, academicMarkdownExtension,
+    frontmatterRange, bibtexFootnoteRange, structuredMarkdownExtension, structuredFolding, bibliographyGroups, bibliographyGutter };
   global.mdEditorCoreHelpers = helpers;
 
   // ---------------------------------------------------------------------------
@@ -214,7 +384,9 @@
       return codeLanguageNames[name] || null;
     }
 
-    const markdownSupport = V.markdown({ base: V.markdownLanguage, codeLanguages: codeLanguageFor, extensions: [academicMarkdownExtension()] });
+    const folding = structuredFolding(V);
+    const markdownSupport = V.markdown({ base: V.markdownLanguage, codeLanguages: codeLanguageFor,
+      extensions: [structuredMarkdownExtension(V), academicMarkdownExtension(), { props: [folding.props] }] });
 
     const highlightStyle = V.HighlightStyle.define([
       { tag: V.tags.heading, color: '#233e60', fontWeight: '700' },
@@ -230,6 +402,7 @@
       { tag: V.tags.number, color: '#b1650a' },
       { tag: V.tags.bool, color: '#b1650a' },
       { tag: V.tags.typeName, color: '#1f6f8b' },
+      { tag: V.tags.propertyName, color: '#233e60', fontWeight: '600' },
       { tag: V.tags.quote, color: '#63798f', fontStyle: 'italic' },
       { tag: V.tags.list, color: '#42648b' },
     ]);
@@ -246,6 +419,7 @@
       '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#233e60' },
       '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': { backgroundColor: '#bcd6f2' },
       '.cm-foldPlaceholder': { backgroundColor: '#eef2f8', border: '1px solid #dbe4f0', color: '#42648b', padding: '0 6px', borderRadius: '4px' },
+      '.md-bibliography-fold': { border: 'none', background: 'transparent', color: '#42648b', cursor: 'pointer', padding: '0 2px', fontSize: '12px' },
     }, { dark: false });
 
     // ---- textarea bridge ----
@@ -336,6 +510,22 @@
       }),
       V.lineNumbers(),
       V.foldGutter(),
+      folding.service,
+      bibliographyGutter(V),
+      V.codeFolding({
+        preparePlaceholder(state, range) {
+          const group = bibliographyGroups(V, state).find(item => item.from === range.from && item.to === range.to);
+          if (group) return '参考文献 · ' + group.count + ' 条 …';
+          const fm = frontmatterRange(state.doc.toString());
+          return fm && range.from === state.doc.line(1).to && range.to === fm.to
+            ? 'frontmatter · ' + state.doc.lineAt(fm.to).number + ' 行 …' : '…';
+        },
+        placeholderDOM(view, onclick, label) {
+          const button = foldButton(view, label, '展开' + (label === '…' ? '已折叠内容' : label), onclick);
+          button.className = 'cm-foldPlaceholder';
+          return button;
+        }
+      }),
       V.highlightActiveLineGutter(),
       V.highlightActiveLine(),
       V.highlightSpecialChars(),
