@@ -45,6 +45,14 @@ if [ -f /etc/os-release ]; then say "  系统：$(. /etc/os-release; echo "$PRET
 if ! ensure_node; then bad "需要 Node.js >= 18（且无法自动安装）"; exit 1; fi
 good "node $(node -v)"
 
+# YAML 是固定版本运行依赖；干净 CI checkout 也必须能运行同一校验入口。
+if ! ( cd "$TARGET" && node -e "if (require('yaml/package.json').version !== require('./package.json').dependencies.yaml) process.exit(1)" >/dev/null 2>&1 ); then
+  command -v npm >/dev/null 2>&1 || { bad "需要 npm 安装项目依赖，请先运行 npm ci"; exit 1; }
+  say "  安装锁定依赖（npm ci，禁用安装脚本）…"
+  ( cd "$TARGET" && npm ci --ignore-scripts --no-audit --no-fund ) || { bad "安装运行依赖失败"; exit 1; }
+fi
+
+
 # ------------------------------------------------------- 结构与可执行位
 head2 "结构与可执行位"
 REQUIRED="bin/md2pdf src/md2pdf.mjs src/render.mjs src/chrome.mjs src/options.mjs src/profiles.mjs src/ws.mjs src/install-skill.mjs assets/shell.html assets/base.css assets/gb-logo.svg scripts/assets/trace-gb-logo.mjs scripts/assets/gb-logo.src.png
