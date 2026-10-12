@@ -239,7 +239,7 @@
       if (node.name === 'MdBibliographyGroup') {
         let count = 0;
         for (let child = node.node.firstChild; child; child = child.nextSibling) count++;
-        groups.push({ from: node.from, to: node.to, start: node.from, count });
+        groups.push({ from: node.from, to: node.to, start: node.from, count, firstTo: node.node.firstChild.to });
       }
       if (fm && node.name === 'Pair' && node.from < fm.to) {
         const key = node.node.firstChild;
@@ -277,34 +277,122 @@
     return button;
   }
 
-  function bibliographyGutter(V) {
-    class GroupMarker extends V.GutterMarker {
-      constructor(range) { super(); this.range = range; }
-      eq(other) { return this.range.from === other.range.from && this.range.to === other.range.to && this.range.count === other.range.count; }
-      toDOM(view) {
-        const button = foldButton(view, '▾', '折叠参考文献组（' + this.range.count + ' 条）', () => {
-          view.dispatch({ effects: V.foldEffect.of(this.range) });
-          view.focus();
-        });
-        button.className = 'md-bibliography-fold';
-        return button;
+  function isFolded(V, state, range) {
+    let folded = false;
+    V.foldedRanges(state).between(range.from, range.from, (from, to) => {
+      if (from === range.from && to === range.to) folded = true;
+    });
+    return folded;
+  }
+
+  function compactFoldGutter(V) {
+    const menuPlugin = V.ViewPlugin.fromClass(class {
+      constructor(view) {
+        this.view = view;
+        this.menu = this.anchor = null;
+        this.outside = event => {
+          if (this.menu && !this.menu.contains(event.target) && !this.anchor.contains(event.target)) this.close();
+        };
+        this.scroll = () => this.close();
+        view.dom.ownerDocument.addEventListener('pointerdown', this.outside, true);
+        view.scrollDOM.addEventListener('scroll', this.scroll);
       }
-    }
-    return V.gutter({ class: 'md-bibliography-gutter', lineMarker(view, line) {
-      const group = bibliographyGroups(V, view.state).find(range => range.start === line.from);
-      if (!group) return null;
-      let folded = false;
-      V.foldedRanges(view.state).between(group.from, group.from, (from, to) => {
-        if (from === group.from && to === group.to) folded = true;
-      });
-      return folded ? null : new GroupMarker(group);
-    }, lineMarkerChange: update => update.docChanged ||
-      V.syntaxTree(update.startState) !== V.syntaxTree(update.state) ||
-      update.transactions.some(tr => tr.effects.length > 0) });
+      close(focus = false) {
+        const anchor = this.anchor, menu = this.menu;
+        this.menu = this.anchor = null;
+        if (menu) menu.remove();
+        if (anchor) anchor.setAttribute('aria-expanded', 'false');
+        if (focus && anchor && anchor.isConnected) anchor.focus();
+      }
+      open(anchor, individual, group) {
+        if (this.anchor === anchor) { this.close(true); return; }
+        this.close();
+        const view = this.view, doc = view.dom.ownerDocument;
+        const menu = doc.createElement('div');
+        menu.className = 'md-fold-menu';
+        menu.setAttribute('role', 'menu');
+        menu.setAttribute('aria-label', '参考文献折叠选项');
+        this.menu = menu; this.anchor = anchor;
+        anchor.setAttribute('aria-haspopup', 'menu');
+        anchor.setAttribute('aria-expanded', 'true');
+        for (const [range, text, label, className] of [
+          [individual, '⌄', '当前文献', 'md-fold-entry'],
+          [group, '≡', '参考文献组（' + group.count + ' 条）', 'md-fold-group']
+        ]) {
+          const folded = isFolded(V, view.state, range);
+          const button = foldButton(view, folded ? '›' : text, (folded ? '展开' : '折叠') + label, event => {
+            event.stopPropagation(); this.close();
+            view.dispatch({ effects: (folded ? V.unfoldEffect : V.foldEffect).of(range) });
+            view.focus();
+          });
+          button.className = className;
+          button.setAttribute('role', 'menuitem');
+          menu.appendChild(button);
+        }
+        menu.addEventListener('keydown', event => {
+          if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); this.close(true); }
+          if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault(); event.stopPropagation();
+            const buttons = [...menu.children], index = buttons.indexOf(doc.activeElement);
+            buttons[(index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length].focus();
+          }
+        });
+        menu.addEventListener('focusout', event => {
+          if (!menu.contains(event.relatedTarget) && event.relatedTarget !== anchor) this.close();
+        });
+        const rect = anchor.getBoundingClientRect(), host = view.dom.getBoundingClientRect();
+        menu.style.left = (rect.right - host.left + 2) + 'px';
+        menu.style.top = (rect.top - host.top + rect.height / 2) + 'px';
+        view.dom.appendChild(menu);
+        menu.firstChild.focus();
+      }
+      update(update) {
+        if (update.docChanged || update.viewportChanged ||
+            update.transactions.some(tr => tr.effects.length > 0)) this.close();
+      }
+      destroy() {
+        this.close();
+        this.view.dom.ownerDocument.removeEventListener('pointerdown', this.outside, true);
+        this.view.scrollDOM.removeEventListener('scroll', this.scroll);
+      }
+    });
+    return [menuPlugin, V.foldService.of((state, start, end) => {
+      const group = bibliographyGroups(V, state).find(range => range.start === start);
+      return group && group.firstTo <= end ? group : null;
+    }), V.foldGutter({
+      markerDOM(open) {
+        const button = global.document.createElement('button');
+        button.type = 'button';
+        button.className = 'md-fold-trigger';
+        button.textContent = open ? '⌄' : '›';
+        button.title = open ? '折叠' : '展开';
+        button.setAttribute('aria-label', button.title);
+        button.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault(); event.stopPropagation(); button.click();
+          }
+        });
+        return button;
+      },
+      domEventHandlers: { click(view, line, event) {
+        const group = bibliographyGroups(V, view.state).find(range => range.start === line.from);
+        if (!group || isFolded(V, view.state, group)) return false;
+        const firstEnd = view.state.doc.lineAt(line.from).to;
+        if (group.firstTo <= firstEnd) {
+          view.dispatch({ effects: V.foldEffect.of(group) });
+          return true;
+        }
+        const anchor = event.target.closest('.cm-gutterElement').querySelector('.md-fold-trigger');
+        if (!anchor) return false;
+        view.plugin(menuPlugin).open(anchor, { from: firstEnd, to: group.firstTo }, group);
+        event.preventDefault();
+        return true;
+      } }
+    })];
   }
 
   const helpers = { clamp, normalizeRange, offsetToLine, lineToOffset, lineCount, academicMarkdownExtension,
-    frontmatterRange, bibtexFootnoteRange, structuredMarkdownExtension, structuredFolding, bibliographyGroups, bibliographyGutter };
+    frontmatterRange, bibtexFootnoteRange, structuredMarkdownExtension, structuredFolding, bibliographyGroups, compactFoldGutter };
   global.mdEditorCoreHelpers = helpers;
 
   // ---------------------------------------------------------------------------
@@ -419,7 +507,21 @@
       '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#233e60' },
       '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': { backgroundColor: '#bcd6f2' },
       '.cm-foldPlaceholder': { backgroundColor: '#eef2f8', border: '1px solid #dbe4f0', color: '#42648b', padding: '0 6px', borderRadius: '4px' },
-      '.md-bibliography-fold': { border: 'none', background: 'transparent', color: '#42648b', cursor: 'pointer', padding: '0 2px', fontSize: '12px' },
+      '.cm-lineNumbers .cm-gutterElement': { padding: '0 1px 0 3px', minWidth: '0' },
+      '.cm-foldGutter .cm-gutterElement': {
+        display: 'flex', alignItems: 'center', justifyContent: 'center', width: '12px', boxSizing: 'border-box'
+      },
+      '.md-fold-trigger, .md-fold-menu button': { border: 'none', background: 'transparent', color: '#42648b', cursor: 'pointer',
+        padding: '0 1px', margin: '0', font: 'inherit', lineHeight: 'inherit' },
+      '.md-fold-trigger': { width: '12px' },
+      '.md-fold-menu': { position: 'absolute', zIndex: '210', display: 'flex', gap: '2px', padding: '2px',
+        backgroundColor: '#fff', border: '1px solid #dbe4f0', borderRadius: '4px',
+        boxShadow: '0 2px 5px #233e6014', transform: 'translateY(-50%)', animation: 'md-fold-slide 90ms ease-out' },
+      '.md-fold-menu button': { width: '22px', height: '22px', lineHeight: '22px', borderRadius: '2px' },
+      '.md-fold-menu button:hover, .md-fold-menu button:focus-visible': { backgroundColor: '#eef2f8', outline: '1px solid #bcd6f2' },
+      '@keyframes md-fold-slide': { from: { opacity: '0', transform: 'translate(-3px, -50%)' },
+        to: { opacity: '1', transform: 'translate(0, -50%)' } },
+      '@media (prefers-reduced-motion: reduce)': { '.md-fold-menu': { animation: 'none' } },
     }, { dark: false });
 
     // ---- textarea bridge ----
@@ -509,9 +611,8 @@
         'Completions': '补全建议',
       }),
       V.lineNumbers(),
-      V.foldGutter(),
+      compactFoldGutter(V),
       folding.service,
-      bibliographyGutter(V),
       V.codeFolding({
         preparePlaceholder(state, range) {
           const group = bibliographyGroups(V, state).find(item => item.from === range.from && item.to === range.to);

@@ -39,14 +39,43 @@ try {
   const snapshot = () => evaluate(`({
     lines: [...document.querySelectorAll('.cm-content .cm-line')].map(el => el.textContent),
     placeholders: [...document.querySelectorAll('.cm-foldPlaceholder')].map(el => el.textContent),
-    groups: document.querySelectorAll('.md-bibliography-fold').length,
+    menus: document.querySelectorAll('.md-fold-menu').length,
     source: mdEditor.getValue()
   })`);
   const foldLine = async number => {
     assert.equal(await evaluate(`mdEditor.goToLine(${number}); mdEditor.runCommand('fold')`), true);
     await evaluate(`new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))`);
   };
-  await foldLine(3);
+  await evaluate(`window.triggerFor = prefix => {
+    const center = rect => rect.y + rect.height / 2;
+    const row = [...document.querySelectorAll('.cm-content .cm-line')].find(el => el.textContent.startsWith(prefix));
+    const y = center(row.getBoundingClientRect());
+    return [...document.querySelectorAll('.cm-foldGutter .cm-gutterElement')]
+      .find(el => Math.abs(center(el.getBoundingClientRect()) - y) < 1)?.querySelector('button');
+  }; window.groupTrigger = () => triggerFor('[^one]')`);
+  const layout = () => evaluate(`(() => {
+    const numbers = document.querySelector('.cm-lineNumbers').getBoundingClientRect();
+    const fold = document.querySelector('.cm-foldGutter').getBoundingClientRect();
+    return { columns: document.querySelectorAll('.cm-gutter').length, foldWidth: fold.width,
+      gap: fold.x - numbers.right, gutterWidth: document.querySelector('.cm-gutters').getBoundingClientRect().width,
+      contentX: document.querySelector('.cm-content').getBoundingClientRect().x };
+  })()`);
+  const closedLayout = await layout();
+  assert.equal(closedLayout.columns, 2, 'only line numbers and one folding column remain');
+  assert.ok(closedLayout.foldWidth <= 12 && closedLayout.gap < 1, 'fold control is narrow and adjacent to line numbers');
+  await evaluate(`groupTrigger().click()`);
+  assert.equal((await snapshot()).menus, 1);
+  const menuLayout = await evaluate(`(() => {
+    const entry = document.querySelector('.md-fold-entry').getBoundingClientRect();
+    const group = document.querySelector('.md-fold-group').getBoundingClientRect();
+    return { entryX: entry.x, groupX: group.x, deltaY: Math.abs(entry.y - group.y) };
+  })()`);
+  assert.ok(menuLayout.entryX < menuLayout.groupX && menuLayout.deltaY < 1, 'two compact choices align on one row');
+  assert.deepEqual(await layout(), closedLayout, 'opening the menu does not consume editor width');
+  await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+  assert.equal((await snapshot()).menus, 0);
+  assert.equal(await evaluate(`document.activeElement === groupTrigger()`), true, 'Escape restores trigger focus');
+  await evaluate(`triggerFor('发布单位:').click()`);
   assert.ok((await snapshot()).lines.includes('发布单位:…'));
   await foldLine(1);
   let state = await snapshot();
@@ -56,12 +85,12 @@ try {
   await evaluate(`document.querySelector('.cm-foldPlaceholder').click()`);
   state = await snapshot();
   assert.ok(state.lines.includes('发布单位:…'), 'inner array fold survives outer expansion');
-  await foldLine(10);
+  await evaluate(`groupTrigger().click(); document.querySelector('.md-fold-entry').click()`);
   state = await snapshot();
   assert.ok(state.lines.includes('[^one]: @article{one,…'));
   assert.equal(state.lines.filter(line => line.trim() === '}').length, 1, 'only unfolded second entry has a closing brace');
-  assert.equal(state.groups, 1);
-  await evaluate(`document.querySelector('.md-bibliography-fold').click()`);
+  assert.equal(state.menus, 0);
+  await evaluate(`groupTrigger().click(); document.querySelector('.md-fold-group').click()`);
   state = await snapshot();
   assert.ok(state.lines.includes('参考文献 · 2 条 …'), 'whole group is one display row');
   assert.equal(state.lines.filter(line => /\[\^(?:one|two)\]/.test(line)).length, 0);
@@ -69,7 +98,7 @@ try {
   await evaluate(`[...document.querySelectorAll('.cm-foldPlaceholder')].find(el => el.textContent.includes('参考文献')).click()`);
   state = await snapshot();
   assert.ok(state.lines.includes('[^one]: @article{one,…'), 'first-entry fold survives group expansion');
-  assert.equal(state.groups, 1);
+  assert.equal(state.menus, 0);
   // Native buttons support keyboard activation, not only pointer clicks.
   await evaluate(`[...document.querySelectorAll('.cm-foldPlaceholder')].find(el => el.textContent === '…' && el.closest('.cm-line').textContent.startsWith('[^one]')).focus()`);
   await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
@@ -77,14 +106,28 @@ try {
   state = await snapshot();
   assert.equal(state.lines.filter(line => line.trim() === '}').length, 2);
   assert.equal(state.source, source);
+  // A dual-level menu also supports keyboard selection of the group action.
+  await evaluate(`groupTrigger().focus()`);
+  await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  assert.equal((await snapshot()).menus, 1);
+  await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 });
+  assert.equal(await evaluate(`document.activeElement.className`), 'md-fold-group');
+  await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  assert.ok((await snapshot()).lines.includes('参考文献 · 2 条 …'));
+  await evaluate(`[...document.querySelectorAll('.cm-foldPlaceholder')].find(el => el.textContent.includes('参考文献')).click()`);
+  await evaluate(`groupTrigger().click(); document.querySelector('.cm-content').dispatchEvent(new PointerEvent('pointerdown', {bubbles:true}))`);
+  assert.equal((await snapshot()).menus, 0, 'outside click dismisses the menu');
+  await evaluate(`groupTrigger().click(); foldView.scrollDOM.dispatchEvent(new Event('scroll'))`);
+  assert.equal((await snapshot()).menus, 0, 'scroll dismisses the menu');
   assert.deepEqual(errors, []);
   if (process.env.MD2PDF_FOLD_SCREENSHOT) {
     await foldLine(1);
-    await evaluate(`document.querySelector('.md-bibliography-fold').click()`);
+    await evaluate(`groupTrigger().click()`);
+    await evaluate(`Promise.all(document.querySelector('.md-fold-menu').getAnimations().map(animation => animation.finished))`);
     const screenshot = await browser.send('Page.captureScreenshot', { format: 'png' });
     await writeFile(process.env.MD2PDF_FOLD_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
   }
-  console.log('Chromium: YAML outer/inner, BibTeX individual/group, one-row display, keyboard expansion and unchanged source passed');
+  console.log('Chromium: compact shared gutter, aligned floating choices, YAML/BibTeX folds, keyboard/outside dismissal and unchanged source passed');
 } finally {
   await browser.stop();
   await rm(temp, { recursive: true, force: true });
