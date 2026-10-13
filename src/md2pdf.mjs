@@ -45,50 +45,60 @@ import { Chrome, findChrome } from './chrome.mjs';
 const VERSION = '1.14.10';
 
 const HELP = `
-md2pdf ${VERSION} —— Markdown → 优雅 PDF
+md2pdf ${VERSION} — Markdown 转 PDF
 
-  md2pdf <file.md> [file2.md ...] [选项]
-  md2pdf webapp [--port <端口>]（默认 3000，仅本机访问）
-  md2pdf skill install --target <codex|workbuddy|codebuddy|claude|agents> [--force]
-  md2pdf skill install --dir <技能目录> [--force]
+用法
+  md2pdf <文件...> [选项]
+  md2pdf webapp [--port <端口>]  默认 3000，仅本机访问
+  md2pdf skill install --help   查看具体用法
 
-选项：
-  -o, --output <path>      输出路径（默认与输入同目录同名 .pdf）
-      --theme <name>       elegant（默认，墨蓝+古铜）| minimal（黑白公文）
-      --type <name>        文档类型（默认自动探测）：${PROFILE_NAMES.join('|')}
-      --title <text>       覆盖标题（显式空串 "" 隐藏文档标题）
-      --kicker <text>      报头小标题（显式空串 "" 隐藏）
-      --enable <names>     开启功能，逗号分隔、可重复：
-                           header,footer,colophon,meta,lead,toc,outline,float-numbering,gb-cover,gb-defaults,link-urls,landscape
-      --disable <names>    关闭功能，逗号分隔、可重复（同 --enable）
-  -t, --toc                --enable toc 的便捷别名
-      --numbering <mode>   章节编号：auto（默认，识别到已有编号则不动）| force（强制）| none（不加）
-      --number-scheme <n>  编号方案：${SCHEME_NAMES.join('|')}（默认 arabic）
-      --font-size <pt>     正文字号（默认 10.5）
-      --margin <mm>        页边距（默认 20；可写 "20,18" = 上下,左右；gb 类型默认 25/20/25/19）
-      --footer-left <text>   页脚左文字（显式空串 "" 清空）
-      --footer-center <text> 页脚中文字（默认 当前页 / 总页数；显式空串 "" 清空）
-      --footer-right <text>  页脚右文字（显式空串 "" 清空）
-      --header-left/--header-center/--header-right <text>  页眉文字（默认空）
-      --colophon-left/--colophon-center/--colophon-right <text>  文末落款文字（默认左侧口号、右侧时间）
-      --bibliography-title <text> 参考文献标题（默认「参考文献」；显式空串 "" 只去标题）
-      --keep-html          保留中间 HTML
-      --paged-html [path]  输出分页 HTML：浏览器打开与 PDF 同款分页/页码
-                           （Paged.js；gb 类型含封面/奇偶页眉；缺省路径 = 同名 .html）
-      --html-only          只生成 HTML，不启动浏览器（调试样式 / CI 校验用）
-      --open               完成后打开 PDF
-  -h, --help
+选项
+  -o, --output <路径>        输出路径，默认与输入同目录、同名 .pdf
+      --type <名称>          模板类型：${PROFILE_NAMES.join('、')}；默认自动识别
+      --theme <名称>         主题：elegant、minimal；默认 elegant
+      --title <文字>         文档标题
+      --kicker <文字>        报头小标题
+      --font-size <pt>       正文字号，默认 10.5
+      --line-height <倍数>   正文行距，默认 1.9
+      --margin <mm>          页边距，支持“上下,左右”
+      --numbering <模式>     章节编号：auto、force、none；默认 auto
+      --number-scheme <名称> 编号方案：${SCHEME_NAMES.join('、')}；默认 arabic
+  -t, --toc                  显示目录
+      --toc-depth <层级>     目录深度：1、2；默认 1
+      --header-{left,center,right} <文字>
+      --footer-{left,center,right} <文字>
+      --colophon-{left,center,right} <文字>
+      --bibliography-title <文字>
+                             参考文献标题，默认“参考文献”
+      --enable/disable <功能列表>
+                             启用/禁用功能
+                             启用/禁用多项功能，以英文逗号分隔，候选功能：
+                             header、footer、colophon、meta、lead、toc、
+                             outline、float-numbering、link-urls、landscape、
+                             gb-cover、gb-defaults
+      --open                 生成后打开 PDF
+      --keep-html            保留中间 HTML
+      --paged-html [路径]    输出分页 HTML，默认与输入同名 .html
+      --html-only            仅生成 HTML
+  -h, --help                 显示帮助
+  -v, --version              显示版本
 
-说明：
-  • 文档类型 / 主题 / 字号 / 行距 / 页边距 / 章节编号 / 编号方案 / 目录深度等也可写在 frontmatter，CLI 优先于 frontmatter。
-  • 功能开关使用 --enable / --disable；兼容迁移说明见 README。
-  • 参考文献一律自动生成，使用 --bibliography-title 设置章节标题。
-  • 文本类选项写空串（如 --title ""）表示清空该字段，且不再回退到 frontmatter 或文件名。
+规则
+  配置优先级：命令行 → frontmatter → 模板默认 → 全局默认。
+  文档配置也可写入 frontmatter；同层矛盾配置报错。
+  文字参数必须有值；"" 表示清空，不再继承低优先级配置。
+  {left,center,right} 表示三个独立选项，如 --header-left。
+  --enable/disable 表示 --enable 或 --disable。
+  页眉、页脚、落款默认启用；导语默认关闭。
+  页眉默认空且不占空间，页脚默认居中页码，落款默认左侧品牌、右侧生成时间。
+  参考文献自动生成；国标模板遵循固定版式。
 
-示例：
-  md2pdf SKILL.md
+示例
+  md2pdf notes.md
   md2pdf notes.md --theme minimal --enable toc --open
-  md2pdf a.md b.md -o /tmp/   # 多文件时 -o 视为输出目录
+  md2pdf notes.md --header-left "内部资料" --disable lead
+  md2pdf a.md b.md -o ./output/
+  md2pdf webapp --port 8765
 `;
 
 async function renderOne(mdPath, opts, chrome, tmpRoot) {

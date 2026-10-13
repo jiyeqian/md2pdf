@@ -74,5 +74,11 @@ test('CLI help only advertises current switch and bibliography interfaces', asyn
   const { stdout } = await exec(process.execPath, ['src/md2pdf.mjs', '--help'], {cwd:root});
   assert.ok(!stdout.includes('--no-'));
   assert.ok(!stdout.includes('--bibliography ['));
-  for (const option of ['--enable', '--disable', '--footer-center', '--bibliography-title']) assert.ok(stdout.includes(option));
+  for (const option of ['--enable', '--disable', '--footer-{left,center,right}', '--bibliography-title', 'md2pdf skill install --help']) assert.ok(stdout.includes(option));
+});
+
+test('CLI short version alias matches the full version option', async () => {
+  const short = await exec(process.execPath, ['src/md2pdf.mjs', '-v'], {cwd:root});
+  const full = await exec(process.execPath, ['src/md2pdf.mjs', '--version'], {cwd:root});
+  assert.equal(short.stdout, full.stdout);
 });

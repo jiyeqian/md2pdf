@@ -158,7 +158,7 @@ export function parseArgs(argv) {
 
     switch (name) {
       case '-h': case '--help': o.help = true; break;
-      case '--version': o.version = true; break;
+      case '-v': case '--version': o.version = true; break;
       case '-o': case '--output': o.output = takeValue('--output'); break;
 
       case '--enable': setFeatureList(takeValue('--enable'), true, '--enable'); break;
