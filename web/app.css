@@ -103,7 +103,7 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 }
 
 .topbar-actions .button-link{width:76px;height:38px;justify-content:center;padding:0 10px}
-.editor-footer,.preview-footer{font-size:11px;min-height:42px;gap:8px}
+.editor-footer,.preview-footer{font-size:11px;min-height:30px;padding:3px 18px;gap:4px;flex-shrink:0}
 .editor-footer math,.preview-footer math,.preview-footer #status{font-size:11px}
 .editor-footer>span:first-child,.preview-footer>span{min-width:0;overflow-x:auto}
 #count{white-space:nowrap;flex-shrink:0}
@@ -117,3 +117,5 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .config-error-jump{flex-shrink:0;border:1px solid #e0a3a3;background:#fff;color:#a83b3b;border-radius:5px;padding:1px 7px;font-size:11px;line-height:1.5}
 .config-error-jump:hover{background:#fbe0e0}
 .config-error-message{min-width:0;word-break:break-word}
+
+.privacy button{border:0;background:none;padding:0;color:inherit;font:inherit;line-height:inherit;text-decoration:none}

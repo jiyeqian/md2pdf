@@ -1,6 +1,6 @@
 {
   "name": "@jiyeqian/md2pdf",
-  "version": "1.14.9",
+  "version": "1.14.10",
   "description": "MAKE MD2PDF GREAT",
   "type": "module",
   "bin": {
@@ -26,8 +26,9 @@
     "demo:pdf": "node src/md2pdf.mjs examples/general.md -o /tmp/md2pdf-general.pdf",
     "start": "node src/server.mjs",
     "test:skill": "node --test tests/skill-install-checks.mjs",
-    "test:web": "node tests/editor-core-checks.mjs && node --test tests/readme-removal-checks.mjs tests/server-checks.mjs tests/web-options-checks.mjs tests/web-config-errors-checks.mjs tests/preview-checks.mjs tests/editor-position-checks.mjs tests/editor-analysis-checks.mjs tests/editor-images-checks.mjs tests/editor-layout-checks.mjs tests/editor-zoom-checks.mjs tests/editor-files-checks.mjs tests/document-header-checks.mjs tests/web-colophon-checks.mjs tests/editor-academic-checks.mjs tests/webapp-command-checks.mjs tests/doi-checks.mjs tests/doi-integration-checks.mjs tests/editor-doi-checks.mjs tests/editor-doi-dialog-checks.mjs",
+    "test:web": "node tests/editor-core-checks.mjs && node --test tests/readme-removal-checks.mjs tests/server-checks.mjs tests/web-options-checks.mjs tests/web-config-errors-checks.mjs tests/preview-checks.mjs tests/editor-position-checks.mjs tests/editor-analysis-checks.mjs tests/editor-images-checks.mjs tests/editor-layout-checks.mjs tests/editor-zoom-checks.mjs tests/editor-files-checks.mjs tests/document-header-checks.mjs tests/web-colophon-checks.mjs tests/editor-academic-checks.mjs tests/editor-structured-fold-checks.mjs tests/webapp-command-checks.mjs tests/doi-checks.mjs tests/doi-integration-checks.mjs tests/editor-doi-checks.mjs tests/editor-doi-dialog-checks.mjs",
     "test:browser": "node tests/browser-checks.mjs",
+    "test:editor-fold-browser": "node tests/editor-structured-fold-browser-checks.mjs",
     "test:config": "node --test tests/config-checks.mjs tests/options-config-checks.mjs tests/render-config-checks.mjs tests/config-integration-checks.mjs tests/page-bars-checks.mjs"
   },
   "publishConfig": {
