@@ -185,3 +185,51 @@ test('a group of single-line entries still exposes a fold in the shared column',
   const state = stateFor(source); nodes(state);
   assert.deepEqual(foldAt(state, 1), { from: 0, to: source.indexOf('\n\n正文') });
 });
+
+function enterIn(source, marker) {
+  const pos = source.indexOf(marker) + marker.length;
+  let state = stateFor(source).update({ selection: { anchor: pos } }).state;
+  nodes(state);
+  const view = { get state() { return state; }, dispatch(transaction) { state = state.update(transaction).state; } };
+  return { handled: H.continueFrontmatterList(V, view), state, pos };
+}
+
+test('frontmatter Enter continues YAML list items at the same indentation and places the cursor after the dash', () => {
+  for (const indent of ['', '  ', '    ']) {
+    const source = '---\n起草单位:\n' + indent + '- 第一单位\n---\n正文';
+    const result = enterIn(source, '- 第一单位');
+    assert.equal(result.handled, true);
+    assert.equal(result.state.doc.toString(), source.replace('- 第一单位', '- 第一单位\n' + indent + '- '));
+    assert.equal(result.state.doc.sliceString(result.state.selection.main.head - 2, result.state.selection.main.head), '- ');
+  }
+});
+
+test('Enter on an empty YAML list item exits the list and retains indentation', () => {
+  const source = '---\n起草单位:\n  - 第一单位\n  - \n---';
+  let state = stateFor(source).update({ selection: { anchor: source.lastIndexOf('  - ') + 4 } }).state;
+  nodes(state);
+  assert.equal(H.continueFrontmatterList(V, { state, dispatch(tr) { state = state.update(tr).state; } }), true);
+  assert.equal(state.doc.toString(), '---\n起草单位:\n  - 第一单位\n  \n---');
+  assert.equal(state.selection.main.head, source.lastIndexOf('  - ') + 2);
+});
+
+test('YAML text blocks and quoted text do not gain list markers', () => {
+  for (const source of [
+    '---\ndescription: |\n  - 普通文字\n---',
+    '---\ndescription: >\n  - 普通文字\n---',
+    '---\ndescription: "首行\n  - 普通文字"\n---'
+  ]) {
+    const result = enterIn(source, '- 普通文字');
+    assert.equal(result.handled, false);
+    assert.equal(result.state.doc.toString(), source);
+  }
+});
+
+test('frontmatter continuation leaves prose lists, code and ordinary YAML fields to existing Enter behavior', () => {
+  for (const source of ['- 正文列表', '```yaml\n  - 代码内容\n```', '---\ntitle: 标题\n---']) {
+    const marker = source.includes('- ') ? /- [^\n]+/.exec(source)[0] : 'title: 标题';
+    const result = enterIn(source, marker);
+    assert.equal(result.handled, false);
+    assert.equal(result.state.doc.toString(), source);
+  }
+});

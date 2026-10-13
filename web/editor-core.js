@@ -391,8 +391,29 @@
     })];
   }
 
+  function continueFrontmatterList(V, view) {
+    const state = view.state, range = state.selection.main;
+    if (state.selection.ranges.length !== 1 || !range.empty) return false;
+    const fm = frontmatterRange(state.doc.toString());
+    if (!fm || range.head < fm.bodyFrom || range.head >= fm.bodyTo) return false;
+    const line = state.doc.lineAt(range.head), match = /^([ \t]*)-(?:[ \t]+|$)/.exec(line.text);
+    if (!match || range.head < line.from + match[0].length) return false;
+    // A dash inside a YAML text block or quoted value is text, not a sequence item.
+    for (let node = V.syntaxTree(state).resolveInner(range.head, -1); node; node = node.parent) {
+      if (node.name === 'BlockLiteral' || node.name === 'QuotedLiteral') return false;
+    }
+    if (!line.text.slice(match[0].length).trim()) {
+      const from = line.from + match[1].length;
+      view.dispatch({ changes: { from, to: line.to, insert: '' }, selection: { anchor: from }, userEvent: 'input' });
+    } else {
+      const insert = '\n' + match[1] + '- ';
+      view.dispatch({ changes: { from: range.head, insert }, selection: { anchor: range.head + insert.length }, userEvent: 'input' });
+    }
+    return true;
+  }
+
   const helpers = { clamp, normalizeRange, offsetToLine, lineToOffset, lineCount, academicMarkdownExtension,
-    frontmatterRange, bibtexFootnoteRange, structuredMarkdownExtension, structuredFolding, bibliographyGroups, compactFoldGutter };
+    frontmatterRange, bibtexFootnoteRange, structuredMarkdownExtension, structuredFolding, bibliographyGroups, compactFoldGutter, continueFrontmatterList };
   global.mdEditorCoreHelpers = helpers;
 
   // ---------------------------------------------------------------------------
@@ -593,6 +614,7 @@
 
     const keymap = V.keymap.of([
       ...V.closeBracketsKeymap,
+      { key: 'Enter', run: view => continueFrontmatterList(V, view) },
       ...V.defaultKeymap,
       ...V.searchKeymap,
       ...V.historyKeymap,

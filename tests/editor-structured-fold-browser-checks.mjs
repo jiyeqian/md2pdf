@@ -119,15 +119,31 @@ try {
   assert.equal((await snapshot()).menus, 0, 'outside click dismisses the menu');
   await evaluate(`groupTrigger().click(); foldView.scrollDOM.dispatchEvent(new Event('scroll'))`);
   assert.equal((await snapshot()).menus, 0, 'scroll dismisses the menu');
+  const listSource = '---\n起草单位:\n  - 第一单位\n---\n\n- 正文列表';
+  await evaluate(`mdEditor.setValue(${JSON.stringify(listSource)});
+    mdEditor.setSelection(mdEditor.getValue().indexOf('第一单位') + 4); mdEditor.focus()`);
+  await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  assert.equal(await evaluate(`mdEditor.getValue()`), '---\n起草单位:\n  - 第一单位\n  - \n---\n\n- 正文列表');
+  assert.equal(await evaluate(`mdEditor.getValue().slice(mdEditor.getSelection().from - 2, mdEditor.getSelection().from)`), '- ');
+  await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  assert.equal(await evaluate(`mdEditor.getValue()`), '---\n起草单位:\n  - 第一单位\n  \n---\n\n- 正文列表');
+  await evaluate(`mdEditor.runCommand('undo')`);
+  assert.equal(await evaluate('mdEditor.getValue()'), listSource.replace('第一单位', '第一单位\n  - '), 'empty-item exit is one undo step');
+  await evaluate(`mdEditor.runCommand('undo')`);
+  assert.equal(await evaluate('mdEditor.getValue()'), listSource, 'list continuation is one undo step');
+  await evaluate(`mdEditor.setSelection(mdEditor.getValue().length); mdEditor.focus()`);
+  await browser.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  assert.equal((await evaluate('mdEditor.getValue()')).endsWith('- 正文列表\n- '), true, 'ordinary Markdown lists still continue');
   assert.deepEqual(errors, []);
   if (process.env.MD2PDF_FOLD_SCREENSHOT) {
+    await evaluate(`mdEditor.setValue(${JSON.stringify(source)})`);
     await foldLine(1);
     await evaluate(`groupTrigger().click()`);
     await evaluate(`Promise.all(document.querySelector('.md-fold-menu').getAnimations().map(animation => animation.finished))`);
     const screenshot = await browser.send('Page.captureScreenshot', { format: 'png' });
     await writeFile(process.env.MD2PDF_FOLD_SCREENSHOT, Buffer.from(screenshot.data, 'base64'));
   }
-  console.log('Chromium: compact shared gutter, aligned floating choices, YAML/BibTeX folds, keyboard/outside dismissal and unchanged source passed');
+  console.log('Chromium: compact shared gutter, aligned floating choices, YAML/BibTeX folds, keyboard/outside dismissal, YAML list continuation/exit/undo and Markdown lists passed');
 } finally {
   await browser.stop();
   await rm(temp, { recursive: true, force: true });
