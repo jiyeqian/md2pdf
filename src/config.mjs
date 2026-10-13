@@ -68,7 +68,7 @@ const typeName = v => {
 
 /* ---------------- 字段表 ---------------- */
 
-const TEXT_FIELDS = ['title', 'kicker', 'colophon', 'footerLeft', 'footerCenter', 'footerRight', 'bibliographyTitle'];
+const TEXT_FIELDS = ['title', 'kicker', 'colophonLeft', 'colophonCenter', 'colophonRight', 'headerLeft', 'headerCenter', 'headerRight', 'footerLeft', 'footerCenter', 'footerRight', 'bibliographyTitle'];
 const NUMBER_FIELDS = {
   fontSize: { min: 0.1 },
   lineHeight: { min: 0.1 },
@@ -79,7 +79,7 @@ const NUMBER_FIELDS = {
   marginSide: { min: 0 },
   tocDepth: { min: 1, enum: [1, 2] },
 };
-const BOOL_FIELDS = ['footer', 'meta', 'lead', 'toc', 'outline', 'floatNumbering', 'gbCover', 'gbDefaults', 'linkUrls', 'landscape'];
+const BOOL_FIELDS = ['header', 'colophonEnabled', 'footer', 'meta', 'lead', 'toc', 'outline', 'floatNumbering', 'gbCover', 'gbDefaults', 'linkUrls', 'landscape'];
 const ENUM_FIELDS = {
   theme: { label: '主题', values: () => listThemes() },
   type: { label: '文档类型', values: () => PROFILE_NAMES.slice() },
@@ -108,6 +108,12 @@ const FM_ALIASES = {
   marginLeft: ['margin-left'],
   marginRight: ['margin-right'],
   marginSide: ['margin-side'],
+  colophonLeft: ['colophon-left', 'colophon'],
+  colophonCenter: ['colophon-center'],
+  colophonRight: ['colophon-right'],
+  headerLeft: ['header-left'],
+  headerCenter: ['header-center'],
+  headerRight: ['header-right'],
   footerLeft: ['footer-left'],
   footerCenter: ['footer-center'],
   footerRight: ['footer-right'],
@@ -490,7 +496,7 @@ export function resolveDocumentOptions(explicit = {}, fm = {}, profile = null, c
       throw cfgError(message, key, rawKey ? context.positions?.[rawKey] : null);
     };
     if (prof.gbDoc) {
-      for (const key of ['theme', 'numberScheme', 'numbering', 'fontSize', 'lineHeight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginSide']) {
+      for (const key of ['theme', 'numberScheme', 'numbering', 'fontSize', 'lineHeight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginSide', 'headerLeft', 'headerCenter', 'headerRight']) {
         if (hasOwn(layer, key)) reject(key, `国家标准的 ${key} 使用固定版式，不能覆盖`);
       }
       if (layer.landscape === true) reject('landscape', '国家标准固定为 A4 纵向，不能开启横向');
@@ -532,7 +538,10 @@ export function resolveDocumentOptions(explicit = {}, fm = {}, profile = null, c
   // 国家标准固定版式：无导语、无落款，不可被 enable/disable 或 FM 绕过。
   if (prof.gbDoc) {
     out.lead = false;
-    out.colophon = '';
+    out.colophonEnabled = false;
+    out.colophonLeft = '';
+    out.colophonCenter = '';
+    out.colophonRight = '';
   }
 
   out.type = prof.name;

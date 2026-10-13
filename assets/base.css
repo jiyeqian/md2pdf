@@ -288,3 +288,7 @@ section { break-inside: auto; }
 .toc .toc-dots { flex: 1 1 auto; min-width: 1em; margin: 0 .4em; border-bottom: 1px dotted var(--rule); }
 .toc li a::after { content: target-counter(attr(href), page); flex: 0 0 auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .colophon > span, .colophon a { font-size: inherit; }
+
+.colophon > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.colophon > span:nth-child(2) { text-align: center; }
+.colophon > span:last-child { text-align: right; }

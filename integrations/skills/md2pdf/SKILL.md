@@ -59,7 +59,7 @@ md2pdf skill install --target workbuddy
 
 ## 排版规则（需要解释效果时看这里）
 
-首个 H1 提升为报头大标题、第一段顶层普通段落在 lead 开启时成为导语；frontmatter 的 name/description 生成元信息条
+首个 H1 提升为报头大标题、lead 默认关闭，第一段顶层普通段落在 lead 开启时成为导语；frontmatter 的 name/description 生成元信息条
 （"适用于…""不用于…"自动拆两栏）；H2 自动分节并加 id 锚点；相对路径图片转 file://；
 页脚页码由 CDP `Page.printToPDF` 生成（CLI `--print-to-pdf` 不支持页眉页脚模板）。
 
@@ -97,3 +97,5 @@ bash scripts/validate.sh              # 本地与 CNB 云原生构建跑的是�
 
 推送后 CNB 自动跑同一套校验；打 tag 则自动 `npm publish` 发新版，用户 `npm update -g` 即可拿到。
 发版前记得同步 `src/md2pdf.mjs` 的 `VERSION` 与 `package.json` 的 `version`（校验会检查一致）。
+
+页眉、页脚、文末落款分别使用 `--header-left/center/right`、`--footer-left/center/right`、`--colophon-left/center/right <text>`。整栏默认启用，`--disable header,footer,colophon` 关闭；空页眉不占空间。对应 frontmatter 使用相同 kebab-case 字段。

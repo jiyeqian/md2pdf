@@ -69,9 +69,9 @@ test('文本字段严格 string：null / 列表 / 对象 / 数值均报错', () 
 
 test('文本字段显式空串合法：清空且阻止低层回退', () => {
   const r = parseFrontmatter(FM('colophon: ""'));
-  assert.equal(r.config.colophon, '');
+  assert.equal(r.config.colophonLeft, '');
   const resolved = resolveDocumentOptions({}, r.fm, general({ defaults: { colophon: '低层' } }));
-  assert.equal(resolved.colophon, '');
+  assert.equal(resolved.colophonLeft, '');
 });
 
 test('数值字段不能为空 / 非法值报错，合法数值通过', () => {
@@ -173,7 +173,7 @@ test('GB 强制版式：无导语无落款，不被 enable/disable 或 FM 绕过
   const resolved = resolveDocumentOptions({ lead: true, colophon: '显式落款' }, fm,
     { name: 'gb', gbDoc: true, defaults: { theme: 'gb', lead: false } });
   assert.equal(resolved.lead, false);
-  assert.equal(resolved.colophon, '');
+  assert.equal(resolved.colophonLeft, '');
 });
 
 test('运行字段透传：frontmatter 不能控制 keep-html / open / output', () => {

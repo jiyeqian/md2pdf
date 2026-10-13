@@ -21,7 +21,7 @@ disable:
 ---
 ```
 
-文档开关包括 `footer`、`meta`、`lead`、`toc`、`outline`、`float-numbering`、`gb-cover`、`gb-defaults`、`link-urls`、`landscape`。CLI 的列表可用逗号分隔，并可重复传入；frontmatter 必须使用列表。未知功能名、错误类型和启用/禁用矛盾均报错。
+文档开关包括 `header`、`footer`、`colophon`、`meta`、`lead`、`toc`、`outline`、`float-numbering`、`gb-cover`、`gb-defaults`、`link-urls`、`landscape`。CLI 的列表可用逗号分隔，并可重复传入；frontmatter 必须使用列表。未知功能名、错误类型和启用/禁用矛盾均报错。
 
 输出路径、打开结果、保留中间 HTML、只生成 HTML、Web App 端口、skill 安装等属于运行操作，不允许由文档 frontmatter 控制。
 
@@ -41,7 +41,7 @@ bibliography-title: "参考资料"
 ---
 ```
 
-文本配置有 `title`、`kicker`、`colophon`、`footer-left`、`footer-center`、`footer-right`、`bibliography-title`。不传参数/不声明字段表示继承；字符串表示覆盖；`""` 表示明确清空；CLI 缺值和 frontmatter 的裸字段、null、列表、对象报错。标题显式清空后不再使用一级标题或文件名作为替代标题。
+文本配置有 `title`、`kicker`、`header-left/center/right`、`colophon-left/center/right`、`footer-left`、`footer-center`、`footer-right`、`bibliography-title`。不传参数/不声明字段表示继承；字符串表示覆盖；`""` 表示明确清空；CLI 缺值和 frontmatter 的裸字段、null、列表、对象报错。标题显式清空后不再使用一级标题或文件名作为替代标题。
 
 文档类型、主题、编号模式、编号方案、目录深度、字号、行距、边距同样遵守优先级，但数值和枚举不接受空字符串。frontmatter 使用与 CLI 相同的不带 `--` 的字段名。普通文档元数据不因空值而一律报错。
 
@@ -53,7 +53,7 @@ bibliography-title: "参考资料"
 
 ## 导语与参考文献
 
-导语是正文中跳过各级标题后遇到的第一段顶层普通段落；代码块、列表、引用块、表格、公式块、仅图片段落和参考文献定义不算。开启 `lead` 时移至文档标题下，原位置不重复；关闭时留在原位。国家标准仍不提取导语。
+导语是正文中跳过各级标题后遇到的第一段顶层普通段落；代码块、列表、引用块、表格、公式块、仅图片段落和参考文献定义不算。`lead` 全局默认关闭；开启 `lead` 时移至文档标题下，原位置不重复；关闭时留在原位。国家标准仍不提取导语。
 
 参考文献始终按当前方式自动渲染，`bibliography-title` 默认“参考文献”。空字符串隐藏标题而保留内容、编号和跳转；没有参考文献不生成空章节。
 
@@ -66,3 +66,16 @@ CLI 报告配置错误并返回非零退出状态。Web App 在预览区域顶�
 旧 `--no-*` 及正向布尔参数继续作为兼容别名，但不在 help 展示；`-t/--toc` 保留为便利入口。旧 `--no-footer` 仍关闭整个页脚，不能等同于清空中间页码。
 
 旧 `--bibliography`、`--no-bibliography` 是例外：识别并提示迁移，参考文献始终自动处理，不再允许旧参数关闭。新接口使用 `--bibliography-title <text>` 设置标题。
+
+## 三栏开关与文字
+
+`header`、`footer`、`colophon` 默认启用。整栏开关和各位置文字分别按 CLI → frontmatter → 文档类型 → 全局默认解析；文字不会隐式启用被关闭的整栏。页眉默认三处为空，全部为空时不显示、不占空间。页脚默认居中页码；落款默认左侧品牌链接、中间空、右侧生成时间。
+
+```yaml
+header-left: "内部资料"
+colophon-center: "审核通过"
+colophon-right: ""
+disable: [footer, lead]
+```
+
+CLI 对应 `--header-left/--header-center/--header-right <text>` 和 `--colophon-left/--colophon-center/--colophon-right <text>`。旧 `--colophon <text>` / frontmatter `colophon: "文字"` 是左侧文字的兼容别名；同层与新参数取值矛盾时报错。国家标准不允许覆盖固定页眉，保持专用页脚且不输出落款。

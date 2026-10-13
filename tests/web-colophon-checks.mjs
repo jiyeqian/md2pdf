@@ -37,7 +37,7 @@ test('CLI 与 Web 默认一致：都输出官方仓库口号 + 时间（不再�
   assert.ok(colophon(cli.html).includes(ANCHOR));
   const s = spans(cli.html);
   assert.equal(s[0], 'make ' + ANCHOR + ' great');
-  assert.equal(s[1], stamp(AT));
+  assert.equal(s[2], stamp(AT));
 });
 
 test('显式 colophon：只覆盖左侧并转义，右侧时间保留', async () => {
@@ -45,14 +45,14 @@ test('显式 colophon：只覆盖左侧并转义，右侧时间保留', async ()
   const s = spans(res.html);
   assert.ok(!colophon(res.html).includes('md2pdf-open-repo'));
   assert.equal(s[0], 'A &amp; &lt;B&gt;&quot;');
-  assert.equal(s[1], stamp(AT), '右侧时间不因 colophon 改变');
+  assert.equal(s[2], stamp(AT), '右侧时间不因 colophon 改变');
 });
 
 test('显式空 colophon：只清空左侧，右侧时间保留', async () => {
   const res = await render(BODY, { colophon: '' }, { webSafe: true, generatedAt: AT });
   const s = spans(res.html);
   assert.equal(s[0], '');
-  assert.equal(s[1], stamp(AT));
+  assert.equal(s[2], stamp(AT));
   assert.ok(res.html.includes('<div class="colophon">'), '空 colophon 仍输出落款容器');
 });
 
@@ -68,11 +68,11 @@ test('GB：无文末落款（无 colophon 容器，更无链接）', async () =>
 test('SKILL 默认落款与其他类型一致（官方仓库口号 + 时间）', async () => {
   const res = await render('---\nname: demo\n---\n\n# 标题\n', {}, { webSafe: true, generatedAt: AT });
   assert.ok(colophon(res.html).includes(ANCHOR));
-  assert.equal(spans(res.html)[1], stamp(AT));
+  assert.equal(spans(res.html)[2], stamp(AT));
 });
 
 test('每次 render 单一时间：落款时间不随内容/页数变化', async () => {
   const a = await render(BODY, {}, { generatedAt: AT });
   const b = await render(BODY + '\n更多正文。\n\n## 小节\n\n正文。\n', {}, { generatedAt: AT });
-  assert.equal(spans(a.html)[1], spans(b.html)[1]);
+  assert.equal(spans(a.html)[2], spans(b.html)[2]);
 });

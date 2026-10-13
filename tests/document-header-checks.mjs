@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { render } from '../src/render.mjs';
-const web = (md, opts = {}) => render(md, { numbering: 'none', ...opts }, { webSafe: true });
+const web = (md, opts = {}) => render(md, { numbering: 'none', lead: true, ...opts }, { webSafe: true });
 const toc = html => /<div class="toc">([\s\S]*?)<\/ol><\/div>/.exec(html)?.[1] || '';
 const lead = html => /<p class="lead">([\s\S]*?)<\/p>/.exec(html)?.[1] || '';
 test('missing H1 prompts; empty H1 suppresses fallback without overriding explicit metadata', async () => {

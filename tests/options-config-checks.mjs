@@ -82,7 +82,7 @@ test('运行型开关：仅 CLI 可控，保留原模式', () => {
 test('--key=value：支持含空串与以 - 开头的值', () => {
   assert.equal(parseArgs(['--title=']).title, '');
   assert.equal(parseArgs(['--title=-abc']).title, '-abc');
-  assert.equal(parseArgs(['--colophon=']).colophon, '');
+  assert.equal(parseArgs(['--colophon=']).colophonLeft, '');
   assert.equal(parseArgs(['--theme=minimal']).theme, 'minimal');
   assert.equal(parseArgs(['--enable=toc,outline']).outline, true);
 });
@@ -149,7 +149,7 @@ test('浏览器解析全链路：parseArgs(expandArgs(argv)) 保持可用', () =
 test('resolveDocumentOptions：CLI 显式值胜出，空串清空并阻断 fm 回退', () => {
   const fm = parseFrontmatter('---\ncolophon: "文档落款"\nfooter-center: "内部资料"\n---\n# 标题').fm;
   const resolved = resolveDocumentOptions(parseArgs(['doc.md', '--colophon', '']), fm, { name: 'general', defaults: {} });
-  assert.equal(resolved.colophon, '');
+  assert.equal(resolved.colophonLeft, '');
   assert.equal(resolved.footerCenter, '内部资料');
   assert.equal(resolved.keepHtml, false);
 });
@@ -170,5 +170,5 @@ test('resolveDocumentOptions：全局默认与 GB 强制版式', () => {
 
   const gb = resolveDocumentOptions(parseArgs(['--enable', 'lead']), {}, { name: 'gb', gbDoc: true, defaults: { lead: false } });
   assert.equal(gb.lead, false);
-  assert.equal(gb.colophon, '');
+  assert.equal(gb.colophonLeft, '');
 });

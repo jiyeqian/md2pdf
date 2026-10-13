@@ -17,6 +17,8 @@ export function listThemes() {
  * 这些是「文档型」开关：CLI 与 frontmatter 都可控制。
  */
 export const FEATURES = {
+  header: 'header',
+  colophon: 'colophonEnabled',
   footer: 'footer',
   meta: 'meta',
   lead: 'lead',
@@ -54,9 +56,11 @@ export const GLOBAL_OPTION_DEFAULTS = {
   marginBottom: 18,
   marginLeft: 18,
   marginRight: 18,
+  header: true,
+  colophonEnabled: true,
   footer: true,
   meta: true,
-  lead: true,
+  lead: false,
   outline: true,
   floatNumbering: true,
   gbCover: true,
@@ -76,7 +80,7 @@ export function expandArgs(argv) {
   const out = [];
   for (const a of argv) {
     const m = /^--([a-z][a-z0-9-]*)=(.*)$/i.exec(a);
-    if (m && (FEATURES[m[1]] !== undefined || RUNTIME_FEATURES[m[1]] !== undefined)) {
+    if (m && m[1] !== 'colophon' && (FEATURES[m[1]] !== undefined || RUNTIME_FEATURES[m[1]] !== undefined)) {
       const truthy = /^(true|1|yes|on)$/i.test(m[2]);
       const falsey = /^(false|0|no|off)$/i.test(m[2]);
       if (truthy || falsey) { out.push(truthy ? '--enable' : '--disable', m[1]); continue; }
@@ -197,7 +201,13 @@ export function parseArgs(argv) {
       // 文本
       case '--title': put('title', takeValue('--title'), '--title'); break;
       case '--kicker': put('kicker', takeValue('--kicker'), '--kicker'); break;
-      case '--colophon': put('colophon', takeValue('--colophon'), '--colophon'); break;
+      case '--colophon': put('colophonLeft', takeValue('--colophon'), '--colophon'); break;
+      case '--header-left': put('headerLeft', takeValue('--header-left'), '--header-left'); break;
+      case '--header-center': put('headerCenter', takeValue('--header-center'), '--header-center'); break;
+      case '--header-right': put('headerRight', takeValue('--header-right'), '--header-right'); break;
+      case '--colophon-left': put('colophonLeft', takeValue('--colophon-left'), '--colophon-left'); break;
+      case '--colophon-center': put('colophonCenter', takeValue('--colophon-center'), '--colophon-center'); break;
+      case '--colophon-right': put('colophonRight', takeValue('--colophon-right'), '--colophon-right'); break;
       case '--footer-left': put('footerLeft', takeValue('--footer-left'), '--footer-left'); break;
       case '--footer-center': put('footerCenter', takeValue('--footer-center'), '--footer-center'); break;
       case '--footer-right': put('footerRight', takeValue('--footer-right'), '--footer-right'); break;

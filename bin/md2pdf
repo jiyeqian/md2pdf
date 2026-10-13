@@ -26,11 +26,10 @@ node_major() {
 
 pick_node() {
   if [ -n "$MD2PDF_NODE" ] && [ -x "$MD2PDF_NODE" ]; then echo "$MD2PDF_NODE"; return; fi
-  candidates="$HOME/.workbuddy/binaries/node/versions/22.22.2-3/bin/node
+  candidates="$(command -v node 2>/dev/null)
 /usr/local/bin/node
 /opt/homebrew/bin/node
-/usr/bin/node
-$(command -v node 2>/dev/null)"
+/usr/bin/node"
   for c in $candidates; do
     [ -x "$c" ] || continue
     if [ "$(node_major "$c")" -ge 22 ] 2>/dev/null; then echo "$c"; return; fi

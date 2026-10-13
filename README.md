@@ -129,7 +129,9 @@ md2pdf 文件名.md --theme minimal --toc
 | `--enable link-urls` | 正文链接后附 URL（纸质可读） |
 | `--enable landscape` / `--font-size <pt>` / `--margin <mm>` | 横向 / 字号（默认 10.5）/ 页边距（默认 20；可写 "20,18" = 上下,左右） |
 | `--footer-left <text>` / `--footer-center <text>` / `--footer-right <text>` | 设置页脚文字；中间未指定时显示页码；`--disable footer` 关闭整个页脚 |
-| `--colophon <text>` | 只修改文末落款左侧；默认左侧为仓库链接，右侧为生成时间 |
+| `--header-left/center/right <text>` | 页眉三栏文字，默认空且不占空间 |
+| `--footer-left/center/right <text>` | 页脚三栏文字，默认居中页码 |
+| `--colophon-left/center/right <text>` | 落款三栏文字，默认左侧仓库链接、右侧生成时间 |
 | `--keep-html` / `--html-only` | 留中间 HTML 调样式 / 只出 HTML（CI 校验用） |
 | `--open` | 完成后打开 PDF |
 
@@ -152,7 +154,7 @@ node scripts/inspect-pdf.mjs out.pdf
 
 ## 排版规则
 
-- 首个 H1 提升为报头大标题；第一段顶层普通段落作为导语，开启 lead 时移到标题下，原位置不重复。
+- 首个 H1 提升为报头大标题；第一段顶层普通段落作为导语，lead 默认关闭，开启时移到标题下，原位置不重复。
 - YAML frontmatter 的 `name` / `description` 生成元信息条；「适用于…/不用于…」自动拆两栏。
 - H2 自动分节加色块；表格深色表头＋隔行浅底；有序列表圆形序号。
 - 章节编号分两维：是否编号与格式由 `--numbering` 与 `--number-scheme` 控制。

@@ -528,7 +528,7 @@ export async function render(src, options = {}, context = {}) {
   const eff = resolveDocumentOptions(options, fm, profile, { ...context, positions });
   const effTheme = eff.theme ?? profile.defaults.theme ?? 'elegant';
   // GB 强制版式：国家标准不用导语，enable/disable 与 FM 都不能绕过。
-  const effLead = profile.gbDoc ? false : (eff.lead ?? profile.defaults.lead ?? true);
+  const effLead = profile.gbDoc ? false : (eff.lead ?? profile.defaults.lead ?? false);
   const effNumbering = eff.numbering ?? profile.defaults.numbering ?? 'auto';
   const effScheme = eff.numberScheme ?? profile.defaults.numberScheme ?? 'arabic';
   const useToc = eff.toc ?? profile.defaults.toc ?? false;
@@ -721,12 +721,13 @@ export async function render(src, options = {}, context = {}) {
       ].filter(Boolean).join('\n')
     : '';
   // 文末落款：CLI 与 Web 默认一致 —— 左侧官方仓库口号，右侧本次渲染生成时间（本机时区，带偏移）。
-  // colophon 仅覆盖左侧；显式空串只清空左侧，右侧时间保留；GB 不输出落款。
+  // 文字与整栏开关分别解析；关闭整栏不影响保存的文字。
   const stamp = formatStamp(context.generatedAt instanceof Date ? context.generatedAt : new Date());
   const colophonLeftDefault = `make <a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a> great`;
-  const colophonLeftHtml = eff.colophon === undefined ? colophonLeftDefault : esc(eff.colophon);
-  const colophonHtml = profile.gbDoc ? '' :
-    `<div class="colophon">\n  <span>${colophonLeftHtml}</span>\n  <span>${esc(stamp)}</span>\n</div>`;
+  const colophonParts = [eff.colophonLeft === undefined ? colophonLeftDefault : esc(eff.colophonLeft),
+    esc(eff.colophonCenter || ''), esc(eff.colophonRight === undefined ? stamp : eff.colophonRight)];
+  const colophonHtml = profile.gbDoc || eff.colophonEnabled === false || !colophonParts.some(Boolean) ? '' :
+    `<div class="colophon">${colophonParts.map(part => `<span>${part}</span>`).join('')}</div>`;
 
   // 用函数形式替换：既支持多处占位符，也避免用户文本里的 $& 被当作替换模式
   const fill = (tpl, map) => Object.entries(map).reduce(
@@ -871,6 +872,7 @@ export async function render(src, options = {}, context = {}) {
         : '  @bottom-center { content: counter(page) " / " counter(pages); ' + footFont + ' }';
     const pageBoxes = profile.gbDoc ? '' : [
       '@page {',
+      ...['Left', 'Center', 'Right'].map(side => eff.header !== false && eff['header' + side] ? '  @top-' + side.toLowerCase() + ' { content: ' + cssString(eff['header' + side]) + '; ' + footFont + ' }' : ''),
       centerCss,
       showFooter && eff.footerLeft ? '  @bottom-left { content: ' + JSON.stringify(eff.footerLeft) + '; ' + footFont + ' }' : '',
       showFooter && eff.footerRight ? '  @bottom-right { content: ' + JSON.stringify(eff.footerRight) + '; ' + footFont + ' }' : '',
@@ -905,10 +907,11 @@ export async function render(src, options = {}, context = {}) {
   // GB：页眉/页码改由 Paged.js 的 @page margin box 绘制（奇偶页位置不同、前置罗马/正文阿拉伯），
   // 必须关掉 Chrome 原生的 headerTemplate/footerTemplate，否则同页会出现两套页码。
   const usePaged = !!profile.gbDoc || !!toc;
-  const headerTemplate = '<span></span>';
+  const showHeader = !profile.gbDoc && eff.header !== false && ['Left', 'Center', 'Right'].some(side => eff['header' + side]);
+  const headerTemplate = showHeader ? `<div style="width:100%;font-size:8px;color:#8a8578;display:flex;padding:0 12mm;">${['Left', 'Center', 'Right'].map(side => `<span style="flex:1;min-width:0;overflow-wrap:anywhere;text-align:${side.toLowerCase()};">${esc(eff['header' + side] || '')}</span>`).join('')}</div>` : '<span></span>';
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
   return { title, html: assetHtml(toc && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
-    printOptions: { footer: usePaged ? false : eff.footer !== false, footerTemplate, header: false, headerTemplate,
+    printOptions: { footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
       landscape: eff.landscape, outline: eff.outline !== false, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
 }

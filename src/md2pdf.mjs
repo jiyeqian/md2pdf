@@ -59,7 +59,7 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --title <text>       覆盖标题（显式空串 "" 隐藏文档标题）
       --kicker <text>      报头小标题（显式空串 "" 隐藏）
       --enable <names>     开启功能，逗号分隔、可重复：
-                           footer,meta,lead,toc,outline,float-numbering,gb-cover,gb-defaults,link-urls,landscape
+                           header,footer,colophon,meta,lead,toc,outline,float-numbering,gb-cover,gb-defaults,link-urls,landscape
       --disable <names>    关闭功能，逗号分隔、可重复（同 --enable）
   -t, --toc                --enable toc 的便捷别名
       --numbering <mode>   章节编号：auto（默认，识别到已有编号则不动）| force（强制）| none（不加）
@@ -69,7 +69,8 @@ md2pdf ${VERSION} —— Markdown → 优雅 PDF
       --footer-left <text>   页脚左文字（显式空串 "" 清空）
       --footer-center <text> 页脚中文字（默认 当前页 / 总页数；显式空串 "" 清空）
       --footer-right <text>  页脚右文字（显式空串 "" 清空）
-      --colophon <text>    文末落款左侧文字（默认官方仓库口号；显式空串 "" 仅清空左侧）
+      --header-left/--header-center/--header-right <text>  页眉文字（默认空）
+      --colophon-left/--colophon-center/--colophon-right <text>  文末落款文字（默认左侧口号、右侧时间）
       --bibliography-title <text> 参考文献标题（默认「参考文献」；显式空串 "" 只去标题）
       --keep-html          保留中间 HTML
       --paged-html [path]  输出分页 HTML：浏览器打开与 PDF 同款分页/页码
