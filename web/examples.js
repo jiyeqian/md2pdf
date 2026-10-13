@@ -20,6 +20,7 @@ const previewState = document.querySelector('#preview-state');
 const HANDOFF_KEY = 'md2pdf:handoff';
 const DRAFT_KEY = 'md2pdf:draft';
 
+let currentType = '';
 let catalog = [];
 let activeId = null;
 let activeType = '';
@@ -84,6 +85,11 @@ function renderCards() {
     const badge = document.createElement('span');
     badge.className = 'type-badge';
     badge.textContent = typeLabel(example.type);
+    if (example.type === currentType) {
+      badge.classList.add('is-current');
+      badge.title = '当前文档类型';
+      button.setAttribute('aria-current', 'true');
+    }
 
     const title = document.createElement('h3');
     title.textContent = example.title || example.id;
@@ -184,9 +190,17 @@ async function boot() {
   try { catalog = await loadCatalog(); }
   catch (error) { setListStatus(error.message, true); listEl.setAttribute('aria-busy', 'false'); return; }
   if (!catalog.length) { setListStatus('暂无可用的示例。', true); listEl.setAttribute('aria-busy', 'false'); return; }
+  try {
+    const draft = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null');
+    const { currentTemplateType } = await import('./workspace-navigation.mjs');
+    currentType = await currentTemplateType(draft, async body => {
+      const response = await fetch('/api/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      return response.ok ? response.json() : null;
+    });
+  } catch { /* 无有效草稿时显示默认模板。 */ }
   renderCards();
   setListStatus(`共 ${catalog.length} 个示例`);
-  selectExample(catalog[0].id);
+  selectExample((catalog.find(example => example.type === currentType) || catalog[0]).id);
 }
 
 boot();

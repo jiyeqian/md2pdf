@@ -79,3 +79,9 @@ disable: [footer, lead]
 ```
 
 CLI 对应 `--header-left/--header-center/--header-right <text>` 和 `--colophon-left/--colophon-center/--colophon-right <text>`。旧 `--colophon <text>` / frontmatter `colophon: "文字"` 是左侧文字的兼容别名；同层与新参数取值矛盾时报错。国家标准不允许覆盖固定页眉，保持专用页脚且不输出落款。
+
+## 模板与主题
+
+模板与文档类型一一对应；每种类型可提供多个主题，国标可仅保留固定主题。模板库根据当前草稿的有效类型默认选中模板，并以反色类型标签标记；浏览其他模板不更改当前草稿。
+
+编辑器的 `⌘/Ctrl+S` 下载当前 Markdown，`⌘/Ctrl+O` 打开 Markdown，`⌘/Ctrl+P` 下载 PDF，预览获得焦点时也可使用。全屏与窗口共用同步开关；切换布局时保留内容位置。

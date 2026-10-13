@@ -293,6 +293,7 @@ function fakeEnvironment() {
     sessionStorage: { getItem() { return null; }, setItem() {}, removeItem() {} },
     console: { warn() {} },
     setTimeout, clearTimeout,
+    requestAnimationFrame: callback => callback(),
     matchMedia: () => ({ matches: false }),
     addEventListener(type, fn) { (winListeners[type] || (winListeners[type] = [])).push(fn); },
     removeEventListener() {},

@@ -46,6 +46,13 @@
   var cursorTimer = null;
   var suppressUntil = 0;       // 预览→编辑器跳转期间，抑制光标回传，避免回环
   var currentType = 'general';
+  var openMarkdownInput = null;
+  var documentShortcut = null;
+  var layoutRevision = 0;
+  var pendingLayout = null;
+  var lastEditorAnchor = null;
+  var lastPreviewPosition = null;
+  import('./workspace-navigation.mjs').then(function (module) { documentShortcut = module.documentShortcut; }).catch(function () { console.warn('文档快捷键模块加载失败'); });
   var cmEditor = null;                     // CodeMirror 根元素；缩放只改它的 font-size，不动渲染字号
   var markdownZoom = ZOOM_DEFAULT;         // 百分比
   var previewZoom = ZOOM_DEFAULT;          // 百分比，发往 iframe；与 Markdown 缩放相互独立
@@ -707,6 +714,26 @@
   }
 
   function applyFullscreen(mode) {
+    if (mode === fullscreenMode()) return;
+    var id = ++layoutRevision;
+    clearTimeout(cursorTimer);
+    suppressUntil = Date.now() + 1000;
+    if (fullscreenMode() !== 'preview' && hasEditor() && window.mdEditor.captureViewport) lastEditorAnchor = window.mdEditor.captureViewport();
+    var anchor = lastEditorAnchor;
+    pendingLayout = { id: id, mode: mode, previous: fullscreenMode(), anchor: anchor };
+    if (previewFrame && previewFrame.contentWindow) {
+      previewFrame.contentWindow.postMessage({ type: 'md2pdf-capture-position', id: id }, '*');
+      setTimeout(function () { finishFullscreen(id, null); }, 150);
+    } else finishFullscreen(id, null);
+  }
+
+  function finishFullscreen(id, position) {
+    if (!pendingLayout || pendingLayout.id !== id) return;
+    var pending = pendingLayout;
+    pendingLayout = null;
+    if (pending.previous !== 'editor' && position) lastPreviewPosition = position;
+    position = pending.previous === 'editor' ? lastPreviewPosition : position;
+    var mode = pending.mode;
     var editorOn = mode === 'editor';
     var previewOn = mode === 'preview';
     workspace.classList.toggle(FOCUS_CLASS, editorOn);
@@ -726,6 +753,17 @@
       previewFullscreenBtn.title = previewOn ? '退出全屏（Esc）' : '全屏预览（Esc 退出）';
     }
     if (editorOn) focusEditor();
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      if (id !== layoutRevision) return;
+      measureEditor();
+      if (pending.anchor && window.mdEditor.restoreViewport) window.mdEditor.restoreViewport(pending.anchor);
+      if (position && previewFrame.contentWindow) previewFrame.contentWindow.postMessage({ type: 'md2pdf-restore-position', position: position }, '*');
+      if (syncInput && syncInput.checked) {
+        if (position && Number.isSafeInteger(position.line) && position.line > 0 && pending.previous === 'preview' && pending.mode !== 'editor') {
+          window.mdEditor.goToLine(position.line);
+        } else if (pending.previous !== 'preview' || pending.mode === 'editor' || !position || !position.line) locateCurrentCursor();
+      }
+    }); });
   }
 
   function toggleFullscreen(mode) {
@@ -763,12 +801,14 @@
   function makeFileButton(label, icon, action) {
     var button = make('button', { type: 'button', class: 'icon-button', 'aria-label': label, title: label });
     button.appendChild(iconSvg(icon));
+    if (icon === 'save' || icon === 'open') button.title = label + '（' + (IS_MAC ? '⌘' : 'Ctrl+') + (icon === 'save' ? 'S' : 'O') + '）';
     button.addEventListener('click', action);
     return button;
   }
 
   function buildFileButtons(actions) {
     var input = make('input', { type: 'file', accept: '.md,.markdown,.mdown,text/markdown,text/plain', hidden: '' });
+    openMarkdownInput = input;
     actions.appendChild(input);
     input.addEventListener('change', async function () {
       var file = input.files && input.files[0];
@@ -818,6 +858,8 @@
     previewFullscreenBtn = makeFullscreenButton('预览全屏', '全屏预览（Esc 退出）');
     previewFullscreenBtn.addEventListener('click', function () { toggleFullscreen('preview'); });
     if (previewActions) previewActions.appendChild(previewFullscreenBtn);
+    var download = document.querySelector('#download');
+    if (download) download.title = '下载 PDF（' + (IS_MAC ? '⌘P' : 'Ctrl+P') + '）';
     applyFullscreen(null); // 同步按钮初始 aria-pressed / title
   }
 
@@ -909,6 +951,8 @@
 
   function onKeydown(event) {
     if (event.defaultPrevented) return;
+    var docAction = documentShortcut && documentShortcut(event);
+    if (docAction) { event.preventDefault(); runDocumentAction(docAction); return; }
     if (event.isComposing || event.keyCode === 229) return;   // 输入法组合中不拦截
     if (event.key === 'Escape' && basicMenu && !basicMenu.hidden) { event.preventDefault(); closeBasicMenu(true); return; }
     if (event.key === 'Escape' && fullscreenMode()) { applyFullscreen(null); return; }
@@ -926,6 +970,20 @@
     event.preventDefault();
     runInsert(action);
   }
+
+  function runDocumentAction(action) {
+    if (action === 'save') saveMarkdown();
+    else if (action === 'open' && openMarkdownInput) openMarkdownInput.click();
+    else if (action === 'pdf') {
+      var download = document.querySelector('#download');
+      if (download && !download.disabled) download.click();
+    }
+  }
+  window.addEventListener('message', function (event) {
+    if (!previewFrame || event.source !== previewFrame.contentWindow || !event.data) return;
+    if (event.data.type === 'md2pdf-position' && pendingLayout && event.data.id === pendingLayout.id) finishFullscreen(event.data.id, event.data.position);
+    if (event.data.type === 'md2pdf-document-action' && ['save', 'open', 'pdf'].indexOf(event.data.action) >= 0) runDocumentAction(event.data.action);
+  });
 
   // Escape in the sandboxed iframe cannot bubble into the parent document.
   document.addEventListener('md-preview-exit-fullscreen', function () {

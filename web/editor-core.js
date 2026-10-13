@@ -677,6 +677,15 @@
     const api = {
       __mounted: true,
       getValue: function () { return view.state.doc.toString(); },
+      captureViewport: function () {
+        const block = view.lineBlockAtHeight(view.scrollDOM.scrollTop);
+        return { from: block.from, offset: view.scrollDOM.scrollTop - block.top };
+      },
+      restoreViewport: function (anchor) {
+        if (!anchor || !Number.isFinite(anchor.from)) return;
+        view.requestMeasure({ read: () => view.lineBlockAt(Math.min(anchor.from, view.state.doc.length)).top,
+          write: top => { view.scrollDOM.scrollTop = top + anchor.offset; } });
+      },
       setValue: function (text) { setDocument(text, true); },
       focus: function () { view.focus(); },
       getSelection: function () {

@@ -31,3 +31,5 @@
 @media(max-width:1100px){.detail-body{grid-template-columns:1fr}.detail-source{border-right:0;border-bottom:1px solid #e7ebf0}.detail-source,.detail-preview{height:440px;min-height:320px}}
 @media(max-width:900px){.examples-main{padding:18px 20px}.examples-layout{grid-template-columns:1fr}.example-cards{max-height:none}.detail-source,.detail-preview{height:400px}}
 @media(max-width:600px){.examples-main{padding:14px}.detail-head{flex-direction:column}.detail-source,.detail-preview{height:340px}}
+
+.type-badge.is-current{background:#3a5677;color:#fff}
