@@ -54,7 +54,7 @@ try {
   const position = await evaluate(`(()=>{scrollTo(0,1400);const node=Array.from(document.querySelectorAll('[data-md2pdf-source-line]')).find(node=>node.getBoundingClientRect().top>=0);window.positionNode=node;return node.getBoundingClientRect().top/document.documentElement.clientWidth})()`,executionContextId);
   await evaluate(`document.querySelector('.preview-panel button[aria-label="预览全屏"]').click()`);
   await wait('document.querySelector(".workspace").classList.contains("preview-focus")');
-  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.md-panel-sync')).display`),'flex');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.md-panel-sync')).display`),'none');
   await evaluate(`new Promise(resolve=>setTimeout(resolve,400))`);
   const fullPosition = await evaluate(`positionNode.getBoundingClientRect().top/document.documentElement.clientWidth`,executionContextId);
   assert.ok(Math.abs(fullPosition-position)<0.05, 'preview logical anchor preserved on fullscreen entry');
@@ -68,11 +68,17 @@ try {
   assert.equal(await evaluate(`document.querySelector('.md-panel-sync').getAttribute('aria-pressed')`),'false');
   await evaluate(`document.querySelector('.md-panel-sync').click();document.querySelector('.editor-panel button[aria-label="Markdown 全屏写作"]').click()`);
   await wait('document.querySelector(".workspace").classList.contains("editor-focus")');
-  await evaluate(`mdEditor.goToLine(33);document.querySelector('.editor-panel button[aria-label="退出 Markdown 全屏"]').click()`);
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.md-panel-sync')).display`),'none');
+  await evaluate(`mdEditor.goToLine(33)`);
+  await evaluate(`new Promise(resolve=>setTimeout(resolve,700))`);
+  await evaluate(`document.querySelector('.editor-panel button[aria-label="退出 Markdown 全屏"]').click()`);
   await wait('!document.querySelector(".workspace").classList.contains("editor-focus")');
   await evaluate(`new Promise(resolve=>setTimeout(resolve,500))`);
   assert.equal(await evaluate('mdEditor.getCursorLine()'),33);
   assert.equal(await evaluate(`document.querySelector('.md2pdf-preview-target')?.getAttribute('data-md2pdf-source-line')`,executionContextId),'33');
+  assert.ok(Math.abs(await evaluate(`document.querySelector('[data-md2pdf-source-line="33"]').getBoundingClientRect().top`,executionContextId)) < 3, 'return from writing fullscreen aligns visible preview with latest H2');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.md-panel-sync')).display`),'flex');
+  assert.equal(await evaluate(`document.querySelector('label:has(select[name=type])').firstChild.textContent`),'模板');
   // Effective frontmatter type, not a template origin ID, controls the library.
   await evaluate(`mdEditor.setValue(${JSON.stringify('---\ntype: paper\n---\n# 测试')})`);
   await browser.send('Page.navigate',{url:url+'/examples'});

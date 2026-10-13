@@ -757,11 +757,13 @@
       if (id !== layoutRevision) return;
       measureEditor();
       if (pending.anchor && window.mdEditor.restoreViewport) window.mdEditor.restoreViewport(pending.anchor);
-      if (position && previewFrame.contentWindow) previewFrame.contentWindow.postMessage({ type: 'md2pdf-restore-position', position: position }, '*');
+      // 同步开启时，退出写作全屏以最新光标为准，不能恢复旧预览锚点。
+      var followsCursor = syncInput && syncInput.checked && (pending.previous !== 'preview' || pending.mode === 'editor');
+      if (!followsCursor && position && previewFrame.contentWindow) previewFrame.contentWindow.postMessage({ type: 'md2pdf-restore-position', position: position }, '*');
       if (syncInput && syncInput.checked) {
         if (position && Number.isSafeInteger(position.line) && position.line > 0 && pending.previous === 'preview' && pending.mode !== 'editor') {
           window.mdEditor.goToLine(position.line);
-        } else if (pending.previous !== 'preview' || pending.mode === 'editor' || !position || !position.line) locateCurrentCursor();
+        } else if (pending.previous !== 'preview' || pending.mode === 'editor' || !position || !position.line) locateCurrentCursor(true);
       }
     }); });
   }
@@ -864,22 +866,22 @@
   }
 
   // ---------------------------------------------------------------- 位置桥接
-  function locateCurrentCursor() {
+  function locateCurrentCursor(instant) {
     if (!hasEditor() || !previewFrame || !previewFrame.contentWindow) return;
     var line;
     try { line = window.mdEditor.getCursorLine(); } catch (e) { return; }
     if (!Number.isFinite(line)) return;
-    postLocate(line);
+    postLocate(line, instant);
   }
 
-  function postLocate(line) {
+  function postLocate(line, instant) {
     if (!previewFrame || !previewFrame.contentWindow) return;
-    try { previewFrame.contentWindow.postMessage({ type: 'md2pdf-locate', line: line }, '*'); }
+    try { previewFrame.contentWindow.postMessage({ type: 'md2pdf-locate', line: line, instant: instant === true }, '*'); }
     catch (e) { /* 跨源异常忽略 */ }
   }
 
   function onCursor(event) {
-    if (!ready || !syncInput || !syncInput.checked) return;
+    if (!ready || !syncInput || !syncInput.checked || fullscreenMode() === 'editor') return;
     if (Date.now() < suppressUntil) return;      // 由预览跳转引发，不回传
     var line = event.detail && event.detail.line;
     if (!Number.isFinite(line)) return;

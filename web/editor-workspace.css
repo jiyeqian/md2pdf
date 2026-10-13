@@ -276,7 +276,7 @@
 .md-panel-sync{grid-area:1/2;position:relative;top:8px;justify-self:center;align-self:start;z-index:5;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:transparent;color:#677389;padding:6px;cursor:pointer}
 .md-panel-sync:hover{background:#eef2f8}
 .md-panel-sync:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
-.workspace.editor-focus .md-panel-sync,.workspace.preview-focus .md-panel-sync{display:flex;position:fixed;top:14px;right:116px;left:auto;z-index:110}
+.workspace.editor-focus .md-panel-sync,.workspace.preview-focus .md-panel-sync{display:none}
 .workspace.md-editor-workspace .panel-heading{position:relative;display:flex;justify-content:space-between}
 .md-wt-zoom{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:200px;height:40px;align-self:auto}
 .md-wt-zoom > .ruler-control{top:50%;bottom:auto;transform:translateY(-50%)}
