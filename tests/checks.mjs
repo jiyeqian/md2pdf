@@ -337,7 +337,7 @@ ok('书签：老版本 Chrome 不认参数时退回无书签渲染',
   /generateDocumentOutline: true \}\);[\s\S]{0,320}printToPDF', base\)/.test(src),
   '直接抛错会让老版本 Chrome 上整个转换失败');
 ok('书签：帮助文本以 --enable/--disable 列出 outline',
-  /--enable <names>[\s\S]*outline,float-numbering/.test(src) && /--disable <names>/.test(src));
+  /--enable\/disable <功能列表>[\s\S]*outline、float-numbering/.test(src) && /--enable 或 --disable/.test(src));
 
 /* ---------- 7. shell 里「多字节字符紧跟裸变量」的坑 ---------- */
 // 实测：macOS 自带的 bash 3.2（/bin/sh）会把这个字符的首字节并进变量名 ——
