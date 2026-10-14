@@ -3,7 +3,7 @@
 // 模板库与编辑器共用 / 页面，模板视图通过 history.state 导航。
 const HANDOFF_KEY = 'md2pdf:handoff';
 const DRAFT_KEY = 'md2pdf:draft';
-const root = document.querySelector('.template-library-page');
+  const root = document.querySelector('.template-library-page');
 if (root) {
   const listEl = root.querySelector('#example-list');
   const listStatus = root.querySelector('#list-status');
@@ -35,10 +35,11 @@ if (root) {
   function navigate(view, push = true) {
     if (push) history.pushState({ ...(history.state || {}), md2pdfView: view }, '', '/');
     if (root.hidden) root.hidden = false;
-    document.querySelectorAll('[data-view="editor"], .template-library-view, .template-library-page > .topbar').forEach(el => {
-      const show = view === 'templates' ? el.matches('.template-library-view, .template-library-page > .topbar') : el.matches('[data-view="editor"]');
-      el.hidden = !show;
-    });
+    const editorView = document.querySelector('[data-view="editor"]');
+    const libraryView = root.querySelector('.template-library-view');
+    editorView.hidden = view === 'templates';
+    root.hidden = view !== 'templates';
+    libraryView.hidden = view !== 'templates';
     document.body.classList.toggle('show-template-library', view === 'templates');
     if (view === 'templates' && !catalog.length) loadCatalog();
     if (view === 'editor') { window.dispatchEvent(new Event('resize')); window.dispatchEvent(new Event('md2pdf-editor-view')); }
@@ -62,12 +63,7 @@ if (root) {
     if (handoff?.md) window.dispatchEvent(new Event('md2pdf-template-created'));
   });
   window.addEventListener('popstate', event => navigate(event.state?.md2pdfView === 'templates' ? 'templates' : 'editor', false));
-  if (location.pathname !== '/') {
-    history.replaceState({ ...(history.state || {}), md2pdfView: 'templates' }, '', '/');
-    root.hidden = false;
-    root.querySelector('.template-library-view').hidden = false;
-    root.querySelector('.topbar').hidden = false;
-  }
+  if (location.pathname !== '/') history.replaceState({ ...(history.state || {}), md2pdfView: 'templates' }, '', '/');
 
   function renderCards() {
     const query = search.value.trim().toLocaleLowerCase();
@@ -167,11 +163,10 @@ if (root) {
   });
   document.querySelector('#examples-link-top')?.addEventListener('click', event => { event.preventDefault(); navigate('templates'); });
   window.addEventListener('DOMContentLoaded', () => {
-    const requestedTemplateView = new URLSearchParams(location.search).get('view') === 'templates';
+    const requestedTemplateView = window.__MD2PDF_INITIAL_VIEW__ === 'templates' || new URLSearchParams(location.search).get('view') === 'templates';
     const initial = requestedTemplateView || history.state?.md2pdfView === 'templates' ? 'templates' : 'editor';
     root.hidden = false;
-    history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', '/');
-    if (initial === 'editor') root.querySelector('.template-library-view').hidden = true;
+    history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', location.pathname === '/' ? '/' : '/');
     navigate(initial, false);
   });
 }

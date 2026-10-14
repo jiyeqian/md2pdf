@@ -93,6 +93,9 @@ test('serves UI/example; refuses traversal, foreign host/origin and wrong method
   assert.doesNotMatch(pageHtml, /<\/option\s+[^>]/);
   assert.match(pageHtml, /<option value="general">/);
   assert.match(pageHtml, /<option value="elegant">/);
+  const legacyTemplatePage = await fetch(app.url + '/examples');
+  assert.equal(legacyTemplatePage.status, 200);
+  assert.match(await legacyTemplatePage.text(), /__MD2PDF_INITIAL_VIEW__="templates"/);
   for (const route of ['/app.js', '/app.css', '/api/example']) assert.equal((await fetch(app.url + route)).status, 200);
   for (const route of ['/src/render.mjs', '/vendor/marked.esm.js', '/%2e%2e/package.json']) assert.equal((await fetch(app.url + route)).status, 404);
   assert.equal((await app.post('/api/render', doc, { Origin: 'https://evil.example' })).status, 403);
