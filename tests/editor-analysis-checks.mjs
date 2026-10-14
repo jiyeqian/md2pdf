@@ -509,10 +509,10 @@ test('frontmatter fields match independent of document type and preserve optimal
     return provideCompletions({ text, pos }, analyzeMarkdown(text));
   };
   assert.equal(complete('title: Existing\n标准', '标准').options.some(o => o.label === '标准号'), true);
-  assert.equal(complete('title: Existing\ntit', 'tit').options.some(o => o.label === 'title'), false);
+  assert.equal(complete('title: Existing\ntit', 'tit').options.some(o => o.label === 'title'), true);
   const scalar = complete('author:', 'author').options[0];
-  assert.equal(scalar.apply, 'author: ');
-  assert.equal(scalar.selectionOffset, scalar.apply.length);
+  assert.equal(scalar.apply, 'author: ""');
+  assert.equal(scalar.selectionOffset, scalar.apply.length - 1);
   const list = complete('起草单', '起草单').options[0];
   assert.equal(list.apply, '起草单位: \n  - ');
   assert.equal(list.selectionOffset, list.apply.length);
@@ -528,7 +528,7 @@ test('field completion replaces remaining key and existing colon only once', () 
   const pos = text.indexOf('author') + 3;
   const result = provideCompletions({ text, pos }, analyzeMarkdown(text));
   const option = result.options.find(o => o.label === 'author');
-  assert.equal(text.slice(0, result.from) + option.apply + text.slice(result.to), '---\nauthor: \n---');
+  assert.equal(text.slice(0, result.from) + option.apply + text.slice(result.to), '---\nauthor: ""\n---');
   const listText = '---\n起草单位:\n---';
   const list = provideCompletions({ text: listText, pos: listText.indexOf('起草单位') + 2 }, analyzeMarkdown(listText));
   assert.equal(listText.slice(0, list.from) + list.options[0].apply + listText.slice(list.to), '---\n起草单位: \n  - \n---');
@@ -549,4 +549,75 @@ test('field catalog contains only config definitions and supported documented me
   const renderer = fs.readFileSync(new URL('../src/render.mjs', import.meta.url), 'utf8');
   const docs = fs.readFileSync(new URL('../docs/gb-template.md', import.meta.url), 'utf8');
   for (const field of METADATA_FIELDS) assert.ok(renderer.includes(field) || docs.includes('`' + field + '`'), field);
+});
+
+
+test('frontmatter value recommendations are scoped, canonical and use parser definitions', async () => {
+  const { frontmatterValueCatalog, parseFrontmatter, resolveDocumentOptions } = await import('../src/config.mjs');
+  const { FRONTMATTER_FIELDS, FEATURES } = await import('../src/frontmatter-fields.mjs');
+  const catalog = frontmatterValueCatalog();
+  const complete = body => {
+    const text = '---\n' + body + '\n---';
+    const pos = text.length - 4;
+    return provideCompletions({ text, pos, frontmatterValues: catalog }, analyzeMarkdown(text));
+  };
+  assert.deepEqual(complete('toc-depth: ').options.map(o => o.label), ['1', '2']);
+  assert.deepEqual(complete('header: ').options.map(o => o.label), ['true', 'false']);
+  assert.deepEqual(complete('bibliography: ').options.map(o => o.label), ['footnote', 'bib']);
+  assert.deepEqual(complete('toc-depth: 2').options.map(o => o.label), ['2']);
+  assert.deepEqual(complete('numbering: ').options.map(o => o.label), catalog.numbering);
+  for (const field of ['theme', 'type', 'number-scheme']) {
+    const key = field === 'number-scheme' ? 'numberScheme' : field;
+    assert.deepEqual(complete(field + ': ').options.map(o => o.label), catalog[key]);
+  }
+  assert.deepEqual(complete('enable: \n  - ').options.map(o => o.label), Object.keys(FEATURES));
+  assert.deepEqual(complete('disable: \n  - toc\n  - gb').options.map(o => o.label), ['gb-cover', 'gb-defaults']);
+  assert.equal(complete('author: abc'), null);
+  assert.equal(complete('title: ""'), null);
+  assert.equal(complete('custom:\n  - toc'), null);
+  assert.equal(complete('title: |\n  enable:\n  - toc'), null);
+  assert.ok(FRONTMATTER_FIELDS.includes('colophon-enabled'));
+  assert.ok(!FRONTMATTER_FIELDS.includes('colophonEnabled'));
+  assert.ok(!FRONTMATTER_FIELDS.includes('ics'));
+  assert.ok(!FRONTMATTER_FIELDS.includes('ccs'));
+  for (const field of ['author', 'keywords', 'date', '发布日期', '实施日期', '全部代替标准', '代替标准']) {
+    const candidate = complete(field).options.find(o => o.label === field);
+    assert.equal(candidate.apply, field + ': ""');
+    assert.equal(candidate.selectionOffset, candidate.apply.length - 1);
+  }
+  assert.equal(complete('font-size').options[0].apply, 'font-size: ');
+  const quoted = complete('tit').options.find(o => o.label === 'title');
+  assert.equal(quoted.apply, 'title: ""');
+  assert.equal(quoted.selectionOffset, quoted.apply.length - 1);
+  const enumeration = complete('toc-depth').options[0];
+  assert.equal(enumeration.apply, 'toc-depth: ');
+  assert.equal(enumeration.startCompletion, true);
+  const list = complete('enable').options[0];
+  assert.equal(list.apply, 'enable: \n  - ');
+  assert.equal(list.startCompletion, true);
+  const source = '---\ncolophon-enabled: false\n---\nBody';
+  const parsed = parseFrontmatter(source);
+  assert.equal(resolveDocumentOptions({}, parsed.fm).colophonEnabled, false);
+  assert.equal(resolveDocumentOptions({}, { colophonEnabled: false }).colophonEnabled, false);
+  assert.throws(() => parseFrontmatter('---\nheader: true\nheader: false\n---'), /重复字段/);
+});
+
+
+test('confirming frontmatter values supplies a missing colon separator only once', async () => {
+  const { frontmatterValueCatalog, parseFrontmatter } = await import('../src/config.mjs');
+  for (const [input, value, expected] of [
+    ['type:', 'general', 'type: general'],
+    ['type:gen', 'general', 'type: general'],
+    ['type: general', 'general', 'type: general'],
+    ['type:  gen', 'general', 'type:  general'],
+    ['toc-depth:', '2', 'toc-depth: 2'],
+    ['header:', 'true', 'header: true'],
+  ]) {
+    const text = '---\n' + input + '\n---';
+    const result = provideCompletions({ text, pos: 4 + input.length, frontmatterValues: frontmatterValueCatalog() }, analyzeMarkdown(text));
+    const option = result.options.find(o => o.label === value);
+    const completed = text.slice(0, result.from) + option.apply + text.slice(result.to);
+    assert.equal(completed, '---\n' + expected + '\n---');
+    assert.doesNotThrow(() => parseFrontmatter(completed));
+  }
 });

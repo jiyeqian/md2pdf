@@ -16,7 +16,7 @@
  * 安全：解析结果经 sanitize 深拷贝，剔除 __proto__ / prototype / constructor，
  * 防止 YAML 反序列化污染原型；解析设置 maxAliasCount 上限，避免别名炸弹。
  */
-import { TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES } from './frontmatter-fields.mjs';
+import { TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from './frontmatter-fields.mjs';
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { GLOBAL_OPTION_DEFAULTS, FEATURES, RUNTIME_FEATURES, listThemes } from './options.mjs';
 import { PROFILE_NAMES } from './profiles.mjs';
@@ -72,9 +72,13 @@ const typeName = v => {
 const ENUM_FIELDS = {
   theme: { label: '主题', values: () => listThemes() },
   type: { label: '文档类型', values: () => PROFILE_NAMES.slice() },
-  numbering: { label: '编号模式', values: () => ['auto', 'force', 'none'] },
+  numbering: { label: '编号模式', values: () => NUMBERING_VALUES.slice() },
   numberScheme: { label: '编号方案', values: () => SCHEME_NAMES.slice() },
 };
+export function frontmatterValueCatalog() {
+  return Object.fromEntries(Object.entries(ENUM_FIELDS).map(([key, definition]) => [key, definition.values()]));
+}
+
 const canonicalField = raw => {
   if (!raw) return null;
   if (CONFIG_FIELDS.has(raw)) return raw;
@@ -165,7 +169,7 @@ const coerceBibliography = (v, rawKey, canon, pos, warnings) => {
     warnings.push('字段 bibliography 已废弃：参考文献始终自动处理，不再支持关闭');
     return 'footnote';
   }
-  if (v === 'footnote' || v === 'bib') return v;
+  if (BIBLIOGRAPHY_VALUES.includes(v)) return v;
   throw cfgError(`字段 ${rawKey} 取值无效（可用：footnote、bib）`, canon, pos);
 };
 

@@ -459,3 +459,11 @@ test('非 GB 类型拒绝 frontmatter 里的 gb 专属取值，未知普通元�
   const unknown = await app.post('/api/render', { md: '---\n自定义字段: 值\n备注: 说明\n---\n# T\n\n## S\n\n正文' });
   assert.equal(unknown.status, 200, '未知普通元数据字段不应被过度拒绝');
 });
+
+test('frontmatter value catalog endpoint shares parser enum definitions', async t => {
+  const { url } = await fixture(t);
+  const { frontmatterValueCatalog } = await import('../src/config.mjs');
+  const response = await fetch(url + '/api/frontmatter-values');
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), frontmatterValueCatalog());
+});

@@ -16,20 +16,8 @@ export function listThemes() {
  * 功能开关名（enable/disable 统一命名）→ 渲染选项键。
  * 这些是「文档型」开关：CLI 与 frontmatter 都可控制。
  */
-export const FEATURES = {
-  header: 'header',
-  colophon: 'colophonEnabled',
-  footer: 'footer',
-  meta: 'meta',
-  lead: 'lead',
-  toc: 'toc',
-  outline: 'outline',
-  'float-numbering': 'floatNumbering',
-  'gb-cover': 'gbCover',
-  'gb-defaults': 'gbDefaults',
-  'link-urls': 'linkUrls',
-  landscape: 'landscape',
-};
+export { FEATURES } from './frontmatter-fields.mjs';
+import { FEATURES } from './frontmatter-fields.mjs';
 
 /**
  * 运行型开关：仅 CLI 可 enable/disable，frontmatter 不得控制。

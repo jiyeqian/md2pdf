@@ -494,11 +494,14 @@ function init() {
   latestAnalysis = analyzeValue(value);
   currentType = inferType(value, formTypeValue());
 
+  let frontmatterValues = {};
+  fetch('/api/frontmatter-values').then(response => response.ok ? response.json() : {}).then(values => { frontmatterValues = values; }).catch(() => {});
+
   // 补全使用「当前文本」实时分析，避免节流导致候选过期。
   if (typeof editor.setCompletions === 'function') {
     editor.setCompletions(function (context) {
       latestAnalysis = analyzeValue(context.text);
-      return provideCompletions(context, latestAnalysis);
+      return provideCompletions(Object.assign({}, context, { frontmatterValues }), latestAnalysis);
     });
   }
 

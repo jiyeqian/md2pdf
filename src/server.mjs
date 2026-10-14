@@ -9,7 +9,7 @@ import { enhancePreview } from './preview.mjs';
 import { attachSourcePositions } from './editor-position.mjs';
 import { Chrome, findChrome } from './chrome.mjs';
 import { webPolicyDocument, policyForType, effectiveOptions, assertOptionsAllowed, frontmatterOverrides } from './web-options.mjs';
-import { parseFrontmatter } from './config.mjs';
+import { parseFrontmatter, frontmatterValueCatalog } from './config.mjs';
 import { PROFILES, PROFILE_NAMES, detectProfile } from './profiles.mjs';
 import { exampleCatalog, findExample, defaultExampleSource } from './web-examples.mjs';
 import { createDoiResolver } from './doi.mjs';
@@ -272,6 +272,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         if (!example) { json(404, { error: '示例不存在' }); return; }
         res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' }); res.end(example.md); return;
       }
+      if (req.method === 'GET' && req.url === '/api/frontmatter-values') { json(200, frontmatterValueCatalog()); return; }
       if (req.method === 'GET' && req.url === '/api/policy') { json(200, webPolicyDocument()); return; }
       if (req.method === 'GET' && req.url === '/api/examples') {
         const examples = (await exampleCatalog()).map(({ id, type, title, summary }) => ({ id, type, title, description: summary }));

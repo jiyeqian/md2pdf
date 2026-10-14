@@ -280,3 +280,13 @@ test('vendored parser runs from an isolated directory without node_modules', asy
   assert.ok(yaml.isMap(yaml.parseDocument('title: x').contents));
   assert.ok(yaml.isSeq(yaml.parseDocument('- x').contents));
 });
+
+
+test('colophon-enabled aliases the legacy camelCase flag without changing precedence', () => {
+  for (const key of ['colophon-enabled', 'colophonEnabled']) {
+    const parsed = parseFrontmatter(FM(key + ': false'));
+    assert.equal(resolveDocumentOptions({}, parsed.fm).colophonEnabled, false);
+    assert.equal(resolveDocumentOptions({ colophonEnabled: true }, parsed.fm).colophonEnabled, true);
+  }
+  assert.throws(() => resolveDocumentOptions({}, { 'colophon-enabled': false, colophonEnabled: true }), /冲突/);
+});

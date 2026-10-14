@@ -622,7 +622,7 @@
 
     const keymap = V.keymap.of([
       ...V.closeBracketsKeymap,
-      { key: 'Enter', run: view => continueFrontmatterList(V, view) },
+      { key: 'Enter', run: view => { const continued = continueFrontmatterList(V, view); if (continued) setTimeout(() => V.startCompletion(view), 0); return continued; } },
       ...V.defaultKeymap,
       ...V.searchKeymap,
       ...V.historyKeymap,

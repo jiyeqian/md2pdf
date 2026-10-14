@@ -1,4 +1,4 @@
-import { FRONTMATTER_FIELDS, ARRAY_FIELDS, canonicalFrontmatterField } from '../src/frontmatter-fields.mjs';
+import { FRONTMATTER_FIELDS, ARRAY_FIELDS, canonicalFrontmatterField, TEXT_FIELDS, TEXT_METADATA_FIELDS, BOOL_FIELDS, NUMBER_FIELDS, FEATURES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from '../src/frontmatter-fields.mjs';
 /**
  * md2pdf 专业辅助 · 纯解析模块
  *
@@ -673,7 +673,7 @@ export function provideCompletions(context, analysis) {
   const pos = context.pos;
   if (pos < 0 || pos > text.length) return null;
   const before = text.slice(0, pos);
-  const fields = frontmatterCompletions(text, pos);
+  const fields = frontmatterCompletions(text, pos, context.frontmatterValues);
   if (fields) return fields;
   const command = /\\([re])$/.exec(before);
   if (command && !isSuppressedContext(text, pos)) {
@@ -741,7 +741,7 @@ function firstLine(text) {
   return s.length > 60 ? s.slice(0, 57) + '…' : s;
 }
 
-function frontmatterCompletions(text, pos) {
+function frontmatterCompletions(text, pos, catalog = {}) {
   const lines = text.split('\n');
   if (!/^\uFEFF?---\s*$/.test(lines[0])) return null;
   let end = -1;
@@ -751,23 +751,48 @@ function frontmatterCompletions(text, pos) {
   const lineIndex = text.slice(0, lineStart).split('\n').length - 1;
   if (lineIndex < 1 || lineIndex >= end) return null;
   const prefix = text.slice(lineStart, pos);
-  if (!/^[^\s:#{}[\],]+$/.test(prefix)) return null;
   const lineEnd = text.indexOf('\n', pos);
   const suffix = text.slice(pos, lineEnd < 0 ? text.length : lineEnd).replace(/\r$/, '');
-  // Only complete an unfinished top-level key; a value already present is preserved.
-  if (!/^[^\s:#{}[\],]*(?::[ \t]*)?$/.test(suffix)) return null;
-  const used = new Set();
-  for (let i = 1; i < end; i++) {
-    if (i === lineIndex) continue;
-    const match = /^([^\s:#{}[\],]+):/.exec(lines[i]);
-    if (match) used.add(canonicalFrontmatterField(match[1]));
+  const valuesFor = field => {
+    const canonical = canonicalFrontmatterField(field);
+    if (BOOL_FIELDS.includes(canonical)) return ['true', 'false'];
+    if (NUMBER_FIELDS[canonical]?.enum) return NUMBER_FIELDS[canonical].enum.map(String);
+    if (canonical === 'numbering') return NUMBERING_VALUES;
+    if (canonical === 'bibliography') return BIBLIOGRAPHY_VALUES;
+    return Array.isArray(catalog[canonical]) ? catalog[canonical].map(String) : [];
+  };
+  const valueMatch = /^([^\s:#{}[\],]+):[ \t]*(.*)$/.exec(prefix);
+  let values, typedValue;
+  if (valueMatch) {
+    values = valuesFor(valueMatch[1]); typedValue = valueMatch[2];
+  } else {
+    const item = /^[ \t]+-[ \t]+([^\s#{}[\],]*)$/.exec(prefix);
+    if (item) {
+      for (let i = lineIndex - 1; i > 0; i--) {
+        if (!lines[i].trim()) continue;
+        if (/^\s/.test(lines[i])) continue;
+        if (/^(enable|disable):[ \t]*(?:#.*)?$/.test(lines[i])) { values = Object.keys(FEATURES); typedValue = item[1]; }
+        break;
+      }
+    }
   }
+  if (values) {
+    if (!values.length) return null;
+    if (!/^[^\s:#{}[\],]*$/.test(typedValue) || !/^[^\s:#{}[\],]*[ \t]*$/.test(suffix)) return null;
+    const lower = typedValue.toLowerCase();
+    const separator = valueMatch && prefix[valueMatch[1].length + 1] !== ' ' && prefix[valueMatch[1].length + 1] !== '\t' ? ' ' : '';
+    return { from: pos - typedValue.length, to: pos + suffix.trimEnd().length, options: values.filter(value => value.toLowerCase().includes(lower)).sort((a, b) => Number(!a.toLowerCase().startsWith(lower)) - Number(!b.toLowerCase().startsWith(lower))).map(value => ({ label: value, apply: separator + value })) };
+  }
+  if (!/^[^\s:#{}[\],]+$/.test(prefix)) return null;
+  // Completing a field must never replace an existing value.
+  if (!/^[^\s:#{}[\],]*(?::[ \t]*)?$/.test(suffix)) return null;
   const typed = prefix.toLowerCase();
   const score = field => field.toLowerCase() === typed ? 0 : field.toLowerCase().startsWith(typed) ? 1 : 2;
-  const fields = FRONTMATTER_FIELDS.filter(field => field.toLowerCase().includes(typed) && !used.has(canonicalFrontmatterField(field)));
+  const fields = FRONTMATTER_FIELDS.filter(field => field.toLowerCase().includes(typed));
   fields.sort((a, b) => score(a) - score(b));
   return { from: lineStart, to: pos + suffix.length, options: fields.map(field => {
-    const apply = field + ': ' + (ARRAY_FIELDS.has(field) ? '\n  - ' : '');
-    return { label: field, type: 'property', apply, selectionOffset: apply.length };
+    const quoted = TEXT_FIELDS.includes(canonicalFrontmatterField(field)) || TEXT_METADATA_FIELDS.has(field);
+    const apply = field + ': ' + (ARRAY_FIELDS.has(field) ? '\n  - ' : quoted ? '""' : '');
+    return { label: field, type: 'property', apply, selectionOffset: apply.length - (quoted ? 1 : 0), startCompletion: valuesFor(field).length > 0 || field === 'enable' || field === 'disable' };
   }) };
 }
