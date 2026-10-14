@@ -263,8 +263,8 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8` }); res.end(await readFile(target)); return;
       }
       // UI 页面由前端工作流后续补齐：仅在文件已存在时提供，缺失时按 404 处理而非 500。
-      if (req.method === 'GET' && req.url === '/examples' && existsSync(path.join(ROOT, 'web/examples.html'))) {
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(await readFile(path.join(ROOT, 'web/examples.html'))); return;
+      if (req.method === 'GET' && (req.url === '/examples' || req.url === '/examples/')) {
+        res.writeHead(302, { Location: '/' }); res.end(); return;
       }
       // 在线示例：只服务白名单里的 .md（id 必须命中固定目录），请求参数不参与路径拼接。
       if (req.method === 'GET' && req.url.startsWith('/examples/')) {

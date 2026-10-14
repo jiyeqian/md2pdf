@@ -22,7 +22,7 @@ for (const choice of ['cancel', 'accept', 'escape']) test('template confirmation
   const dialog = nodes[0];
   const [cancel, accept] = dialog.children[2].children;
   assert.equal(cancel.focused, true);
-  assert.equal(dialog.children[1].textContent, '使用该模板会替换编辑器中的内容，是否继续？');
+  assert.equal(dialog.children[1].textContent, '从模板创建会替换当前文档内容，是否继续？');
   if (choice === 'escape') { let prevented = false; dialog.events.cancel({ preventDefault() { prevented = true; } }); assert.ok(prevented); }
   else (choice === 'accept' ? accept : cancel).events.click();
   assert.equal(await result, choice === 'accept');

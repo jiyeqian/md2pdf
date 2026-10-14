@@ -470,7 +470,7 @@
 
     var files = make('div', { class: 'md-wt-group', role: 'group', 'aria-label': '打开与模板' });
     buildFileButtons(files);
-    appendItem(files, { icon: 'template', label: '从模板创建', href: '/examples', id: 'browse-examples' });
+    appendItem(files, { icon: 'template', label: '从模板创建', href: '/', id: 'browse-examples' });
     toolbar.appendChild(files);
     toolbar.appendChild(buildGroup('撤销重做与查找替换', 'md-wt-group--history', HISTORY_ITEMS));
     var formatGroup = buildBasicFormatControl();

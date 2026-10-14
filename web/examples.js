@@ -1,205 +1,176 @@
 'use strict';
 
-// md2pdf 示例库前端。
-// 目录：GET /api/examples -> {examples:[{id,type,title,description}]}（也兼容直接返回数组）。
-// 单条：GET /api/example?id=... -> {md,type,title}。
-// 预览：POST /api/render {md,opts:{type}} -> {html,type,policy}。
-// 浏览与预览只读，不写入编辑器草稿；「使用此示例」经 sessionStorage 交接并跳转。
-
-const listEl = document.querySelector('#example-list');
-const listStatus = document.querySelector('#list-status');
-const detailTitle = document.querySelector('#detail-title');
-const detailMeta = document.querySelector('#detail-meta');
-const sourceType = document.querySelector('#source-type');
-const useButton = document.querySelector('#use-example');
-const source = document.querySelector('#example-source');
-const iframe = document.querySelector('#example-preview');
-const exampleEmpty = document.querySelector('#example-empty');
-const previewState = document.querySelector('#preview-state');
-
+// 模板库与编辑器共用 / 页面，模板视图通过 history.state 导航。
 const HANDOFF_KEY = 'md2pdf:handoff';
 const DRAFT_KEY = 'md2pdf:draft';
+const root = document.querySelector('.template-library-page');
+if (root) {
+  const listEl = root.querySelector('#example-list');
+  const listStatus = root.querySelector('#list-status');
+  const detailTitle = root.querySelector('#detail-title');
+  const detailMeta = root.querySelector('#detail-meta');
+  const sourceType = root.querySelector('#source-type');
+  const useButton = root.querySelector('#use-example');
+  const source = root.querySelector('#example-source');
+  const iframe = root.querySelector('#example-preview');
+  const exampleEmpty = root.querySelector('#example-empty');
+  const previewState = root.querySelector('#preview-state');
+  const search = root.querySelector('#template-search');
+  const listBack = root.querySelector('#template-list-back');
+  let catalog = [];
+  let activeId = '';
+  let activeType = '';
+  let controller;
+  let revision = 0;
+  let typeLabels = {};
+  const rendered = new Map();
 
-let currentType = '';
-let catalog = [];
-let activeId = null;
-let activeType = '';
-let controller = null;
-let revision = 0;
-let previewRevision = -1;
-let previewTimer;
-let typeLabels = {};
-
-function setListStatus(message, error = false) {
-  listStatus.textContent = message;
-  listStatus.dataset.error = String(error);
-}
-function setPreviewState(message, error = false) {
-  previewState.textContent = message;
-  previewState.dataset.error = String(error);
-}
-function typeLabel(type) { return typeLabels[type] || type || '自动识别'; }
-
-function readDraftMd() {
-  try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
-    if (!raw) return '';
-    const draft = JSON.parse(raw);
-    return typeof draft.md === 'string' ? draft.md : '';
-  } catch { return ''; }
-}
-
-function injectRevision(html, rev) {
-  return String(html)
-    .replaceAll("type:'md2pdf-ready'", `type:'md2pdf-ready',revision:${rev}`)
-    .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`);
-}
-
-async function loadLabels() {
-  try {
-    const response = await fetch('/api/policy');
-    if (!response.ok) return;
-    const doc = await response.json();
-    typeLabels = (doc && doc.labels && doc.labels.type) || {};
-  } catch { /* 标签缺失时回退为类型 id */ }
-}
-
-async function loadCatalog() {
-  const response = await fetch('/api/examples');
-  if (!response.ok) throw new Error(`示例目录加载失败（${response.status}）`);
-  const data = await response.json();
-  if (Array.isArray(data)) return data;
-  return Array.isArray(data && data.examples) ? data.examples : [];
-}
-
-function renderCards() {
-  listEl.replaceChildren();
-  for (const example of catalog) {
-    const item = document.createElement('li');
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'example-card';
-    button.dataset.id = example.id;
-    button.setAttribute('aria-pressed', 'false');
-
-    const badge = document.createElement('span');
-    badge.className = 'type-badge';
-    badge.textContent = typeLabel(example.type);
-    if (example.type === currentType) {
-      badge.classList.add('is-current');
-      badge.title = '当前文档类型';
-      button.setAttribute('aria-current', 'true');
-    }
-
-    const title = document.createElement('h3');
-    title.textContent = example.title || example.id;
-
-    const summary = document.createElement('p');
-    summary.textContent = example.description || example.summary || '';
-
-    button.append(badge, title, summary);
-
-    const tags = example.tags;
-    if (Array.isArray(tags) && tags.length) {
-      const tagList = document.createElement('ul');
-      tagList.className = 'example-tags';
-      for (const tag of tags) { const li = document.createElement('li'); li.textContent = tag; tagList.append(li); }
-      button.append(tagList);
-    }
-
-    button.addEventListener('click', () => selectExample(example.id));
-    item.append(button);
-    listEl.append(item);
+  function setStatus(message, error = false) { listStatus.textContent = message; listStatus.dataset.error = String(error); }
+  function setPreviewState(message, error = false) { previewState.textContent = message; previewState.dataset.error = String(error); }
+  function readDraft() { try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null'); } catch { return null; } }
+  function injectRevision(html, rev) {
+    return String(html).replaceAll("type:'md2pdf-ready'", `type:'md2pdf-ready',revision:${rev}`).replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`);
   }
-  listEl.setAttribute('aria-busy', 'false');
-}
 
-async function selectExample(id) {
-  activeId = id;
-  for (const button of listEl.querySelectorAll('.example-card')) button.setAttribute('aria-pressed', String(button.dataset.id === id));
-  const meta = catalog.find(entry => entry.id === id) || {};
-  useButton.disabled = true;
-  source.value = '';
-  if (exampleEmpty) exampleEmpty.hidden = false;
-  detailTitle.textContent = meta.title || id;
-  detailMeta.textContent = meta.description || meta.summary || '';
-  sourceType.textContent = typeLabel(meta.type);
-  setPreviewState('正在加载源码…');
-
-  revision++;
-  controller?.abort();
-  controller = new AbortController();
-  const current = revision;
-  try {
-    const response = await fetch('/api/example?id=' + encodeURIComponent(id), { signal: controller.signal });
-    if (!response.ok) throw new Error(`示例加载失败（${response.status}）`);
-    const data = await response.json();
-    if (current !== revision) return;
-    source.value = typeof data.md === 'string' ? data.md : '';
-    activeType = data.type || meta.type || '';
-    sourceType.textContent = typeLabel(activeType);
-    useButton.disabled = !source.value.trim();
-    exampleEmpty.hidden = true;
-    setPreviewState('正在排版预览…');
-
-    previewRevision = -1;
-    clearTimeout(previewTimer);
-    const renderResponse = await fetch('/api/render', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ md: source.value, opts: activeType ? { type: activeType } : {} }),
-      signal: controller.signal,
+  function navigate(view, push = true) {
+    if (push) history.pushState({ ...(history.state || {}), md2pdfView: view }, '', '/');
+    if (root.hidden) root.hidden = false;
+    document.querySelectorAll('[data-view="editor"], .template-library-view, .template-library-page > .topbar').forEach(el => {
+      const show = view === 'templates' ? el.matches('.template-library-view, .template-library-page > .topbar') : el.matches('[data-view="editor"]');
+      el.hidden = !show;
     });
-    if (!renderResponse.ok) {
-      const detail = await renderResponse.json().catch(() => ({}));
-      throw new Error(detail.error || `预览失败（${renderResponse.status}）`);
-    }
-    const result = await renderResponse.json();
-    if (current !== revision) return;
-    previewRevision = current;
-    iframe.srcdoc = injectRevision(result.html, current);
-    setPreviewState('正在加载公式、图表与分页…');
-    previewTimer = setTimeout(() => { if (current === revision) setPreviewState('排版等待超时，请重试。', true); }, 60000);
-  } catch (error) {
-    if (error.name !== 'AbortError' && current === revision) {
-      setPreviewState(error.message, true);
-      setListStatus(error.message, true);
-    }
+    document.body.classList.toggle('show-template-library', view === 'templates');
+    if (view === 'templates' && !catalog.length) loadCatalog();
+    if (view === 'editor') { window.dispatchEvent(new Event('resize')); window.dispatchEvent(new Event('md2pdf-editor-view')); }
   }
+  document.addEventListener('click', event => {
+    const link = event.target.closest('[data-view-link]');
+    if (!link) return;
+    event.preventDefault();
+    navigate(link.dataset.viewLink);
+  });
+  root.addEventListener('click', event => {
+    const back = event.target.closest('[data-view-link="editor"]');
+    if (back) { event.preventDefault(); navigate('editor'); }
+  });
+  listBack.addEventListener('click', () => document.body.classList.remove('template-detail-open'));
+  root.addEventListener('click', event => {
+    if (event.target.closest('.example-card') && matchMedia('(max-width: 760px)').matches) { document.body.classList.add('template-detail-open'); listBack.hidden = false; }
+  });
+  window.addEventListener('md2pdf-editor-view', () => {
+    const handoff = (() => { try { return JSON.parse(sessionStorage.getItem(HANDOFF_KEY) || 'null'); } catch { return null; } })();
+    if (handoff?.md) window.dispatchEvent(new Event('md2pdf-template-created'));
+  });
+  window.addEventListener('popstate', event => navigate(event.state?.md2pdfView === 'templates' ? 'templates' : 'editor', false));
+  if (location.pathname !== '/') {
+    history.replaceState({ ...(history.state || {}), md2pdfView: 'templates' }, '', '/');
+    root.hidden = false;
+    root.querySelector('.template-library-view').hidden = false;
+    root.querySelector('.topbar').hidden = false;
+  }
+
+  function renderCards() {
+    const query = search.value.trim().toLocaleLowerCase();
+    listEl.replaceChildren();
+    const visible = catalog.filter(item => `${item.title} ${item.description} ${(item.tags || []).join(' ')}`.toLocaleLowerCase().includes(query));
+    for (const example of visible) {
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'example-card'; button.dataset.id = example.id;
+      button.setAttribute('aria-pressed', String(example.id === activeId));
+      if (example.current) button.dataset.currentTemplate = 'true';
+      const badge = document.createElement('span'); badge.className = 'type-badge'; badge.textContent = example.current ? '当前模板' : '模板';
+      const title = document.createElement('h3'); title.textContent = example.title || example.id;
+      const summary = document.createElement('p'); summary.textContent = example.description || '';
+      button.append(badge, title, summary);
+      button.addEventListener('click', () => selectTemplate(example.id));
+      li.append(button); listEl.append(li);
+    }
+    listEl.setAttribute('aria-busy', 'false');
+  }
+
+  async function loadCatalog() {
+    try {
+      const [response, policyResponse] = await Promise.all([fetch('/api/examples'), fetch('/api/policy')]);
+      if (!response.ok) throw new Error(`模板目录加载失败（${response.status}）`);
+      const data = await response.json();
+      catalog = Array.isArray(data) ? data : data.examples || [];
+      window.md2pdfTemplateTitles = Object.fromEntries(catalog.map(item => [item.id, item.title || item.id]));
+      if (policyResponse.ok) typeLabels = (await policyResponse.json()).labels?.type || {};
+      const draft = readDraft();
+      if (draft?.md) {
+        try {
+          const resolved = await fetch('/api/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ md: draft.md, opts: draft.opts?.type ? { type: draft.opts.type } : {} }) });
+          const { type } = await resolved.json();
+          const match = catalog.find(item => item.type === type && item.id === draft.templateId) || catalog.find(item => item.type === type);
+          if (match) match.current = true;
+        } catch { /* 识别不可用时仍可浏览模板 */ }
+      }
+      renderCards();
+      setStatus(`${catalog.length} 个模板`);
+      const preferred = catalog.find(item => item.current) || catalog[0];
+      if (preferred) selectTemplate(preferred.id);
+    } catch (error) { setStatus(error.message, true); listEl.setAttribute('aria-busy', 'false'); }
+  }
+
+  async function selectTemplate(id) {
+    const meta = catalog.find(item => item.id === id);
+    if (!meta) return;
+    activeId = id;
+    document.body.classList.add('template-detail-open');
+    listBack.hidden = !matchMedia('(max-width: 760px)').matches;
+    renderCards();
+    detailTitle.textContent = meta.title || id;
+    detailMeta.textContent = meta.description || '';
+    useButton.disabled = true;
+    if (exampleEmpty) exampleEmpty.hidden = false;
+    const current = ++revision;
+    controller?.abort(); controller = new AbortController();
+    setPreviewState(rendered.has(id) ? '正在加载预览…' : '正在生成预览…');
+    try {
+      let data = rendered.get(id);
+      if (!data) {
+        const response = await fetch('/api/example?id=' + encodeURIComponent(id), { signal: controller.signal });
+        if (!response.ok) throw new Error(`模板加载失败（${response.status}）`);
+        data = await response.json();
+        if (current !== revision) return;
+        const renderResponse = await fetch('/api/render', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ md: data.md, opts: data.type ? { type: data.type } : {} }), signal: controller.signal });
+        if (!renderResponse.ok) { const detail = await renderResponse.json().catch(() => ({})); throw new Error(detail.error || `预览失败（${renderResponse.status}）`); }
+        data.rendered = await renderResponse.json();
+        rendered.set(id, data);
+      }
+      if (current !== revision) return;
+      source.value = data.md || ''; activeType = data.type || meta.type || '';
+      sourceType.textContent = typeLabels[activeType] || activeType || '模板';
+      useButton.disabled = !source.value.trim();
+      if (exampleEmpty) exampleEmpty.hidden = true;
+      iframe.srcdoc = injectRevision(data.rendered.html, current);
+      setPreviewState('正在加载公式、图表与分页…');
+      setTimeout(() => { if (current === revision && previewState.textContent.startsWith('正在加载')) setPreviewState('预览加载较慢，请稍后重试。', true); }, 60000);
+    } catch (error) { if (error.name !== 'AbortError' && current === revision) setPreviewState(error.message, true); }
+  }
+
+  window.addEventListener('message', event => {
+    if (event.source !== iframe.contentWindow || !event.data || event.data.revision !== revision) return;
+    if (event.data.type === 'md2pdf-ready') setPreviewState('预览已更新');
+    else if (event.data.type === 'md2pdf-error') setPreviewState(event.data.error || '预览排版失败。', true);
+  });
+  search.addEventListener('input', renderCards);
+  useButton.addEventListener('click', async () => {
+    if (!source.value.trim() || !await window.mdConfirmTemplate()) return;
+    const meta = catalog.find(entry => entry.id === activeId) || {};
+    try {
+      sessionStorage.setItem(HANDOFF_KEY, JSON.stringify({ id: activeId, md: source.value, type: activeType || meta.type || '', title: meta.title || '', replaceConfirmed: true }));
+      navigate('editor');
+      window.dispatchEvent(new Event('md2pdf-template-created'));
+    } catch { setPreviewState('浏览器无法保存模板交接，请复制源码到编辑器。', true); }
+  });
+  document.querySelector('#examples-link-top')?.addEventListener('click', event => { event.preventDefault(); navigate('templates'); });
+  window.addEventListener('DOMContentLoaded', () => {
+    const initial = history.state?.md2pdfView === 'templates' ? 'templates' : 'editor';
+    root.hidden = false;
+    history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', '/');
+    if (initial === 'editor') root.querySelector('.template-library-view').hidden = true;
+    navigate(initial, false);
+  });
 }
-
-window.addEventListener('message', event => {
-  if (event.source !== iframe.contentWindow || !event.data || event.data.revision !== previewRevision || previewRevision !== revision) return;
-  if (event.data.type === 'md2pdf-ready') { clearTimeout(previewTimer); setPreviewState('预览已更新'); }
-  else if (event.data.type === 'md2pdf-error') { clearTimeout(previewTimer); setPreviewState(event.data.error || '预览排版失败。', true); }
-});
-
-useButton.addEventListener('click', async () => {
-  const md = source.value;
-  if (!md.trim()) return;
-  if (!await window.mdConfirmTemplate()) return;
-  const meta = catalog.find(entry => entry.id === activeId) || {};
-  try {
-    sessionStorage.setItem(HANDOFF_KEY, JSON.stringify({ md, type: activeType || meta.type || '', title: meta.title || '', replaceConfirmed: true }));
-  } catch { setPreviewState('浏览器无法保存示例交接，请复制源码到编辑器。', true); return; }
-  location.href = '/';
-});
-
-async function boot() {
-  await loadLabels();
-  try { catalog = await loadCatalog(); }
-  catch (error) { setListStatus(error.message, true); listEl.setAttribute('aria-busy', 'false'); return; }
-  if (!catalog.length) { setListStatus('暂无可用的示例。', true); listEl.setAttribute('aria-busy', 'false'); return; }
-  try {
-    const draft = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null');
-    const { currentTemplateType } = await import('./workspace-navigation.mjs');
-    currentType = await currentTemplateType(draft, async body => {
-      const response = await fetch('/api/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      return response.ok ? response.json() : null;
-    });
-  } catch { /* 无有效草稿时显示默认模板。 */ }
-  renderCards();
-  setListStatus(`共 ${catalog.length} 个示例`);
-  selectExample((catalog.find(example => example.type === currentType) || catalog[0]).id);
-}
-
-boot();

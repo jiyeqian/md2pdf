@@ -41,7 +41,7 @@ test('固定规则整栏已移除（index / form / app / css）', () => {
 });
 
 test('导航栏示例库入口改为「模板库」，编辑器与库页标题统一', () => {
-  assert.match(indexHtml, /<a id="examples-link-top" class="button-link nav-square" href="\/examples" aria-label="模板库" title="模板库"><svg[^>]*aria-hidden="true"/);
+  assert.match(indexHtml, /<a id="examples-link-top" class="button-link nav-square" href="\/" aria-label="模板库" title="模板库" data-view-link="templates"><svg[^>]*aria-hidden="true"/);
   assert.ok(!/示例库/.test(indexHtml), '编辑器不应再残留「示例库」字样');
   // 库页标题 / 副标题同步为「模板库」。
   assert.match(examplesHtml, /<title>make md2pdf great · 模板库<\/title>/);
@@ -412,7 +412,7 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   assert.ok(walk(toolbar, []).includes(templateLink), '模板入口应移到工具条');
   assert.ok(!env.editorActions.children.includes(templateLink));
   assert.equal(templateLink.tagName, 'A', '从模板创建应是锚点而非命令按钮');
-  assert.equal(templateLink.getAttribute('href'), '/examples');
+  assert.equal(templateLink.getAttribute('href'), '/');
   assert.equal(templateLink.getAttribute('aria-label'), '从模板创建');
   assert.ok(templateLink.getAttribute('title'), '锚点需有 title');
   assert.ok((templateLink.children || []).some(c => c.tagName === 'SVG'), '锚点应含文档+图标');
@@ -629,7 +629,7 @@ test('从模板创建入口：位于 Markdown 标题栏全屏按钮之前（锚�
   assert.ok(!/>浏览示例库<\/a>/.test(indexHtml), '旧的示例入口文案应移除');
   assert.ok(!/>从模板创建<\/a>/.test(indexHtml), 'index 底部不再内联从模板创建');
   // editor-workspace.js 注入锚点：保持 id / href / aria-label，使用文档+图标。
-  assert.match(wsJs, /href: '\/examples'/);
+  assert.match(wsJs, /href: '\/'/);
   assert.match(wsJs, /label: '从模板创建'/);
   assert.match(wsJs, /id: 'browse-examples'/);
   assert.match(wsJs, /template: \[/, '需要线性文档+图标');
@@ -815,8 +815,8 @@ test('选项模型：范围默认值（元数据缺省回退），空值不发�
 test('两页标语居中且弱化，模板页面文案一致', async () => {
   const examples = await read('web/examples.html');
   for (const html of [indexHtml, examples]) assert.match(html, /<p class="topbar-tagline">MAKE MD2PDF GREAT<\/p>/);
-  assert.match(examples, /<h2>模板示例<\/h2>/);
-  assert.match(examples, /id="use-example"[^>]*>使用模板<\/button>/);
+  assert.match(examples, /<h2>模板 /);
+  assert.match(examples, /id="use-example"[^>]*>从模板创建<\/button>/);
   assert.ok(!examples.includes('使用此示例'));
   assert.match(appCss, /\.topbar-tagline\{[^}]*left:50%[^}]*color:#9aa5b3/);
 });

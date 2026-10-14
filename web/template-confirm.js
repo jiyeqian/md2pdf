@@ -9,9 +9,9 @@
     dialog.setAttribute('aria-labelledby', 'template-confirm-title');
     const title = document.createElement('h2');
     title.id = 'template-confirm-title';
-    title.textContent = '使用模板';
+    title.textContent = '从模板创建';
     const message = document.createElement('p');
-    message.textContent = '使用该模板会替换编辑器中的内容，是否继续？';
+    message.textContent = '从模板创建会替换当前文档内容，是否继续？';
     const actions = document.createElement('div');
     actions.className = 'template-confirm-actions';
     const cancel = document.createElement('button');
@@ -21,7 +21,7 @@
     const accept = document.createElement('button');
     accept.type = 'button';
     accept.className = 'primary';
-    accept.textContent = '使用模板';
+    accept.textContent = '创建并替换';
     actions.append(cancel, accept);
     dialog.append(title, message, actions);
     document.body.append(dialog);

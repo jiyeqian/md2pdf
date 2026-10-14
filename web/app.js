@@ -14,6 +14,7 @@ const countEl = document.querySelector('#count');
 const emptyPreview = document.querySelector('#empty-preview');
 const configErrorsEl = document.querySelector('#config-errors');
 const topExamplesLink = document.querySelector('#examples-link-top');
+const currentTemplateEl = document.querySelector('#current-template');
 
 const DRAFT_KEY = 'md2pdf:draft';
 const HANDOFF_KEY = 'md2pdf:handoff';
@@ -143,7 +144,9 @@ function readFormOptions() {
 }
 function saveDraft() {
   if (!editor || !initialized) return;
-  const saved = writeStore(DRAFT_KEY, JSON.stringify({ md: editor.value, opts: readFormOptions(), savedAt: Date.now() }));
+  const previousDraft = readDraft();
+  const templateId = previousDraft?.md === editor.value ? previousDraft.templateId : window.currentTemplateId;
+  const saved = writeStore(DRAFT_KEY, JSON.stringify({ md: editor.value, opts: readFormOptions(), templateId, savedAt: Date.now() }));
   let warning = document.getElementById('draft-warning');
   if (!saved && !warning) {
     warning = document.createElement('p');
@@ -585,6 +588,13 @@ async function renderPreview() {
     if (current !== revision) return;
     renderedEffective = result.effective || {};
     if (result.policy) applyPolicy(result.policy);
+    if (currentTemplateEl) {
+      const labels = policyDoc?.labels?.type || {};
+      const effectiveTemplate = result.type || result.effective?.type || '';
+      const currentId = window.currentTemplateId;
+      const title = currentId && (window.md2pdfTemplateTitles || {})[currentId];
+      currentTemplateEl.textContent = title ? ` · ${title}` : effectiveTemplate ? ` · ${labels[effectiveTemplate] || effectiveTemplate}` : '';
+    }
     if (emptyPreview) emptyPreview.hidden = true;
     // 成功渲染：清除上次的配置错误提示并恢复导出按钮（修正后自动恢复）。
     hasPreview = true;
@@ -679,6 +689,7 @@ async function boot() {
     applyStoredOptions(draft.opts);
     const restoredType = form.elements.type.value;
     if (restoredType && policyDoc && policyDoc.policy && policyDoc.policy[restoredType]) applyPolicy(policyDoc.policy[restoredType]);
+    if (draft.templateId) window.currentTemplateId = draft.templateId;
   }
 
   // 显式「使用此示例」经由 sessionStorage 交接；已有草稿需确认才替换。
@@ -686,6 +697,7 @@ async function boot() {
     writeStore(HANDOFF_KEY, null);
     if (handoff.replaceConfirmed || await window.mdConfirmTemplate()) {
       editor.value = handoff.md;
+      window.currentTemplateId = handoff.id || '';
       if (handoff.type) {
         if (policyDoc && policyDoc.policy && policyDoc.policy[handoff.type]) applyPolicy(policyDoc.policy[handoff.type]);
         form.elements.type.value = handoff.type;
@@ -697,6 +709,7 @@ async function boot() {
   } else if (!editor.value.trim()) {
     await loadDefaultExample();
   }
+  if (currentTemplateEl && window.currentTemplateId) currentTemplateEl.dataset.templateId = window.currentTemplateId;
 
   initialized = true;
   saveDraft();
@@ -801,6 +814,23 @@ document.addEventListener('click', event => {
   const link = target && target.closest ? target.closest('#browse-examples, #examples-link-top') : null;
   if (link) saveDraft();
 }, true);
+window.addEventListener('md2pdf-template-created', () => {
+  const handoff = readHandoff();
+  if (!handoff || typeof handoff.md !== 'string') return;
+  writeStore(HANDOFF_KEY, null);
+  editor.value = handoff.md;
+  window.currentTemplateId = handoff.id || '';
+  if (handoff.type) {
+    if (policyDoc?.policy?.[handoff.type]) applyPolicy(policyDoc.policy[handoff.type]);
+    form.elements.type.value = handoff.type;
+  }
+  writeStore(DRAFT_KEY, JSON.stringify({ md: handoff.md, opts: readFormOptions(), templateId: handoff.id, savedAt: Date.now() }));
+  saveDraft();
+  if (currentTemplateEl && handoff.title) currentTemplateEl.textContent = ` · ${handoff.title}`;
+  updateCount();
+  schedulePreview();
+  setStatus('已从模板创建，正在排版…');
+});
 window.addEventListener('pagehide', saveDraft);
 
 // 与 Markdown 下载共用命名：把浏览器端算出的基名随请求发送，PDF 与 Markdown 同文档同版本
