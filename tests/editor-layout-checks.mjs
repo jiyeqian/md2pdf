@@ -17,6 +17,8 @@ import vm from 'node:vm';
 const read = rel => readFile(new URL('../' + rel, import.meta.url), 'utf8');
 const indexHtml = await read('web/index.html');
 const examplesHtml = await read('web/examples.html');
+const examplesJs = await read('web/examples.js');
+const examplesCss = await read('web/examples.css');
 const appJs = await read('web/app.js');
 const appCss = await read('web/app.css');
 const wsJs = await read('web/editor-workspace.js');
@@ -25,7 +27,8 @@ const wsCss = await read('web/editor-workspace.css');
 // ---------------------------------------------------------------- index.html
 test('头部品牌：主标题 md2pdf，副标题编辑器，页面标题 md2pdf', () => {
   assert.match(indexHtml, /<h1 class="brand-logo">md2pdf<\/h1>/);
-  assert.match(indexHtml, /<p class="brand-sub">编辑器<\/p>/);
+  assert.match(indexHtml, /<p class="brand-sub" id="app-view-label">编辑器<\/p>/);
+  assert.equal((indexHtml.match(/<header class="topbar"/g) || []).length, 1, '单页应用只保留一个顶栏');
   assert.match(indexHtml, /<title>make md2pdf great<\/title>/);
   assert.ok(!/Markdown 排版工作台<\/p>/.test(indexHtml), '不应残留旧的描述文案');
 });
@@ -47,6 +50,15 @@ test('导航栏示例库入口改为「模板库」，编辑器与库页标题�
   assert.match(examplesHtml, /<title>make md2pdf great · 模板库<\/title>/);
   assert.match(examplesHtml, /<h1>md2pdf<\/h1><p>模板库<\/p>/);
   assert.ok(!/示例库/.test(examplesHtml), '库页不应再残留「示例库」标题');
+});
+
+test('空白会话草稿不阻止默认示例载入；模板预览优先且源码默认折叠', () => {
+  assert.match(appJs, /draft\.md\.trim\(\)/, '空草稿不应覆盖启动默认示例');
+  assert.match(examplesJs, /'use strict';[\s\S]*?\(\(\) => \{/, '模板脚本应隔离作用域，避免阻止编辑器脚本解析');
+  assert.match(examplesJs, /viewLink\.dataset\.viewLink = view === 'templates' \? 'editor' : 'templates'/, '共享顶栏导航目标应随当前页面切换');
+  assert.match(examplesJs, /detail-source'\)\.open = false/, '切换模板时源码面板应保持收起');
+  assert.match(examplesCss, /\.detail-body\{display:flex;flex-direction:column/);
+  assert.match(examplesCss, /\.detail-preview\{order:1;display:flex/);
 });
 
 test('下载按钮移入预览 panel-heading，保留 id/disabled/aria-label 与图标', () => {

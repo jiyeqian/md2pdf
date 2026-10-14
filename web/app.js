@@ -684,7 +684,7 @@ async function boot() {
   if (policyDoc && policyDoc.autoPolicy) applyPolicy(policyDoc.autoPolicy);
 
   // 恢复会话草稿（浏览示例库返回或刷新后仍在）。
-  if (revision === startedAt && draft && typeof draft.md === 'string') {
+  if (revision === startedAt && draft && typeof draft.md === 'string' && draft.md.trim()) {
     editor.value = draft.md;
     applyStoredOptions(draft.opts);
     const restoredType = form.elements.type.value;

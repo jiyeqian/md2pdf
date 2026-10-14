@@ -1,6 +1,7 @@
 'use strict';
 
 // 模板库与编辑器共用 / 页面，模板视图通过 history.state 导航。
+(() => {
 const HANDOFF_KEY = 'md2pdf:handoff';
 const DRAFT_KEY = 'md2pdf:draft';
   const root = document.querySelector('.template-library-page');
@@ -17,6 +18,8 @@ if (root) {
   const previewState = root.querySelector('#preview-state');
   const search = root.querySelector('#template-search');
   const listBack = root.querySelector('#template-list-back');
+  const viewLabel = document.querySelector('#app-view-label');
+  const viewLink = document.querySelector('#examples-link-top');
   let catalog = [];
   let activeId = '';
   let activeType = '';
@@ -34,12 +37,15 @@ if (root) {
 
   function navigate(view, push = true) {
     if (push) history.pushState({ ...(history.state || {}), md2pdfView: view }, '', '/');
-    if (root.hidden) root.hidden = false;
     const editorView = document.querySelector('[data-view="editor"]');
     const libraryView = root.querySelector('.template-library-view');
     editorView.hidden = view === 'templates';
     root.hidden = view !== 'templates';
     libraryView.hidden = view !== 'templates';
+    viewLabel.textContent = view === 'templates' ? '模板库' : '编辑器';
+    viewLink.setAttribute('aria-label', view === 'templates' ? '返回编辑器' : '模板库');
+    viewLink.title = view === 'templates' ? '返回编辑器' : '模板库';
+    viewLink.dataset.viewLink = view === 'templates' ? 'editor' : 'templates';
     document.body.classList.toggle('show-template-library', view === 'templates');
     if (view === 'templates' && !catalog.length) loadCatalog();
     if (view === 'editor') { window.dispatchEvent(new Event('resize')); window.dispatchEvent(new Event('md2pdf-editor-view')); }
@@ -113,6 +119,7 @@ if (root) {
     const meta = catalog.find(item => item.id === id);
     if (!meta) return;
     activeId = id;
+    root.querySelector('.detail-source').open = false;
     document.body.classList.add('template-detail-open');
     listBack.hidden = !matchMedia('(max-width: 760px)').matches;
     renderCards();
@@ -161,12 +168,11 @@ if (root) {
       window.dispatchEvent(new Event('md2pdf-template-created'));
     } catch { setPreviewState('浏览器无法保存模板交接，请复制源码到编辑器。', true); }
   });
-  document.querySelector('#examples-link-top')?.addEventListener('click', event => { event.preventDefault(); navigate('templates'); });
   window.addEventListener('DOMContentLoaded', () => {
     const requestedTemplateView = window.__MD2PDF_INITIAL_VIEW__ === 'templates' || new URLSearchParams(location.search).get('view') === 'templates';
     const initial = requestedTemplateView || history.state?.md2pdfView === 'templates' ? 'templates' : 'editor';
-    root.hidden = false;
     history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', location.pathname === '/' ? '/' : '/');
     navigate(initial, false);
   });
 }
+})();
