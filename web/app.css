@@ -77,8 +77,6 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .range-default:hover{background:#eef2f8;color:#42648b}
 .range-default:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .range-default-icon{width:15px;height:15px;display:block}
-.range-note{margin:0;color:#7c8798;font-size:11px;line-height:1.5}
-.range-note:empty{display:none}
 @media(max-width:600px){.range-popover{left:auto;right:0;width:min(300px,calc(100vw - 24px))}}
 
 /* 标语独立居中；窄屏放在第二行，避让品牌和导航。 */
@@ -121,3 +119,31 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .privacy button{border:0;background:none;padding:0;color:inherit;font:inherit;line-height:inherit;text-decoration:none}
 
 .template-confirm{width:min(420px,calc(100vw - 40px));padding:24px;border:1px solid #dfe5ed;border-radius:12px;color:#26394f;background:#fff;box-shadow:0 18px 60px #233e6033}.template-confirm::backdrop{background:#233e6055}.template-confirm h2{margin:0 0 12px;font-size:16px}.template-confirm p{margin:0;font-size:14px;line-height:1.7;color:#677389}.template-confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}.template-confirm-actions button{padding:9px 16px;border-radius:7px;font-size:13px}.template-confirm-cancel{border:1px solid #d9e0e9;background:#fff;color:#42648b}.template-confirm-cancel:hover{background:#f3f6fa}
+
+/* Preview actions wrap independently, like Markdown actions. */
+.workspace{height:calc(100vh - 154px)}
+.preview-toolbar{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:7px 10px;margin:0;border:0;border-bottom:1px solid #e7ebf0;border-radius:0;background:#fbfcfe;overflow:visible;z-index:31}
+.preview-toolbar .toolbar-field{flex:0 0 auto;min-width:0;display:block}
+.preview-toolbar .range-pop{width:auto}
+.preview-toolbar .range-trigger{display:flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #dbe2ec;border-radius:6px;background:#fff;color:#33465e}
+.preview-toolbar .range-trigger::after{display:none}
+.preview-toolbar .range-trigger:hover{border-color:#b7c6da;background:#f2f6fb}
+.preview-toolbar .range-trigger.is-explicit{background:#e9f0f8;border-color:#c9d8e9;color:#315a86}
+.preview-option-icon{width:16px;height:16px;display:block}
+.preview-toolbar .range-popover{width:260px;gap:10px;padding:15px 12px 12px}
+.preview-toolbar .option-label{display:flex;flex-direction:column;gap:8px;min-width:0;color:#677389;font-size:12px}
+.preview-toolbar .ruler-control{position:relative}
+.range-value{position:absolute;top:-15px;transform:translateX(-50%);padding:1px 5px;border-radius:4px;background:#edf2f8;color:#42648b;font-size:10px;white-space:nowrap;pointer-events:none;opacity:0}
+.range-adjusting .range-value{opacity:1}
+@media(max-width:900px){.workspace{height:auto}}
+
+@media(max-width:600px){.preview-toolbar .range-trigger{width:26px;height:26px}}
+
+.preview-toolbar .option-popover{width:max-content;min-width:0;max-width:calc(100vw - 24px);padding:5px;gap:2px}
+.option-choice{position:relative;display:block;width:100%;padding:3.5px 8px 3.5px 10px;border:0;border-radius:5px;background:transparent;color:#33465e;font-size:12px;line-height:1.5;text-align:left;white-space:nowrap}
+.option-choice:hover,.option-choice:focus-visible{background:#f2f6fb;outline:none}
+.option-choice[aria-checked="true"]{background:#eef2f8;color:#233e60}
+.option-choice::before{content:"✓";display:inline-block;width:11px;margin-right:6px;visibility:hidden;color:#6f93bc;text-align:center}
+.option-choice[aria-checked="true"]::before{visibility:visible}
+
+.preview-toolbar select[hidden]{display:none!important}

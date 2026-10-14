@@ -39,6 +39,7 @@
   var previewFrame = document.querySelector('#preview');
   var toolbar, divider, editorFullscreenBtn, previewFullscreenBtn, syncInput, snippetSelect, insertSnippetBtn, details;
   var basicWrap, basicButton, basicMenu;
+  var editorModeBtn, previewModeBtn;
   var commandButtons = [];
   var ready = false;
   var dragging = false;
@@ -661,7 +662,8 @@
     divider.addEventListener('pointermove', function (event) {
       if (!dragging) return;
       var rect = workspace.getBoundingClientRect();
-      var width = clamp(event.clientX - rect.left, MIN_EDITOR, rect.width - MIN_PREVIEW - DIVIDER);
+      var offset = workspace.classList.contains('panels-reversed') ? rect.right - event.clientX : event.clientX - rect.left;
+      var width = clamp(offset, MIN_EDITOR, rect.width - MIN_PREVIEW - DIVIDER);
       applyWidth(width, rect.width, true);
     });
     function stopDrag(event) {
@@ -675,7 +677,7 @@
     divider.addEventListener('keydown', function (event) {
       var rect = workspace.getBoundingClientRect();
       var current = currentWidth(rect);
-      var step = 24;
+      var step = workspace.classList.contains('panels-reversed') ? -24 : 24;
       if (event.key === 'ArrowLeft') { applyWidth(current - step, rect.width, true); event.preventDefault(); }
       else if (event.key === 'ArrowRight') { applyWidth(current + step, rect.width, true); event.preventDefault(); }
       else if (event.key === 'Home') { applyWidth(MIN_EDITOR, rect.width, true); event.preventDefault(); }
@@ -758,6 +760,7 @@
       previewFullscreenBtn.setAttribute('aria-label', previewOn ? '退出预览全屏' : '预览全屏');
       previewFullscreenBtn.title = previewOn ? '退出全屏（Esc）' : '全屏预览（Esc 退出）';
     }
+    updatePanelModeButtons();
     if (editorOn) focusEditor();
     requestAnimationFrame(function () { requestAnimationFrame(function () {
       if (id !== layoutRevision) return;
@@ -848,6 +851,46 @@
 
   // 在两侧 panel-heading 的动作区注入全屏按钮：Markdown 侧位于最右，
   // 预览侧追加在下载按钮之后，全屏始终位于该栏最右。
+  function updatePanelModeButtons() {
+    var mode = fullscreenMode();
+    if (editorModeBtn) editorModeBtn.title = mode ? '切换到预览' : '交换面板位置';
+    if (previewModeBtn) previewModeBtn.title = mode ? '切换到 Markdown' : '交换面板位置';
+    if (editorModeBtn) editorModeBtn.setAttribute('aria-label', 'Markdown（M）：' + editorModeBtn.title);
+    if (previewModeBtn) previewModeBtn.setAttribute('aria-label', '预览（P）：' + previewModeBtn.title);
+  }
+
+  function switchPanelMode() {
+    var mode = fullscreenMode();
+    if (mode) { applyFullscreen(mode === 'editor' ? 'preview' : 'editor'); return; }
+    var anchor = hasEditor() && window.mdEditor.captureViewport ? window.mdEditor.captureViewport() : null;
+    if (!isNarrow()) {
+      var rect = workspace.getBoundingClientRect();
+      applyWidth(currentWidth(rect), rect.width, false);
+    }
+    workspace.classList.toggle('panels-reversed');
+    requestAnimationFrame(function () {
+      measureEditor();
+      if (anchor && window.mdEditor.restoreViewport) window.mdEditor.restoreViewport(anchor);
+    });
+  }
+
+  function buildPanelModeButtons() {
+    function attach(panel, text) {
+      var heading = panel.querySelector('h2');
+      if (!heading) return null;
+      var button = make('button', { type: 'button', class: 'md-panel-mode' }, text);
+      button.addEventListener('pointerdown', function (event) { event.preventDefault(); });
+      button.addEventListener('click', switchPanelMode);
+      heading.setAttribute('aria-label', text === 'M' ? 'Markdown' : '预览');
+      heading.textContent = '';
+      heading.appendChild(button);
+      return button;
+    }
+    editorModeBtn = attach(editorPanel, 'M');
+    previewModeBtn = attach(previewPanel, 'P');
+    updatePanelModeButtons();
+  }
+
   function buildFullscreenButtons() {
     var editorHeading = editorPanel.querySelector('.panel-heading');
     var previewHeading = previewPanel.querySelector('.panel-heading');
@@ -1032,7 +1075,7 @@
     window.addEventListener('blur', function () { closeBasicMenu(false); });
     window.addEventListener('resize', function () {
       if (basicMenu && !basicMenu.hidden) positionBasicMenu();
-      if (ratio == null || isNarrow()) return;
+      if (ratio == null || isNarrow() || fullscreenMode()) return;
       var rect = workspace.getBoundingClientRect();
       applyWidth(ratio * rect.width, rect.width, false);
     });
@@ -1043,6 +1086,7 @@
   buildToolbar();
   buildDivider();
   buildFullscreenButtons();
+  buildPanelModeButtons();
   buildZoomControls();
   restoreRatio();
   wireEvents();

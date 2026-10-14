@@ -17,7 +17,7 @@ const topExamplesLink = document.querySelector('#examples-link-top');
 
 const DRAFT_KEY = 'md2pdf:draft';
 const HANDOFF_KEY = 'md2pdf:handoff';
-const CONTROL_ORDER = ['type', 'theme', 'toc', 'fontSize', 'margin', 'lineHeight', 'numbering'];
+const CONTROL_ORDER = ['type', 'theme', 'toc', 'numbering', 'fontSize', 'margin', 'lineHeight'];
 
 // ---------- 选项模型：范围滑块 + 「标题编号」合并菜单 ----------
 // 范围控件（字号 / 边距 / 行距）：number 输入是唯一取值来源，range 仅是同一取值的快捷输入。
@@ -289,6 +289,7 @@ function applyPolicy(policy) {
       field.placeholder = '默认';
     }
   }
+  updateOptionTriggers();
   saveDraft();
 }
 
@@ -325,7 +326,6 @@ function applyRangeControl(name, control) {
   rangeMeta[name] = range;
   field.min = range.min; field.max = range.max; field.step = range.step; field.placeholder = '默认';
   updateRangeScale(name, range);
-  updateRangeNote(name, control);
   const slider = rangeSlider(name);
   if (slider) { slider.min = range.min; slider.max = range.max; slider.step = range.step; }
   if (field.value === '') showRangeDefault(name, range);
@@ -333,6 +333,7 @@ function applyRangeControl(name, control) {
 }
 
 const rangeMeta = {};
+let renderedEffective = {};
 function rangeSlider(name) { const group = controlWrap(name); return group ? group.querySelector('[data-range-slider="' + name + '"]') : null; }
 function rangeScale(name) { const group = controlWrap(name); return group ? group.querySelector('[data-range-scale="' + name + '"]') : null; }
 // 直尺端点：把策略区间显示在刻度条左右两侧（字号 8/24、边距 10/40、行距 1/2.5）。
@@ -345,7 +346,74 @@ function updateRangeScale(name, range) {
   if (max) max.textContent = String(range.max);
 }
 function rangeSummary(name) { const group = controlWrap(name); return group ? group.querySelector('summary.range-trigger') : null; }
-function rangeNote(name) { const group = controlWrap(name); return group ? group.querySelector('[data-range-note="' + name + '"]') : null; }
+function updateOptionTriggers() {
+  for (const name of ['type', 'theme', 'toc', 'numbering']) {
+    const wrap = controlWrap(name);
+    const trigger = wrap && wrap.querySelector('[data-option-trigger]');
+    const field = form.elements[name];
+    if (!trigger || !field) continue;
+    const option = Array.from(field.options).find(item => item.value === field.value);
+    const label = { type: '模板', theme: '主题', toc: '目录', numbering: '编号' }[name];
+    let text = option ? option.textContent : field.value || '跟随文档';
+    if (field.value === '') {
+      let effective = renderedEffective[name];
+      if (name === 'type') effective = currentPolicy && currentPolicy.type;
+      if (name === 'toc' && typeof effective === 'boolean') effective = effective ? '开启' : '关闭';
+      if (effective !== undefined) text += `（当前 ${effective}）`;
+    }
+    trigger.title = `${label}：${text}`;
+    trigger.setAttribute('aria-label', trigger.title);
+    trigger.classList.toggle('is-explicit', field.value !== '');
+    if (wrap.hidden) { const details = wrap.querySelector('details'); if (details) details.open = false; }
+    renderOptionMenu(name);
+  }
+}
+function renderOptionMenu(name, focusSelected = false) {
+  const wrap = controlWrap(name);
+  const menu = wrap && wrap.querySelector('[data-option-menu]');
+  const field = form.elements[name];
+  if (!menu || !field) return;
+  const activeValue = document.activeElement && document.activeElement.getAttribute('data-option-value');
+  const hadFocus = menu.contains && menu.contains(document.activeElement);
+  let focusButton;
+  menu.replaceChildren();
+  for (const option of Array.from(field.options)) {
+    if (option.disabled || option.hidden) continue;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'option-choice';
+    button.textContent = option.textContent;
+    button.setAttribute('role', 'menuitemradio');
+    button.setAttribute('aria-checked', String(option.value === field.value));
+    button.setAttribute('data-option-value', option.value);
+    button.tabIndex = option.value === field.value ? 0 : -1;
+    button.addEventListener('click', () => {
+      field.value = option.value;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.dispatchEvent(new Event('change', { bubbles: true }));
+      const details = wrap.querySelector('details');
+      if (details) details.open = false;
+      const trigger = wrap.querySelector('[data-option-trigger]');
+      if (trigger) trigger.focus();
+    });
+    button.addEventListener('keydown', event => {
+      const buttons = Array.from(menu.querySelectorAll('.option-choice'));
+      let index = buttons.indexOf(button);
+      if (event.key === 'ArrowDown') index = (index + 1) % buttons.length;
+      else if (event.key === 'ArrowUp') index = (index + buttons.length - 1) % buttons.length;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = buttons.length - 1;
+      else return;
+      event.preventDefault();
+      for (const item of buttons) item.tabIndex = -1;
+      buttons[index].tabIndex = 0;
+      buttons[index].focus();
+    });
+    menu.appendChild(button);
+    if ((focusSelected && option.value === field.value) || (hadFocus && option.value === activeValue)) focusButton = button;
+  }
+  if (focusButton) focusButton.focus();
+}
 function currentRange(name) { return rangeMeta[name] || resolveRange(name, null); }
 // 紧凑触发器文案：空值 = 跟随文档；显式值带单位（12 pt / 25 mm / 2.1 倍）。
 function updateRangeTrigger(name) {
@@ -355,30 +423,27 @@ function updateRangeTrigger(name) {
   const field = form.elements[name];
   const raw = field ? field.value : '';
   const text = raw === '' ? '跟随文档' : `${raw} ${meta.unit}`.trim();
-  summary.textContent = text;
-  summary.setAttribute('aria-label', `${meta.label}：${text}`);
-}
-// 浮层内的模板默认说明：边距明确四边数值（fixedValue 上下、fixedNote 左右），
-// 避免把统一的 20 误当成四边默认；并说明调整会把四边统一为同一数值。
-function updateRangeNote(name, control) {
-  const note = rangeNote(name);
-  if (!note) return;
-  const range = currentRange(name);
+  let effective = renderedEffective[name];
   if (name === 'margin') {
-    const sides = control && control.fixedValue ? String(control.fixedValue) : '';
-    const sideNote = control && control.fixedNote ? String(control.fixedNote) : '';
-    note.textContent = `模板默认：上下 ${sides || range.defaultValue} mm${sideNote ? ' · ' + sideNote : ''}。调整后四边统一为同一数值。`;
-  } else if (name === 'fontSize') {
-    note.textContent = `模板默认 ${range.defaultValue} pt；调整仅覆盖正文字号。`;
-  } else if (name === 'lineHeight') {
-    note.textContent = `模板默认 ${range.defaultValue} 倍；调整仅覆盖正文行距。`;
-  } else {
-    note.textContent = '';
+    const sides = ['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].map(key => renderedEffective[key]);
+    if (sides.every(value => value !== undefined)) effective = sides.every(value => value === sides[0]) ? sides[0] : sides.join(' / ');
   }
+  summary.title = `${meta.label}：${text}${raw === '' && effective !== undefined ? `（当前 ${effective} ${meta.unit}）` : ''}`;
+  summary.classList.toggle('is-explicit', raw !== '');
+  const bubble = controlWrap(name).querySelector('[data-range-value="' + name + '"]');
+  const slider = rangeSlider(name);
+  if (bubble && slider) {
+    bubble.textContent = `${slider.value} ${meta.unit}`;
+    const ratio = Math.max(0, Math.min(1, (Number(slider.value) - Number(slider.min)) / (Number(slider.max) - Number(slider.min))));
+    const width = slider.clientWidth || 0;
+    bubble.style.left = `${(slider.offsetLeft || 0) + 4 + ratio * Math.max(0, width - 8)}px`;
+  }
+  summary.setAttribute('aria-label', `${meta.label}：${text}`);
 }
 function showRangeDefault(name, range) {
   const slider = rangeSlider(name);
-  if (slider) slider.value = String(range.defaultValue);
+  const effective = name === 'margin' ? renderedEffective.marginTop : renderedEffective[name];
+  if (slider) slider.value = String(Number.isFinite(Number(effective)) ? effective : range.defaultValue);
   const group = controlWrap(name);
   if (group) group.classList.add('is-default');
   updateRangeTrigger(name);
@@ -518,6 +583,7 @@ async function renderPreview() {
     const response = await request('/api/render', { md: editor.value, opts }, controller.signal);
     const result = await response.json();
     if (current !== revision) return;
+    renderedEffective = result.effective || {};
     if (result.policy) applyPolicy(result.policy);
     if (emptyPreview) emptyPreview.hidden = true;
     // 成功渲染：清除上次的配置错误提示并恢复导出按钮（修正后自动恢复）。
@@ -650,7 +716,7 @@ function syncRangeFromEvent(target) {
   const numberName = target.getAttribute('data-range-number');
   if (numberName) { if (target.value === '') showRangeDefault(numberName, currentRange(numberName)); else reflectRangeValue(numberName, target.value); }
 }
-form.addEventListener('input', event => { syncRangeFromEvent(event.target); saveDraft(); schedulePreview(); });
+form.addEventListener('input', event => { syncRangeFromEvent(event.target); updateOptionTriggers(); saveDraft(); schedulePreview(); });
 // 「恢复默认」：清空取值 = 省略覆盖，交给模板默认（含不对称的默认页边距）。
 form.addEventListener('click', event => {
   const button = event.target && event.target.closest ? event.target.closest('[data-range-default]') : null;
@@ -677,9 +743,25 @@ function positionRangePopover(details) {
   panel.style.left = `${left - anchor.left}px`;
   panel.style.right = 'auto';
 }
+for (const name of RANGE_CONTROLS) {
+  const slider = rangeSlider(name);
+  const wrap = controlWrap(name);
+  if (!slider || !wrap) continue;
+  let dragging = false;
+  slider.addEventListener('pointerdown', () => { dragging = true; wrap.classList.add('range-adjusting'); updateRangeTrigger(name); });
+  const end = () => { dragging = false; wrap.classList.remove('range-adjusting'); };
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+  slider.addEventListener('keydown', event => {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) wrap.classList.add('range-adjusting');
+  });
+  slider.addEventListener('blur', end);
+  slider.addEventListener('input', () => { if (dragging) wrap.classList.add('range-adjusting'); });
+}
 for (const details of form.querySelectorAll('details.range-pop')) {
   details.addEventListener('toggle', () => {
-    if (details.open) { closeRangePopovers(details); positionRangePopover(details); }
+    if (details.open) { closeRangePopovers(details); const trigger = details.querySelector('[data-option-trigger]'); if (trigger) renderOptionMenu(trigger.getAttribute('data-option-trigger'), true); positionRangePopover(details); const slider = details.querySelector('[data-range-slider]'); if (slider) updateRangeTrigger(slider.getAttribute('data-range-slider')); }
+    else { const wrap = details.closest('[data-control]'); if (wrap) wrap.classList.remove('range-adjusting'); }
   });
 }
 window.addEventListener('resize', () => {

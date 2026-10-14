@@ -218,7 +218,7 @@ function fakeEnvironment() {
       this.attrs = {};
       this.children = [];
       this.listeners = {};
-      this.style = { setProperty() {} };
+      this.style = { setProperty(k, v) { this[k] = v; } };
       this.dataset = {};
       this.hidden = false;
       this.disabled = false;
@@ -255,6 +255,8 @@ function fakeEnvironment() {
   workspace.q['.preview-panel'] = previewPanel;
   const editorHeading = new FakeNode('div');
   const previewHeading = new FakeNode('div');
+  editorPanel.q['h2'] = new FakeNode('h2');
+  previewPanel.q['h2'] = new FakeNode('h2');
   editorPanel.q['.panel-heading'] = editorHeading;
   previewPanel.q['.panel-heading'] = previewHeading;
 
@@ -586,7 +588,7 @@ test('行为：基础格式面板的关闭路径（菜单内点击 / 外部点�
 
 // ---------------------------------------------------------------- 选项模型（index.html 静态）
 test('index.html：「标题编号」合并菜单替代旧的章节编号 / 编号方案两个控件', () => {
-  assert.match(indexHtml, /<label data-control="numbering">编号<select name="numbering">/);
+  assert.match(indexHtml, /<select hidden aria-label="编号" name="numbering">/);
   assert.ok(!indexHtml.includes('name="numberScheme"'), '不应再有独立的编号方案控件');
   assert.ok(!/data-control="numberScheme"/.test(indexHtml), '不应再有独立的编号方案控件外壳');
   assert.ok(!indexHtml.includes('编号方案'), '旧「编号方案」控件文案应已移除');
@@ -597,7 +599,7 @@ test('index.html：「标题编号」合并菜单替代旧的章节编号 / 编�
   ]) assert.match(indexHtml, new RegExp('<option value="' + value + '">' + label.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&') + '</option>'), '缺少选项：' + label);
 });
 
-test('index.html：字号 / 边距 / 行距为紧凑按钮 + 调整浮层（直尺滑块 / 重置图标 / 说明）', () => {
+test('index.html：字号 / 边距 / 行距为紧凑按钮 + 调整浮层（直尺滑块 / 重置图标 / 瞬时数值）', () => {
   const specs = [
     ['fontSize', 8, 24, '0.5', 'pt'],
     ['margin', 10, 40, '1', 'mm'],
@@ -609,11 +611,12 @@ test('index.html：字号 / 边距 / 行距为紧凑按钮 + 调整浮层（直�
     const next = indexHtml.indexOf('data-control="', at + 1);
     const block = indexHtml.slice(at, next < 0 ? at + 2000 : next);
     assert.match(block, /<details class="range-pop">/, name + ' 应为 details 浮层');
-    assert.match(block, /<summary class="range-trigger"[^>]*>跟随文档<\/summary>/, name + ' 触发器默认文案应为「跟随文档」');
+    assert.match(block, /<summary class="range-trigger"[^>]*><svg/, name + ' 触发器应为纯图标');
     assert.match(block, new RegExp('data-range-slider="' + name + '" min="' + min + '" max="' + max + '" step="' + step + '"'), name + ' 滑块范围');
     assert.match(block, new RegExp('<input[^>]*name="' + name + '"[^>]*type="hidden"'), name + ' 隐藏字段保留草稿与导出参数');
     assert.match(block, new RegExp('data-range-default="' + name + '"'), name + ' 跟随文档按钮');
-    assert.match(block, new RegExp('data-range-note="' + name + '"'), name + ' 模板默认说明节点');
+    assert.match(block, new RegExp('data-range-value="' + name + '"'), name + ' 操作中显示数值');
+    assert.ok(!block.includes('range-note'), '不保留范围说明');
     assert.ok(!block.includes('class="range-unit"'), name + ' 浮层不再显示数值输入单位');
   }
   // 边距旧的三档下拉已移除
@@ -635,7 +638,7 @@ test('从模板创建入口：位于 Markdown 标题栏全屏按钮之前（锚�
 });
 
 test('app.css：范围控件为紧凑按钮 + 直尺滑块及重置图标', () => {
-  for (const token of ['.ruler-slider', '.ruler-scale', '.range-default', '.range-pop', '.range-trigger', '.range-popover', '.range-note']) {
+  for (const token of ['.ruler-slider', '.ruler-scale', '.range-default', '.range-pop', '.range-trigger', '.range-popover', '.range-value']) {
     assert.ok(appCss.includes(token), '缺少：' + token);
   }
   const open = (appCss.match(/\{/g) || []).length;
@@ -651,10 +654,10 @@ test('app.js：控件顺序含 lineHeight，且合并菜单不再单列 numberSc
 });
 
 test('app.js：滑块与数值双向同步、跟随文档省略覆盖、触发器文案 + 浮层互斥、复用防抖', () => {
-  for (const token of ['data-range-slider', 'data-range-number', 'data-range-default', 'data-range-note', 'function syncRangeFromEvent', 'function showRangeDefault', 'function reflectRangeValue', 'function updateRangeTrigger', 'function updateRangeNote', 'function closeRangePopovers', 'details.range-pop', 'showRangeDefault(name, currentRange(name))']) {
+  for (const token of ['data-range-slider', 'data-range-number', 'data-range-default', 'data-range-value', 'function syncRangeFromEvent', 'function showRangeDefault', 'function reflectRangeValue', 'function updateRangeTrigger', 'function updateOptionTriggers', 'function closeRangePopovers', 'details.range-pop', 'showRangeDefault(name, currentRange(name))']) {
     assert.ok(appJs.includes(token), '缺少：' + token);
   }
-  assert.match(appJs, /form\.addEventListener\('input', event => \{ syncRangeFromEvent\(event\.target\); saveDraft\(\); schedulePreview\(\)/);
+  assert.match(appJs, /form\.addEventListener\('input', event => \{ syncRangeFromEvent\(event\.target\); updateOptionTriggers\(\); saveDraft\(\); schedulePreview\(\)/);
   // collectedOptions 只在非空时发送，未显式操作不覆盖默认
   assert.match(appJs, /const value = field\.value;\s*\n\s*if \(value === ''\) continue;/);
 });
@@ -675,7 +678,7 @@ function fakeAppEnvironment() {
       this.attrs = {};
       this.children = [];
       this.listeners = {};
-      this.style = { setProperty() {} };
+      this.style = { setProperty(k, v) { this[k] = v; } };
       this.dataset = {};
       this.hidden = false;
       this.disabled = false;
@@ -854,4 +857,127 @@ test('privacy 下载保存与标题栏 Markdown 下载使用同一个动作', ()
   assert.ok(download);
   assert.equal(env.privacySave.listeners.click.length, 1);
   assert.equal(env.privacySave.listeners.click[0], download.listeners.click[0]);
+});
+
+ test('预览排版工具条：位于预览标题之后，七项按图标逐个换行', () => {
+  const formAt = indexHtml.indexOf('<form id="options"');
+  assert.ok(formAt > indexHtml.indexOf('id="preview-title"'));
+  assert.ok(formAt < indexHtml.indexOf('id="config-errors"'));
+  const form = indexHtml.slice(formAt, indexHtml.indexOf('</form>', formAt));
+  const names = [...form.matchAll(/data-control="([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(names, ['type', 'theme', 'toc', 'numbering', 'fontSize', 'margin', 'lineHeight']);
+  assert.equal((form.match(/<summary /g) || []).length, 7);
+  assert.equal((form.match(/class="preview-option-icon"/g) || []).length, 7);
+  assert.match(appCss, /\.preview-toolbar \.toolbar-field\{flex:0 0 auto;min-width:0/);
+  assert.match(appJs, /slider.addEventListener\('keydown'/);
+  assert.match(appJs, /slider.addEventListener\('blur', end\)/);
+  assert.match(appJs, /window.addEventListener\('pointerup', end\)/);
+});
+
+test('范围图标跟随实际文档值，保留空覆盖并将数值气泡定位到滑块', () => {
+  const env = fakeAppEnvironment();
+  vm.runInContext(appJs, env.sandbox);
+  const group = env.sandbox.document.createElement('div');
+  const summary = env.sandbox.document.createElement('summary');
+  const slider = env.sandbox.document.createElement('input');
+  const bubble = env.sandbox.document.createElement('output');
+  slider.min = 8; slider.max = 24; slider.clientWidth = 200; slider.offsetLeft = 0;
+  group.q['summary.range-trigger'] = summary;
+  group.q['[data-range-slider="fontSize"]'] = slider;
+  group.q['[data-range-value="fontSize"]'] = bubble;
+  env.form.q['[data-control="fontSize"]'] = group;
+  vm.runInContext('renderedEffective = {fontSize:18}; showRangeDefault("fontSize", currentRange("fontSize"));', env.sandbox);
+  assert.equal(env.form.elements.fontSize.value, '', '跟随文档不写入覆盖');
+  assert.equal(slider.value, '18');
+  assert.equal(summary.title, '字号：跟随文档（当前 18 pt）');
+  assert.equal(bubble.textContent, '18 pt');
+  assert.equal(bubble.style.left, '124px');
+  vm.runInContext('form.elements.fontSize.value = "24"; reflectRangeValue("fontSize", "24");', env.sandbox);
+  assert.equal(summary.title, '字号：24 pt');
+  assert.equal(bubble.style.left, '196px', '气泡不进入重置按钮区域');
+  assert.ok(summary.classList.contains('is-explicit'));
+});
+
+test('排版图标直接列出策略选项，选择只发送一次 input/change 并还焦点', () => {
+  const env = fakeAppEnvironment();
+  vm.runInContext(appJs, env.sandbox);
+  const group = env.sandbox.document.createElement('div');
+  const menu = env.sandbox.document.createElement('div');
+  const details = { open: true };
+  let restored = false;
+  const trigger = { focus() { restored = true; } };
+  group.q['[data-option-menu]'] = menu;
+  group.q['details'] = details;
+  group.q['[data-option-trigger]'] = trigger;
+  menu.querySelectorAll = () => menu.children;
+  const field = env.form.elements.theme;
+  field.options = [{value:'', textContent:'跟随文档'}, {value:'minimal', textContent:'简洁 · 黑白'}, {value:'gb', textContent:'国家标准', disabled:true}];
+  const events = [];
+  field.dispatchEvent = event => events.push(event.type);
+  env.sandbox.Event = class { constructor(type) { this.type = type; } };
+  env.form.q['[data-control="theme"]'] = group;
+  vm.runInContext('renderOptionMenu("theme")', env.sandbox);
+  assert.match(appCss, /\.preview-toolbar select\[hidden\]\{display:none!important\}/, '现代原生选择器样式不得重新显示隐藏绑定字段');
+  assert.equal(menu.children.length, 2, '不显示策略禁用选项');
+  assert.equal(menu.children[0].textContent, '跟随文档');
+  assert.equal(menu.children[0].getAttribute('aria-checked'), 'true');
+  let focused = false;
+  menu.children[1].focus = () => { focused = true; };
+  let prevented = false;
+  menu.children[0].dispatch('keydown', { key:'End', preventDefault() { prevented = true; } });
+  assert.ok(prevented && focused);
+  menu.children[1].dispatch('click');
+  assert.equal(field.value, 'minimal');
+  assert.deepEqual(events, ['input', 'change']);
+  assert.equal(details.open, false);
+  assert.ok(restored);
+});
+
+
+test('M/P 交换面板并在全屏间切换，退出恢复布局、宽度及编辑实例', () => {
+  const env = fakeEnvironment();
+  const editor = { focus() {}, getCursorLine() { return 1; }, captureViewport() { return { line: 7 }; }, restoreViewport() {}, requestMeasure() {} };
+  env.sandbox.mdEditor = editor;
+  env.editorPanel.getBoundingClientRect = () => ({ width: 420 });
+  vm.runInContext(wsJs, env.sandbox);
+  const m = env.editorPanel.q.h2.children[0];
+  const p = env.previewPanel.q.h2.children[0];
+  assert.equal(m.textContent, 'M');
+  assert.equal(p.textContent, 'P');
+  assert.equal(m.title, '交换面板位置');
+  m.dispatch('click');
+  assert.ok(env.workspace.classList.contains('panels-reversed'));
+  assert.equal(env.workspace.style['--md-wt-editor-width'], '420px');
+  const full = env.editorActions.children.find(n => n.getAttribute('aria-label') === 'Markdown 全屏写作');
+  full.dispatch('click');
+  assert.ok(env.workspace.classList.contains('editor-focus'));
+  assert.equal(m.title, '切换到预览');
+  m.dispatch('click');
+  assert.ok(env.workspace.classList.contains('preview-focus'));
+  assert.equal(p.title, '切换到 Markdown');
+  p.dispatch('click');
+  assert.ok(env.workspace.classList.contains('editor-focus'));
+  env.dispatchWindow('resize');
+  env.document.dispatch('keydown', { key: 'Escape', defaultPrevented: false, isComposing: false, keyCode: 0 });
+  assert.ok(env.workspace.classList.contains('panels-reversed'));
+  assert.equal(env.workspace.style['--md-wt-editor-width'], '420px');
+  assert.equal(env.sandbox.mdEditor, editor);
+  p.dispatch('click');
+  assert.equal(env.workspace.classList.contains('panels-reversed'), false);
+});
+
+test('交换后分隔条的拖动及键盘方向与实际位置一致', () => {
+  const env = fakeEnvironment();
+  env.editorPanel.getBoundingClientRect = () => ({ width: 420 });
+  env.workspace.getBoundingClientRect = () => ({ left: 0, right: 1000, width: 1000 });
+  vm.runInContext(wsJs, env.sandbox);
+  env.editorPanel.q.h2.children[0].dispatch('click');
+  const divider = env.workspace.children.find(n => n.classList.contains('md-wt-divider'));
+  divider.dispatch('pointerdown', { pointerId: 1, preventDefault() {} });
+  divider.dispatch('pointermove', { clientX: 540 });
+  assert.equal(env.workspace.style['--md-wt-editor-width'], '460px');
+  divider.dispatch('keydown', { key: 'ArrowLeft', preventDefault() {} });
+  assert.equal(env.workspace.style['--md-wt-editor-width'], '444px');
+  divider.dispatch('keydown', { key: 'ArrowRight', preventDefault() {} });
+  assert.equal(env.workspace.style['--md-wt-editor-width'], '396px');
 });
