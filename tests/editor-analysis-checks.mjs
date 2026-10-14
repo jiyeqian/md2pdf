@@ -354,6 +354,20 @@ test('provideCompletions：[^ 前缀给出脚注候选与正确插入范围', ()
   assert.deepEqual(none.options, [], '已触发但无匹配候选');
 });
 
+test('文献引用只补全文档中已有定义，确认时替换原闭括号', () => {
+  const text = '[^paper]: 普通文献\n\n[^bib]: @article{bib, title={论文}}\n\n参见[^]';
+  const pos = text.lastIndexOf(']');
+  const result = provideCompletions({ text, pos }, analyzeMarkdown(text));
+  assert.deepEqual(result.options.map((option) => option.label), ['paper', 'bib']);
+  assert.equal(result.to, text.length);
+  for (const option of result.options) {
+    const applied = text.slice(0, result.from) + option.apply + text.slice(result.to);
+    assert.ok(applied.endsWith('[^' + option.label + ']'));
+  }
+  const missing = provideCompletions(ctx('[^'), analyzeMarkdown('正文无文献'));
+  assert.deepEqual(missing.options, []);
+});
+
 test('provideCompletions：\\ref{ 前缀按已输入 ID 过滤并给出正确插入范围', () => {
   const text = '如图 \\ref{fig:';
   const res = provideCompletions(ctx(text), FA);
@@ -466,11 +480,11 @@ test('列表操作在空白行插入标记，同时保留多行中的空段', ()
   }
 });
 
-test('引用插入展示候选而不自动选定；无候选保留占位并提示', () => {
+test('引用插入展示已有候选；无候选保留空引用并提示', () => {
   const source = fs.readFileSync(new URL('../web/editor-pro.js', import.meta.url), 'utf8');
   const start = source.indexOf('function insertReference(');
   const fn = source.slice(start, source.indexOf('\nfunction ', start + 1));
-  for (const mode of ['ref', 'eqref']) for (const candidates of [true, false]) {
+  for (const mode of ['ref', 'eqref', 'noteref']) for (const candidates of [true, false]) {
     let inserted, selection, opened = 0;
     const status = { textContent: '' };
     const sandbox = {
@@ -479,26 +493,19 @@ test('引用插入展示候选而不自动选定；无候选保留占位并提�
       selectRange: (a, b) => { selection = [a, b]; }, document: { getElementById: () => status },
     };
     vm.runInNewContext(fn + `\n;insertReference('${mode}');`, sandbox);
-    assert.equal(inserted, '\\' + mode + '{' + (candidates ? '' : mode === 'ref' ? 'fig:name' : 'eq:name') + '}');
+    const open = mode === 'noteref' ? '[^' : '\\' + mode + '{';
+    assert.equal(inserted, open + (mode === 'noteref' ? ']' : '}'));
     assert.equal(opened, candidates ? 1 : 0);
-    assert.equal(selection[0] === selection[1], candidates);
+    assert.equal(selection[0], open.length);
+    assert.equal(selection[1], open.length);
     assert.equal(!!status.textContent, !candidates);
   }
 });
 
 
-test('abbreviated references complete command before targets, with caret inside', () => {
-  for (const [input, apply] of [['\\r', '\\ref{}'], ['\\e', '\\eqref{}']]) {
-    const result = provideCompletions({ text: input, pos: input.length }, analyzeMarkdown(input));
-    assert.equal(result.from, 0);
-    assert.equal(result.options[0].apply, apply);
-    assert.equal(result.options[0].selectionOffset, apply.length - 1);
-    assert.equal(result.options[0].startCompletion, true);
-  }
-  assert.equal(provideCompletions({ text: '\\', pos: 1 }, analyzeMarkdown('\\')), null);
-  for (const text of ['```\n\\r\n```', '$$\n\\r\n$$', '$$ x \\r $$', '$$ x \\e $$', '---\ntitle: \\r\n---']) {
-    const pos = text.indexOf('\\r') + 2;
-    assert.equal(provideCompletions({ text, pos }, analyzeMarkdown(text)), null);
+test('short reference commands use icon entry rather than textual completion', () => {
+  for (const input of ['\\', '\\r', '\\e', '\\b']) {
+    assert.equal(provideCompletions({ text: input, pos: input.length }, analyzeMarkdown(input)), null);
   }
 });
 

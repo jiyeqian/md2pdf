@@ -133,6 +133,7 @@
     listOl: [{ d: 'M3.2 5.6h1.3v3.2' }, { d: 'M3.2 14.6c1.6 0 1.6 1.3 0 1.3h1.6' }, { d: 'M7.4 6h9' }, { d: 'M7.4 10h9' }, { d: 'M7.4 14h9' }],
     inlineMath: [{ d: 'M6 5h8l-4.5 5 4.5 5H6' }],
     ref: [{ d: 'M3 4h9v11H3zM4 12l3-4 3 3' }, { d: 'M12 8h5m-2-2 2 2-2 2' }],
+    noteref: [{ d: 'M4 5h7M4 9h7M4 13h5' }, { d: 'M12 10h5m-2-2 2 2-2 2' }],
     eqref: [{ d: 'M4 5h7l-4 5 4 5H4' }, { d: 'M12 10h5m-2-2 2 2-2 2' }],
     foldToggle: [{ d: 'M6.6 8.6 10 5.2l3.4 3.4' }, { d: 'M6.6 11.4 10 14.8l3.4-3.4' }],
     // Tabler arrows-exchange（24 网格）按 0.8333333333 缩放进 20 视图，路径数据未改动。
@@ -290,7 +291,8 @@
     { icon: 'bibliography', label: 'BibTeX参考文献', insert: 'bibliography' },
     { icon: 'doi', label: 'DOI参考文献' },
     { icon: 'ref', label: '图表引用', insert: 'ref' },
-    { icon: 'eqref', label: '公式引用', insert: 'eqref' }
+    { icon: 'eqref', label: '公式引用', insert: 'eqref' },
+    { icon: 'noteref', label: '文献引用', insert: 'noteref' }
   ];
   var SNIPPETS = [
     { name: 'gb-scope', label: '标准范围（gb-scope）' },

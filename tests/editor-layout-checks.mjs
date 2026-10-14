@@ -173,11 +173,10 @@ test('editor-workspace.js：工具栏为分组 SVG 图标按钮，title/aria-lab
   assert.match(wsJs, /updateSync\(true\)/, '同步定位默认开启');
 });
 
-test('editor-workspace.css：紧凑图标按钮、组间分隔、窄屏不溢出', () => {
+test('editor-workspace.css：紧凑图标按钮逐个换行、窄屏不溢出', () => {
   for (const token of [
     '.md-wt-icon { width: 16px; height: 16px',
-    '.md-wt-group + .md-wt-group',
-    'border-left: 1px solid #e3e8ef',
+    '.md-wt-group { display: contents; }',
     'width: 28px',
     'max-width: 390px',
   ]) assert.ok(wsCss.includes(token), '缺少：' + token);
@@ -487,7 +486,8 @@ test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执�
   itemFor('行内公式').dispatch('click', {});
   topButton('图表引用').dispatch('click', {});
   topButton('公式引用').dispatch('click', {});
-  assert.deepEqual(inserted.slice(-3), ['inline-math', 'ref', 'eqref']);
+  topButton('文献引用').dispatch('click', {});
+  assert.deepEqual(inserted.slice(-4), ['inline-math', 'ref', 'eqref', 'noteref']);
 
   // 复杂插入仍在第一级且可插入（表格 / 代码块 / 公式块）。
   topButton('表格').dispatch('click', {});

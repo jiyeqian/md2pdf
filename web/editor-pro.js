@@ -192,24 +192,26 @@ function transformLines(sel, kind) {
   }
 }
 
-// 图表引用（\ref）/ 公式引用（\eqref）：优先复用现有补全目标，无目标时给出可编辑占位。
+// 引用入口只插入语法骨架；候选来自文档中已有目标。
 function insertReference(mode) {
   const editor = getApi();
   const sel = editor.getSelection();
-  const open = mode === 'eqref' ? '\\eqref{' : '\\ref{';
+  const open = mode === 'noteref' ? '[^' : mode === 'eqref' ? '\\eqref{' : '\\ref{';
+  const close = mode === 'noteref' ? ']' : '}';
   let candidates = false;
   try {
     const result = provideCompletions({ text: open, pos: open.length }, analyzeValue(editor.getValue()));
     candidates = !!(result && Array.isArray(result.options) && result.options.length);
-  } catch (err) { /* 分析失败时退回占位 */ }
-  const id = candidates ? '' : mode === 'eqref' ? 'eq:name' : 'fig:name';
-  editor.replaceRange(sel.from, sel.to, open + id + '}');
+  } catch (err) { /* 分析失败时仍保留可编辑的空引用。 */ }
+  editor.replaceRange(sel.from, sel.to, open + close);
   const at = sel.from + open.length;
-  selectRange(at, at + id.length);
+  selectRange(at, at);
   if (candidates && editor.startCompletion) editor.startCompletion();
   if (!candidates) {
     const status = document.getElementById('status');
-    if (status) status.textContent = mode === 'eqref' ? '请先为公式添加标签，再选择公式引用。' : '请先为图表添加标签，再选择图表引用。';
+    if (status) status.textContent = mode === 'noteref'
+      ? '请先插入参考文献，再选择文献引用。'
+      : mode === 'eqref' ? '请先为公式添加标签，再选择公式引用。' : '请先为图表添加标签，再选择图表引用。';
   }
 }
 
@@ -309,6 +311,7 @@ function insert(name) {
       case 'ol': transformLines(sel, 'ol'); break;
       case 'ref': insertReference('ref'); break;
       case 'eqref': insertReference('eqref'); break;
+      case 'noteref': insertReference('noteref'); break;
       case 'quote': transformLines(sel, 'quote'); break;
       case 'footnote': insertDefinition('footnote', sel, '注释内容'); break;
       case 'bibliography': insertDefinition('bibliography', sel, '文献标题'); break;

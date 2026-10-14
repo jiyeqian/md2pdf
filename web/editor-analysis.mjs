@@ -675,11 +675,6 @@ export function provideCompletions(context, analysis) {
   const before = text.slice(0, pos);
   const fields = frontmatterCompletions(text, pos, context.frontmatterValues);
   if (fields) return fields;
-  const command = /\\([re])$/.exec(before);
-  if (command && !isSuppressedContext(text, pos)) {
-    const apply = command[1] === 'r' ? '\\ref{}' : '\\eqref{}';
-    return { from: pos - 2, to: pos, options: [{ label: apply.slice(0, -2), type: 'keyword', apply, selectionOffset: apply.length - 1, startCompletion: true }] };
-  }
   for (const trigger of COMPLETION_TRIGGERS) {
     const m = trigger.re.exec(before);
     if (!m) continue;

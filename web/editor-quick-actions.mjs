@@ -3,6 +3,7 @@ export function protectedRanges(text) {
   const ranges = [];
   const fm = /^(?:\uFEFF)?---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/.exec(text);
   if (fm) ranges.push([0, fm[0].endsWith("\n") ? fm[0].length-1 : fm[0].length]);
+  else if (/^(?:\uFEFF)?---(?:\r?\n|$)/.test(text)) ranges.push([0,text.length]);
   const lines = text.split('\n'); let offset = 0, open = null;
   for (const line of lines) {
     if (!open) {
@@ -64,16 +65,19 @@ export function transformSelection(text, from, to, action) {
   if (to > end) mapped[1]=newOffset;
   return {from:start,to:end,text:values.join('\n'),anchor:mapped[0],head:mapped[1]};
 }
-const labels = {link:'链接',bold:'粗体',italic:'斜体',strike:'删除线',ul:'无序列表',ol:'有序列表',quote:'引用块',image:'图片',table:'表格',codeblock:'代码块',formula:'公式块',figure:'图表',footnote:'参考文献',bibliography:'BibTeX参考文献',doi:'DOI参考文献'};
+const labels = {link:'链接',bold:'粗体',italic:'斜体',strike:'删除线',ul:'无序列表',ol:'有序列表',quote:'引用块',image:'图片',table:'表格',codeblock:'代码块',formula:'公式块',figure:'图表',footnote:'参考文献',bibliography:'BibTeX参考文献',doi:'DOI参考文献',ref:'图表引用',eqref:'公式引用',noteref:'文献引用'};
 const paths = {link:'M10 8l4-4a4 4 0 015 5l-4 4M14 16l-4 4a4 4 0 01-5-5l4-4M8 16l8-8',bold:'M7 4h6a4 4 0 010 8H7zm0 8h7a4 4 0 010 8H7z',italic:'M10 4h8M6 20h8M15 4L9 20',strike:'M5 12h14M17 6c-6-5-14 4-6 6 8 2 4 11-3 6',ul:'M8 6h12M8 12h12M8 18h12M3 6h1M3 12h1M3 18h1',ol:'M9 6h11M9 12h11M9 18h11M3 4h1v4M3 11h2l-2 3h2M3 17h2v3H3',quote:'M4 5h6v7H7l-3 6M14 5h6v7h-3l-3 6',image:'M3 4h18v16H3zM3 17l6-6 4 4 3-3 5 5M7 8h1',table:'M3 4h18v16H3zM3 10h18M10 4v16',codeblock:'M8 6l-5 6 5 6M16 6l5 6-5 6M14 3l-4 18',formula:'M5 2h10M5 18h10M6 5h8l-4.5 5 4.5 5H6'};
 export function slashActions(text, pos) {
   if (isProtected(text,pos)) return null;
   const before=text.slice(0,pos), line=before.slice(before.lastIndexOf('\n')+1);
+  const reference=/\\([reb])$/.exec(before);
+  if(reference) return {from:pos-2,actions:[{r:'ref',e:'eqref',b:'noteref'}[reference[1]]]};
   const tail=text.slice(pos,text.indexOf('\n',pos)<0?text.length:text.indexOf('\n',pos));
   if (before.endsWith('/b')) return {from:pos-2,actions:['footnote','bibliography','doi']};
   if (!/^[ \t\r]*$/.test(tail)) return null;
-  if (/^[ \t]*\/m$/.test(line)) return {from:pos-2,actions:['figure']};
-  if (/^[ \t]*\/$/.test(line)) return {from:pos-1,actions:['image','table','codeblock','formula']};
+  if (/^[ \t]*\/r$/.test(line)) return {from:pos-2,actions:['table','image','figure']};
+  if (/^[ \t]*\/e$/.test(line)) return {from:pos-2,actions:['formula']};
+  if (/^[ \t]*\/$/.test(line)) return {from:pos-1,actions:['codeblock']};
   return null;
 }
 export function installQuickActions(editor) {
