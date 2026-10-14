@@ -12,6 +12,8 @@
 // 重要：所有编辑动作只用可撤销的 replaceRange / replaceSelection，绝不调用 setValue
 //       （setValue 会重建编辑器状态、清空撤销历史）。
 
+import { installQuickActions } from './editor-quick-actions.mjs';
+
 import {
   analyzeMarkdown,
   renderSnippet,
@@ -487,6 +489,7 @@ function init() {
 
   if (!buildPanel()) return;
 
+  installQuickActions(editor);
   const value = editor.getValue();
   latestAnalysis = analyzeValue(value);
   currentType = inferType(value, formTypeValue());

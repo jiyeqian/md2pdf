@@ -16,6 +16,7 @@
  * 安全：解析结果经 sanitize 深拷贝，剔除 __proto__ / prototype / constructor，
  * 防止 YAML 反序列化污染原型；解析设置 maxAliasCount 上限，避免别名炸弹。
  */
+import { TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES } from './frontmatter-fields.mjs';
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { GLOBAL_OPTION_DEFAULTS, FEATURES, RUNTIME_FEATURES, listThemes } from './options.mjs';
 import { PROFILE_NAMES } from './profiles.mjs';
@@ -68,58 +69,12 @@ const typeName = v => {
 
 /* ---------------- 字段表 ---------------- */
 
-const TEXT_FIELDS = ['title', 'kicker', 'colophonLeft', 'colophonCenter', 'colophonRight', 'headerLeft', 'headerCenter', 'headerRight', 'footerLeft', 'footerCenter', 'footerRight', 'bibliographyTitle'];
-const NUMBER_FIELDS = {
-  fontSize: { min: 0.1 },
-  lineHeight: { min: 0.1 },
-  marginTop: { min: 0 },
-  marginBottom: { min: 0 },
-  marginLeft: { min: 0 },
-  marginRight: { min: 0 },
-  marginSide: { min: 0 },
-  tocDepth: { min: 1, enum: [1, 2] },
-};
-const BOOL_FIELDS = ['header', 'colophonEnabled', 'footer', 'meta', 'lead', 'toc', 'outline', 'floatNumbering', 'gbCover', 'gbDefaults', 'linkUrls', 'landscape'];
 const ENUM_FIELDS = {
   theme: { label: '主题', values: () => listThemes() },
   type: { label: '文档类型', values: () => PROFILE_NAMES.slice() },
   numbering: { label: '编号模式', values: () => ['auto', 'force', 'none'] },
   numberScheme: { label: '编号方案', values: () => SCHEME_NAMES.slice() },
 };
-const CONTROL_FIELDS = ['enable', 'disable'];
-const SPECIAL_FIELDS = ['margin', 'bibliography'];
-const CONFIG_FIELDS = new Set([
-  ...TEXT_FIELDS, ...Object.keys(NUMBER_FIELDS), ...BOOL_FIELDS,
-  ...Object.keys(ENUM_FIELDS), ...CONTROL_FIELDS, ...SPECIAL_FIELDS,
-]);
-
-// kebab-case（及少量别名）→ 规范 camelCase
-const FM_ALIASES = {
-  fontSize: ['font-size'],
-  lineHeight: ['line-height'],
-  tocDepth: ['toc-depth'],
-  numberScheme: ['number-scheme'],
-  floatNumbering: ['float-numbering'],
-  gbCover: ['gb-cover'],
-  gbDefaults: ['gb-defaults'],
-  linkUrls: ['link-urls'],
-  marginTop: ['margin-top'],
-  marginBottom: ['margin-bottom'],
-  marginLeft: ['margin-left'],
-  marginRight: ['margin-right'],
-  marginSide: ['margin-side'],
-  colophonLeft: ['colophon-left', 'colophon'],
-  colophonCenter: ['colophon-center'],
-  colophonRight: ['colophon-right'],
-  headerLeft: ['header-left'],
-  headerCenter: ['header-center'],
-  headerRight: ['header-right'],
-  footerLeft: ['footer-left'],
-  footerCenter: ['footer-center'],
-  footerRight: ['footer-right'],
-  bibliographyTitle: ['bibliography-title'],
-};
-
 const canonicalField = raw => {
   if (!raw) return null;
   if (CONFIG_FIELDS.has(raw)) return raw;

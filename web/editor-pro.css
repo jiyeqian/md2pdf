@@ -124,3 +124,11 @@
   .md-pro-body { max-height: min(180px, 25vh); }
 }
 
+
+/* Compact actions follow the source selection without consuming editor columns. */
+.md-quick-actions { position: fixed; z-index: 1000; display: flex; gap: 2px; padding: 3px; background: var(--bg, #fff); border: 1px solid #d7dce2; border-radius: 6px; box-shadow: 0 2px 8px #0002; }
+.md-quick-actions[hidden] { display: none; }
+.md-quick-actions button { width: 28px; height: 28px; display: grid; place-items: center; padding: 4px; border: 0; border-radius: 3px; background: transparent; color: inherit; cursor: pointer; }
+.md-quick-actions svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.md-quick-actions button:hover, .md-quick-actions button.is-active { background: #e8edf3; }
+.md-quick-actions button:focus-visible { outline: 2px solid #557ba6; }

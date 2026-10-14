@@ -103,6 +103,8 @@
   // 默认开启的同步定位是一个带 aria-pressed 的图标开关按钮。
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var ICONS = {
+    indentMore: [{ d: 'M8 4h9M8 10h9M8 16h9M2 7l3 3-3 3' }],
+    indentLess: [{ d: 'M8 4h9M8 10h9M8 16h9M5 7l-3 3 3 3' }],
     open: [{ d: 'M3 6h5l2 2h7v7H3z' }, { d: 'M3 6V4h5l2 2h5v2' }],
     save: [{ d: 'M4 3h10l3 3v11H4z' }, { d: 'M7 3v5h6V3M7 17v-6h7v6' }],
     undo: [{ d: 'M7 5.2 3.6 8.6 7 12' }, { d: 'M3.6 8.6H12a4.4 4.4 0 0 1 0 8.8H9.4' }],
@@ -267,7 +269,9 @@
     ] },
     { label: '列表', items: [
       { icon: 'listDash', label: '无序列表', action: 'ul-dash', insert: 'ul-dash' },
-      { icon: 'listOl', label: '有序列表', action: 'ol', insert: 'ol' }
+      { icon: 'listOl', label: '有序列表', action: 'ol', insert: 'ol' },
+      { icon: 'indentMore', label: '右缩进', command: 'indentMore' },
+      { icon: 'indentLess', label: '左缩进', command: 'indentLess' }
     ] },
     { label: '行内元素', items: [
       { icon: 'link', label: '链接', action: 'link', insert: 'link' },
@@ -348,7 +352,7 @@
       var button = make('button', { type: 'button', class: 'md-wt-button md-wt-menu-item', role: 'menuitem', title: itemTitle(item), 'aria-label': item.label, tabindex: '-1' });
       button.appendChild(iconSvg(item.icon));
       button.addEventListener('click', function () {
-        runInsert(item.insert);
+        if (item.command) runCommand(item.command); else runInsert(item.insert);
         closeBasicMenu(false); // 让 runInsert 的 focusEditor 保持焦点
       });
       commandButtons.push(button);

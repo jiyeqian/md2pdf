@@ -1,3 +1,4 @@
+import { FRONTMATTER_FIELDS, ARRAY_FIELDS, canonicalFrontmatterField } from '../src/frontmatter-fields.mjs';
 /**
  * md2pdf 专业辅助 · 纯解析模块
  *
@@ -638,7 +639,17 @@ function isSuppressedContext(text, pos) {
     else if (transition === 'close') fence = null;
   }
   if (fence) return true;
+  let math = false;
+  let scanFence = null;
+  for (const line of lines.slice(0, -1)) {
+    const transition = fenceTransition(line, scanFence);
+    if (transition === 'open') scanFence = fenceInfo(line);
+    else if (transition === 'close') scanFence = null;
+    else if (!scanFence && /^\s*\$\$\s*$/.test(line)) math = !math;
+  }
+  if (math) return true;
   const cursorLine = lines[lines.length - 1] || '';
+  if (/^\s*\$\$/.test(cursorLine) && !/^\s*\$\$[\s\S]*\$\$/.test(cursorLine)) return true;
   if (fenceInfo(cursorLine)) {
     const transition = fenceTransition(cursorLine, fence);
     if (transition === 'open' || transition === 'close') return true;
@@ -662,6 +673,13 @@ export function provideCompletions(context, analysis) {
   const pos = context.pos;
   if (pos < 0 || pos > text.length) return null;
   const before = text.slice(0, pos);
+  const fields = frontmatterCompletions(text, pos);
+  if (fields) return fields;
+  const command = /\\([re])$/.exec(before);
+  if (command && !isSuppressedContext(text, pos)) {
+    const apply = command[1] === 'r' ? '\\ref{}' : '\\eqref{}';
+    return { from: pos - 2, to: pos, options: [{ label: apply.slice(0, -2), type: 'keyword', apply, selectionOffset: apply.length - 1, startCompletion: true }] };
+  }
   for (const trigger of COMPLETION_TRIGGERS) {
     const m = trigger.re.exec(before);
     if (!m) continue;
@@ -721,4 +739,35 @@ function refOptions(analysis, typed, mode) {
 function firstLine(text) {
   const s = String(text == null ? '' : text).split('\n')[0].trim();
   return s.length > 60 ? s.slice(0, 57) + '…' : s;
+}
+
+function frontmatterCompletions(text, pos) {
+  const lines = text.split('\n');
+  if (!/^\uFEFF?---\s*$/.test(lines[0])) return null;
+  let end = -1;
+  for (let i = 1; i < lines.length; i++) if (/^---\s*$/.test(lines[i])) { end = i; break; }
+  if (end < 0) return null;
+  const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+  const lineIndex = text.slice(0, lineStart).split('\n').length - 1;
+  if (lineIndex < 1 || lineIndex >= end) return null;
+  const prefix = text.slice(lineStart, pos);
+  if (!/^[^\s:#{}[\],]+$/.test(prefix)) return null;
+  const lineEnd = text.indexOf('\n', pos);
+  const suffix = text.slice(pos, lineEnd < 0 ? text.length : lineEnd).replace(/\r$/, '');
+  // Only complete an unfinished top-level key; a value already present is preserved.
+  if (!/^[^\s:#{}[\],]*(?::[ \t]*)?$/.test(suffix)) return null;
+  const used = new Set();
+  for (let i = 1; i < end; i++) {
+    if (i === lineIndex) continue;
+    const match = /^([^\s:#{}[\],]+):/.exec(lines[i]);
+    if (match) used.add(canonicalFrontmatterField(match[1]));
+  }
+  const typed = prefix.toLowerCase();
+  const score = field => field.toLowerCase() === typed ? 0 : field.toLowerCase().startsWith(typed) ? 1 : 2;
+  const fields = FRONTMATTER_FIELDS.filter(field => field.toLowerCase().includes(typed) && !used.has(canonicalFrontmatterField(field)));
+  fields.sort((a, b) => score(a) - score(b));
+  return { from: lineStart, to: pos + suffix.length, options: fields.map(field => {
+    const apply = field + ': ' + (ARRAY_FIELDS.has(field) ? '\n  - ' : '');
+    return { label: field, type: 'property', apply, selectionOffset: apply.length };
+  }) };
 }

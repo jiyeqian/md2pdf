@@ -485,3 +485,68 @@ test('引用插入展示候选而不自动选定；无候选保留占位并提�
     assert.equal(!!status.textContent, !candidates);
   }
 });
+
+
+test('abbreviated references complete command before targets, with caret inside', () => {
+  for (const [input, apply] of [['\\r', '\\ref{}'], ['\\e', '\\eqref{}']]) {
+    const result = provideCompletions({ text: input, pos: input.length }, analyzeMarkdown(input));
+    assert.equal(result.from, 0);
+    assert.equal(result.options[0].apply, apply);
+    assert.equal(result.options[0].selectionOffset, apply.length - 1);
+    assert.equal(result.options[0].startCompletion, true);
+  }
+  assert.equal(provideCompletions({ text: '\\', pos: 1 }, analyzeMarkdown('\\')), null);
+  for (const text of ['```\n\\r\n```', '$$\n\\r\n$$', '$$ x \\r $$', '$$ x \\e $$', '---\ntitle: \\r\n---']) {
+    const pos = text.indexOf('\\r') + 2;
+    assert.equal(provideCompletions({ text, pos }, analyzeMarkdown(text)), null);
+  }
+});
+
+test('frontmatter fields match independent of document type and preserve optimal caret', () => {
+  const complete = (body, typed) => {
+    const text = '---\n' + body + '\n---';
+    const pos = text.lastIndexOf(typed) + typed.length;
+    return provideCompletions({ text, pos }, analyzeMarkdown(text));
+  };
+  assert.equal(complete('title: Existing\n标准', '标准').options.some(o => o.label === '标准号'), true);
+  assert.equal(complete('title: Existing\ntit', 'tit').options.some(o => o.label === 'title'), false);
+  const scalar = complete('author:', 'author').options[0];
+  assert.equal(scalar.apply, 'author: ');
+  assert.equal(scalar.selectionOffset, scalar.apply.length);
+  const list = complete('起草单', '起草单').options[0];
+  assert.equal(list.apply, '起草单位: \n  - ');
+  assert.equal(list.selectionOffset, list.apply.length);
+  assert.deepEqual(complete('zzzz', 'zzzz').options, []);
+  assert.equal(complete('  tit', 'tit'), null);
+  assert.equal(complete('author: someone', 'author'), null);
+  assert.equal(complete('header', 'header').options[0].label, 'header');
+  assert.equal(complete('font-size: 12\nfont', 'font').options.some(o => o.label === 'fontSize'), false);
+});
+
+test('field completion replaces remaining key and existing colon only once', () => {
+  const text = '---\nauthor: \n---';
+  const pos = text.indexOf('author') + 3;
+  const result = provideCompletions({ text, pos }, analyzeMarkdown(text));
+  const option = result.options.find(o => o.label === 'author');
+  assert.equal(text.slice(0, result.from) + option.apply + text.slice(result.to), '---\nauthor: \n---');
+  const listText = '---\n起草单位:\n---';
+  const list = provideCompletions({ text: listText, pos: listText.indexOf('起草单位') + 2 }, analyzeMarkdown(listText));
+  assert.equal(listText.slice(0, list.from) + list.options[0].apply + listText.slice(list.to), '---\n起草单位: \n  - \n---');
+  assert.equal(provideCompletions({ text: '---\ntit', pos: 7 }, analyzeMarkdown('---\ntit')), null);
+});
+
+test('field catalog contains only config definitions and supported documented metadata', async () => {
+  const { FRONTMATTER_FIELDS, CONFIG_FIELDS, FM_ALIASES, METADATA_FIELDS } = await import('../src/frontmatter-fields.mjs');
+  assert.equal(FRONTMATTER_FIELDS.length, new Set(FRONTMATTER_FIELDS).size);
+  for (const field of CONFIG_FIELDS) {
+    const preferred = FM_ALIASES[field]?.[0] || field;
+    assert.ok(FRONTMATTER_FIELDS.includes(preferred));
+    if (preferred !== field) assert.ok(!FRONTMATTER_FIELDS.includes(field));
+  }
+  assert.ok(FRONTMATTER_FIELDS.includes('toc-depth'));
+  assert.ok(!FRONTMATTER_FIELDS.includes('tocDepth'));
+  assert.ok(!FRONTMATTER_FIELDS.includes('colophon'));
+  const renderer = fs.readFileSync(new URL('../src/render.mjs', import.meta.url), 'utf8');
+  const docs = fs.readFileSync(new URL('../docs/gb-template.md', import.meta.url), 'utf8');
+  for (const field of METADATA_FIELDS) assert.ok(renderer.includes(field) || docs.includes('`' + field + '`'), field);
+});

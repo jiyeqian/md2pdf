@@ -124,6 +124,18 @@
   box-shadow: 0 8px 24px rgba(35, 62, 96, .12);
 }
 
+.md-editor-host .cm-tooltip.cm-tooltip-autocomplete > ul {
+  min-width: 0;
+  max-width: min(360px, 90vw);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.md-editor-host .cm-tooltip.cm-tooltip-autocomplete > ul > li {
+  padding: 2px 6px;
+  line-height: 1.4;
+}
+
 .md-editor-host .cm-tooltip-autocomplete ul li[aria-selected] {
   background: #eef2f8;
   color: #233e60;

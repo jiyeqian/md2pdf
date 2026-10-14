@@ -465,7 +465,14 @@
           const mapped = { label: option.label };
           if (option.type !== undefined) mapped.type = option.type;
           if (option.detail !== undefined) mapped.detail = option.detail;
-          if (typeof option.apply === 'string') mapped.apply = option.apply;
+          if (typeof option.apply === 'string') {
+            mapped.apply = Number.isFinite(option.selectionOffset) || option.startCompletion
+              ? function (target, completion, from, to) {
+                const caret = from + (Number.isFinite(option.selectionOffset) ? option.selectionOffset : option.apply.length);
+                target.dispatch({ changes: { from, to, insert: option.apply }, selection: { anchor: caret }, userEvent: 'input.complete' });
+                if (option.startCompletion) setTimeout(function () { V.startCompletion(target); }, 0);
+              } : option.apply;
+          }
           return mapped;
         });
       if (!options.length) return null;
@@ -609,6 +616,7 @@
           detail: { changes: update.changes },
         }));
       }
+      if (update.selectionSet) doc.dispatchEvent(new CustomEvent('md-editor-selection'));
       emitCursor(update.state.doc.lineAt(update.state.selection.main.head).number);
     });
 
@@ -661,7 +669,7 @@
       V.bracketMatching(),
       V.closeBrackets(),
       V.highlightSelectionMatches(),
-      completionCompartment.of(V.autocompletion({ override: [completionSource], activateOnTyping: true })),
+      completionCompartment.of(V.autocompletion({ override: [completionSource], activateOnTyping: true, icons: false, maxRenderedOptions: 5 })),
       markdownSupport,
       V.syntaxHighlighting(V.defaultHighlightStyle, { fallback: true }),
       V.syntaxHighlighting(highlightStyle),
@@ -679,6 +687,8 @@
 
     // ---- public API ----
     const commands = {
+      indentMore: function () { return V.indentWithTab.run(view); },
+      indentLess: function () { return V.indentWithTab.shift(view); },
       undo: function () { return V.undo(view); },
       redo: function () { return V.redo(view); },
       find: function () { return V.openSearchPanel(view); },
@@ -698,6 +708,10 @@
 
     const api = {
       __mounted: true,
+      coordsAtPos: function (pos) { return view.coordsAtPos(pos); },
+      applyEdit: function (from, to, text, anchor, head) {
+        view.dispatch({ changes: { from, to, insert: text }, selection: { anchor, head: head === undefined ? anchor : head }, userEvent: 'input.format' });
+      },
       getValue: function () { return view.state.doc.toString(); },
       captureViewport: function () {
         const block = view.lineBlockAtHeight(view.scrollDOM.scrollTop);
@@ -753,7 +767,7 @@
       },
       setCompletions: function (provider) {
         completionProvider = typeof provider === 'function' ? provider : null;
-        view.dispatch({ effects: completionCompartment.reconfigure(V.autocompletion({ override: completionProvider ? [completionSource] : [], activateOnTyping: true })) });
+        view.dispatch({ effects: completionCompartment.reconfigure(V.autocompletion({ override: completionProvider ? [completionSource] : [], activateOnTyping: true, icons: false, maxRenderedOptions: 5 })) });
       },
     };
 

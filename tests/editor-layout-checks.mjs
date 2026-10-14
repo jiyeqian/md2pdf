@@ -456,6 +456,7 @@ test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执�
   const menuButtons = (basicMenu.children || []).reduce((out, row) => out.concat(row.children || []), []);
   const itemFor = label => menuButtons.find(b => b.getAttribute('aria-label') === label);
   const topButton = label => all.find(n => n.tagName === 'BUTTON' && n.getAttribute && n.getAttribute('aria-label') === label);
+  assert.deepEqual(menuButtons.filter(b => ['有序列表', '右缩进', '左缩进'].includes(b.getAttribute('aria-label'))).map(b => b.getAttribute('aria-label')), ['有序列表', '右缩进', '左缩进']);
   assert.ok(itemFor('二级标题') && itemFor('行内公式'), '第二级应含标题与行内公式');
   assert.ok(topButton('图表引用') && topButton('公式引用'), '第一级应含图表引用与公式引用');
 
