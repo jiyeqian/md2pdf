@@ -119,6 +119,16 @@ try {
   assert.equal((await snapshot()).menus, 0, 'outside click dismisses the menu');
   await evaluate(`groupTrigger().click(); foldView.scrollDOM.dispatchEvent(new Event('scroll'))`);
   assert.equal((await snapshot()).menus, 0, 'scroll dismisses the menu');
+  const mixedSource = source.replace('\n\n末尾正文', '\n\n[^plain]: 普通参考文献\n\n末尾正文');
+  await evaluate(`mdEditor.setValue(${JSON.stringify(mixedSource)}); new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))`);
+  await evaluate(`groupTrigger().click(); document.querySelector('.md-fold-group').click()`);
+  state = await snapshot();
+  assert.ok(state.lines.includes('参考文献 · 3 条 …'), 'mixed references share one folding row');
+  assert.equal(state.lines.some(line => line.includes('[^plain]')), false, 'ordinary reference is included in the group');
+  assert.ok(state.lines.includes('末尾正文'), 'adjacent prose stays visible');
+  await evaluate(`[...document.querySelectorAll('.cm-foldPlaceholder')].find(el => el.textContent.includes('参考文献')).click()`);
+  assert.ok((await snapshot()).lines.includes('[^plain]: 普通参考文献'));
+  assert.equal((await snapshot()).source, mixedSource);
   const listSource = '---\n起草单位:\n  - 第一单位\n---\n\n- 正文列表';
   await evaluate(`mdEditor.setValue(${JSON.stringify(listSource)});
     mdEditor.setSelection(mdEditor.getValue().indexOf('第一单位') + 4); mdEditor.focus()`);

@@ -119,3 +119,5 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .config-error-message{min-width:0;word-break:break-word}
 
 .privacy button{border:0;background:none;padding:0;color:inherit;font:inherit;line-height:inherit;text-decoration:none}
+
+.template-confirm{width:min(420px,calc(100vw - 40px));padding:24px;border:1px solid #dfe5ed;border-radius:12px;color:#26394f;background:#fff;box-shadow:0 18px 60px #233e6033}.template-confirm::backdrop{background:#233e6055}.template-confirm h2{margin:0 0 12px;font-size:16px}.template-confirm p{margin:0;font-size:14px;line-height:1.7;color:#677389}.template-confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}.template-confirm-actions button{padding:9px 16px;border-radius:7px;font-size:13px}.template-confirm-cancel{border:1px solid #d9e0e9;background:#fff;color:#42648b}.template-confirm-cancel:hover{background:#f3f6fa}

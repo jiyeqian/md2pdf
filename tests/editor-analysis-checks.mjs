@@ -548,7 +548,8 @@ test('field catalog contains only config definitions and supported documented me
   assert.ok(!FRONTMATTER_FIELDS.includes('colophon'));
   const renderer = fs.readFileSync(new URL('../src/render.mjs', import.meta.url), 'utf8');
   const docs = fs.readFileSync(new URL('../docs/gb-template.md', import.meta.url), 'utf8');
-  for (const field of METADATA_FIELDS) assert.ok(renderer.includes(field) || docs.includes('`' + field + '`'), field);
+  const files = fs.readFileSync(new URL('../web/editor-files.mjs', import.meta.url), 'utf8');
+  for (const field of METADATA_FIELDS) assert.ok(renderer.includes(field) || docs.includes('`' + field + '`') || (field === 'version' && files.includes("frontmatterScalar(markdown, 'version')")), field);
 });
 
 
@@ -620,4 +621,12 @@ test('confirming frontmatter values supplies a missing colon separator only once
     assert.equal(completed, '---\n' + expected + '\n---');
     assert.doesNotThrow(() => parseFrontmatter(completed));
   }
+});
+
+test('version is recommended as a quoted filename metadata field',()=>{
+ const text='---\nvers\n---';
+ const result=provideCompletions({text,pos:8},analyzeMarkdown(text));
+ assert.equal(result.options[0].label,'version');
+ assert.equal(result.options[0].apply,'version: ""');
+ assert.equal(result.options[0].selectionOffset,'version: "'.length);
 });

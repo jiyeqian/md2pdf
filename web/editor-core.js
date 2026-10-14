@@ -236,11 +236,6 @@
     const first = tree.topNode.firstChild;
     const fm = first && first.name === 'MdFrontmatter' ? first : null;
     tree.iterate({ enter(node) {
-      if (node.name === 'MdBibliographyGroup') {
-        let count = 0;
-        for (let child = node.node.firstChild; child; child = child.nextSibling) count++;
-        groups.push({ from: node.from, to: node.to, start: node.from, count, firstTo: node.node.firstChild.to });
-      }
       if (fm && node.name === 'Pair' && node.from < fm.to) {
         const key = node.node.firstChild;
         const value = key && key.nextSibling && key.nextSibling.nextSibling;
@@ -251,6 +246,28 @@
         if (to > line.to) fields.set(line.from, { from: line.to, to });
       }
     } });
+    // Combine adjacent top-level references without changing ordinary footnote
+    // parsing or consuming the prose that follows the reference area.
+    let references = [];
+    const flushReferences = () => {
+      if (references.length > 1 && references.some(node => node.name === 'MdBibtexFootnote')) {
+        const first = references[0], last = references[references.length - 1];
+        groups.push({ from: first.from, to: last.to, start: first.from,
+          count: references.length, firstTo: first.to });
+      }
+      references = [];
+    };
+    for (let node = tree.topNode.firstChild; node; node = node.nextSibling) {
+      const members = [];
+      if (node.name === 'MdBibliographyGroup') {
+        for (let child = node.firstChild; child; child = child.nextSibling) members.push(child);
+      } else if (node.name === 'MdBibtexFootnote' || node.name === 'MdFootnoteDefinition') members.push(node);
+      if (!members.length) { flushReferences(); continue; }
+      const previous = references[references.length - 1];
+      if (previous && !/^\s*$/.test(state.doc.sliceString(previous.to, members[0].from))) flushReferences();
+      references.push(...members);
+    }
+    flushReferences();
     const result = { tree, groups, fields };
     structureCache.set(state, result);
     return result;

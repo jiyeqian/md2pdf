@@ -173,11 +173,10 @@ window.addEventListener('message', event => {
   else if (event.data.type === 'md2pdf-error') { clearTimeout(previewTimer); setPreviewState(event.data.error || '预览排版失败。', true); }
 });
 
-useButton.addEventListener('click', () => {
+useButton.addEventListener('click', async () => {
   const md = source.value;
   if (!md.trim()) return;
-  const existing = readDraftMd();
-  if (existing.trim() && !window.confirm('编辑器中有草稿，使用该示例会将其替换，是否继续？')) return;
+  if (!await window.mdConfirmTemplate()) return;
   const meta = catalog.find(entry => entry.id === activeId) || {};
   try {
     sessionStorage.setItem(HANDOFF_KEY, JSON.stringify({ md, type: activeType || meta.type || '', title: meta.title || '', replaceConfirmed: true }));

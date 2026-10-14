@@ -92,19 +92,20 @@ h1 {
 
 /* ---------- 目录 ---------- */
 .toc {
+  font-size: calc(var(--doc-font-size) / 10.5 * 9.5);
   margin: 0 0 28px;
   padding: 14px 18px;
   background: var(--tint);
   border: 1px solid var(--rule);
 }
 .toc-title {
-  font-size: 9.5pt; text-align: center; white-space: pre; color: var(--accent);
+  font-size: inherit; text-align: center; white-space: pre; color: var(--accent);
   font-weight: 600; margin-bottom: 8px;
 }
 .toc ol { margin: 0; padding-left: 0; list-style: none; }
 /* 正文的 ol > li 有 30px 悬挂缩进（供序号落位）。目录项不是正文有序列表，
  * 必须显式清零内缩，否则一级条目整体右移、与目录块左缘不齐。 */
-.toc li { position: relative; margin: 3px 0; padding-left: 0; font-size: 9.5pt; }
+.toc li { position: relative; margin: 3px 0; padding-left: 0; font-size: inherit; }
 .toc li::before { content: none; }
 .toc li.toc-level-1 > a { margin-left: 1.5em; }
 .toc a { color: var(--ink); text-decoration: none; border: none; }

@@ -618,8 +618,7 @@ async function boot() {
   // 显式「使用此示例」经由 sessionStorage 交接；已有草稿需确认才替换。
   if (revision === startedAt && handoff && typeof handoff.md === 'string') {
     writeStore(HANDOFF_KEY, null);
-    const hasDraft = editor.value.trim().length > 0;
-    if (handoff.replaceConfirmed || !hasDraft || window.confirm('使用示例会替换编辑器中的当前草稿，是否继续？')) {
+    if (handoff.replaceConfirmed || await window.mdConfirmTemplate()) {
       editor.value = handoff.md;
       if (handoff.type) {
         if (policyDoc && policyDoc.policy && policyDoc.policy[handoff.type]) applyPolicy(policyDoc.policy[handoff.type]);

@@ -114,8 +114,8 @@ test('blank-separated entries form a group with independent first-entry and grou
   assert.equal(folded.doc.toString(), source);
 });
 
-test('prose, ordinary footnotes and code terminate or exclude bibliography groups', () => {
-  for (const separator of ['正文', '## 标题', '[^ordinary]: 普通脚注', '    [^code]: @article{x,title={code}}']) {
+test('prose and code terminate or exclude bibliography groups', () => {
+  for (const separator of ['正文', '## 标题', '    [^code]: @article{x,title={code}}']) {
     const state = stateFor(entry('one') + '\n\n' + separator + '\n\n' + entry('two'));
     assert.equal(nodes(state).filter(node => node.name === 'MdBibtexFootnote').length, 2);
     assert.equal(H.bibliographyGroups(V, state).length, 0);
@@ -232,4 +232,29 @@ test('frontmatter continuation leaves prose lists, code and ordinary YAML fields
     assert.equal(result.handled, false);
     assert.equal(result.state.doc.toString(), source);
   }
+});
+
+test('mixed references include leading, middle and trailing ordinary footnotes without swallowing prose', () => {
+  for (const source of [
+    '[^plain]: **普通参考文献**\n\n' + entry('one'),
+    entry('one') + '\n\n[^plain]: **普通参考文献**\n\n' + entry('two'),
+    entry('one') + '\n\n[^plain]: **普通参考文献**'
+  ]) {
+    const state = stateFor(source + '\n\n正文');
+    const tree = nodes(state), groups = H.bibliographyGroups(V, state);
+    assert.equal(groups.length, 1);
+    assert.equal(groups[0].to, source.length);
+    assert.equal(groups[0].count, source.includes('[^two]') ? 3 : 2);
+    assert.ok(tree.some(node => node.name === 'StrongEmphasis'));
+    const group = groups[0];
+    const folded = state.update({ effects: V.foldEffect.of(group) }).state;
+    assert.deepEqual(ranges(folded), [{ from: group.from, to: source.length }]);
+    assert.equal(state.doc.sliceString(group.to).trim(), '正文');
+  }
+});
+
+test('ordinary footnotes alone retain their existing folding behavior', () => {
+  const state = stateFor('[^a]: 普通甲\n\n[^b]: 普通乙');
+  nodes(state);
+  assert.equal(H.bibliographyGroups(V, state).length, 0);
 });

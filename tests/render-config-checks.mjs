@@ -159,3 +159,20 @@ test('自定义 center 不被 finalizePagedCounters 覆盖；列表序号修正�
   assert.match(off.html, /finalizePagedCounters\(false\)/);
   assert.ok(def.html.includes('stampPagedLists'));
 });
+
+test('目录采用文档字号比例，CLI 与 Web 共用缩放规则', async () => {
+  for (const theme of ['elegant', 'minimal']) {
+    for (const fontSize of [10.5, 21]) {
+      const source = '# 文档\n\n## 一级\n\n### 二级\n';
+      const options = { theme, fontSize, toc: true, tocDepth: 2 };
+      const cli = await render(source, options, { generatedAt: AT });
+      const preview = await web(source, options);
+      for (const html of [cli.html, preview.html]) {
+        assert.ok(html.includes('--doc-font-size: ' + fontSize + 'pt'));
+        assert.match(html, /\.toc \{\s*font-size: calc\(var\(--doc-font-size\) \/ 10\.5 \* 9\.5\)/);
+        assert.match(html, /\.toc-title \{\s*font-size: inherit/);
+        assert.match(html, /\.toc li \{[^}]*font-size: inherit/);
+      }
+    }
+  }
+});

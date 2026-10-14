@@ -64,8 +64,18 @@ export function transformSelection(text, from, to, action) {
   if (to > end) mapped[1]=newOffset;
   return {from:start,to:end,text:values.join('\n'),anchor:mapped[0],head:mapped[1]};
 }
-const labels = {link:'链接',bold:'粗体',italic:'斜体',strike:'删除线',ul:'无序列表',ol:'有序列表',quote:'引用块',image:'图片',table:'表格',codeblock:'代码块',formula:'公式块'};
+const labels = {link:'链接',bold:'粗体',italic:'斜体',strike:'删除线',ul:'无序列表',ol:'有序列表',quote:'引用块',image:'图片',table:'表格',codeblock:'代码块',formula:'公式块',figure:'图表',footnote:'参考文献',bibliography:'BibTeX参考文献',doi:'DOI参考文献'};
 const paths = {link:'M10 8l4-4a4 4 0 015 5l-4 4M14 16l-4 4a4 4 0 01-5-5l4-4M8 16l8-8',bold:'M7 4h6a4 4 0 010 8H7zm0 8h7a4 4 0 010 8H7z',italic:'M10 4h8M6 20h8M15 4L9 20',strike:'M5 12h14M17 6c-6-5-14 4-6 6 8 2 4 11-3 6',ul:'M8 6h12M8 12h12M8 18h12M3 6h1M3 12h1M3 18h1',ol:'M9 6h11M9 12h11M9 18h11M3 4h1v4M3 11h2l-2 3h2M3 17h2v3H3',quote:'M4 5h6v7H7l-3 6M14 5h6v7h-3l-3 6',image:'M3 4h18v16H3zM3 17l6-6 4 4 3-3 5 5M7 8h1',table:'M3 4h18v16H3zM3 10h18M10 4v16',codeblock:'M8 6l-5 6 5 6M16 6l5 6-5 6M14 3l-4 18',formula:'M5 2h10M5 18h10M6 5h8l-4.5 5 4.5 5H6'};
+export function slashActions(text, pos) {
+  if (isProtected(text,pos)) return null;
+  const before=text.slice(0,pos), line=before.slice(before.lastIndexOf('\n')+1);
+  const tail=text.slice(pos,text.indexOf('\n',pos)<0?text.length:text.indexOf('\n',pos));
+  if (before.endsWith('/b')) return {from:pos-2,actions:['footnote','bibliography','doi']};
+  if (!/^[ \t\r]*$/.test(tail)) return null;
+  if (/^[ \t]*\/m$/.test(line)) return {from:pos-2,actions:['figure']};
+  if (/^[ \t]*\/$/.test(line)) return {from:pos-1,actions:['image','table','codeblock','formula']};
+  return null;
+}
 export function installQuickActions(editor) {
   const doc = document;
   const menu = doc.createElement('div');menu.className='md-quick-actions';menu.setAttribute('role','toolbar');menu.hidden=true;doc.body.append(menu);
@@ -78,7 +88,9 @@ export function installQuickActions(editor) {
     mode=kind;range={...sel};index=0;menu.dataset.key=key;menu.replaceChildren();
     for (const action of actions) {
       const button=doc.createElement('button');button.type='button';button.dataset.action=action;button.title=labels[action];button.setAttribute('aria-label',labels[action]);
-      const svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox',action==='formula'?'0 0 20 20':'0 0 24 24');svg.setAttribute('aria-hidden','true');const path=doc.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',paths[action]);svg.append(path);button.append(svg);
+      const svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox',action==='formula'?'0 0 20 20':'0 0 24 24');svg.setAttribute('aria-hidden','true');const path=doc.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',paths[action]);svg.append(path);
+      const source=Array.from(doc.querySelectorAll('button[aria-label]')).find(b=>!menu.contains(b)&&b.getAttribute('aria-label')===labels[action])?.querySelector('svg,img');
+      button.append(source?source.cloneNode(true):svg);
       button.addEventListener('mousedown',e=>e.preventDefault());button.addEventListener('click',()=>activate(action));menu.append(button);
     }
     menu.hidden=false; const coords=editor.coordsAtPos(sel.from); if(coords) {menu.style.left=Math.max(4,Math.min(coords.left,innerWidth-actions.length*32-12))+'px';menu.style.top=Math.max(4,coords.top-38)+'px';}
@@ -89,14 +101,14 @@ export function installQuickActions(editor) {
     const saved=range,kind=mode;close();if(!saved)return;
     const text=editor.getValue();
     if(kind==='selection') {const change=transformSelection(text,saved.from,saved.to,action);if(change)editor.applyEdit(change.from,change.to,change.text,change.anchor,change.head);}
-    else {editor.applyEdit(saved.from-1,saved.from,'',saved.from-1,saved.from-1);editor.focus();if(action==='image')doc.querySelector('.md-image-insert')?.click();else window.mdEditorTools?.insert(action);}
+    else {const start=saved.triggerFrom;editor.applyEdit(start,saved.from,'',start,start);editor.focus();if(action==='image')doc.querySelector('.md-image-insert')?.click();else if(action==='doi')doc.dispatchEvent(new CustomEvent('md-doi-open'));else window.mdEditorTools?.insert(action);}
     if(kind==='selection')editor.focus();
   };
   const update=()=>{
     const sel=editor.getSelection(),text=editor.getValue();const actions=selectionActions(text,sel.from,sel.to);
     if(actions.length){show('selection',sel,actions);return;}
-    const line=text.slice(text.lastIndexOf('\n',sel.from-1)+1,sel.from);const tail=text.slice(sel.from,text.indexOf('\n',sel.from)<0?text.length:text.indexOf('\n',sel.from));
-    if(sel.from===sel.to && /^[ \t]*\/$/.test(line) && /^[ \t\r]*$/.test(tail) && !isProtected(text,sel.from)){show('slash',sel,['image','table','codeblock','formula']);return;}
+    const slash=sel.from===sel.to?slashActions(text,sel.from):null;
+    if(slash){show('slash',{...sel,triggerFrom:slash.from},slash.actions);return;}
     close();dismissed=null;
   };
   for(const event of ['md-editor-selection','md-editor-change','md-editor-reset'])doc.addEventListener(event,update);
