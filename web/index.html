@@ -77,20 +77,8 @@
   <div class="template-library-page" hidden>
     <div data-view="templates" class="template-library-view">
       <main class="examples-main">
-        <p class="examples-intro">浏览模板排版效果；从模板创建会替换当前文档，系统会先请你确认。</p>
-        <div class="examples-layout">
-          <section class="examples-list-panel" aria-label="模板列表">
-            <div class="panel-heading"><h2>模板 <button id="template-list-back" type="button" hidden>返回列表</button></h2><span id="list-status" role="status" aria-live="polite">正在加载…</span></div>
-            <div class="template-browser-tools"><input id="template-search" type="search" placeholder="搜索模板" aria-label="搜索模板"><ul id="example-list" class="example-cards" role="list" aria-busy="true"></ul></div>
-          </section>
-          <section class="examples-detail-panel" aria-label="模板详情">
-            <div class="detail-head"><div class="detail-title-block"><h2 id="detail-title">选择一个模板</h2><p id="detail-meta" class="detail-meta"></p></div><button id="use-example" class="primary" type="button" disabled>从模板创建</button></div>
-            <div class="detail-body">
-              <details class="detail-source"><summary>查看模板源码</summary><div class="panel-heading"><h3>Markdown 源码（只读）</h3><span id="source-type" class="type-badge"></span></div><label class="sr-only" for="example-source">模板 Markdown 源码（只读）</label><textarea id="example-source" readonly spellcheck="false" placeholder="选择模板以查看源码…"></textarea></details>
-              <div class="detail-preview"><div class="panel-heading"><h3>排版预览</h3><span id="preview-state" class="detail-meta">选择模板后在此预览。</span></div><div class="preview-surface"><iframe id="example-preview" title="模板排版预览" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><div id="example-empty">选择模板后在此预览。</div></div></div>
-            </div>
-          </section>
-        </div>
+        <div class="examples-heading"><h2>模板</h2><p class="examples-intro">浏览模板效果，选择后可直接从该模板创建。</p><span id="list-status" role="status" aria-live="polite">正在加载…</span></div>
+        <ul id="example-list" class="example-cards" role="list" aria-busy="true"></ul>
       </main>
     </div>
   </div>

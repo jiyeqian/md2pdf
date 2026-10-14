@@ -78,13 +78,13 @@ try {
   assert.equal(await evaluate(`document.querySelector('.md2pdf-preview-target')?.getAttribute('data-md2pdf-source-line')`,executionContextId),'33');
   assert.ok(Math.abs(await evaluate(`document.querySelector('[data-md2pdf-source-line="33"]').getBoundingClientRect().top`,executionContextId)) < 3, 'return from writing fullscreen aligns visible preview with latest H2');
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('.md-panel-sync')).display`),'flex');
-  assert.equal(await evaluate(`document.querySelector('label:has(select[name=type])').firstChild.textContent`),'模板');
+  assert.match(await evaluate(`document.querySelector('[data-control=type] [data-option-trigger=type]').getAttribute('aria-label')`),/^模板/);
   // Effective frontmatter type, not a template origin ID, controls the library.
   await evaluate(`mdEditor.setValue(${JSON.stringify('---\ntype: paper\n---\n# 测试')})`);
   await browser.send('Page.navigate',{url:url+'/examples'});
   await wait('document.querySelector(".example-card[aria-current=true]")');
-  assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true]').getAttribute('aria-pressed')`),'true');
-  assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'学术论文');
+  assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true]').dataset.currentTemplate`),'true');
+  assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'当前模板');
   assert.ok(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').classList.contains('is-current')`));
   console.log('Chromium: document/iframe shortcuts, shared fullscreen sync switch, and effective-type template selection passed');
 } catch (error) {
