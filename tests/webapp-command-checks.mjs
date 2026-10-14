@@ -33,7 +33,7 @@ test('npm ships the web assets and each topbar ends with the safe GitHub link', 
   for (const name of ['index.html', 'examples.html']) {
     const html = readFileSync(new URL('../web/' + name, import.meta.url), 'utf8');
     const nav = html.match(/<nav class="topbar-actions"[\s\S]*?<\/nav>/)[0];
-    assert.match(nav, /href="https:\/\/github\.com\/jiyeqian\/md2pdf" target="_blank" rel="noopener noreferrer"[^>]*>GitHub<\/a>\s*<\/nav>/);
+    assert.match(nav, /href="https:\/\/github\.com\/jiyeqian\/md2pdf" target="_blank" rel="noopener noreferrer"[^>]*aria-label="md2pdf GitHub 仓库"[^>]*><svg[\s\S]*?<\/svg><\/a>\s*<\/nav>/);
   }
 });
 

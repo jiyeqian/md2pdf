@@ -147,3 +147,8 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .option-choice[aria-checked="true"]::before{visibility:visible}
 
 .preview-toolbar select[hidden]{display:none!important}
+
+.topbar-actions a.nav-square{display:inline-flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;min-width:42px;padding:0;border:0;border-radius:12px;background:#233e60;color:#fff;text-decoration:none;box-sizing:border-box}
+.topbar-actions a.nav-square:hover{background:#34577f;color:#fff}
+.topbar-actions a.nav-square:focus-visible{outline:2px solid #6f93bc;outline-offset:3px}
+.nav-square svg{display:block;width:23px;height:23px}

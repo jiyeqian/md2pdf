@@ -639,6 +639,42 @@
     heading.insertBefore(control.root, actions || null);
   }
 
+  // 标题和工具条使用同一列节奏；只更新几何量，不重新创建控件。
+  function updatePanelGrid(panel) {
+    var width = panel.clientWidth || panel.getBoundingClientRect().width;
+    if (!width) return;
+    var mobile = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
+    var tiny = window.matchMedia && window.matchMedia('(max-width: 390px)').matches;
+    var button = mobile ? 26 : 28;
+    var inset = tiny ? 7 : mobile ? 8 : 10;
+    var available = Math.max(button, width - inset * 2);
+    var columns = Math.max(1, Math.round((available + 4) / (button + 4)));
+    var gap = columns > 1 ? (available - columns * button) / (columns - 1) : 0;
+    panel.style.setProperty('--panel-columns', String(columns));
+    panel.style.setProperty('--panel-button', button + 'px');
+    panel.style.setProperty('--panel-gap', gap + 'px');
+    panel.style.setProperty('--panel-inset', inset + 'px');
+    var empty = Math.max(0, available - button * 3 - gap);
+    var zoomWidth = Math.min(empty, empty * 0.3 + 62.334);
+    panel.style.setProperty('--panel-zoom-width', zoomWidth + 'px');
+    panel.style.setProperty('--panel-zoom-left', (inset + button + empty / 2) + 'px');
+  }
+
+  function updatePanelGrids() {
+    updatePanelGrid(editorPanel);
+    updatePanelGrid(previewPanel);
+  }
+
+  function observePanelGrids() {
+    updatePanelGrids();
+    if (window.ResizeObserver) {
+      var observer = new window.ResizeObserver(updatePanelGrids);
+      observer.observe(editorPanel);
+      observer.observe(previewPanel);
+    }
+    window.addEventListener('resize', updatePanelGrids);
+  }
+
   // ---------------------------------------------------------------- 分隔条
   function buildDivider() {
     divider = make('div', {
@@ -764,6 +800,7 @@
     if (editorOn) focusEditor();
     requestAnimationFrame(function () { requestAnimationFrame(function () {
       if (id !== layoutRevision) return;
+      updatePanelGrids();
       measureEditor();
       if (pending.anchor && window.mdEditor.restoreViewport) window.mdEditor.restoreViewport(pending.anchor);
       // 同步开启时，退出写作全屏以最新光标为准，不能恢复旧预览锚点。
@@ -869,6 +906,7 @@
     }
     workspace.classList.toggle('panels-reversed');
     requestAnimationFrame(function () {
+      updatePanelGrids();
       measureEditor();
       if (anchor && window.mdEditor.restoreViewport) window.mdEditor.restoreViewport(anchor);
     });
@@ -1090,5 +1128,6 @@
   buildZoomControls();
   restoreRatio();
   wireEvents();
+  observePanelGrids();
   setEnabled(ready);
 })();

@@ -324,3 +324,36 @@
 .md-wt-zoom .ruler-slider{width:calc(100% - 5.334px);margin-inline:2.667px}
 .md-wt-zoom .ruler-slider::-webkit-slider-runnable-track{background:linear-gradient(#b8c2cf,#b8c2cf) .8335px center/1px 4px no-repeat,linear-gradient(#b8c2cf,#b8c2cf) calc(100% - .8335px) center/1px 4px no-repeat,linear-gradient(#cdd4de,#cdd4de) center/calc(100% - 2.667px) 2px no-repeat}
 .md-wt-zoom .ruler-slider::-moz-range-track{background:linear-gradient(#b8c2cf,#b8c2cf) .8335px center/1px 4px no-repeat,linear-gradient(#b8c2cf,#b8c2cf) calc(100% - .8335px) center/1px 4px no-repeat,linear-gradient(#cdd4de,#cdd4de) center/calc(100% - 2.667px) 2px no-repeat}
+
+/* 每个面板的两条工具行共用动态列宽、列距和边缘留白。 */
+.workspace.md-editor-workspace .panel-heading,
+.workspace.md-editor-workspace .md-wt-toolbar,
+.workspace.md-editor-workspace .preview-toolbar {
+  display: grid;
+  grid-template-columns: repeat(var(--panel-columns, 8), var(--panel-button, 28px));
+  column-gap: var(--panel-gap, 8px);
+  row-gap: 4px;
+  padding-left: var(--panel-inset, 10px);
+  padding-right: var(--panel-inset, 10px);
+}
+.workspace.md-editor-workspace .panel-heading h2 { grid-column: 1; grid-row: 1; }
+.workspace.md-editor-workspace .panel-heading .panel-actions {
+  display: flex;
+  grid-column: -3 / -1;
+  grid-row: 1;
+  gap: var(--panel-gap, 8px);
+  justify-self: stretch;
+}
+.workspace.md-editor-workspace .md-wt-mount { display: contents; }
+.workspace.md-editor-workspace .md-wt-group + .md-wt-group { margin-left: 0; padding-left: 0; }
+.workspace.md-editor-workspace .md-wt-toolbar button,
+.workspace.md-editor-workspace .md-wt-toolbar a.md-wt-button,
+.workspace.md-editor-workspace .preview-toolbar .range-trigger,
+.workspace.md-editor-workspace .panel-heading .icon-button,
+.workspace.md-editor-workspace .panel-heading .md-panel-mode {
+  width: var(--panel-button, 28px); height: var(--panel-button, 28px);
+}
+.workspace.md-editor-workspace .md-wt-zoom {
+  left: var(--panel-zoom-left, 50%);
+  width: var(--panel-zoom-width, 140px);
+}
