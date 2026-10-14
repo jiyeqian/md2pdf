@@ -84,6 +84,17 @@ export function installQuickActions(editor) {
   const doc = document;
   const menu = doc.createElement('div');menu.className='md-quick-actions';menu.setAttribute('role','toolbar');menu.hidden=true;doc.body.append(menu);
   let mode=null,range=null,index=0,dismissed=null;
+  const place=sel=>{
+    const coords=editor.coordsAtPos(sel.from); if(!coords)return;
+    const viewport=window.visualViewport;
+    const left=viewport?viewport.offsetLeft:0,top=viewport?viewport.offsetTop:0;
+    const right=left+(viewport?viewport.width:window.innerWidth),bottom=top+(viewport?viewport.height:window.innerHeight);
+    const width=menu.offsetWidth,height=menu.offsetHeight;
+    const x=Math.max(left+4,Math.min(coords.left,right-width-4));
+    const above=coords.top-height-8;
+    const y=above>=top+4?above:Math.min(coords.bottom+8,bottom-height-4);
+    menu.style.left=x+'px';menu.style.top=Math.max(top+4,Math.min(y,bottom-height-4))+'px';
+  };
   const close=()=>{menu.hidden=true;mode=null;range=null;};
   const show=(kind,sel,actions)=>{
     const key=kind+':'+sel.from+':'+sel.to+':'+editor.getValue(); if (dismissed===key) return;
@@ -97,7 +108,7 @@ export function installQuickActions(editor) {
       button.append(source?source.cloneNode(true):svg);
       button.addEventListener('mousedown',e=>e.preventDefault());button.addEventListener('click',()=>activate(action));menu.append(button);
     }
-    menu.hidden=false; const coords=editor.coordsAtPos(sel.from); if(coords) {menu.style.left=Math.max(4,Math.min(coords.left,innerWidth-actions.length*32-12))+'px';menu.style.top=Math.max(4,coords.top-38)+'px';}
+    menu.hidden=false; place(sel);
     mark();
   };
   const mark=()=>Array.from(menu.children).forEach((b,i)=>b.classList.toggle('is-active',i===index));
@@ -122,7 +133,9 @@ export function installQuickActions(editor) {
     if(mode==='slash' && ['ArrowLeft','ArrowRight','Enter'].includes(event.key)){event.preventDefault();event.stopPropagation();if(event.key==='Enter')activate(menu.children[index].dataset.action);else{index=(index+(event.key==='ArrowRight'?1:-1)+menu.children.length)%menu.children.length;mark();}}
   },true);
   doc.addEventListener('pointerdown',event=>{if(!menu.hidden&&!menu.contains(event.target)){dismissed=menu.dataset.key;close();}});
-  const reposition=()=>{if(menu.hidden)return;const active=index;close();update();index=Math.min(active,menu.children.length-1);mark();};
+  let repositionFrame=0;
+  const reposition=()=>{if(menu.hidden||repositionFrame)return;repositionFrame=requestAnimationFrame(()=>{repositionFrame=0;if(!menu.hidden&&range)place(range);});};
   window.addEventListener('scroll',reposition,true);window.addEventListener('resize',reposition);
+  window.visualViewport?.addEventListener('scroll',reposition);window.visualViewport?.addEventListener('resize',reposition);
   return {close,update};
 }
