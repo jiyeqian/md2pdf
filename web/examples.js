@@ -167,7 +167,8 @@ if (root) {
   });
   document.querySelector('#examples-link-top')?.addEventListener('click', event => { event.preventDefault(); navigate('templates'); });
   window.addEventListener('DOMContentLoaded', () => {
-    const initial = history.state?.md2pdfView === 'templates' ? 'templates' : 'editor';
+    const requestedTemplateView = new URLSearchParams(location.search).get('view') === 'templates';
+    const initial = requestedTemplateView || history.state?.md2pdfView === 'templates' ? 'templates' : 'editor';
     root.hidden = false;
     history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', '/');
     if (initial === 'editor') root.querySelector('.template-library-view').hidden = true;

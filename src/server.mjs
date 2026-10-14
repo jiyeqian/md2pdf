@@ -264,7 +264,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       }
       // UI 页面由前端工作流后续补齐：仅在文件已存在时提供，缺失时按 404 处理而非 500。
       if (req.method === 'GET' && (req.url === '/examples' || req.url === '/examples/')) {
-        res.writeHead(302, { Location: '/' }); res.end(); return;
+        res.writeHead(302, { Location: '/?view=templates' }); res.end(); return;
       }
       // 在线示例：只服务白名单里的 .md（id 必须命中固定目录），请求参数不参与路径拼接。
       if (req.method === 'GET' && req.url.startsWith('/examples/')) {
