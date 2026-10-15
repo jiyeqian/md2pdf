@@ -222,6 +222,15 @@ test('editor-workspace.css：双全屏共享固定 viewport 模式且窄屏可�
   assert.equal(open, close, 'CSS 花括号不平衡');
 });
 
+test('纵向面板按可见高度等高或单屏滚动，同步按钮总间距为 32px', () => {
+  assert.match(wsCss, /md-wt-stack-fit\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)\s+30px\s+minmax\(0,\s*1fr\)[^}]*row-gap:\s*1px/s);
+  assert.match(wsCss, /md-wt-stack-fit > \.editor-panel,[\s\S]*?md-wt-stack-fit > \.preview-panel\s*\{[^}]*height:\s*auto/);
+  assert.match(wsCss, /md-wt-stack-scroll > \.editor-panel,[\s\S]*?md-wt-stack-scroll > \.preview-panel\s*\{[^}]*height:\s*var\(--md-wt-stack-panel-height\)/);
+  assert.match(wsJs, /window\.visualViewport && window\.visualViewport\.height/);
+  assert.match(wsJs, /minimum \* 2 \+ 32/);
+  assert.match(wsJs, /visualViewport\.addEventListener\('resize', scheduleStackLayout\)/);
+});
+
 // ---------------------------------------------------------------- 行为：vm 执行
 function fakeEnvironment() {
   class ClassList {
@@ -1011,14 +1020,14 @@ test('面板共享网格覆盖左右边缘，缩放轨道占两侧按钮间空�
     env.editorPanel.getBoundingClientRect = () => ({ width });
     env.previewPanel.getBoundingClientRect = () => ({ width: width + 100 });
     env.sandbox.matchMedia = query => ({ matches: mobile && query === '(max-width: 600px)' });
-    const observed = [];
-    let resize;
+    const observers = [];
     env.sandbox.ResizeObserver = class {
-      constructor(fn) { resize = fn; }
-      observe(panel) { observed.push(panel); }
+      constructor(fn) { this.targets = []; this.callback = fn; observers.push(this); }
+      observe(panel) { this.targets.push(panel); }
     };
     vm.runInContext(wsJs, env.sandbox);
-    assert.deepEqual(observed, [env.editorPanel, env.previewPanel]);
+    assert.deepEqual(observers[0].targets, [env.editorPanel, env.previewPanel]);
+    assert.ok(observers.length >= 2, '堆叠布局也应观察外壳工具条高度变化');
     const style = env.editorPanel.style;
     const n = Number(style['--panel-columns']);
     const b = parseFloat(style['--panel-button']);
@@ -1032,7 +1041,7 @@ test('面板共享网格覆盖左右边缘，缩放轨道占两侧按钮间空�
     assert.ok(Math.abs(parseFloat(style['--panel-zoom-left']) - (left + right) / 2) < 0.001);
     assert.ok(Math.abs((parseFloat(style['--panel-zoom-width']) - 62.334) / (right - left) - 0.3) < 0.001);
     env.editorPanel.getBoundingClientRect = () => ({ width: width + 200 });
-    resize();
+    observers[0].callback();
     assert.ok(Number(style['--panel-columns']) > n, '观察面板实际尺寸变化后更新网格');
   }
 });
