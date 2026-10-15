@@ -403,13 +403,15 @@
         const group = bibliographyGroups(V, view.state).find(range => range.start === line.from);
         if (!group || isFolded(V, view.state, group)) return false;
         const firstEnd = view.state.doc.lineAt(line.from).to;
-        if (group.firstTo <= firstEnd) {
-          view.dispatch({ effects: V.foldEffect.of(group) });
-          return true;
-        }
+        // 普通脚注常只有一个逻辑行（显示时仍可能换行）：折叠正文，保留标识。
+        const firstLine = view.state.doc.lineAt(line.from);
+        const prefix = /^\[\^[^\]]+\]:[ \t]*/.exec(firstLine.text);
+        const bodyFrom = line.from + (prefix ? prefix[0].length : 0);
+        const individualFrom = group.firstTo <= firstEnd
+          ? (bodyFrom < group.firstTo ? bodyFrom : line.from) : firstEnd;
         const anchor = event.target.closest('.cm-gutterElement').querySelector('.md-fold-trigger');
         if (!anchor) return false;
-        view.plugin(menuPlugin).open(anchor, { from: firstEnd, to: group.firstTo }, group);
+        view.plugin(menuPlugin).open(anchor, { from: individualFrom, to: group.firstTo }, group);
         event.preventDefault();
         return true;
       } }
