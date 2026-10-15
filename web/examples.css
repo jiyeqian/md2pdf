@@ -16,7 +16,7 @@
 .example-card p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:38px;max-height:38px;margin:0;color:#67758a;font-size:12px;line-height:19px}
 .template-card-preview{position:relative;height:calc((100cqw - 24px) * 1.4142857 + 24px);overflow:hidden;border-top:1px solid #e7ebf0;background:#8f959e}
 .template-card-frame{position:absolute;top:-12px;left:0;display:block;width:100%;height:calc(100% + 13px);border:0;background:#8f959e}
-.template-preview-status{position:absolute;top:12px;right:14px;max-width:calc(100% - 28px);margin:0;padding:5px 9px;border-radius:6px;background:#ffffffdc;color:#718096;font-size:11px;pointer-events:none}
+.template-preview-status{position:absolute;top:12px;left:50%;transform:translateX(-50%);max-width:calc(100% - 28px);margin:0;padding:5px 9px;border-radius:6px;background:#ffffffdc;color:#718096;font-size:11px;pointer-events:none}
 .template-preview-status[hidden]{display:none}
 .nav-square svg[hidden]{display:none}
 body.show-template-library #examples-link-top [data-nav-icon="templates"]{display:none}
