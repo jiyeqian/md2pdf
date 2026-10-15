@@ -103,6 +103,18 @@ try {
   await wait('document.querySelector(".example-card[data-id=general] iframe")');
   await wait('document.querySelector(".example-card[data-id=general] .template-card-snapshot").hidden');
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('.template-preview-toggle input')).paddingLeft`),'0px','switch does not inherit text-input padding');
+  let liveGeometry;
+  for (const target of (await browser.send('Target.getTargets')).targetInfos.filter(target=>target.type==='iframe')) {
+    const {sessionId}=await browser.send('Target.attachToTarget',{targetId:target.targetId,flatten:true});
+    const geometry=await evaluate(`(()=>{if(!document.documentElement.classList.contains('md2pdf-template-card'))return null;const pages=document.querySelectorAll('.pagedjs_page'),first=pages[0].getBoundingClientRect();return {top:first.top,left:first.left,width:first.width,viewportWidth:document.documentElement.clientWidth,viewportHeight:innerHeight,secondTop:pages[1]?.getBoundingClientRect().top,scrollY}})()`,sessionId);
+    await browser.send('Target.detachFromTarget',{sessionId});
+    if(geometry)liveGeometry=geometry;
+  }
+  assert.ok(liveGeometry,'inspect the actual live card document');
+  assert.ok(Math.abs(liveGeometry.top-12)<1 && Math.abs(liveGeometry.left-12)<1,JSON.stringify(liveGeometry));
+  assert.ok(Math.abs(liveGeometry.width-liveGeometry.viewportWidth+24)<1,JSON.stringify(liveGeometry));
+  assert.equal(liveGeometry.scrollY,0);
+  assert.ok(liveGeometry.secondTop>liveGeometry.viewportHeight,'the second page remains below the card viewport');
   for (const id of ['paper','gb','skill']) {
     await evaluate(`document.querySelector('.example-card[data-id=${id}]').scrollIntoView();document.querySelector('.example-card[data-id=${id}] .template-preview-toggle input').click()`);
     await wait(`document.querySelector('.example-card[data-id=${id}] .template-card-snapshot').hidden`);
@@ -112,8 +124,8 @@ try {
   }
   const cardGeometry = await evaluate(`(()=>{const card=document.querySelector('.example-card'), preview=card.querySelector('.template-card-preview'), frame=preview.querySelector('iframe'), style=getComputedStyle(frame);return {width:card.clientWidth,height:parseFloat(getComputedStyle(preview).height),top:parseFloat(style.top),left:parseFloat(style.left),frameWidth:parseFloat(style.width),frameHeight:parseFloat(style.height)}})()`);
   assert.ok(Math.abs(cardGeometry.height-((cardGeometry.width-24)*297/210+24))<1,'template preview height fits one A4 page and equal gray margins');
-  assert.deepEqual([cardGeometry.top,cardGeometry.left,cardGeometry.frameWidth],[-12,0,cardGeometry.width]);
-  assert.ok(Math.abs(cardGeometry.frameHeight-cardGeometry.height-12)<=1,'preview frame clips before the second page');
+  assert.deepEqual([cardGeometry.top,cardGeometry.left,cardGeometry.frameWidth],[0,0,cardGeometry.width]);
+  assert.ok(Math.abs(cardGeometry.frameHeight-cardGeometry.height)<=1,'preview frame clips before the second page');
   assert.match(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').title`),/^当前模板：/);
   assert.ok(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').classList.contains('is-current')`));
   await evaluate(`document.querySelector('#examples-link-top').click()`);

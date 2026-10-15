@@ -62,7 +62,11 @@
   }
 
   function injectRevision(html, rev) {
+    const cardCss = '@media screen { html.md2pdf-template-card, html.md2pdf-template-card body { overflow-anchor: none !important; } html.md2pdf-template-card body { padding: 12px 0 !important; } }';
     return String(html)
+      .replace('style.textContent = PREVIEW_CSS;', `document.documentElement.classList.add('md2pdf-template-card'); style.textContent = PREVIEW_CSS + ${JSON.stringify(cardCss)};`)
+      .replace('Math.min(1, (document.documentElement.clientWidth - 24) / page.offsetWidth)', '((document.documentElement.clientWidth - 24) / page.offsetWidth)')
+      .replace("parent.postMessage({type:'md2pdf-ready'", "scrollTo(0, 0); parent.postMessage({type:'md2pdf-ready'")
       .replaceAll("type:'md2pdf-ready'", `type:'md2pdf-ready',revision:${rev}`)
       .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`);
   }
