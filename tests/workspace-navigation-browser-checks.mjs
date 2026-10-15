@@ -140,7 +140,50 @@ try {
   await evaluate(`window.mdConfirmTemplate=async()=>true;document.querySelector('.example-card[data-id=paper] [data-create-template]').click()`);
   await wait('JSON.parse(sessionStorage.getItem("md2pdf:draft") || "{}").templateId === "paper" && document.querySelector("[data-view=editor]").hidden === false');
   assert.equal(await evaluate(`document.querySelector('.example-card[data-id=paper] iframe') === null`),true,'creating from a static card does not require its live preview');
-  console.log('Chromium: document/iframe shortcuts, shared fullscreen sync switch, and effective-type template selection passed');
+
+  // Vertical panels use the whole visible workspace when there is enough room,
+  // otherwise each panel is a viewport-sized page with a compact sync row.
+  await evaluate(`mdEditor.setValue(${JSON.stringify('# Long layout fixture\n\n'+Array.from({length:500},(_,i)=>'Line '+i+' — enough text to exercise editor scrolling.').join('\n'))})`);
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:800,height:1200,deviceScaleFactor:1,mobile:false});
+  await wait('document.querySelector(".workspace").classList.contains("md-wt-stack-fit")');
+  const fitGeometry=await evaluate(`(()=>{const w=document.querySelector('.workspace'),e=document.querySelector('.editor-panel').getBoundingClientRect(),p=document.querySelector('.preview-panel').getBoundingClientRect();return {height:w.getBoundingClientRect().height,editor:e.height,preview:p.height,bottom:p.bottom,viewport:innerHeight,mode:w.classList.contains('md-wt-stack-fit')}})()`);
+  assert.ok(fitGeometry.mode && Math.abs(fitGeometry.editor-fitGeometry.preview)<1,JSON.stringify(fitGeometry));
+  assert.ok(fitGeometry.bottom<=fitGeometry.viewport+1,JSON.stringify(fitGeometry));
+
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+  await wait('document.querySelector(".workspace").classList.contains("md-wt-stack-scroll")');
+  const phoneGeometry=await evaluate(`(()=>{const w=document.querySelector('.workspace'),e=document.querySelector('.editor-panel').getBoundingClientRect(),p=document.querySelector('.preview-panel').getBoundingClientRect(),s=document.querySelector('.md-panel-sync').getBoundingClientRect();return {editor:e.height,preview:p.height,gap:p.top-e.bottom,sync:s.height,viewport:visualViewport.height,document:document.documentElement.scrollHeight,panelCss:getComputedStyle(document.querySelector('.editor-panel')).height}})()`);
+  assert.ok(Math.abs(phoneGeometry.editor-phoneGeometry.preview)<1,JSON.stringify(phoneGeometry));
+  assert.ok(Math.abs(phoneGeometry.gap-32)<1 && Math.abs(phoneGeometry.sync-30)<1,JSON.stringify(phoneGeometry));
+  assert.ok(phoneGeometry.document>phoneGeometry.viewport,JSON.stringify(phoneGeometry));
+  assert.ok(await evaluate(`document.querySelector('.cm-scroller').scrollHeight>document.querySelector('.cm-scroller').clientHeight`),'long document should scroll inside the editor panel');
+
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:390,height:720,deviceScaleFactor:1,mobile:true});
+  await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+  const keyboardGeometry=await evaluate(`({viewport:visualViewport.height,panel:parseFloat(getComputedStyle(document.querySelector('.editor-panel')).height)})`);
+  assert.ok(keyboardGeometry.viewport<phoneGeometry.viewport && keyboardGeometry.panel<phoneGeometry.editor,JSON.stringify({phoneGeometry,keyboardGeometry}));
+
+  await evaluate(`document.querySelector('.md-panel-mode').click()`);
+  assert.ok(await evaluate(`document.querySelector('.workspace').classList.contains('panels-reversed')`),'M/P must keep exchange available in vertical layout');
+  assert.ok(await evaluate(`document.querySelector('.editor-panel').getBoundingClientRect().top>document.querySelector('.preview-panel').getBoundingClientRect().top`),'exchange should reverse the vertical panel order');
+  await evaluate(`document.querySelector('.editor-panel button[aria-label="Markdown 全屏写作"]').click()`);
+  await wait('document.querySelector(".workspace").classList.contains("editor-focus")');
+  assert.equal(await evaluate(`document.querySelector('.workspace').classList.contains('md-wt-stack-scroll')`),false,'fullscreen must bypass stacked panel sizing');
+  await evaluate(`document.querySelector('.editor-panel button[aria-label="退出 Markdown 全屏"]').click()`);
+  await wait('!document.querySelector(".workspace").classList.contains("editor-focus")');
+  assert.ok(await evaluate(`document.querySelector('.workspace').classList.contains('md-wt-stack-scroll')`),'exit fullscreen should restore visible-height mode');
+  await evaluate(`document.querySelector('.preview-panel button[aria-label="预览全屏"]').click()`);
+  await wait('document.querySelector(".workspace").classList.contains("preview-focus")');
+  assert.equal(await evaluate(`document.querySelector('.workspace').classList.contains('md-wt-stack-scroll')`),false);
+  await evaluate(`document.querySelector('.preview-panel button[aria-label="退出预览全屏"]').click()`);
+  await wait('!document.querySelector(".workspace").classList.contains("preview-focus")');
+
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:1200,height:800,deviceScaleFactor:1,mobile:false});
+  await evaluate(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+  const horizontalGeometry=await evaluate(`(()=>{const w=document.querySelector('.workspace'),e=document.querySelector('.editor-panel').getBoundingClientRect(),p=document.querySelector('.preview-panel').getBoundingClientRect();return {stack:w.classList.contains('md-wt-stack-fit')||w.classList.contains('md-wt-stack-scroll'),sameRow:Math.abs(e.top-p.top)<1,sameHeight:Math.abs(e.height-p.height)<1,overflow:document.documentElement.scrollWidth>innerWidth}})()`);
+  assert.deepEqual(horizontalGeometry,{stack:false,sameRow:true,sameHeight:true,overflow:false});
+  await browser.send('Emulation.clearDeviceMetricsOverride');
+  console.log('Chromium: document/iframe navigation, template selection, stacked viewport sizing, fullscreens, and horizontal layout passed');
 } catch (error) {
   try { console.log(await browser.send('Runtime.evaluate',{expression:`JSON.stringify({status:document.querySelector('#status')?.textContent,editor:!!window.mdEditor,preview:document.querySelector('#preview')?.srcdoc.slice(-100)})`,returnByValue:true})); } catch {}
   throw error;

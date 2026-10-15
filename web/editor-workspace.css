@@ -313,6 +313,32 @@
  .workspace.md-editor-workspace .panel-heading .md-panel-mode{width:28px;height:28px}
  .md-wt-zoom{width:130px}
 }
+
+/* 纵向布局：同步按钮保留 30px，高低两侧各留 1px，面板间总高 32px。 */
+@media (max-width: 900px) {
+  .workspace.md-editor-workspace.md-wt-stack-fit {
+    height: var(--md-wt-stack-fit-height);
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) 30px minmax(0, 1fr);
+    row-gap: 1px;
+  }
+  .workspace.md-editor-workspace.md-wt-stack-fit > .editor-panel,
+  .workspace.md-editor-workspace.md-wt-stack-fit > .preview-panel {
+    height: auto;
+    min-height: 0;
+  }
+  .workspace.md-editor-workspace.md-wt-stack-scroll {
+    height: auto;
+    min-height: 0;
+    grid-template-rows: auto 30px auto;
+    row-gap: 1px;
+  }
+  .workspace.md-editor-workspace.md-wt-stack-scroll > .editor-panel,
+  .workspace.md-editor-workspace.md-wt-stack-scroll > .preview-panel {
+    height: var(--md-wt-stack-panel-height);
+    min-height: 0;
+  }
+}
 @media(max-width:390px){
  .workspace.md-editor-workspace .panel-heading{padding:6px 7px}
  .preview-toolbar{padding-left:7px;padding-right:7px}

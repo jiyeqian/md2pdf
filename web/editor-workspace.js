@@ -666,6 +666,76 @@
     window.addEventListener('resize', updatePanelGrids);
   }
 
+  // 窄视口下按可见网页空间选择纵向面板高度；软键盘和浏览器地址栏变化时同步更新。
+  var stackLayoutFrame = 0;
+  function stackPanelMinimum(panel, bodySelector, minimumBodyHeight) {
+    var body = panel.querySelector(bodySelector);
+    var panelHeight = panel.getBoundingClientRect().height;
+    var bodyHeight = body && body.getBoundingClientRect().height;
+    if (!bodyHeight || !panelHeight) return 380;
+    return Math.max(360, Math.ceil(panelHeight - bodyHeight + minimumBodyHeight));
+  }
+
+  function updateStackLayout() {
+    var stacked = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+    if (!stacked || fullscreenMode()) {
+      workspace.classList.remove('md-wt-stack-fit', 'md-wt-stack-scroll');
+      return;
+    }
+
+    var viewportHeight = window.visualViewport && window.visualViewport.height || window.innerHeight;
+    var topbar = document.querySelector('#app-topbar');
+    var main = workspace.parentElement;
+    var privacy = main && main.querySelector('.privacy');
+    var mainStyle = main && window.getComputedStyle(main);
+    var privacyStyle = privacy && window.getComputedStyle(privacy);
+    var reserved = (topbar ? topbar.getBoundingClientRect().height : 0)
+      + (mainStyle ? parseFloat(mainStyle.paddingTop) + parseFloat(mainStyle.paddingBottom) : 0);
+    if (privacy && privacyStyle && !privacy.hidden) {
+      reserved += privacy.getBoundingClientRect().height
+        + parseFloat(privacyStyle.marginTop) + parseFloat(privacyStyle.marginBottom);
+    }
+    var available = Math.max(0, Math.floor(viewportHeight - reserved));
+    var editorMinimum = stackPanelMinimum(editorPanel, '.cm-editor, #markdown', 180);
+    var previewMinimum = stackPanelMinimum(previewPanel, '.preview-surface', 150);
+    var minimum = Math.max(editorMinimum, previewMinimum);
+    var fits = available >= minimum * 2 + 32;
+
+    workspace.style.setProperty('--md-wt-stack-fit-height', available + 'px');
+    workspace.style.setProperty('--md-wt-stack-panel-height', Math.max(minimum, available) + 'px');
+    workspace.classList.toggle('md-wt-stack-fit', fits);
+    workspace.classList.toggle('md-wt-stack-scroll', !fits);
+  }
+
+  function scheduleStackLayout() {
+    if (stackLayoutFrame) return;
+    stackLayoutFrame = window.requestAnimationFrame(function () {
+      stackLayoutFrame = 0;
+      updateStackLayout();
+    });
+  }
+
+  function observeStackLayout() {
+    updateStackLayout();
+    window.addEventListener('resize', scheduleStackLayout);
+    window.addEventListener('orientationchange', scheduleStackLayout);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleStackLayout);
+    if (window.ResizeObserver) {
+      var observer = new window.ResizeObserver(scheduleStackLayout);
+      var topbar = document.querySelector('#app-topbar');
+      var main = workspace.parentElement;
+      var privacy = main && main.querySelector('.privacy');
+      if (topbar) observer.observe(topbar);
+      if (privacy) observer.observe(privacy);
+      [editorPanel, previewPanel].forEach(function (panel) {
+        Array.from(panel.children).forEach(function (child) {
+          if (!child.classList.contains('cm-editor') && child.getAttribute('id') !== 'markdown'
+            && !child.classList.contains('preview-surface')) observer.observe(child);
+        });
+      });
+    }
+  }
+
   // ---------------------------------------------------------------- 分隔条
   function buildDivider() {
     divider = make('div', {
@@ -773,6 +843,7 @@
     var previewOn = mode === 'preview';
     workspace.classList.toggle(FOCUS_CLASS, editorOn);
     workspace.classList.toggle(PREVIEW_FOCUS_CLASS, previewOn);
+    updateStackLayout();
     if (editorFullscreenBtn) {
       editorFullscreenBtn.setAttribute('aria-pressed', String(editorOn));
       editorFullscreenBtn.textContent = '';
@@ -1121,5 +1192,6 @@
   restoreRatio();
   wireEvents();
   observePanelGrids();
+  observeStackLayout();
   setEnabled(ready);
 })();
