@@ -32,10 +32,12 @@
       observedGutter = gutter;
       if (gutter) gutterResize.observe(gutter);
     }
-    const rect = gutter && gutter.getBoundingClientRect();
+    const openButton = panel.querySelector('.md-wt-toolbar [aria-label="打开 Markdown"]');
+    const anchor = openButton && openButton.getBoundingClientRect();
     const footerRect = footer.getBoundingClientRect();
-    // 隐藏后保留最后一次可见栏宽，避免开关与旁边内容左右跳动。
-    if (visible && rect && rect.width) buttonSlot = Math.max(28, (rect.left - footerRect.left) * 2 + rect.width);
+    // 两个按钮和整栏共享顶部打开按钮的中轴，显隐不改变对齐基准。
+    if (anchor && anchor.width) buttonSlot = Math.max(28, (anchor.left + anchor.width / 2 - footerRect.left) * 2);
+    panel.style.setProperty('--editor-gutter-width', buttonSlot + 'px');
     button.style.setProperty('--gutter-button-slot', buttonSlot + 'px');
   }
   function scheduleAlign() {

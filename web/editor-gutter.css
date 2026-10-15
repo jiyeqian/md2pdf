@@ -1,3 +1,11 @@
+.editor-panel .cm-gutters {
+  box-sizing: border-box;
+  width: var(--editor-gutter-width, 48px);
+  min-width: var(--editor-gutter-width, 48px);
+  max-width: var(--editor-gutter-width, 48px);
+  flex-shrink: 0;
+}
+.editor-panel .cm-lineNumbers { flex: 1 1 auto; }
 .editor-panel.editor-gutters-hidden .cm-gutters { display: none !important; }
 .editor-panel .editor-footer { justify-content: flex-start; padding-left: 0; }
 .editor-panel .editor-footer #count { margin-left: auto; }
