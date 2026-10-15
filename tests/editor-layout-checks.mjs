@@ -113,7 +113,7 @@ test('editor-workspace.js 在两侧动作区注入全屏图标按钮（外壳职
   assert.match(wsJs, /function makeFullscreenButton/);
   assert.match(wsJs, /var SVG_NS = 'http:\/\/www\.w3\.org\/2000\/svg'/);
   assert.match(wsJs, /createElementNS\(SVG_NS, 'svg'\)/);
-  assert.match(wsJs, /make\('button', \{ type: 'button', class: 'icon-button', 'aria-pressed': 'false', 'aria-label': label, title: title \}\)/);
+  assert.match(wsJs, /make\('button', \{ type: 'button', class: 'icon-button', 'data-panel-fullscreen': '', 'aria-pressed': 'false', 'aria-label': label, title: title \}\)/);
   assert.match(wsJs, /querySelector\('\.panel-actions'\)/);
   assert.match(wsJs, /editorActions\.appendChild\(editorFullscreenBtn\)/, 'Markdown 全屏按钮应位于动作区最右');
   assert.match(wsJs, /previewActions\.appendChild\(previewFullscreenBtn\)/, '预览全屏按钮应追加在下载按钮之后（最右）');
@@ -1028,7 +1028,7 @@ test('面板共享网格覆盖左右边缘，缩放轨道占两侧按钮间空�
     assert.ok(gap >= 2 && gap < 6.5, '左右间距接近上下4px间距且不拉伸按钮');
     assert.ok(Math.abs(n * b + (n - 1) * gap + 2 * inset - width) < 0.001);
     const left = inset + b;
-    const right = width - inset - (2 * b + gap);
+    const right = width - inset - (3 * b + 2 * gap);
     assert.ok(Math.abs(parseFloat(style['--panel-zoom-left']) - (left + right) / 2) < 0.001);
     assert.ok(Math.abs((parseFloat(style['--panel-zoom-width']) - 62.334) / (right - left) - 0.3) < 0.001);
     env.editorPanel.getBoundingClientRect = () => ({ width: width + 200 });

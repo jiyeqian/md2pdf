@@ -37,7 +37,7 @@
   workspace.classList.add('md-editor-workspace');
 
   var previewFrame = document.querySelector('#preview');
-  var toolbar, divider, editorFullscreenBtn, previewFullscreenBtn, syncInput, snippetSelect, insertSnippetBtn, details;
+  var toolbar, divider, editorFullscreenBtn, previewFullscreenBtn, syncInput;
   var basicWrap, basicButton, basicMenu;
   var editorModeBtn, previewModeBtn;
   var commandButtons = [];
@@ -295,13 +295,6 @@
     { icon: 'eqref', label: '公式引用', insert: 'eqref' },
     { icon: 'noteref', label: '文献引用', insert: 'noteref' }
   ];
-  var SNIPPETS = [
-    { name: 'gb-scope', label: '标准范围（gb-scope）' },
-    { name: 'gb-terms', label: '标准术语（gb-terms）' },
-    { name: 'gb-appendix', label: '标准附录（gb-appendix）' },
-    { name: 'skill', label: '技能文档（skill）' }
-  ];
-
   // 图片按钮挂载点：图片模块只把按钮挂到这里（不改导入管线）；找不到时回落到工具条。
   var IMAGE_MOUNT_ATTR = 'data-md-wt-mount';
 
@@ -485,29 +478,6 @@
     if (heading) editorPanel.insertBefore(toolbar, heading.nextSibling);
     else editorPanel.insertBefore(toolbar, editorPanel.firstChild);
 
-    buildSnippetDetails();
-  }
-
-  function buildSnippetDetails() {
-    details = make('details', { class: 'md-wt-details' });
-    details.appendChild(make('summary', null, '更多插入（专业片段）'));
-
-    var body = make('div', { class: 'md-wt-snippets' });
-    snippetSelect = make('select', { id: 'md-wt-snippet', 'aria-label': '专业片段' });
-    snippetSelect.appendChild(make('option', { value: '' }, '选择片段类型…'));
-    SNIPPETS.forEach(function (item) { snippetSelect.appendChild(make('option', { value: item.name }, item.label)); });
-    insertSnippetBtn = iconButton('insert', '插入所选专业片段', '插入所选专业片段');
-    insertSnippetBtn.addEventListener('click', function () {
-      if (snippetSelect.value) runInsert(snippetSelect.value);
-    });
-    commandButtons.push(insertSnippetBtn);
-
-    var hint = make('p', { class: 'md-wt-hint' }, '插入的是 Markdown 源码片段，不是版式控件；编号、目录与页式仍由文档类型和排版选项决定。');
-    body.appendChild(snippetSelect);
-    body.appendChild(insertSnippetBtn);
-    body.appendChild(hint);
-    details.appendChild(body);
-    toolbar.after(details);
   }
 
   // 键盘工具条：左右方向键在按钮间移动，Home/End 到首尾。
@@ -654,7 +624,7 @@
     panel.style.setProperty('--panel-button', button + 'px');
     panel.style.setProperty('--panel-gap', gap + 'px');
     panel.style.setProperty('--panel-inset', inset + 'px');
-    var empty = Math.max(0, available - button * 3 - gap);
+    var empty = Math.max(0, available - button * 4 - gap * 2);
     var zoomWidth = Math.min(empty, empty * 0.3 + 62.334);
     panel.style.setProperty('--panel-zoom-width', zoomWidth + 'px');
     panel.style.setProperty('--panel-zoom-left', (inset + button + empty / 2) + 'px');
@@ -836,7 +806,7 @@
   }
 
   function makeFullscreenButton(label, title) {
-    var button = make('button', { type: 'button', class: 'icon-button', 'aria-pressed': 'false', 'aria-label': label, title: title });
+    var button = make('button', { type: 'button', class: 'icon-button', 'data-panel-fullscreen': '', 'aria-pressed': 'false', 'aria-label': label, title: title });
     button.appendChild(fullscreenIcon());
     return button;
   }

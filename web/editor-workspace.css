@@ -332,7 +332,7 @@
 .workspace.md-editor-workspace .panel-heading h2 { grid-column: 1; grid-row: 1; }
 .workspace.md-editor-workspace .panel-heading .panel-actions {
   display: flex;
-  grid-column: -3 / -1;
+  grid-column: -4 / -1;
   grid-row: 1;
   gap: var(--panel-gap, 8px);
   justify-self: stretch;

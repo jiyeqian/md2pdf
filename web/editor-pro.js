@@ -1,6 +1,6 @@
 // md2pdf web editor — 专业助手（ES module）
 //
-// 归属：本模块只提供「专业写作辅助」：编辑器标题下方的可折叠面板（大纲 / 引用与
+// 归属：本模块只提供「专业写作辅助」：编辑面板右侧的悬浮侧栏（大纲 / 引用与
 // 章节检查 / 状态）以及 window.mdEditorTools.insert(name) 插入工具。
 // 依赖：纯分析模块 editor-analysis.mjs、编辑器内核 window.mdEditor。不修改二者。
 //
@@ -24,8 +24,6 @@ const MAX_OUTLINE = 150;        // 大纲最多渲染条目
 const MAX_DIAGNOSTICS = 50;     // 诊断最多渲染条目
 const ANALYZE_DEBOUNCE = 200;   // 输入后分析节流（ms）
 
-const NO_COMPLIANCE = '本面板仅做 Markdown 书写一致性检查（大纲、引用目标、手写章节号），不对任何标准的符合性作结论。';
-const GB_ADVISORY = '手写章节号提示为书写一致性建议，仅供参考；不会改动你的原文。';
 
 const TYPE_LABELS = {
   auto: '自动识别', general: '通用文档', skill: '技能文档',
@@ -340,19 +338,13 @@ function buildPanel() {
   const editorPanel = document.querySelector('.editor-panel');
   if (!editorPanel) return false;
 
-  const details = el('details', 'md-pro-panel');
-  const summary = el('summary', 'md-pro-summary');
-  summary.append(el('span', 'md-pro-summary-title', '专业助手 · 大纲与引用检查'));
-  const meta = el('span', 'md-pro-summary-meta', '');
-  summary.append(meta);
-  details.append(summary);
-
+  const details = el('div', 'md-pro-panel');
   const body = el('div', 'md-pro-body');
+  const meta = el('span', 'md-pro-summary-meta', '');
   const status = el('p', 'md-pro-status', '');
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
   const typeLine = el('p', 'md-pro-type', '');
-  const note = el('p', 'md-pro-note', NO_COMPLIANCE);
 
   const outlineSection = el('section', 'md-pro-section');
   const outlineHead = el('div', 'md-pro-section-head');
@@ -364,10 +356,9 @@ function buildPanel() {
   const diagHead = el('div', 'md-pro-section-head');
   diagHead.append(el('h3', null, '引用与章节检查'), el('span', 'md-pro-count', ''));
   const diagList = el('div', 'md-pro-diags');
-  const diagNote = el('p', 'md-pro-note md-pro-advisory', GB_ADVISORY);
-  diagSection.append(diagHead, diagList, diagNote);
+  diagSection.append(diagHead, diagList);
 
-  body.append(typeLine, status, note, outlineSection, diagSection);
+  body.append(typeLine, meta, status, outlineSection, diagSection);
   details.append(body);
 
   // 点击按钮时不让面板抢走编辑器选区。
@@ -375,11 +366,8 @@ function buildPanel() {
     if (event.target && event.target.closest('button')) event.preventDefault();
   });
 
-  const heading = editorPanel.querySelector('.panel-heading');
-  const toolbar = editorPanel.querySelector('.md-wt-toolbar');
-  if (toolbar) toolbar.insertAdjacentElement('afterend', details);
-  else if (heading) heading.insertAdjacentElement('afterend', details);
-  else editorPanel.insertBefore(details, editorPanel.firstChild);
+  const sidebar = window.mdPanelSidebars.create({panel: editorPanel, title: '专业助手', id: 'editor-assistant', width: 280});
+  sidebar.content.append(details);
 
   panel = details;
   refs = {
@@ -390,7 +378,6 @@ function buildPanel() {
     outlineList: outlineList,
     diagCount: diagHead.querySelector('.md-pro-count'),
     diagList: diagList,
-    diagNote: diagNote,
   };
   return true;
 }
@@ -427,13 +414,11 @@ function renderDiagnostics(analysis) {
   clear(list);
   const diagnostics = analysis ? analysis.diagnostics : [];
   const shown = diagnostics.slice(0, MAX_DIAGNOSTICS);
-  let advisory = false;
   if (!shown.length) {
     list.append(el('p', 'md-pro-empty', '未发现引用或章节号问题。'));
   } else {
     for (const diag of shown) {
       const severity = diag.severity === 'warning' ? 'warning' : 'info';
-      if (diag.code === 'heading-number' || diag.code === 'heading-number-missing') advisory = true;
       const row = el('div', 'md-pro-diag md-pro-diag-' + severity);
       const line = Number.isFinite(diag.line) && diag.line > 0 ? diag.line : null;
       if (line) {
@@ -455,7 +440,6 @@ function renderDiagnostics(analysis) {
   }
   refs.diagCount.textContent = diagnostics.length + ' 条'
     + (diagnostics.length > MAX_DIAGNOSTICS ? '（显示前 ' + MAX_DIAGNOSTICS + '）' : '');
-  refs.diagNote.hidden = !advisory;
 }
 
 function render() {
