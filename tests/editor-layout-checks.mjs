@@ -1024,7 +1024,7 @@ test('面板共享网格覆盖左右边缘，缩放轨道占两侧按钮间空�
     const b = parseFloat(style['--panel-button']);
     const gap = parseFloat(style['--panel-gap']);
     const inset = parseFloat(style['--panel-inset']);
-    assert.equal(b, mobile ? 26 : 28);
+    assert.equal(b, 28);
     assert.ok(gap >= 2 && gap < 6.5, '左右间距接近上下4px间距且不拉伸按钮');
     assert.ok(Math.abs(n * b + (n - 1) * gap + 2 * inset - width) < 0.001);
     const left = inset + b;

@@ -101,9 +101,9 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 }
 
 .topbar-actions .button-link{width:76px;height:38px;justify-content:center;padding:0 10px}
-.editor-footer,.preview-footer{font-size:11px;min-height:30px;padding:3px 18px;gap:4px;flex-shrink:0}
+.editor-footer,.preview-footer{font-size:11px;height:36px;min-height:36px;padding:3px 18px;gap:4px;flex-shrink:0;flex-direction:row;align-items:center}
 .editor-footer math,.preview-footer math,.preview-footer #status{font-size:11px}
-.editor-footer>span:first-child,.preview-footer>span{min-width:0;overflow-x:auto}
+.editor-footer>span:not(#count),.preview-footer>span{min-width:0;overflow-x:auto}
 #count{white-space:nowrap;flex-shrink:0}
 
 /* 配置错误提示条：位于预览 iframe 之外、正文上方，不覆盖正文；每条错误带行号跳转按钮。 */
@@ -137,7 +137,7 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .range-adjusting .range-value{opacity:1}
 @media(max-width:900px){.workspace{height:auto}}
 
-@media(max-width:600px){.preview-toolbar .range-trigger{width:26px;height:26px}}
+@media(max-width:600px){.preview-toolbar .range-trigger{width:28px;height:28px}}
 
 .preview-toolbar .option-popover{width:max-content;min-width:0;max-width:calc(100vw - 24px);padding:5px;gap:2px}
 .option-choice{position:relative;display:flex;align-items:center;box-sizing:border-box;width:100%;padding:3.5px 8px 3.5px calc(var(--panel-button, 28px)/2 - 11.5px);border:0;border-radius:5px;background:transparent;color:#33465e;font-size:12px;line-height:1.5;text-align:left;white-space:nowrap}

@@ -1,0 +1,24 @@
+.editor-panel.editor-gutters-hidden .cm-gutters { display: none !important; }
+.editor-panel .editor-footer { justify-content: flex-start; padding-left: 0; }
+.editor-panel .editor-footer #count { margin-left: auto; }
+.editor-gutter-toggle {
+  box-sizing: border-box;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  flex: 0 0 28px;
+  margin-left: calc((var(--gutter-button-slot, 28px) - 28px) / 2);
+  margin-right: calc((var(--gutter-button-slot, 28px) - 28px) / 2);
+  padding: 0;
+  border: 1px solid #d5dfeb;
+  border-radius: 6px;
+  background: #fff;
+  color: #38506b;
+  cursor: pointer;
+}
+.editor-gutter-toggle[aria-pressed="true"] { background: #e8f0f8; border-color: #c8daec; }
+.editor-gutter-toggle:focus-visible { outline: 2px solid #6c91bb; outline-offset: 2px; }

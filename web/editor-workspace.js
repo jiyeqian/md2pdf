@@ -636,7 +636,7 @@
     if (!width) return;
     var mobile = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
     var tiny = window.matchMedia && window.matchMedia('(max-width: 390px)').matches;
-    var button = mobile ? 26 : 28;
+    var button = 28;
     var inset = tiny ? 7 : mobile ? 8 : 10;
     var available = Math.max(button, width - inset * 2);
     var columns = Math.max(1, Math.round((available + 4) / (button + 4)));
