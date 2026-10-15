@@ -54,7 +54,7 @@ test('预览缩放经 postMessage 下发且与 Markdown 独立', () => {
   assert.match(wsJs, /function sendPreviewZoom\(\)/);
   // ready 重发按预览窗口校验来源。
   assert.match(wsJs, /event\.source !== previewFrame\.contentWindow/);
-  assert.match(wsJs, /event\.data\.type !== 'md2pdf-ready'/);
+  assert.match(wsJs, /event\.data\.type === 'md2pdf-ready'/);
 });
 
 test('CSS：容器居中、bubble 位置随值、窄屏收缩、括号平衡', () => {
@@ -336,4 +336,31 @@ test('鼠标离开滑块后数值不受焦点滞留影响，键盘操作仍可�
   input.dispatch('keydown', { key: 'ArrowLeft' });
   input.dispatch('blur', {});
   assert.ok(!root.classList.contains('md-zoom-keyboard'));
+});
+
+
+test('实际预览比例回写控件，保留用户期望且拒绝伪造和无效消息', () => {
+  const env = fakeEnvironment();
+  vm.runInContext(wsJs, env.sandbox);
+  const pv = zoomParts(zoomControls(env.previewHeading)[0]);
+  const report = (zoom, source = env.previewFrame.contentWindow) => env.dispatchWin('message', {source, data:{type:'md2pdf-preview-zoom-state', zoom}});
+  report(78.4);
+  assert.equal(pv.input.value, '78.4');
+  assert.equal(pv.value.textContent, '78%');
+  env.dispatchWin('message', {source:env.previewFrame.contentWindow, data:{type:'md2pdf-ready'}});
+  assert.equal(env.sent.at(-1).zoom, 100, '实际缩小不能覆盖期望100%');
+  report(40.2);
+  assert.equal(pv.input.getAttribute('min'), '40');
+  for (const invalid of [0, NaN, Infinity, 151, '80']) report(invalid);
+  report(90, {});
+  assert.equal(pv.input.value, '40.2');
+  report(78.4);
+  pv.input.dispatch('keydown', {key:'ArrowUp', preventDefault(){}});
+  assert.equal(env.sent.at(-1).zoom, 85, '适配后仍支持5%键盘调节');
+  pv.input.value = '80';
+  pv.input.dispatch('input');
+  report(60);
+  pv.input.dispatch('change');
+  env.dispatchWin('message', {source:env.previewFrame.contentWindow, data:{type:'md2pdf-ready'}});
+  assert.equal(env.sent.at(-1).zoom, 80, '主动选择80%应保留');
 });

@@ -147,12 +147,12 @@ test('可信落款链接：按专用 data 属性 + 精确官方 URL 拦截，回
   assert.doesNotMatch(js, /type:'md2pdf-open-repo'[^}]*url/, '消息不得携带 URL 参数');
 });
 
-test('预览缩放：先算自适应再乘 zoom/100，默认 100 保持原效果', () => {
+test('预览缩放：100% 使用固定页面基准，仅在空间不足时缩小', () => {
   const js = injectedScript(enhancePreview(DOC, 'general'));
   assert.match(js, /var ZOOM_MIN = 50, ZOOM_MAX = 150, ZOOM_STEP = 5;/);
   assert.match(js, /var zoom = 100;/);
-  assert.match(js, /var base = Math\.min\(1, \(document\.documentElement\.clientWidth - 24\) \/ page\.offsetWidth\);/);
-  assert.match(js, /pages\.style\.zoom = base \* \(zoom \/ 100\);/);
+  assert.match(js, /var scale = Math\.min\(zoom \/ 100, available \/ page\.offsetWidth\);/);
+  assert.doesNotMatch(js, /if \(z === zoom\) return;/, '重复期望比例也应重新适配并回报实际值');
 });
 
 test('预览缩放：只接受 parent 消息，校验有限数值并夹到 50–150', () => {
@@ -172,17 +172,29 @@ test('预览缩放：指针按下时向父窗口回传纯消息类型（关闭�
 });
 
 
-test('预览顶部和页间留白匹配左右留白，补偿页面缩放', () => {
+test('预览缩放保留期望值，自动适配后回报实际比例并保持 12px 留白', () => {
   const js = injectedScript(enhancePreview(DOC, 'general'));
   const fitBody = js.match(/function fit\(\) \{([\s\S]*?)\n  \}/)[1];
-  const fit = new Function('document', 'zoom', fitBody);
-  for (const [width, pageWidth, zoom] of [[600, 794, 100], [1200, 794, 100], [600, 794, 50]]) {
-    const bodyStyle = {};
-    const pageStyle = {};
-    fit({documentElement:{clientWidth:width}, body:{style:{setProperty:(key, value) => bodyStyle[key] = value}}, querySelector: selector => selector === '.pagedjs_page' ? {offsetWidth:pageWidth} : {style:{setProperty:(key, value) => pageStyle[key] = value}}}, zoom);
-    const scale = Math.min(1, (width - 24) / pageWidth) * zoom / 100;
-    const side = (width - pageWidth * scale) / 2;
-    assert.ok(Math.abs(parseFloat(bodyStyle.padding) - side) < 0.001);
-    assert.ok(Math.abs(parseFloat(pageStyle.gap) * scale - side) < 0.001);
+  const fit = new Function('document', 'zoom', 'parent', fitBody);
+  for (const [width, desired, expectedScale] of [
+    [1200, 100, 1], [600, 100, 576 / 794], [1200, 100, 1],
+    [1200, 80, 0.8], [600, 80, 576 / 794], [1200, 80, 0.8],
+    [1600, 150, 1.5], [300, 100, 276 / 794], [20, 100, 1 / 794],
+  ]) {
+    const bodyStyle = {}, pageStyle = {}, messages = [];
+    const document = {
+      documentElement: {clientWidth: width},
+      body: {style: {setProperty: (key, value) => bodyStyle[key] = value}},
+      querySelector: selector => selector === '.pagedjs_page' ? {offsetWidth: 794} : {
+        style: {setProperty: (key, value) => pageStyle[key] = value,
+          set zoom(value) { pageStyle.zoom = value; }},
+      },
+    };
+    fit(document, desired, {postMessage: message => messages.push(message)});
+    assert.ok(Math.abs(pageStyle.zoom - expectedScale) < 0.000001);
+    assert.equal(bodyStyle.padding, '12px 0');
+    assert.ok(Math.abs(parseFloat(pageStyle.gap) * expectedScale - 12) < 0.000001);
+    assert.equal(messages[0].type, 'md2pdf-preview-zoom-state');
+    assert.ok(Math.abs(messages[0].zoom - expectedScale * 100) < 0.000001);
   }
 });

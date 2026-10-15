@@ -506,7 +506,7 @@
   //     字号、工具栏与标题栏；CodeMirror 活动时用 requestMeasure 重算度量，
   //     编辑器未挂载则回退到 textarea 字号。
   //   * 预览缩放通过 postMessage 把百分比发进 iframe，由 src/preview.mjs 在
-  //     自适应 fit() 结果上再乘 zoom/100；100% 即原始效果。
+  //     按固定页面基准显示；iframe 回传适配后的实际比例，用户选择单独保留。
   // 共享外观类 .ruler-control / .ruler-scale / .ruler-slider 由 app.css 统一提供，
   // 本模块只负责容器布局与数值 bubble 的定位。
   function clampZoom(value) {
@@ -533,14 +533,19 @@
     var maxLabel = make('span', { class: 'ruler-label ruler-label--max' }, ZOOM_MAX + '%');
 
     function render(percent) {
-      output.textContent = percent + '%';
-      input.setAttribute('aria-valuetext', percent + '%');
-      var pos = (percent - ZOOM_MIN) / (ZOOM_MAX - ZOOM_MIN) * 100;
+      var text = Math.round(percent) + '%';
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+      var minimum = Number(input.getAttribute('min'));
+      var pos = (percent - minimum) / (ZOOM_MAX - minimum) * 100;
       root.style.setProperty('--zoom-pos', pos + '%');
     }
 
     function set(percent) {
       var pct = clampZoom(percent);
+      input.setAttribute('min', String(ZOOM_MIN));
+      input.setAttribute('step', String(ZOOM_STEP));
+      minLabel.textContent = ZOOM_MIN + '%';
       input.value = String(pct);
       render(pct);
       onZoom(pct);
@@ -550,10 +555,17 @@
     input.addEventListener('pointerleave', function () { root.classList.remove('md-zoom-keyboard'); });
     input.addEventListener('keydown', function (event) {
       if (/^(ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Home|End|PageUp|PageDown)$/.test(event.key)) root.classList.add('md-zoom-keyboard');
+      if (input.getAttribute('step') === 'any' && /^(ArrowLeft|ArrowRight|ArrowUp|ArrowDown)$/.test(event.key)) {
+        event.preventDefault();
+        set(Number(input.value) + (/^(ArrowLeft|ArrowDown)$/.test(event.key) ? -ZOOM_STEP : ZOOM_STEP));
+      }
     });
     input.addEventListener('blur', function () { root.classList.remove('md-zoom-keyboard'); });
     input.addEventListener('input', function () { set(input.value); });
-    input.addEventListener('change', function () { set(input.value); });
+    input.addEventListener('change', function () {
+      // iframe 回写实际比例后，松手不能把临时适配值变成用户期望值。
+      if (input.getAttribute('step') !== 'any') set(input.value);
+    });
 
     control.appendChild(input);
     control.appendChild(output);
@@ -562,7 +574,16 @@
     root.appendChild(control);
     root.appendChild(scale);
     render(ZOOM_DEFAULT);
-    return { root: root, input: input, output: output, set: set };
+    function display(percent) {
+      if (!isFinite(percent) || percent <= 0 || percent > ZOOM_MAX) return;
+      var minimum = Math.min(ZOOM_MIN, Math.floor(percent));
+      input.setAttribute('min', String(minimum));
+      input.setAttribute('step', 'any');
+      minLabel.textContent = minimum + '%';
+      input.value = String(percent);
+      render(percent);
+    }
+    return { root: root, input: input, output: output, set: set, display: display };
   }
 
   // 只用现有 window.mdEditor 接口；缺失时退回厂商 EditorView.findFromDOM，
@@ -1069,8 +1090,9 @@
     // 预览就绪后重新下发当前缩放：iframe 重载会丢失状态；只接受预览窗口的消息。
     window.addEventListener('message', function (event) {
       if (!previewFrame || event.source !== previewFrame.contentWindow) return;
-      if (!event.data || event.data.type !== 'md2pdf-ready') return;
-      sendPreviewZoom();
+      if (!event.data) return;
+      if (event.data.type === 'md2pdf-ready') sendPreviewZoom();
+      else if (event.data.type === 'md2pdf-preview-zoom-state' && typeof event.data.zoom === 'number' && previewZoomControl) previewZoomControl.display(event.data.zoom);
     });
     // 点击面板外部关闭「基础格式」面板；面板内部与触发器不触发。
     document.addEventListener('click', function (event) {
