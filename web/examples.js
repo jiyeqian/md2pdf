@@ -17,6 +17,7 @@
   const templateOrder = ['general', 'paper', 'gb', 'skill'];
   let catalog = [];
   let revision = 0;
+  let currentTemplateRefresh = 0;
   const rendered = new Map();
   const previewFrames = new Map();
 
@@ -28,6 +29,35 @@
   function readDraft() {
     try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null'); }
     catch { return null; }
+  }
+
+  async function refreshCurrentTemplate() {
+    const refresh = ++currentTemplateRefresh;
+    const draft = readDraft();
+    let type = draft?.previewType || '';
+    if (!type && draft?.md) {
+      try {
+        const response = await fetch('/api/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ md: draft.md, opts: draft.opts?.type ? { type: draft.opts.type } : {} }),
+        });
+        if (response.ok) ({ type } = await response.json());
+      } catch { /* 识别不可用时仍可浏览模板 */ }
+    }
+    if (refresh !== currentTemplateRefresh) return;
+    const match = catalog.find(item => item.type === type && item.id === draft?.templateId)
+      || catalog.find(item => item.type === type);
+    for (const example of catalog) {
+      example.current = example === match;
+      const card = listEl.querySelector(`[data-id="${CSS.escape(example.id)}"]`);
+      if (!card) continue;
+      card.setAttribute('aria-current', String(example.current));
+      card.dataset.currentTemplate = String(example.current);
+      const badge = card.querySelector('.type-badge');
+      badge.classList.toggle('is-current', example.current);
+      badge.title = example.current ? `当前模板：${example.title || example.id}` : (example.title || example.id);
+    }
   }
 
   function injectRevision(html, rev) {
@@ -51,7 +81,10 @@
     templateNavIcon.hidden = view === 'templates';
     editorNavIcon.hidden = view !== 'templates';
     document.body.classList.toggle('show-template-library', view === 'templates');
-    if (view === 'templates' && !catalog.length) loadCatalog();
+    if (view === 'templates') {
+      if (!catalog.length) loadCatalog();
+      else refreshCurrentTemplate();
+    }
     if (view === 'editor') {
       window.dispatchEvent(new Event('resize'));
       window.dispatchEvent(new Event('md2pdf-editor-view'));
@@ -239,20 +272,7 @@
         return (aIndex < 0 ? templateOrder.length : aIndex) - (bIndex < 0 ? templateOrder.length : bIndex);
       });
       window.md2pdfTemplateTitles = Object.fromEntries(catalog.map(item => [item.id, item.title || item.id]));
-      const draft = readDraft();
-      if (draft?.md) {
-        try {
-          const resolved = await fetch('/api/resolve', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ md: draft.md, opts: draft.opts?.type ? { type: draft.opts.type } : {} }),
-          });
-          const { type } = await resolved.json();
-          const match = catalog.find(item => item.type === type && item.id === draft.templateId)
-            || catalog.find(item => item.type === type);
-          if (match) match.current = true;
-        } catch { /* 识别不可用时仍可浏览模板 */ }
-      }
+      await refreshCurrentTemplate();
       setStatus(`${catalog.length} 个模板`);
       renderCards();
     } catch (error) {

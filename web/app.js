@@ -130,6 +130,7 @@ let previewRevision = -1;
 let policyDoc = null;
 let currentPolicy = null;
 let resolveCache = { key: null, result: null };
+let renderedTemplateType = '';
 // 上次成功渲染：是否已有一份可用预览，以及当前配置是否无效（无效时禁止导出 PDF）。
 let hasPreview = false;
 let configInvalid = false;
@@ -146,7 +147,7 @@ function saveDraft() {
   if (!editor || !initialized) return;
   const previousDraft = readDraft();
   const templateId = previousDraft?.md === editor.value ? previousDraft.templateId : window.currentTemplateId;
-  const saved = writeStore(DRAFT_KEY, JSON.stringify({ md: editor.value, opts: readFormOptions(), templateId, savedAt: Date.now() }));
+  const saved = writeStore(DRAFT_KEY, JSON.stringify({ md: editor.value, opts: readFormOptions(), templateId, previewType: renderedTemplateType, savedAt: Date.now() }));
   let warning = document.getElementById('draft-warning');
   if (!saved && !warning) {
     warning = document.createElement('p');
@@ -561,10 +562,12 @@ async function renderPreview() {
   if (!form.reportValidity()) { setStatus('请检查排版选项。', true); return; }
   if (!editor.value.trim()) {
     preview.removeAttribute('srcdoc');
+    renderedTemplateType = '';
     hasPreview = false;
     clearConfigErrors();
     if (emptyPreview) emptyPreview.hidden = false;
     setStatus('输入 Markdown 即可开始排版。');
+    saveDraft();
     return;
   }
   controller = new AbortController();
@@ -587,10 +590,11 @@ async function renderPreview() {
     const result = await response.json();
     if (current !== revision) return;
     renderedEffective = result.effective || {};
+    renderedTemplateType = result.type || result.effective?.type || '';
     if (result.policy) applyPolicy(result.policy);
     if (currentTemplateEl) {
       const labels = policyDoc?.labels?.type || {};
-      const effectiveTemplate = result.type || result.effective?.type || '';
+      const effectiveTemplate = renderedTemplateType;
       const currentId = window.currentTemplateId;
       const title = currentId && (window.md2pdfTemplateTitles || {})[currentId];
       currentTemplateEl.textContent = title ? ` · ${title}` : effectiveTemplate ? ` · ${labels[effectiveTemplate] || effectiveTemplate}` : '';
@@ -601,6 +605,7 @@ async function renderPreview() {
     clearConfigErrors();
     previewRevision = current;
     preview.srcdoc = injectRevision(result.html, current);
+    saveDraft();
     setStatus('正在加载公式、图表与分页…');
     previewTimer = setTimeout(() => { if (current === revision) setStatus('排版等待超时，请修改内容或重试。', true); }, 60000);
   } catch (error) {
@@ -686,6 +691,7 @@ async function boot() {
   // 恢复会话草稿（浏览示例库返回或刷新后仍在）。
   if (revision === startedAt && draft && typeof draft.md === 'string' && draft.md.trim()) {
     editor.value = draft.md;
+    renderedTemplateType = typeof draft.previewType === 'string' ? draft.previewType : '';
     applyStoredOptions(draft.opts);
     const restoredType = form.elements.type.value;
     if (restoredType && policyDoc && policyDoc.policy && policyDoc.policy[restoredType]) applyPolicy(policyDoc.policy[restoredType]);

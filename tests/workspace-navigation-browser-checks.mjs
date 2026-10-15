@@ -83,6 +83,7 @@ try {
   assert.match(await evaluate(`document.querySelector('[data-control=type] [data-option-trigger=type]').getAttribute('aria-label')`),/^模板/);
   // Effective frontmatter type, not a template origin ID, controls the library.
   await evaluate(`mdEditor.setValue(${JSON.stringify('---\ntype: paper\n---\n# 测试')})`);
+  await wait('document.querySelector("#status").textContent === "预览已更新"');
   await browser.send('Page.navigate',{url:url+'/examples'});
   await wait('document.querySelector(".example-card[aria-current=true]")');
   assert.equal(await evaluate(`Array.from(document.querySelectorAll('.example-card')).map(card=>card.dataset.id).join(',')`),'general,paper,gb,skill');
@@ -92,6 +93,14 @@ try {
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'学术论文');
   assert.match(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').title`),/^当前模板：/);
   assert.ok(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').classList.contains('is-current')`));
+  await evaluate(`document.querySelector('#examples-link-top').click()`);
+  await wait('document.querySelector("[data-view=editor]").hidden === false');
+  await evaluate(`mdEditor.setValue(${JSON.stringify('---\ntype: skill\n---\n# 测试')})`);
+  await wait('JSON.parse(sessionStorage.getItem("md2pdf:draft") || "{}").previewType === "skill"');
+  assert.equal(await evaluate(`JSON.parse(sessionStorage.getItem('md2pdf:draft')).previewType`),'skill');
+  await evaluate(`document.querySelector('#examples-link-top').click()`);
+  await wait('document.querySelector(".example-card[aria-current=true]")?.dataset.id === "skill"');
+  assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'技能文档');
   console.log('Chromium: document/iframe shortcuts, shared fullscreen sync switch, and effective-type template selection passed');
 } catch (error) {
   try { console.log(await browser.send('Runtime.evaluate',{expression:`JSON.stringify({status:document.querySelector('#status')?.textContent,editor:!!window.mdEditor,preview:document.querySelector('#preview')?.srcdoc.slice(-100)})`,returnByValue:true})); } catch {}
