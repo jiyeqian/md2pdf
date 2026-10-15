@@ -92,9 +92,9 @@ try {
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true]').dataset.currentTemplate`),'true');
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'学术论文');
   const cardGeometry = await evaluate(`(()=>{const card=document.querySelector('.example-card'), preview=card.querySelector('.template-card-preview'), frame=preview.querySelector('iframe'), style=getComputedStyle(frame);return {width:card.clientWidth,height:parseFloat(getComputedStyle(preview).height),top:parseFloat(style.top),left:parseFloat(style.left),frameWidth:parseFloat(style.width),frameHeight:parseFloat(style.height)}})()`);
-  assert.ok(Math.abs(cardGeometry.height-((cardGeometry.width-32)*297/210+32))<1,'template preview height fits one A4 page and equal gray margins');
-  assert.deepEqual([cardGeometry.top,cardGeometry.left,cardGeometry.frameWidth],[-8,4,cardGeometry.width-8]);
-  assert.ok(Math.abs(cardGeometry.frameHeight-cardGeometry.height-16)<=1,'preview frame adds symmetric crop space around the first page');
+  assert.ok(Math.abs(cardGeometry.height-((cardGeometry.width-24)*297/210+24))<1,'template preview height fits one A4 page and equal gray margins');
+  assert.deepEqual([cardGeometry.top,cardGeometry.left,cardGeometry.frameWidth],[-12,0,cardGeometry.width]);
+  assert.ok(Math.abs(cardGeometry.frameHeight-cardGeometry.height-12)<=1,'preview frame clips before the second page');
   assert.match(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').title`),/^当前模板：/);
   assert.ok(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').classList.contains('is-current')`));
   await evaluate(`document.querySelector('#examples-link-top').click()`);
