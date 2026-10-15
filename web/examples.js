@@ -205,6 +205,8 @@
     hint.textContent = '实时预览 · 开启后可滚动查看全文';
     hint.id = `preview-hint-${example.id}`;
     toggle.setAttribute('aria-describedby', hint.id);
+    toggleLabel.addEventListener('click', () => toggleLabel.classList.add('hint-dismissed'));
+    toggleLabel.addEventListener('mouseleave', () => toggleLabel.classList.remove('hint-dismissed'));
     toggleLabel.append(toggle, hint);
     heading.append(badge, toggleLabel, create);
 

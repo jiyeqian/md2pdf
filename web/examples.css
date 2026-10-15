@@ -32,6 +32,6 @@ body.show-template-library #examples-link-top [data-nav-icon="editor"]{display:b
 .template-preview-toggle input:focus:not(:focus-visible){outline:none}
 .template-preview-toggle input:focus-visible{outline:2px solid #3a5677;outline-offset:3px}
 .template-preview-hint{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:250px;padding:7px 10px;border:1px solid #dfe5ed;border-radius:6px;background:#fff;color:#3a5677;font-size:11px;box-shadow:0 2px 8px #0002;pointer-events:none}
-.template-preview-toggle:hover .template-preview-hint,.template-preview-toggle:focus-within .template-preview-hint{display:block}
+.template-preview-toggle:hover:not(.hint-dismissed) .template-preview-hint{display:block}
 .template-card-snapshot{position:absolute;inset:12px;width:calc(100% - 24px);height:calc(100% - 24px);object-fit:contain;background:#fff;box-shadow:0 1px 2px #0005,0 12px 32px #0004}
 .template-card-snapshot[hidden]{display:none}
