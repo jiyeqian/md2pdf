@@ -212,6 +212,8 @@ npm link              # 命令指向仓库，改代码立即生效
 bash scripts/validate.sh   # 本地与 CI 同一套校验（无需浏览器）
 ```
 
+模板库首页截图随程序提供，浏览时不生成。修改 `examples/`、模板、字体或渲染代码后，在发布前执行 `npm run generate:template-previews`（需要 Chrome），并提交 `web/template-previews/` 中更新的图片。截图复用 WebApp 的渲染流程；普通部署只需提供静态图片。
+
 发版：同步 `src/md2pdf.mjs` 的 `VERSION` 与 `package.json` 的 `version`，然后 `git tag v1.x.x && git push origin v1.x.x`，CNB 流水线会自动 `npm publish`（需配置 `NPM_TOKEN`）。
 
 ## 常见问题

@@ -59,7 +59,6 @@ test('空白会话草稿不阻止默认示例载入；模板库以预览卡片�
   assert.match(indexHtml, /<ul id="example-list" class="example-cards"/);
   assert.match(examplesJs, /className = 'template-card-preview'/);
   assert.match(examplesJs, /aria-label', '从该模板创建'/);
-  assert.match(examplesJs, /Array\.from\(\{ length: Math\.min\(2, catalog\.length\) \}, worker\)/, '模板预览并发限制为两个');
   assert.ok(!indexHtml.includes('template-search') && !indexHtml.includes('detail-source'), '模板库不显示搜索或 Markdown 源码区');
   assert.ok(!indexHtml.includes('examples-heading') && !examplesHtml.includes('examples-heading'), '模板库不显示额外标题区');
   assert.match(indexHtml, /data-nav-icon="templates"[\s\S]*data-nav-icon="editor"/, '顶栏提供可切换的模板库与主页图标');
