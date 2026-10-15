@@ -22,6 +22,7 @@
   footer.prepend(button);
   let frame = 0;
   let observedGutter = null;
+  let buttonSlot = 28;
   const gutterResize = new ResizeObserver(scheduleAlign);
   function align() {
     frame = 0;
@@ -33,8 +34,9 @@
     }
     const rect = gutter && gutter.getBoundingClientRect();
     const footerRect = footer.getBoundingClientRect();
-    const width = visible && rect && rect.width ? Math.max(28, (rect.left - footerRect.left) * 2 + rect.width) : 28;
-    button.style.setProperty('--gutter-button-slot', width + 'px');
+    // 隐藏后保留最后一次可见栏宽，避免开关与旁边内容左右跳动。
+    if (visible && rect && rect.width) buttonSlot = Math.max(28, (rect.left - footerRect.left) * 2 + rect.width);
+    button.style.setProperty('--gutter-button-slot', buttonSlot + 'px');
   }
   function scheduleAlign() {
     if (!frame) frame = global.requestAnimationFrame(align);
