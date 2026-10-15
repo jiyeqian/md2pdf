@@ -305,8 +305,6 @@
 .md-wt-zoom{width:140px;height:28px;min-height:0}
 .md-wt-zoom > .ruler-control{left:27px;right:30px;top:50%;height:12px;transform:translateY(-50%)}
 .md-wt-zoom .ruler-slider{height:12px}
-.md-wt-zoom .ruler-slider::-webkit-slider-thumb{width:2.667px;height:10.666px;margin-top:-1.333px;border-radius:1px}
-.md-wt-zoom .ruler-slider::-moz-range-thumb{width:2.667px;height:10.666px;border-radius:1px}
 .md-wt-zoom .ruler-label{top:50%}
 .md-wt-zoom .md-wt-zoom-value{top:-12px}
 @media(max-width:600px){
@@ -319,11 +317,6 @@
  .workspace.md-editor-workspace .panel-heading{padding:6px 7px}
  .preview-toolbar{padding-left:7px;padding-right:7px}
 }
-
-/* 缩小手柄后仍让其中心落在原来的两端刻度上。 */
-.md-wt-zoom .ruler-slider{width:calc(100% - 5.334px);margin-inline:2.667px}
-.md-wt-zoom .ruler-slider::-webkit-slider-runnable-track{background:linear-gradient(#b8c2cf,#b8c2cf) .8335px center/1px 4px no-repeat,linear-gradient(#b8c2cf,#b8c2cf) calc(100% - .8335px) center/1px 4px no-repeat,linear-gradient(#cdd4de,#cdd4de) center/calc(100% - 2.667px) 2px no-repeat}
-.md-wt-zoom .ruler-slider::-moz-range-track{background:linear-gradient(#b8c2cf,#b8c2cf) .8335px center/1px 4px no-repeat,linear-gradient(#b8c2cf,#b8c2cf) calc(100% - .8335px) center/1px 4px no-repeat,linear-gradient(#cdd4de,#cdd4de) center/calc(100% - 2.667px) 2px no-repeat}
 
 /* 每个面板的两条工具行共用动态列宽、列距和边缘留白。 */
 .workspace.md-editor-workspace .panel-heading,
