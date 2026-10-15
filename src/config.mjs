@@ -476,6 +476,11 @@ export function resolveDocumentOptions(explicit = {}, fm = {}, profile = null, c
   const out = {};
   for (const key of MERGE_KEYS) out[key] = pick(key);
 
+  // 文档版本仅作落款中栏的缺省值，不覆盖显式空串或类型固定版式。
+  if (out.colophonCenter === undefined && (typeof fm.version === 'string' || (typeof fm.version === 'number' && Number.isFinite(fm.version)))) {
+    out.colophonCenter = String(fm.version);
+  }
+
   // 页边距：四边与简写 marginSide 分层取值，且低层简写不得覆盖高层显式四边。
   const pickSide = side => {
     const order = [

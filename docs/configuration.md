@@ -78,6 +78,8 @@ colophon-right: ""
 disable: [footer, lead]
 ```
 
+未显式设置落款中栏时，frontmatter 的 `version` 自动作为 `colophon-center` 的默认值；显式 `colophon-center: ""` 可清空。关闭落款或使用国家标准固定版式时不显示。
+
 CLI 对应 `--header-left/--header-center/--header-right <text>` 和 `--colophon-left/--colophon-center/--colophon-right <text>`。旧 `--colophon <text>` / frontmatter `colophon: "文字"` 是左侧文字的兼容别名；同层与新参数取值矛盾时报错。国家标准不允许覆盖固定页眉，保持专用页脚且不输出落款。
 
 ## 模板与主题

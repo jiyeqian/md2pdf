@@ -42,3 +42,23 @@ test('colophon three slots clear independently and GB keeps fixed layout', async
   assert.match(result.html, /<div class="colophon"><span><\/span><span>居中<\/span><span><\/span><\/div>/);
   await assert.rejects(render('---\ntype: gb\nheader-left: "覆盖"\n---\n# 标题'), /固定版式/);
 });
+
+
+test('frontmatter version defaults the center colophon consistently for CLI and Web', async () => {
+  const md = '---\nversion: "v2.3<&"\n---\n# 标题';
+  const cli = await render(md, parseArgs([]));
+  const web = await render(md, {}, { webSafe: true });
+  const center = /<div class="colophon"><span>[\s\S]*?<\/span><span>([\s\S]*?)<\/span>/;
+  assert.equal(cli.html.match(center)[1], 'v2.3&lt;&amp;');
+  assert.equal(web.html.match(center)[1], cli.html.match(center)[1]);
+  for (const value of ['', '自定义']) {
+    const fm = parseFrontmatter('---\nversion: "1.2"\ncolophon-center: ' + JSON.stringify(value) + '\n---').fm;
+    assert.equal(resolveDocumentOptions({}, fm).colophonCenter, value);
+    assert.equal(resolveDocumentOptions({colophonCenter:value}, {version:'1.2'}).colophonCenter, value);
+  }
+  assert.equal(resolveDocumentOptions({}, {version:1.2}).colophonCenter, '1.2');
+  assert.equal(resolveDocumentOptions({}, {version:{invalid:true}}).colophonCenter, undefined);
+  assert.equal(resolveDocumentOptions({}, {version:'1.2'}, {name:'gb',gbDoc:true,defaults:{}}).colophonCenter, '');
+  const off = await render('---\nversion: "1.2"\ndisable: [colophon]\n---\n# 标题');
+  assert.ok(!off.html.includes('<div class="colophon">'));
+});
