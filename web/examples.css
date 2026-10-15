@@ -24,11 +24,11 @@ body.show-template-library #examples-link-top [data-nav-icon="editor"]{display:b
 @media(max-width:760px){.examples-main{padding:16px}.example-cards{grid-template-columns:1fr;gap:14px}.example-card-copy{height:96px;padding:11px 14px 12px}.example-card-heading{padding:0 14px}}
 @media(max-width:460px){.examples-main{padding:12px}}
 
-.template-preview-toggle{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;cursor:pointer;z-index:2}
-.template-preview-toggle input{appearance:none;display:block;width:30px;height:18px;margin:0;border:1px solid #a4afbd;border-radius:12px;background:#c5ccd5;cursor:pointer;transition:background .15s}
-.template-preview-toggle input::before{content:"";display:block;width:12px;height:12px;margin:2px;border-radius:50%;background:#fff;box-shadow:0 1px 2px #0003;transition:transform .15s}
-.template-preview-toggle input:checked{background:#3a5677;border-color:#3a5677}
-.template-preview-toggle input:checked::before{transform:translateX(12px)}
+.template-preview-toggle{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;width:44px;height:32px;cursor:pointer;z-index:2}
+.template-preview-toggle input{appearance:none;position:relative;display:block;flex:0 0 auto;width:32px;height:18px;margin:0;padding:0;border:0;border-radius:10px;background:#d0d8e3;box-shadow:inset 0 0 0 1px #b8c4d3;cursor:pointer;transition:background .15s}
+.template-preview-toggle input::before{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #233e6030;transition:transform .15s}
+.template-preview-toggle input:checked{background:#3a5677;box-shadow:inset 0 0 0 1px #3a5677}
+.template-preview-toggle input:checked::before{transform:translateX(14px)}
 .template-preview-toggle input:focus-visible{outline:2px solid #3a5677;outline-offset:3px}
 .template-preview-hint{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:250px;padding:7px 10px;border:1px solid #dfe5ed;border-radius:6px;background:#fff;color:#3a5677;font-size:11px;box-shadow:0 2px 8px #0002;pointer-events:none}
 .template-preview-toggle:hover .template-preview-hint,.template-preview-toggle:focus-within .template-preview-hint{display:block}

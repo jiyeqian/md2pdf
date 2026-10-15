@@ -92,6 +92,7 @@ try {
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true]').dataset.currentTemplate`),'true');
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'学术论文');
   await wait('document.querySelector(".example-card[data-id=general] iframe")');
+  await wait('document.querySelector(".example-card[data-id=general] .template-card-snapshot").hidden');
   assert.equal(await evaluate(`document.querySelectorAll('.example-card iframe').length`),1);
   assert.equal(await evaluate(`document.querySelectorAll('.template-card-snapshot').length`),4);
   assert.equal(await evaluate(`document.querySelectorAll('.template-preview-toggle input:checked').length`),1);
@@ -100,6 +101,15 @@ try {
   assert.equal(await evaluate(`document.querySelector('.example-card[data-id=general] .template-card-snapshot').hidden`),false);
   await evaluate(`document.querySelector('.example-card[data-id=general] .template-preview-toggle input').click()`);
   await wait('document.querySelector(".example-card[data-id=general] iframe")');
+  await wait('document.querySelector(".example-card[data-id=general] .template-card-snapshot").hidden');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.template-preview-toggle input')).paddingLeft`),'0px','switch does not inherit text-input padding');
+  for (const id of ['paper','gb','skill']) {
+    await evaluate(`document.querySelector('.example-card[data-id=${id}]').scrollIntoView();document.querySelector('.example-card[data-id=${id}] .template-preview-toggle input').click()`);
+    await wait(`document.querySelector('.example-card[data-id=${id}] .template-card-snapshot').hidden`);
+    assert.equal(await evaluate(`document.querySelector('.example-card[data-id=${id}] iframe').style.opacity`),'1');
+    await evaluate(`document.querySelector('.example-card[data-id=${id}] .template-preview-toggle input').click()`);
+    assert.equal(await evaluate(`document.querySelector('.example-card[data-id=${id}] iframe') === null`),true);
+  }
   const cardGeometry = await evaluate(`(()=>{const card=document.querySelector('.example-card'), preview=card.querySelector('.template-card-preview'), frame=preview.querySelector('iframe'), style=getComputedStyle(frame);return {width:card.clientWidth,height:parseFloat(getComputedStyle(preview).height),top:parseFloat(style.top),left:parseFloat(style.left),frameWidth:parseFloat(style.width),frameHeight:parseFloat(style.height)}})()`);
   assert.ok(Math.abs(cardGeometry.height-((cardGeometry.width-24)*297/210+24))<1,'template preview height fits one A4 page and equal gray margins');
   assert.deepEqual([cardGeometry.top,cardGeometry.left,cardGeometry.frameWidth],[-12,0,cardGeometry.width]);

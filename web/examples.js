@@ -131,7 +131,7 @@
     if (event.data.type === 'md2pdf-ready') {
       state.status.hidden = true;
       state.image.hidden = true;
-      state.frame.style.visibility = 'visible';
+      state.frame.style.opacity = '1';
     }
     else if (event.data.type === 'md2pdf-error') {
       state.status.hidden = false;
@@ -288,7 +288,8 @@
       frame.title = `模板排版预览：${example.title || example.id}`;
       frame.setAttribute('sandbox', 'allow-scripts');
       frame.setAttribute('referrerpolicy', 'no-referrer');
-      frame.style.visibility = 'hidden';
+      // visibility:hidden 会阻塞 iframe 的分页；用透明度等待完成信号。
+      frame.style.opacity = '0';
       card.frame = frame;
       card.preview.append(frame);
       const frameRevision = ++revision;
