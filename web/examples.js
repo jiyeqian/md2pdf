@@ -11,6 +11,9 @@
   const listStatus = root.querySelector('#list-status');
   const viewLabel = document.querySelector('#app-view-label');
   const viewLink = document.querySelector('#examples-link-top');
+  const templateNavIcon = viewLink.querySelector('[data-nav-icon="templates"]');
+  const editorNavIcon = viewLink.querySelector('[data-nav-icon="editor"]');
+  const shortTemplateNames = { general: '机械方案', skill: '日志分析', paper: '仿生抓取', gb: '国家标准' };
   let catalog = [];
   let revision = 0;
   const rendered = new Map();
@@ -44,6 +47,8 @@
     viewLink.setAttribute('aria-label', view === 'templates' ? '返回编辑器' : '模板库');
     viewLink.title = view === 'templates' ? '返回编辑器' : '模板库';
     viewLink.dataset.viewLink = view === 'templates' ? 'editor' : 'templates';
+    templateNavIcon.hidden = view === 'templates';
+    editorNavIcon.hidden = view !== 'templates';
     document.body.classList.toggle('show-template-library', view === 'templates');
     if (view === 'templates' && !catalog.length) loadCatalog();
     if (view === 'editor') {
@@ -104,19 +109,22 @@
     item.dataset.currentTemplate = String(Boolean(example.current));
 
     const heading = document.createElement('div');
-    heading.className = 'example-card-heading';
+    heading.className = 'panel-heading example-card-heading';
     const copy = document.createElement('div');
     copy.className = 'example-card-copy';
     const badge = document.createElement('span');
     badge.className = 'type-badge';
-    badge.textContent = '当前模板';
-    badge.hidden = !example.current;
+    const templateName = shortTemplateNames[example.id] || Array.from(example.title || example.id).slice(0, 4).join('');
+    badge.textContent = templateName;
+    badge.title = example.current ? `当前模板：${example.title || example.id}` : (example.title || example.id);
     if (example.current) badge.classList.add('is-current');
     const title = document.createElement('h3');
     title.textContent = example.title || example.id;
+    title.title = title.textContent;
     const summary = document.createElement('p');
     summary.textContent = example.description || '';
-    copy.append(badge, title, summary);
+    summary.title = summary.textContent;
+    copy.append(title, summary);
 
     const create = document.createElement('button');
     create.type = 'button';
@@ -146,7 +154,7 @@
       icon.append(path);
     }
     create.append(icon);
-    heading.append(copy, create);
+    heading.append(badge, create);
 
     const preview = document.createElement('div');
     preview.className = 'template-card-preview';
@@ -160,7 +168,7 @@
     status.setAttribute('role', 'status');
     status.textContent = '正在生成预览…';
     preview.append(frame, status);
-    item.append(heading, preview);
+    item.append(heading, copy, preview);
     return { item, frame, status, create };
   }
 

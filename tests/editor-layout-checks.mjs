@@ -61,8 +61,13 @@ test('空白会话草稿不阻止默认示例载入；模板库以预览卡片�
   assert.match(examplesJs, /aria-label', '从该模板创建'/);
   assert.match(examplesJs, /Array\.from\(\{ length: Math\.min\(2, catalog\.length\) \}, worker\)/, '模板预览并发限制为两个');
   assert.ok(!indexHtml.includes('template-search') && !indexHtml.includes('detail-source'), '模板库不显示搜索或 Markdown 源码区');
+  assert.ok(!indexHtml.includes('examples-heading') && !examplesHtml.includes('examples-heading'), '模板库不显示额外标题区');
+  assert.match(indexHtml, /data-nav-icon="templates"[\s\S]*data-nav-icon="editor"/, '顶栏提供可切换的模板库与主页图标');
   assert.match(examplesCss, /\.example-cards\{[^}]*display:grid;grid-template-columns:repeat\(auto-fit/);
   assert.match(examplesCss, /@media\(max-width:760px\)[\s\S]*?\.example-cards\{grid-template-columns:1fr/);
+  assert.match(examplesCss, /\.example-card-copy\{height:96px/);
+  assert.match(examplesCss, /\.example-card h3\{[^}]*-webkit-line-clamp:1/);
+  assert.match(examplesCss, /\.example-card p\{[^}]*-webkit-line-clamp:2[^}]*min-height:38px/);
 });
 
 test('下载按钮移入预览 panel-heading，保留 id/disabled/aria-label 与图标', () => {
@@ -831,8 +836,8 @@ test('选项模型：范围默认值（元数据缺省回退），空值不发�
 test('两页标语居中且弱化，模板页面文案一致', async () => {
   const examples = await read('web/examples.html');
   for (const html of [indexHtml, examples]) assert.match(html, /<p class="topbar-tagline">MAKE MD2PDF GREAT<\/p>/);
-  assert.match(examples, /<div class="examples-heading"><h2>模板<\/h2>/);
   assert.match(examples, /id="example-list" class="example-cards"/);
+  assert.ok(!examples.includes('examples-heading'));
   assert.match(examplesJs, /从该模板创建/);
   assert.ok(!examples.includes('使用此示例'));
   assert.ok(!examples.includes('template-search') && !examples.includes('detail-source'));

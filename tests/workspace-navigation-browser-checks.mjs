@@ -29,6 +29,8 @@ try {
   const wait = expression => (console.log('waiting:', expression), evaluate(`new Promise((resolve,reject)=>{let n=0;const timer=setInterval(()=>{if(${expression}){clearInterval(timer);resolve(true)}else if(++n>150){clearInterval(timer);reject(new Error('timeout'))}},100)})`));
   await browser.send('Page.navigate', {url});
   await wait('window.mdEditor');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=templates]')).display`),'block');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=editor]')).display`),'none');
   const md = '# 验收\n\n'+Array.from({length:30},(_,i)=>'## 章节'+i+'\n\n正文内容。\n\n').join('');
   await evaluate(`mdEditor.setValue(${JSON.stringify(md)})`);
   await wait('document.querySelector("#preview").srcdoc.length>100');
@@ -83,8 +85,11 @@ try {
   await evaluate(`mdEditor.setValue(${JSON.stringify('---\ntype: paper\n---\n# 测试')})`);
   await browser.send('Page.navigate',{url:url+'/examples'});
   await wait('document.querySelector(".example-card[aria-current=true]")');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=templates]')).display`),'none');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=editor]')).display`),'block');
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true]').dataset.currentTemplate`),'true');
-  assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'当前模板');
+  assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'仿生抓取');
+  assert.match(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').title`),/^当前模板：/);
   assert.ok(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').classList.contains('is-current')`));
   console.log('Chromium: document/iframe shortcuts, shared fullscreen sync switch, and effective-type template selection passed');
 } catch (error) {
