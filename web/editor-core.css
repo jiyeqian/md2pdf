@@ -1,11 +1,12 @@
 /* md2pdf web editor — core styles (CodeMirror 6 host). */
 
 .md-editor {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
   background: #fff;
+  overflow: hidden;
 }
 
 .md-editor-toolbar {
@@ -41,13 +42,22 @@
 
 .md-editor-host {
   position: relative;
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
 }
 
 .md-editor-host .cm-editor {
   height: 100%;
+  max-height: 100%;
+  min-height: 0;
+}
+
+/* 正文单独收缩、滚动，避免长文把底部查找替换栏推出面板。 */
+.md-editor-host .cm-scroller {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
 }
 
 .md-editor-host .cm-editor.cm-focused {
@@ -61,6 +71,9 @@
 
 /* Search / replace panel: keep it readable and Chinese-label friendly. */
 .md-editor-host .cm-panels {
+  flex-shrink: 0;
+  max-height: 50%;
+  overflow-y: auto;
   background: #fbfcfd;
   color: #35445a;
   border-bottom: 1px solid #edf0f4;
