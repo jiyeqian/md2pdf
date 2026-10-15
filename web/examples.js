@@ -20,6 +20,7 @@
   let currentTemplateRefresh = 0;
   const rendered = new Map();
   const previewFrames = new Map();
+  const previewChoices = new Map();
 
   function setStatus(message, error = false) {
     listStatus.textContent = message;
@@ -101,10 +102,10 @@
     const button = event.target.closest('[data-create-template]');
     if (!button || button.disabled) return;
     const id = button.dataset.createTemplate;
-    const data = rendered.get(id);
-    if (!data?.md || !await window.mdConfirmTemplate()) return;
-    const meta = catalog.find(entry => entry.id === id) || {};
+    const meta = catalog.find(entry => entry.id === id);
+    if (!meta || !await window.mdConfirmTemplate()) return;
     try {
+      const data = await loadExample(meta, false);
       sessionStorage.setItem(HANDOFF_KEY, JSON.stringify({
         id,
         md: data.md,
@@ -113,8 +114,8 @@
         replaceConfirmed: true,
       }));
       navigate('editor');
-    } catch {
-      button.title = '浏览器无法保存模板交接，请复制模板内容到编辑器。';
+    } catch (error) {
+      button.title = error.message || '浏览器无法保存模板交接，请重试。';
     }
   });
   window.addEventListener('md2pdf-editor-view', () => {
@@ -127,7 +128,11 @@
   window.addEventListener('message', event => {
     const state = previewFrames.get(event.source);
     if (!state || event.data?.revision !== state.revision) return;
-    if (event.data.type === 'md2pdf-ready') state.status.hidden = true;
+    if (event.data.type === 'md2pdf-ready') {
+      state.status.hidden = true;
+      state.image.hidden = true;
+      state.frame.style.visibility = 'visible';
+    }
     else if (event.data.type === 'md2pdf-error') {
       state.status.hidden = false;
       state.status.textContent = event.data.error || '预览排版失败';
@@ -164,7 +169,7 @@
     create.type = 'button';
     create.className = 'icon-button template-create-button';
     create.dataset.createTemplate = example.id;
-    create.disabled = true;
+    create.disabled = false;
     create.setAttribute('aria-label', '从该模板创建');
     create.title = '从该模板创建';
     const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -188,22 +193,41 @@
       icon.append(path);
     }
     create.append(icon);
-    heading.append(badge, create);
+    const toggleLabel = document.createElement('label');
+    toggleLabel.className = 'template-preview-toggle';
+    const toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    toggle.setAttribute('role', 'switch');
+    toggle.setAttribute('aria-label', '实时预览');
+    toggle.checked = previewChoices.get(example.id) ?? example.id === 'general';
+    const hint = document.createElement('span');
+    hint.className = 'template-preview-hint';
+    hint.textContent = '实时预览 · 开启后可滚动查看全文';
+    hint.id = `preview-hint-${example.id}`;
+    toggle.setAttribute('aria-describedby', hint.id);
+    toggleLabel.append(toggle, hint);
+    heading.append(badge, toggleLabel, create);
 
     const preview = document.createElement('div');
     preview.className = 'template-card-preview';
-    const frame = document.createElement('iframe');
-    frame.className = 'template-card-frame';
-    frame.title = `模板排版预览：${example.title || example.id}`;
-    frame.setAttribute('sandbox', 'allow-scripts');
-    frame.setAttribute('referrerpolicy', 'no-referrer');
+    const image = document.createElement('img');
+    image.className = 'template-card-snapshot';
+    image.src = `/template-previews/${example.id}.png`;
+    image.alt = `模板首页：${example.title || example.id}`;
+    image.decoding = 'async';
+    image.loading = 'lazy';
     const status = document.createElement('p');
     status.className = 'template-preview-status';
     status.setAttribute('role', 'status');
-    status.textContent = '正在生成预览…';
-    preview.append(frame, status);
+    status.hidden = true;
+    preview.append(image, status);
     item.append(heading, copy, preview);
-    return { item, frame, status, create };
+    const card = { item, preview, image, frame: null, status, create, toggle, generation: 0 };
+    toggle.addEventListener('change', () => {
+      previewChoices.set(example.id, toggle.checked);
+      updatePreview(example, card);
+    });
+    return card;
   }
 
   function renderCards() {
@@ -215,15 +239,21 @@
       listEl.append(card.item);
     }
     listEl.setAttribute('aria-busy', 'false');
-    renderPreviews(cards);
+    for (const example of catalog) {
+      const card = cards.get(example.id);
+      if (card.toggle.checked) updatePreview(example, card);
+    }
   }
 
-  async function loadExample(example) {
-    const cached = rendered.get(example.id);
-    if (cached) return cached;
-    const response = await fetch('/api/example?id=' + encodeURIComponent(example.id));
-    if (!response.ok) throw new Error(`模板加载失败（${response.status}）`);
-    const data = await response.json();
+  async function loadExample(example, live = true) {
+    let data = rendered.get(example.id);
+    if (!data) {
+      const response = await fetch('/api/example?id=' + encodeURIComponent(example.id));
+      if (!response.ok) throw new Error(`模板加载失败（${response.status}）`);
+      data = await response.json();
+      rendered.set(example.id, data);
+    }
+    if (!live || data.rendered) return data;
     const renderResponse = await fetch('/api/render', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -238,26 +268,36 @@
     return data;
   }
 
-  async function renderPreviews(cards) {
-    let next = 0;
-    async function worker() {
-      while (next < catalog.length) {
-        const example = catalog[next++];
-        const card = cards.get(example.id);
-        try {
-          const data = await loadExample(example);
-          const frameRevision = ++revision;
-          previewFrames.set(card.frame.contentWindow, { revision: frameRevision, status: card.status });
-          card.frame.srcdoc = injectRevision(data.rendered.html, frameRevision);
-          card.create.disabled = !data.md?.trim();
-          card.status.hidden = false;
-          card.status.textContent = '正在排版预览…';
-        } catch (error) {
-          if (error.name !== 'AbortError') card.status.textContent = error.message || '预览加载失败';
-        }
-      }
+  async function updatePreview(example, card) {
+    const generation = ++card.generation;
+    if (card.frame) {
+      previewFrames.delete(card.frame.contentWindow);
+      card.frame.remove();
+      card.frame = null;
     }
-    await Promise.all(Array.from({ length: Math.min(2, catalog.length) }, worker));
+    card.image.hidden = false;
+    card.status.hidden = true;
+    if (!card.toggle.checked) return;
+    card.status.hidden = false;
+    card.status.textContent = '正在生成实时预览…';
+    try {
+      const data = await loadExample(example);
+      if (generation !== card.generation || !card.toggle.checked) return;
+      const frame = document.createElement('iframe');
+      frame.className = 'template-card-frame';
+      frame.title = `模板排版预览：${example.title || example.id}`;
+      frame.setAttribute('sandbox', 'allow-scripts');
+      frame.setAttribute('referrerpolicy', 'no-referrer');
+      frame.style.visibility = 'hidden';
+      card.frame = frame;
+      card.preview.append(frame);
+      const frameRevision = ++revision;
+      previewFrames.set(frame.contentWindow, { revision: frameRevision, status: card.status, image: card.image, frame });
+      frame.srcdoc = injectRevision(data.rendered.html, frameRevision);
+    } catch (error) {
+      if (generation !== card.generation) return;
+      card.status.textContent = error.message || '实时预览加载失败，请重新开启';
+    }
   }
 
   async function loadCatalog() {

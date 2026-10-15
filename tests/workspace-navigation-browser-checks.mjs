@@ -91,6 +91,15 @@ try {
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=editor]')).display`),'block');
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true]').dataset.currentTemplate`),'true');
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'学术论文');
+  await wait('document.querySelector(".example-card[data-id=general] iframe")');
+  assert.equal(await evaluate(`document.querySelectorAll('.example-card iframe').length`),1);
+  assert.equal(await evaluate(`document.querySelectorAll('.template-card-snapshot').length`),4);
+  assert.equal(await evaluate(`document.querySelectorAll('.template-preview-toggle input:checked').length`),1);
+  await evaluate(`document.querySelector('.example-card[data-id=general] .template-preview-toggle input').click()`);
+  assert.equal(await evaluate(`document.querySelectorAll('.example-card iframe').length`),0,'turning preview off destroys the iframe');
+  assert.equal(await evaluate(`document.querySelector('.example-card[data-id=general] .template-card-snapshot').hidden`),false);
+  await evaluate(`document.querySelector('.example-card[data-id=general] .template-preview-toggle input').click()`);
+  await wait('document.querySelector(".example-card[data-id=general] iframe")');
   const cardGeometry = await evaluate(`(()=>{const card=document.querySelector('.example-card'), preview=card.querySelector('.template-card-preview'), frame=preview.querySelector('iframe'), style=getComputedStyle(frame);return {width:card.clientWidth,height:parseFloat(getComputedStyle(preview).height),top:parseFloat(style.top),left:parseFloat(style.left),frameWidth:parseFloat(style.width),frameHeight:parseFloat(style.height)}})()`);
   assert.ok(Math.abs(cardGeometry.height-((cardGeometry.width-24)*297/210+24))<1,'template preview height fits one A4 page and equal gray margins');
   assert.deepEqual([cardGeometry.top,cardGeometry.left,cardGeometry.frameWidth],[-12,0,cardGeometry.width]);
@@ -105,6 +114,10 @@ try {
   await evaluate(`document.querySelector('#examples-link-top').click()`);
   await wait('document.querySelector(".example-card[aria-current=true]")?.dataset.id === "skill"');
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'技能文档');
+  assert.equal(await evaluate(`Promise.all(Array.from(document.querySelectorAll('.template-card-snapshot'),img=>fetch(img.src).then(async response=>response.ok&&response.headers.get('content-type').startsWith('image/png')&&(await response.arrayBuffer()).byteLength>1000))).then(results=>results.every(Boolean))`),true);
+  await evaluate(`window.mdConfirmTemplate=async()=>true;document.querySelector('.example-card[data-id=paper] [data-create-template]').click()`);
+  await wait('JSON.parse(sessionStorage.getItem("md2pdf:draft") || "{}").templateId === "paper" && document.querySelector("[data-view=editor]").hidden === false');
+  assert.equal(await evaluate(`document.querySelector('.example-card[data-id=paper] iframe') === null`),true,'creating from a static card does not require its live preview');
   console.log('Chromium: document/iframe shortcuts, shared fullscreen sync switch, and effective-type template selection passed');
 } catch (error) {
   try { console.log(await browser.send('Runtime.evaluate',{expression:`JSON.stringify({status:document.querySelector('#status')?.textContent,editor:!!window.mdEditor,preview:document.querySelector('#preview')?.srcdoc.slice(-100)})`,returnByValue:true})); } catch {}
