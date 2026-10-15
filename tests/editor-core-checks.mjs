@@ -41,7 +41,7 @@ const REQUIRED_VENDOR = [
 
 const REQUIRED_API = [
   'getValue', 'setValue', 'focus', 'getSelection', 'replaceSelection', 'replaceRange',
-  'setSelection', 'goToLine', 'getCursorLine', 'runCommand', 'setCompletions',
+  'setSelection', 'goToLine', 'getCursorLine', 'runCommand', 'setCompletions', 'requestMeasure',
 ];
 
 async function checkVendor() {

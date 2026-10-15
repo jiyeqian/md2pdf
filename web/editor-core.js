@@ -725,6 +725,7 @@
 
     const api = {
       __mounted: true,
+      requestMeasure: function () { view.requestMeasure(); },
       coordsAtPos: function (pos) { return view.coordsAtPos(pos); },
       applyEdit: function (from, to, text, anchor, head) {
         view.dispatch({ changes: { from, to, insert: text }, selection: { anchor, head: head === undefined ? anchor : head }, userEvent: 'input.format' });
@@ -817,6 +818,9 @@
       if (global.console && global.console.warn) global.console.warn('[md2pdf] 编辑器初始化失败，已回退到纯文本编辑区：', error);
       return;
     }
+
+    // 外壳负责可用高度；内核在宿主尺寸变化后更新光标、滚动和搜索栏度量。
+    if (global.ResizeObserver) new global.ResizeObserver(function () { view.requestMeasure(); }).observe(editorHost);
 
     host.append(toolbar, editorHost);
     // Search fields otherwise commit on keyup/change, missing paste and IME input updates.
