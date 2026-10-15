@@ -350,3 +350,5 @@
   left: var(--panel-zoom-left, 50%);
   width: var(--panel-zoom-width, 140px);
 }
+
+.md-wt-toolbar button.is-active{background:#e9eff7;border-color:#8da2bb}

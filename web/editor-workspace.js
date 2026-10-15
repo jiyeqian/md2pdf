@@ -87,7 +87,7 @@
   function runCommand(name) {
     if (!hasEditor()) return;
     try { window.mdEditor.runCommand(name); } catch (e) { /* 忽略 */ }
-    if (name !== 'find' && name !== 'replace') focusEditor();
+    if (name !== 'find' && name !== 'replace' && name !== 'toggleSearch') focusEditor();
   }
 
   function setEnabled(on) {
@@ -254,7 +254,7 @@
   var HISTORY_ITEMS = [
     { icon: 'undo', label: '撤销', action: 'undo', command: 'undo' },
     { icon: 'redo', label: '重做', action: 'redo', command: 'redo' },
-    { icon: 'find', label: '查找与替换', action: 'find', command: 'find' }
+    { icon: 'find', label: '查找与替换', action: 'find', command: 'toggleSearch' }
   ];
   // 第一级只保留一个「基础格式」入口，展开第二级面板（标题 / 强调 / 列表 / 行内）。
   var BASIC_GROUPS = [
@@ -1094,6 +1094,15 @@
       if (event.data.type === 'md2pdf-ready') sendPreviewZoom();
       else if (event.data.type === 'md2pdf-preview-zoom-state' && typeof event.data.zoom === 'number' && previewZoomControl) previewZoomControl.display(event.data.zoom);
     });
+    function updateSearchButton() {
+      var button = toolbar.querySelector('[aria-label="查找与替换"]');
+      if (!button) return;
+      var open = !!editorPanel.querySelector('.cm-search');
+      button.setAttribute('aria-expanded', String(open));
+      button.classList.toggle('is-active', open);
+    }
+    if (window.MutationObserver) new window.MutationObserver(updateSearchButton).observe(editorPanel, { childList: true, subtree: true });
+    updateSearchButton();
     // 点击面板外部关闭「基础格式」面板；面板内部与触发器不触发。
     document.addEventListener('click', function (event) {
       if (!basicMenu || basicMenu.hidden) return;

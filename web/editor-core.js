@@ -381,7 +381,15 @@
         const button = global.document.createElement('button');
         button.type = 'button';
         button.className = 'md-fold-trigger';
-        button.textContent = open ? '⌄' : '›';
+        const svg = global.document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 12 12');
+        svg.setAttribute('width', '8'); svg.setAttribute('height', '8');
+        svg.setAttribute('aria-hidden', 'true');
+        const path = global.document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', open ? 'M3 4.5 6 7.5 9 4.5' : 'M4.5 3 7.5 6 4.5 9');
+        path.setAttribute('fill', 'none'); path.setAttribute('stroke', 'currentColor');
+        path.setAttribute('stroke-width', '1.5'); path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round'); svg.appendChild(path); button.appendChild(svg);
         button.title = open ? '折叠' : '展开';
         button.setAttribute('aria-label', button.title);
         button.addEventListener('keydown', event => {
@@ -554,11 +562,11 @@
       '.cm-foldPlaceholder': { backgroundColor: '#eef2f8', border: '1px solid #dbe4f0', color: '#42648b', padding: '0 6px', borderRadius: '4px' },
       '.cm-lineNumbers .cm-gutterElement': { padding: '0 1px 0 3px', minWidth: '0' },
       '.cm-foldGutter .cm-gutterElement': {
-        display: 'flex', alignItems: 'center', justifyContent: 'center', width: '12px', boxSizing: 'border-box'
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center', width: '12px', boxSizing: 'border-box'
       },
       '.md-fold-trigger, .md-fold-menu button': { border: 'none', background: 'transparent', color: '#42648b', cursor: 'pointer',
         padding: '0 1px', margin: '0', font: 'inherit', lineHeight: 'inherit' },
-      '.md-fold-trigger': { width: '12px' },
+      '.md-fold-trigger': { display: 'flex', alignItems: 'center', justifyContent: 'center', width: '12px', height: '1.8em', padding: '0' },
       '.md-fold-menu': { position: 'absolute', zIndex: '210', display: 'flex', gap: '2px', padding: '2px',
         backgroundColor: '#fff', border: '1px solid #dbe4f0', borderRadius: '4px',
         boxShadow: '0 2px 5px #233e6014', transform: 'translateY(-50%)', animation: 'md-fold-slide 90ms ease-out' },
@@ -709,6 +717,7 @@
       undo: function () { return V.undo(view); },
       redo: function () { return V.redo(view); },
       find: function () { return V.openSearchPanel(view); },
+      toggleSearch: function () { return view.dom.querySelector('.cm-search') ? V.closeSearchPanel(view) : V.openSearchPanel(view); },
       replace: function () { return V.openSearchPanel(view); },
       fold: function () { return V.foldCode(view); },
       unfold: function () { return V.unfoldCode(view); },

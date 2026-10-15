@@ -258,3 +258,20 @@ test('ordinary footnotes alone retain their existing folding behavior', () => {
   nodes(state);
   assert.equal(H.bibliographyGroups(V, state).length, 0);
 });
+
+
+test('fold markers use a fixed SVG chevron with distinct expanded and folded directions', () => {
+  const saved = globalThis.document;
+  const node = tag => ({tag, attrs:{}, children:[], setAttribute(k,v){this.attrs[k]=v;}, appendChild(child){this.children.push(child);}, addEventListener(){}});
+  globalThis.document = {createElement:node, createElementNS:(ns,tag) => node(tag)};
+  try {
+    const config = H.compactFoldGutter({...V, foldGutter:config => config})[2];
+    const expanded = config.markerDOM(true), folded = config.markerDOM(false);
+    assert.equal(expanded.children[0].tag, 'svg');
+    assert.equal(expanded.children[0].attrs.width, '8');
+    assert.equal(expanded.children[0].attrs.height, '8');
+    assert.notEqual(expanded.children[0].children[0].attrs.d, folded.children[0].children[0].attrs.d);
+    assert.equal(expanded.attrs['aria-label'], '折叠');
+    assert.equal(folded.attrs['aria-label'], '展开');
+  } finally { if(saved === undefined) delete globalThis.document; else globalThis.document = saved; }
+});
