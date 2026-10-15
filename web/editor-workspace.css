@@ -306,7 +306,7 @@
 .md-wt-zoom > .ruler-control{left:27px;right:30px;top:50%;height:12px;transform:translateY(-50%)}
 .md-wt-zoom .ruler-slider{height:12px}
 .md-wt-zoom .ruler-label{top:50%}
-.md-wt-zoom .md-wt-zoom-value{top:-12px}
+.md-wt-zoom .md-wt-zoom-value{top:auto;bottom:calc(50% + 11px)}
 @media(max-width:600px){
  .workspace.md-editor-workspace .panel-heading{height:39px;min-height:39px;padding:6px 8px}
  .workspace.md-editor-workspace .panel-heading .icon-button,

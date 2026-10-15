@@ -58,13 +58,13 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .range-pop[open] .range-trigger{border-color:#6f93bc;box-shadow:0 0 0 1px #6f93bc}
 .range-popover{position:absolute;z-index:30;top:calc(100% + 6px);left:0;width:max(260px,100%);max-width:calc(100vw - 24px);box-sizing:border-box;display:flex;flex-direction:column;gap:10px;padding:12px;background:#fff;border:1px solid #d9e0e9;border-radius:10px;box-shadow:0 10px 30px rgba(36,51,72,.16)}
 /* 直尺滑块（.ruler-control / .ruler-slider / .ruler-scale 为共享类，可供面板缩放等复用）：
- * 细灰轨道与淡色端点，端点下方显示 min/max；thumb 中性灰且不填充进度。 */
+ * 圆角灰轨道，保留 min/max 文字；thumb 中性灰且不填充进度。 */
 .ruler-control{display:flex;align-items:center;gap:8px;width:100%}
 .ruler-slider{-webkit-appearance:none;appearance:none;flex:1 1 auto;min-width:0;width:auto;height:20px;margin:0;padding:0;background:transparent;border:0;box-shadow:none;cursor:pointer}
-.ruler-slider::-webkit-slider-runnable-track{height:8px;border-radius:1px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='4'%3E%3Crect width='1' height='4' rx='.5' fill='%23b8c2cf'/%3E%3C/svg%3E") 4px center/1px 4px no-repeat,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='4'%3E%3Crect width='1' height='4' rx='.5' fill='%23b8c2cf'/%3E%3C/svg%3E") calc(100% - 4px) center/1px 4px no-repeat,linear-gradient(#cdd4de,#cdd4de) center/calc(100% - 8px) 2px no-repeat}
-.ruler-slider::-moz-range-track{height:8px;border-radius:1px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='4'%3E%3Crect width='1' height='4' rx='.5' fill='%23b8c2cf'/%3E%3C/svg%3E") 4px center/1px 4px no-repeat,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='4'%3E%3Crect width='1' height='4' rx='.5' fill='%23b8c2cf'/%3E%3C/svg%3E") calc(100% - 4px) center/1px 4px no-repeat,linear-gradient(#cdd4de,#cdd4de) center/calc(100% - 8px) 2px no-repeat}
-.ruler-slider::-moz-range-progress{height:2px;border-radius:1px;background:#cdd4de}
-.ruler-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:8px;height:16px;margin-top:-4px;border:0;border-radius:3px;background:#8a94a3}
+.ruler-slider::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:#cdd4de}
+.ruler-slider::-moz-range-track{height:4px;border-radius:2px;background:#cdd4de}
+.ruler-slider::-moz-range-progress{height:4px;border-radius:2px;background:#cdd4de}
+.ruler-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:8px;height:16px;margin-top:-6px;border:0;border-radius:3px;background:#8a94a3}
 .ruler-slider::-moz-range-thumb{width:8px;height:16px;border:0;border-radius:3px;background:#8a94a3}
 .ruler-slider:focus{outline:none}
 .ruler-slider:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px #fff,0 0 0 4px #6f93bc}
@@ -84,7 +84,7 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .topbar-tagline{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;color:#9aa5b3;font-size:11px;font-weight:400;letter-spacing:1px;white-space:nowrap;pointer-events:none}
 @media(max-width:700px){.topbar{height:94px;padding-bottom:22px}.topbar-tagline{top:auto;bottom:8px;transform:translateX(-50%);font-size:10px;letter-spacing:.8px}}
 
-.range-popover > .ruler-scale{width:calc(100% - 34px);margin-top:-10px}
+.range-popover > .ruler-scale{width:calc(100% - 34px);margin-top:-12.5px}
 
 /* 使用浏览器可定制的选择器，避免系统菜单的深色选中背景。 */
 .toolbar select{color-scheme:light}
@@ -133,7 +133,7 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .preview-toolbar .range-popover{width:260px;gap:10px;padding:15px 12px 12px}
 .preview-toolbar .option-label{display:flex;flex-direction:column;gap:8px;min-width:0;color:#677389;font-size:12px}
 .preview-toolbar .ruler-control{position:relative}
-.range-value{position:absolute;top:-15px;transform:translateX(-50%);padding:1px 5px;border-radius:4px;background:#edf2f8;color:#42648b;font-size:10px;white-space:nowrap;pointer-events:none;opacity:0}
+.range-value{position:absolute;top:auto;bottom:calc(50% + 11px);line-height:1.1;transform:translateX(-50%);padding:1px 5px;border-radius:4px;background:#edf2f8;color:#42648b;font-size:10px;white-space:nowrap;pointer-events:none;opacity:0}
 .range-adjusting .range-value{opacity:1}
 @media(max-width:900px){.workspace{height:auto}}
 
