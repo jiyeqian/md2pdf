@@ -130,7 +130,7 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .preview-toolbar .range-trigger:hover{border-color:#b7c6da;background:#f2f6fb}
 .preview-toolbar .range-trigger.is-explicit{background:#e9f0f8;border-color:#c9d8e9;color:#315a86}
 .preview-option-icon{width:16px;height:16px;display:block}
-.preview-toolbar .range-popover{width:260px;gap:10px;padding:15px 12px 12px}
+.preview-toolbar .range-popover{left:0;right:auto;width:260px;gap:10px;padding:15px 12px 12px}
 .preview-toolbar .option-label{display:flex;flex-direction:column;gap:8px;min-width:0;color:#677389;font-size:12px}
 .preview-toolbar .ruler-control{position:relative}
 .range-value{position:absolute;top:auto;bottom:calc(50% + 11px);line-height:1.1;transform:translateX(-50%);padding:1px 5px;border-radius:4px;background:#edf2f8;color:#42648b;font-size:10px;white-space:nowrap;pointer-events:none;opacity:0}
@@ -140,10 +140,10 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 @media(max-width:600px){.preview-toolbar .range-trigger{width:26px;height:26px}}
 
 .preview-toolbar .option-popover{width:max-content;min-width:0;max-width:calc(100vw - 24px);padding:5px;gap:2px}
-.option-choice{position:relative;display:block;width:100%;padding:3.5px 8px 3.5px 10px;border:0;border-radius:5px;background:transparent;color:#33465e;font-size:12px;line-height:1.5;text-align:left;white-space:nowrap}
+.option-choice{position:relative;display:flex;align-items:center;box-sizing:border-box;width:100%;padding:3.5px 8px 3.5px calc(var(--panel-button, 28px)/2 - 11.5px);border:0;border-radius:5px;background:transparent;color:#33465e;font-size:12px;line-height:1.5;text-align:left;white-space:nowrap}
 .option-choice:hover,.option-choice:focus-visible{background:#f2f6fb;outline:none}
 .option-choice[aria-checked="true"]{background:#eef2f8;color:#233e60}
-.option-choice::before{content:"✓";display:inline-block;width:11px;margin-right:6px;visibility:hidden;color:#6f93bc;text-align:center}
+.option-choice::before{content:"✓";display:block;flex:0 0 11px;width:11px;margin-right:6px;visibility:hidden;color:#6f93bc;text-align:center}
 .option-choice[aria-checked="true"]::before{visibility:visible}
 
 .preview-toolbar select[hidden]{display:none!important}
