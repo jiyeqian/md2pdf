@@ -150,7 +150,7 @@ const ppDir = path.join(os.tmpdir(), 'md2pdf-ci-paper');
 fs.mkdirSync(ppDir, { recursive: true });
 fs.writeFileSync(path.join(ppDir, 'paper.md'), [
   '---', 'title: 抓取控制研究', 'author: 张三，李四', 'affiliation: 清华大学',
-  'abstract: 本文提出一种方法。', 'keywords: 深度学习；抓取控制', '---', '',
+  'abstract: 本文提出一种方法。', 'keywords: [深度学习, 抓取控制]', '---', '',
   '## 引言', '', '正文。', ''
 ].join('\n'));
 const rPaper = run([path.join(ppDir, 'paper.md'), '--html-only', '-o', path.join(ppDir, 'out.html')]);

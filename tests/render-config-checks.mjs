@@ -176,3 +176,19 @@ test('目录采用文档字号比例，CLI 与 Web 共用缩放规则', async ()
     }
   }
 });
+
+
+test('CLI and Web render list keywords identically, hide empty lists, and leave tags as metadata', async () => {
+  const {parseArgs} = await import('../src/options.mjs');
+  const md = '---\nkeywords: ["甲<&", "乙"]\ntags: ["标签"]\n---\n# 标题\n';
+  const cli = await render(md, parseArgs([]), {generatedAt:AT});
+  const online = await web(md);
+  for (const result of [cli, online]) {
+    assert.equal(result.type, 'paper');
+    assert.ok(result.html.includes('甲&lt;&amp;；乙'));
+    assert.ok(!result.html.includes('标签'));
+  }
+  const empty = await web('---\nkeywords: []\ntags: ["标签"]\n---\n# 标题');
+  assert.equal(empty.type, 'general');
+  assert.ok(!empty.html.includes('<div class="keywords">'));
+});

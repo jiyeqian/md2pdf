@@ -9,7 +9,11 @@ title: 论文标题
 author: 张三，李四
 affiliation: 单位名称
 abstract: 一段 200 字左右的摘要，说明问题、方法与主要结果。
-keywords: 关键词一；关键词二；关键词三
+keywords:
+  - 关键词一
+  - 关键词二
+  - 关键词三
+tags: []
 ---
 
 ## 引言

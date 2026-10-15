@@ -588,10 +588,15 @@ test('frontmatter value recommendations are scoped, canonical and use parser def
   assert.ok(!FRONTMATTER_FIELDS.includes('colophonEnabled'));
   assert.ok(!FRONTMATTER_FIELDS.includes('ics'));
   assert.ok(!FRONTMATTER_FIELDS.includes('ccs'));
-  for (const field of ['author', 'keywords', 'date', '发布日期', '实施日期', '全部代替标准', '代替标准']) {
+  for (const field of ['author', 'date', '发布日期', '实施日期', '全部代替标准', '代替标准']) {
     const candidate = complete(field).options.find(o => o.label === field);
     assert.equal(candidate.apply, field + ': ""');
     assert.equal(candidate.selectionOffset, candidate.apply.length - 1);
+  }
+  for (const field of ['keywords', 'tags']) {
+    const candidate = complete(field).options.find(o => o.label === field);
+    assert.equal(candidate.apply, field + ': \n  - ');
+    assert.equal(candidate.selectionOffset, candidate.apply.length);
   }
   assert.equal(complete('font-size').options[0].apply, 'font-size: ');
   const quoted = complete('tit').options.find(o => o.label === 'title');
