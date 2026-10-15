@@ -85,10 +85,11 @@ try {
   await evaluate(`mdEditor.setValue(${JSON.stringify('---\ntype: paper\n---\n# 测试')})`);
   await browser.send('Page.navigate',{url:url+'/examples'});
   await wait('document.querySelector(".example-card[aria-current=true]")');
+  assert.equal(await evaluate(`Array.from(document.querySelectorAll('.example-card')).map(card=>card.dataset.id).join(',')`),'general,paper,gb,skill');
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=templates]')).display`),'none');
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=editor]')).display`),'block');
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true]').dataset.currentTemplate`),'true');
-  assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'仿生抓取');
+  assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'学术论文');
   assert.match(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').title`),/^当前模板：/);
   assert.ok(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').classList.contains('is-current')`));
   console.log('Chromium: document/iframe shortcuts, shared fullscreen sync switch, and effective-type template selection passed');

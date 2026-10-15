@@ -13,7 +13,8 @@
   const viewLink = document.querySelector('#examples-link-top');
   const templateNavIcon = viewLink.querySelector('[data-nav-icon="templates"]');
   const editorNavIcon = viewLink.querySelector('[data-nav-icon="editor"]');
-  const shortTemplateNames = { general: '机械方案', skill: '日志分析', paper: '仿生抓取', gb: '国家标准' };
+  const shortTemplateNames = { general: '通用文档', paper: '学术论文', gb: '国家标准', skill: '技能文档' };
+  const templateOrder = ['general', 'paper', 'gb', 'skill'];
   let catalog = [];
   let revision = 0;
   const rendered = new Map();
@@ -232,6 +233,11 @@
       if (!response.ok) throw new Error(`模板目录加载失败（${response.status}）`);
       const data = await response.json();
       catalog = Array.isArray(data) ? data : data.examples || [];
+      catalog.sort((a, b) => {
+        const aIndex = templateOrder.indexOf(a.id);
+        const bIndex = templateOrder.indexOf(b.id);
+        return (aIndex < 0 ? templateOrder.length : aIndex) - (bIndex < 0 ? templateOrder.length : bIndex);
+      });
       window.md2pdfTemplateTitles = Object.fromEntries(catalog.map(item => [item.id, item.title || item.id]));
       const draft = readDraft();
       if (draft?.md) {
