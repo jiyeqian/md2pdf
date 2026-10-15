@@ -170,3 +170,19 @@ test('预览缩放：指针按下时向父窗口回传纯消息类型（关闭�
   assert.match(js, /parent\.postMessage\(\{type:'md2pdf-preview-pointerdown'\}, '\*'\)/);
   assert.doesNotMatch(js, /type:'md2pdf-preview-pointerdown'[^}]*\w/, 'pointerdown 消息不得携带参数');
 });
+
+
+test('预览顶部和页间留白匹配左右留白，补偿页面缩放', () => {
+  const js = injectedScript(enhancePreview(DOC, 'general'));
+  const fitBody = js.match(/function fit\(\) \{([\s\S]*?)\n  \}/)[1];
+  const fit = new Function('document', 'zoom', fitBody);
+  for (const [width, pageWidth, zoom] of [[600, 794, 100], [1200, 794, 100], [600, 794, 50]]) {
+    const bodyStyle = {};
+    const pageStyle = {};
+    fit({documentElement:{clientWidth:width}, body:{style:{setProperty:(key, value) => bodyStyle[key] = value}}, querySelector: selector => selector === '.pagedjs_page' ? {offsetWidth:pageWidth} : {style:{setProperty:(key, value) => pageStyle[key] = value}}}, zoom);
+    const scale = Math.min(1, (width - 24) / pageWidth) * zoom / 100;
+    const side = (width - pageWidth * scale) / 2;
+    assert.ok(Math.abs(parseFloat(bodyStyle.padding) - side) < 0.001);
+    assert.ok(Math.abs(parseFloat(pageStyle.gap) * scale - side) < 0.001);
+  }
+});
