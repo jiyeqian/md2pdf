@@ -109,6 +109,9 @@ export function installQuickActions(editor) {
       button.addEventListener('mousedown',e=>e.preventDefault());button.addEventListener('click',()=>activate(action));menu.append(button);
     }
     menu.hidden=false; place(sel);
+    requestAnimationFrame(()=>{
+      if(!menu.hidden&&range?.from===sel.from&&range?.to===sel.to)place(range);
+    });
     mark();
   };
   const mark=()=>Array.from(menu.children).forEach((b,i)=>b.classList.toggle('is-active',i===index));
