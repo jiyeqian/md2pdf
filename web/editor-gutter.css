@@ -8,7 +8,7 @@
 .editor-panel .cm-lineNumbers { flex: 1 1 auto; }
 .editor-panel.editor-gutters-hidden .cm-gutters { display: none !important; }
 .editor-panel .editor-footer { justify-content: flex-start; padding-left: 0; }
-.editor-panel .editor-footer #count { margin-left: auto; }
+.editor-panel .editor-footer #count { margin-left: 0; }
 .editor-gutter-toggle {
   box-sizing: border-box;
   position: relative;

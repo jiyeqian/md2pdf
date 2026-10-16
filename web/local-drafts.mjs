@@ -70,8 +70,9 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     }
   }
   function schedule() {
-    pending = true;
+    pending = active ? signature(snapshot()) !== savedSignature : !!capture().md.trim();
     syncMirror();
+    if (!pending) return;
     state('正在保存草稿…');
     clearTimeout(timer);
     timer = setTimeout(() => enqueue(saveNow).catch(() => {}), 350);
@@ -278,5 +279,6 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
   savedSignature = restored ? signature(restored) : '';
   return { restored, blank, schedule, flush: () => enqueue(saveNow), openMenu,
     openFile: (md, name) => replace({ md, filename: name, opts: {}, templateId: '', previewType: '' }),
+    createBlank: () => enqueue(async () => { await saveNow(); await store.activate(null); reset(); }),
     replace, store, current: () => active?.id || null };
 }

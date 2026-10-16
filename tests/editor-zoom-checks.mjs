@@ -1,7 +1,7 @@
 // 工作台缩放滑块的结构与行为检查（无需浏览器）。
 //
 // 覆盖：
-//   * Markdown / 排版预览两侧标题栏各注入一个缩放滑块（50–150，step 5，默认 100 真中点）；
+//   * Markdown / 排版预览两侧标题栏各注入一个缩放滑块（20–200，step 5，默认 100）；
 //   * 共享外观类 .ruler-control / .ruler-scale / .ruler-slider 与专用容器类 .md-wt-zoom；
 //   * Markdown 缩放只改 .cm-editor 显示字号（13px × 比例），textarea 兜底，不碰工具栏/标题；
 //   * 预览缩放经 postMessage md2pdf-preview-zoom 下发，与 Markdown 缩放相互独立；
@@ -20,9 +20,9 @@ const wsJs = await read('web/editor-workspace.js');
 const wsCss = await read('web/editor-workspace.css');
 
 // ---------------------------------------------------------------- 源码契约
-test('缩放常量：50–150、step 5、默认 100、基准字号 13px', () => {
+test('缩放常量：20–200、step 5、默认 100、基准字号 13px', () => {
   assert.match(wsJs, /var EDITOR_BASE_FONT = 13;/);
-  assert.match(wsJs, /var ZOOM_MIN = 50, ZOOM_MAX = 150, ZOOM_STEP = 5, ZOOM_DEFAULT = 100;/);
+  assert.match(wsJs, /var ZOOM_MIN = 20, ZOOM_MAX = 200, ZOOM_STEP = 5, ZOOM_DEFAULT = 100;/);
 });
 
 test('滑块使用共享外观类，容器带专用类', () => {
@@ -217,15 +217,15 @@ test('行为：两侧各注入一个滑块，默认 100 为真中点', () => {
   for (const root of [...editorZooms, ...previewZooms]) {
     const { input, scale, value, min, max } = zoomParts(root);
     assert.ok(input && scale && value && min && max, '滑块结构不完整');
-    assert.equal(input.getAttribute('min'), '50');
-    assert.equal(input.getAttribute('max'), '150');
+    assert.equal(input.getAttribute('min'), '20');
+    assert.equal(input.getAttribute('max'), '200');
     assert.equal(input.getAttribute('step'), '5');
     assert.equal(input.value, '100');
     assert.equal(input.getAttribute('aria-valuetext'), '100%');
     assert.equal(value.textContent, '100%');
-    assert.equal(min.textContent, '50%');
-    assert.equal(max.textContent, '150%');
-    assert.equal(root.style['--zoom-pos'], '50%', '100% 应位于刻度中点');
+    assert.equal(min.textContent, '20%');
+    assert.equal(max.textContent, '200%');
+    assert.ok(Math.abs(parseFloat(root.style['--zoom-pos']) - 80 / 180 * 100) < .001);
   }
   // 默认字号 = 13px。
   assert.equal(env.cmEditor.style.fontSize, '13px');
@@ -242,18 +242,18 @@ test('行为：Markdown 缩放在上下界夹取、随比例改字号，且不�
   md.input.dispatch('input', { type: 'input', target: md.input });
   assert.equal(env.cmEditor.style.fontSize, '19.5px', '150% → 13×1.5');
   assert.equal(md.value.textContent, '150%');
-  assert.equal(zoomControls(env.editorHeading)[0].style['--zoom-pos'], '100%');
+  assert.ok(Math.abs(parseFloat(zoomControls(env.editorHeading)[0].style['--zoom-pos']) - 130 / 180 * 100) < .001);
   assert.equal(env.sent.length, before, 'Markdown 缩放不应触碰预览');
 
-  md.input.value = '40';
+  md.input.value = '10';
   md.input.dispatch('input', { type: 'input', target: md.input });
-  assert.equal(env.cmEditor.style.fontSize, '6.5px', '40% 应夹到 50% → 13×0.5');
-  assert.equal(md.input.value, '50');
+  assert.equal(env.cmEditor.style.fontSize, '2.6px', '10% 应夹到20%' );
+  assert.equal(md.input.value, '20');
 
   md.input.value = '130';
   md.input.dispatch('input', { type: 'input', target: md.input });
   assert.equal(env.cmEditor.style.fontSize, '16.9px', '130% → 13×1.3');
-  assert.equal(zoomControls(env.editorHeading)[0].style['--zoom-pos'], '80%', '(130-50)/100');
+  assert.ok(Math.abs(parseFloat(zoomControls(env.editorHeading)[0].style['--zoom-pos']) - 110 / 180 * 100) < .001);
   assert.equal(env.sent.length, before);
 });
 
@@ -275,7 +275,7 @@ test('行为：预览缩放独立下发消息、按 step 吸附并夹取', () =>
 
   pv.input.value = '10';
   pv.input.dispatch('input', { type: 'input', target: pv.input });
-  assert.equal(env.sent[env.sent.length - 1].zoom, 50, '10 应夹到 50');
+  assert.equal(env.sent[env.sent.length - 1].zoom, 20, '10 应夹到20');
 });
 
 test('行为：预览 ready 后按来源校验并重发当前缩放', () => {
@@ -350,8 +350,8 @@ test('实际预览比例回写控件，保留用户期望且拒绝伪造和无�
   env.dispatchWin('message', {source:env.previewFrame.contentWindow, data:{type:'md2pdf-ready'}});
   assert.equal(env.sent.at(-1).zoom, 100, '实际缩小不能覆盖期望100%');
   report(40.2);
-  assert.equal(pv.input.getAttribute('min'), '40');
-  for (const invalid of [0, NaN, Infinity, 151, '80']) report(invalid);
+  assert.equal(pv.input.getAttribute('min'), '20');
+  for (const invalid of [0, NaN, Infinity, 201, '80']) report(invalid);
   report(90, {});
   assert.equal(pv.input.value, '40.2');
   report(78.4);

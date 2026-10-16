@@ -85,21 +85,36 @@ export function installQuickActions(editor) {
   const menu = doc.createElement('div');menu.className='md-quick-actions';menu.setAttribute('role','toolbar');menu.hidden=true;doc.body.append(menu);
   let mode=null,range=null,index=0,dismissed=null;
   const place=sel=>{
-    const coords=editor.coordsAtPos(sel.from); if(!coords)return;
+    let coords;
+    try { coords=editor.coordsAtPos(sel.from); } catch { coords=null; }
+    menu.style.visibility='hidden';
+    if(!coords)return;
     const viewport=window.visualViewport;
-    const left=viewport?viewport.offsetLeft:0,top=viewport?viewport.offsetTop:0;
-    const right=left+(viewport?viewport.width:window.innerWidth),bottom=top+(viewport?viewport.height:window.innerHeight);
+    let left=viewport?viewport.offsetLeft:0,top=viewport?viewport.offsetTop:0;
+    let right=left+(viewport?viewport.width:window.innerWidth),bottom=top+(viewport?viewport.height:window.innerHeight);
+    const scroller=doc.querySelector('.cm-scroller');
+    if(scroller){
+      const rect=scroller.getBoundingClientRect();
+      left=Math.max(left,rect.left);right=Math.min(right,rect.right);
+      top=Math.max(top,rect.top);bottom=Math.min(bottom,rect.bottom);
+    }
+    // 光标不可见时隐藏，避免将浮层夹到远离输入处的位置。
+    if(coords.bottom<top||coords.top>bottom||coords.left<left||coords.left>right)return;
     const width=menu.offsetWidth,height=menu.offsetHeight;
+    if(right-left<width+8)return;
     const x=Math.max(left+4,Math.min(coords.left,right-width-4));
     const above=coords.top-height-8;
-    const y=above>=top+4?above:Math.min(coords.bottom+8,bottom-height-4);
-    menu.style.left=x+'px';menu.style.top=Math.max(top+4,Math.min(y,bottom-height-4))+'px';
+    const y=above>=top+4?above:coords.bottom+8;
+    if(y+height>bottom-4)return;
+    // 页面定位与光标采用相同坐标，避免 iOS 键盘期间 fixed 图层额外偏移。
+    menu.style.left=(x+window.scrollX)+'px';menu.style.top=(y+window.scrollY)+'px';
+    menu.style.visibility='visible';
   };
   const close=()=>{menu.hidden=true;mode=null;range=null;};
   const show=(kind,sel,actions)=>{
     const key=kind+':'+sel.from+':'+sel.to+':'+editor.getValue(); if (dismissed===key) return;
     const same=mode===kind && range?.from===sel.from && range?.to===sel.to && menu.dataset.key===key;
-    if (same) return;
+    if (same) { reposition(); return; }
     mode=kind;range={...sel};index=0;menu.dataset.key=key;menu.replaceChildren();
     for (const action of actions) {
       const button=doc.createElement('button');button.type='button';button.dataset.action=action;button.title=labels[action];button.setAttribute('aria-label',labels[action]);
@@ -108,10 +123,7 @@ export function installQuickActions(editor) {
       button.append(source?source.cloneNode(true):svg);
       button.addEventListener('mousedown',e=>e.preventDefault());button.addEventListener('click',()=>activate(action));menu.append(button);
     }
-    menu.hidden=false; place(sel);
-    requestAnimationFrame(()=>{
-      if(!menu.hidden&&range?.from===sel.from&&range?.to===sel.to)place(range);
-    });
+    menu.hidden=false; menu.style.visibility='hidden'; reposition();
     mark();
   };
   const mark=()=>Array.from(menu.children).forEach((b,i)=>b.classList.toggle('is-active',i===index));
@@ -131,14 +143,28 @@ export function installQuickActions(editor) {
   };
   for(const event of ['md-editor-selection','md-editor-change','md-editor-reset'])doc.addEventListener(event,update);
   doc.addEventListener('keydown',event=>{
-    if(menu.hidden)return;
+    if(menu.hidden||menu.style.visibility==='hidden')return;
     if(event.key==='Escape'){dismissed=menu.dataset.key;close();event.preventDefault();return;}
     if(mode==='slash' && ['ArrowLeft','ArrowRight','Enter'].includes(event.key)){event.preventDefault();event.stopPropagation();if(event.key==='Enter')activate(menu.children[index].dataset.action);else{index=(index+(event.key==='ArrowRight'?1:-1)+menu.children.length)%menu.children.length;mark();}}
   },true);
   doc.addEventListener('pointerdown',event=>{if(!menu.hidden&&!menu.contains(event.target)){dismissed=menu.dataset.key;close();}});
-  let repositionFrame=0;
-  const reposition=()=>{if(menu.hidden||repositionFrame)return;repositionFrame=requestAnimationFrame(()=>{repositionFrame=0;if(!menu.hidden&&range)place(range);});};
+  let repositionFrame=0,settleFrames=0;
+  const measure=()=>{
+    repositionFrame=0;
+    if(menu.hidden||!range)return;
+    place(range);
+    if(--settleFrames>0)repositionFrame=requestAnimationFrame(measure);
+  };
+  const reposition=()=>{
+    if(menu.hidden)return;
+    settleFrames=6;
+    if(!repositionFrame)repositionFrame=requestAnimationFrame(measure);
+  };
   window.addEventListener('scroll',reposition,true);window.addEventListener('resize',reposition);
   window.visualViewport?.addEventListener('scroll',reposition);window.visualViewport?.addEventListener('resize',reposition);
+  if(window.ResizeObserver){
+    const scroller=doc.querySelector('.cm-scroller');
+    if(scroller)new ResizeObserver(reposition).observe(scroller);
+  }
   return {close,update};
 }

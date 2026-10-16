@@ -149,13 +149,13 @@ test('可信落款链接：按专用 data 属性 + 精确官方 URL 拦截，回
 
 test('预览缩放：100% 使用固定页面基准，仅在空间不足时缩小', () => {
   const js = injectedScript(enhancePreview(DOC, 'general'));
-  assert.match(js, /var ZOOM_MIN = 50, ZOOM_MAX = 150, ZOOM_STEP = 5;/);
+  assert.match(js, /var ZOOM_MIN = 20, ZOOM_MAX = 200, ZOOM_STEP = 5;/);
   assert.match(js, /var zoom = 100;/);
   assert.match(js, /var scale = Math\.min\(zoom \/ 100, available \/ page\.offsetWidth\);/);
   assert.doesNotMatch(js, /if \(z === zoom\) return;/, '重复期望比例也应重新适配并回报实际值');
 });
 
-test('预览缩放：只接受 parent 消息，校验有限数值并夹到 50–150', () => {
+test('预览缩放：只接受 parent 消息，校验有限数值并夹到 20–200', () => {
   const js = injectedScript(enhancePreview(DOC, 'general'));
   assert.match(js, /event\.data\.type !== "md2pdf-preview-zoom"/);
   assert.match(js, /if \(event\.source !== parent \|\| !event\.data \|\| event\.data\.type !== "md2pdf-preview-zoom"\) return;/);

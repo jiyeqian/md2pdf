@@ -252,7 +252,7 @@
 }
 
 
-.editor-footer #count{margin-left:auto;white-space:nowrap;text-align:right}
+.editor-footer #count{white-space:nowrap;text-align:left}.editor-footer #draft-save-status{margin-left:auto;text-align:right}
 
 .md-wt-group + .md-wt-group{margin-left:0;padding-left:0;border-left:0}
 .workspace.md-editor-workspace{position:relative}

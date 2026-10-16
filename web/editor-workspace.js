@@ -28,7 +28,7 @@
   var DIVIDER = 10;                        // 与 CSS 变量 --md-wt-divider 对齐
   var CURSOR_DEBOUNCE = 200;
   var EDITOR_BASE_FONT = 13;               // 与 editor-core 主题 '&': { fontSize: '13px' } 对齐
-  var ZOOM_MIN = 50, ZOOM_MAX = 150, ZOOM_STEP = 5, ZOOM_DEFAULT = 100;
+  var ZOOM_MIN = 20, ZOOM_MAX = 200, ZOOM_STEP = 5, ZOOM_DEFAULT = 100;
 
   var workspace = document.querySelector('.workspace');
   var editorPanel = workspace && workspace.querySelector('.editor-panel');
@@ -463,7 +463,11 @@
 
     var files = make('div', { class: 'md-wt-group', role: 'group', 'aria-label': '打开与模板' });
     buildFileButtons(files);
-    appendItem(files, { icon: 'template', label: '从模板创建', href: '/', id: 'browse-examples' });
+    var createButton = makeFileButton('创建 Markdown', 'template', function () {
+      import('./document-create.mjs').then(function (module) { module.openCreateMenu(createButton); }).catch(function (error) { fileStatus(error.message, true); });
+    });
+    createButton.setAttribute('id', 'create-markdown');
+    files.appendChild(createButton);
     toolbar.appendChild(files);
     toolbar.appendChild(buildGroup('撤销重做与查找替换', 'md-wt-group--history', HISTORY_ITEMS));
     var formatGroup = buildBasicFormatControl();
@@ -537,7 +541,7 @@
       output.textContent = text;
       input.setAttribute('aria-valuetext', text);
       var minimum = Number(input.getAttribute('min'));
-      var pos = (percent - minimum) / (ZOOM_MAX - minimum) * 100;
+      var pos = clamp((percent - minimum) / (ZOOM_MAX - minimum) * 100, 0, 100);
       root.style.setProperty('--zoom-pos', pos + '%');
     }
 
@@ -576,7 +580,7 @@
     render(ZOOM_DEFAULT);
     function display(percent) {
       if (!isFinite(percent) || percent <= 0 || percent > ZOOM_MAX) return;
-      var minimum = Math.min(ZOOM_MIN, Math.floor(percent));
+      var minimum = ZOOM_MIN;
       input.setAttribute('min', String(minimum));
       input.setAttribute('step', 'any');
       minLabel.textContent = minimum + '%';

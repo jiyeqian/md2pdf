@@ -96,10 +96,11 @@
     }
   }
 
-  document.addEventListener('click', event => {
+  document.addEventListener('click', async event => {
     const link = event.target.closest('[data-view-link]');
     if (!link) return;
     event.preventDefault();
+    try { await window.mdDrafts?.flush(); } catch { return; }
     navigate(link.dataset.viewLink);
   });
   root.addEventListener('click', async event => {
@@ -187,10 +188,8 @@
     icon.setAttribute('stroke-linecap', 'round');
     icon.setAttribute('stroke-linejoin', 'round');
     for (const d of [
-      'M11.2 3.6H6.2a1.4 1.4 0 0 0-1.4 1.4v10a1.4 1.4 0 0 0 1.4 1.4h7.6a1.4 1.4 0 0 0 1.4-1.4V7.4z',
-      'M11.2 3.6v3.8h3.4',
-      'M7.8 11h4.4',
-      'M10 8.8v4.4',
+      'M3 3h14v14H3zM3 7h14M8 7v10',
+      'M10.5 12h4M12.5 10v4',
     ]) {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', d);

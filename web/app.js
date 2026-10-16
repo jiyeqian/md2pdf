@@ -194,6 +194,11 @@ function applyDraft(record) {
     if (initialized) schedulePreview();
   } finally { applyingDraft = false; }
 }
+window.mdCreateBlank = async () => {
+  if (localDrafts) await localDrafts.createBlank();
+  else { saveDraft(); applyDraft({ md: '', opts: {} }); saveDraft(); }
+  window.mdEditor?.focus();
+};
 function reportDraft(message, error) {
   const node = document.querySelector('#draft-save-status');
   if (node) { node.textContent = message; node.dataset.error = String(!!error); }
