@@ -23,7 +23,7 @@
 .md-draft-mark { grid-column: 1; grid-row: 1; line-height: 1.5; text-align: center; }
 .md-draft-title { grid-column: 2; grid-row: 1; display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .md-draft-row small { grid-column: 2; display: block; color: #667789; font-size: .85em; }
-.md-draft-row .md-draft-delete { flex: 0 0 20px; width: 20px; margin-left: 4px; padding: 3px 0; text-align: left; line-height: 1.5; color: #9e3434; }
+.md-draft-row .md-draft-delete { display: flex; align-items: center; justify-content: center; flex: 0 0 20px; width: 20px; height: 24px; min-height: 24px; margin-left: 4px; padding: 0; text-align: center; line-height: 1; color: #9e3434; }
 .md-drafts-menu .md-drafts-clear { border-top: 1px solid #e5e9ef; margin-top: 4px; color: #9e3434; }
 .md-drafts-menu button:disabled { opacity: .5; cursor: default; }
 #draft-save-status { flex-shrink: 0; min-height: 16px; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; color: #617386; font: 11px/16px system-ui, sans-serif; text-align: right; white-space: nowrap; }
