@@ -1,0 +1,29 @@
+.md-drafts-menu {
+  position: fixed;
+  z-index: 1100;
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  border: 1px solid #d5dce4;
+  border-radius: 10px;
+  background: #fff;
+  color: #253649;
+  box-shadow: 0 6px 24px #182b4226;
+  font: 14px/1.4 system-ui, sans-serif;
+}
+.md-drafts-menu[hidden] { display: none; }
+.md-drafts-menu button { box-sizing: border-box; display: block; width: 100%; min-height: 40px; border: 0; border-radius: 5px; background: transparent; color: inherit; padding: 7px 9px; text-align: left; font: inherit; cursor: pointer; }
+.md-drafts-menu button:hover, .md-drafts-menu button:focus-visible { background: #eef3f8; }
+.md-drafts-menu button:focus-visible { outline: 2px solid #376ba0; outline-offset: -2px; }
+.md-drafts-heading { padding: 8px 9px 5px; border-top: 1px solid #e5e9ef; margin-top: 4px; color: #667789; font-size: 12px; }
+.md-drafts-menu p { padding: 0 9px; color: #667789; }
+.md-draft-row { display: flex; align-items: center; }
+.md-draft-row > button:first-child { flex: 1; min-width: 0; }
+.md-draft-title { display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-draft-row small { display: block; color: #667789; font-size: 11px; }
+.md-draft-row .md-draft-delete { flex: 0 0 40px; width: 40px; text-align: center; font-size: 23px; color: #9e3434; }
+.md-drafts-menu .md-drafts-clear { border-top: 1px solid #e5e9ef; margin-top: 4px; color: #9e3434; }
+.md-drafts-menu button:disabled { opacity: .5; cursor: default; }
+#draft-save-status { flex-shrink: 0; min-height: 16px; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; color: #617386; font: 11px/16px system-ui, sans-serif; text-align: right; white-space: nowrap; }
+#draft-save-status[data-error="true"] { color: #b12c2c; white-space: normal; }

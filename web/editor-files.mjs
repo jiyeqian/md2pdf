@@ -143,6 +143,10 @@ function frontmatterScalar(markdown, key) {
   return parseFrontmatterScalar(raw) || '';
 }
 
+export function frontmatterTitle(markdown) {
+  return frontmatterScalar(markdown, 'title');
+}
+
 export function frontmatterVersion(markdown) {
   return sanitizeVersion(frontmatterScalar(markdown, 'version'));
 }

@@ -928,11 +928,17 @@
       try {
         var text = await file.text();
         if (!window.mdEditor || typeof window.mdEditor.setValue !== 'function') throw new Error('editor unavailable');
-        window.mdEditor.setValue(text.replace(/^\uFEFF/, ''));
+        text = text.replace(/^\uFEFF/, '');
+        if (window.mdDrafts) await window.mdDrafts.openFile(text, file.name);
+        else window.mdEditor.setValue(text);
         focusEditor();
       } catch (e) { fileStatus('无法读取 Markdown 文件，请重试。', true); }
     });
-    actions.appendChild(makeFileButton('打开 Markdown', 'open', function () { input.click(); }));
+    var openButton = makeFileButton('打开 Markdown', 'open', function () {
+      if (window.mdDrafts) window.mdDrafts.openMenu(openButton, input).catch(function (error) { fileStatus(error.message, true); });
+      else input.click();
+    });
+    actions.appendChild(openButton);
   }
 
   async function saveMarkdown() {

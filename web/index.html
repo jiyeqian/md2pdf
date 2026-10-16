@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/panel-sidebars.css">
   <link rel="stylesheet" href="/editor-gutter.css">
   <link rel="stylesheet" href="/editor-workspace.css">
+  <link rel="stylesheet" href="/local-drafts.css">
   <link rel="stylesheet" href="/editor-doi.css">
   <link rel="stylesheet" href="/examples.css">
   <script src="/editor-vendor.js" defer></script>
@@ -46,6 +47,7 @@
         </div>
         <label class="sr-only" for="markdown">Markdown 正文</label>
         <textarea id="markdown" spellcheck="false" placeholder="正在加载示例…"></textarea>
+        <div id="draft-save-status" role="status" aria-live="polite"></div>
         <div class="editor-footer"><span><math aria-label="即时预览"><mrow><munder><mo>lim</mo><mrow><mi>Δt</mi><mo lspace="0.08em" rspace="0.08em">→</mo><msup><mn>0</mn><mo>+</mo></msup></mrow></munder><mtext>Preview</mtext><mo stretchy="false">(</mo><mi>t</mi><mo>+</mo><mi>Δt</mi><mo stretchy="false">)</mo><mo>=</mo><mi mathvariant="normal">render</mi><mo stretchy="false">(</mo><mtext>Markdown</mtext><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow></math></span><span id="count">0 字符</span></div>
       </section>
       <section class="preview-panel" aria-labelledby="preview-title">
@@ -75,7 +77,7 @@
         <div class="preview-footer"><span><math aria-label="持续改进预览与 PDF 一致性"><mrow><munder><mo>lim</mo><mrow><mtext>effort</mtext><mo lspace="0.08em" rspace="0.08em">→</mo><mo lspace="0" rspace="0">+</mo><mo lspace="0" rspace="0">∞</mo></mrow></munder><mtext>Preview</mtext><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><mtext>PDF</mtext><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow></math></span><p id="status" role="status" aria-live="polite">正在加载示例…</p></div>
       </section>
     </div>
-    <p class="privacy">服务器不保存用户数据，仅暂存于当前标签页，请及时<button id="privacy-save" type="button" aria-label="下载保存 Markdown">下载保存</button> Markdown。</p>
+    <p class="privacy">草稿保存在此浏览器中，服务器不保存文档，请及时<button id="privacy-save" type="button" aria-label="下载保存 Markdown">下载保存</button> Markdown。</p>
   </main>
   </div>
   <div class="template-library-page" hidden>

@@ -18,6 +18,8 @@ const currentTemplateEl = document.querySelector('#current-template');
 
 const DRAFT_KEY = 'md2pdf:draft';
 const HANDOFF_KEY = 'md2pdf:handoff';
+let localDrafts = null;
+let applyingDraft = false;
 const CONTROL_ORDER = ['type', 'theme', 'toc', 'numbering', 'fontSize', 'margin', 'lineHeight'];
 
 // ---------- 选项模型：范围滑块 + 「标题编号」合并菜单 ----------
@@ -144,7 +146,8 @@ function readFormOptions() {
   return opts;
 }
 function saveDraft() {
-  if (!editor || !initialized) return;
+  if (!editor || !initialized || applyingDraft) return;
+  if (localDrafts) { localDrafts.schedule(); return; }
   const previousDraft = readDraft();
   const templateId = previousDraft?.md === editor.value ? previousDraft.templateId : window.currentTemplateId;
   const saved = writeStore(DRAFT_KEY, JSON.stringify({ md: editor.value, opts: readFormOptions(), templateId, previewType: renderedTemplateType, savedAt: Date.now() }));
@@ -166,6 +169,34 @@ function readDraft() {
   const raw = readStore(DRAFT_KEY);
   if (!raw) return null;
   try { return JSON.parse(raw); } catch { return null; }
+}
+function captureDraft() {
+  return { md: editor.value, opts: readFormOptions(), templateId: window.currentTemplateId || '', previewType: renderedTemplateType };
+}
+function applyDraft(record) {
+  applyingDraft = true;
+  try {
+    for (const name of CONTROL_ORDER) if (form.elements[name]) form.elements[name].value = '';
+    window.currentTemplateId = record.templateId || '';
+    renderedTemplateType = record.previewType || '';
+    renderedEffective = {};
+    resolveCache = { key: null, result: null };
+    if (policyDoc) applyPolicy(policyDoc.policy?.[record.opts?.type] || policyDoc.autoPolicy);
+    applyStoredOptions(record.opts);
+    editor.value = record.md;
+    if (currentTemplateEl) currentTemplateEl.textContent = '';
+    clearConfigErrors();
+    hasPreview = false;
+    preview.removeAttribute('srcdoc');
+    if (emptyPreview) emptyPreview.hidden = false;
+    updateOptionTriggers();
+    updateCount();
+    if (initialized) schedulePreview();
+  } finally { applyingDraft = false; }
+}
+function reportDraft(message, error) {
+  const node = document.querySelector('#draft-save-status');
+  if (node) { node.textContent = message; node.dataset.error = String(!!error); }
 }
 function readHandoff() {
   const raw = readStore(HANDOFF_KEY);
@@ -682,14 +713,24 @@ async function loadDefaultExample() {
 
 async function boot() {
   const startedAt = revision;
-  const draft = readDraft();
+  let draft = readDraft();
+  let blank = false;
+  if (window.indexedDB) {
+    try {
+      const { initializeLocalDrafts } = await import('./local-drafts.mjs');
+      localDrafts = await initializeLocalDrafts({ capture: captureDraft, apply: applyDraft, legacy: draft,
+        mirror: value => writeStore(DRAFT_KEY, JSON.stringify(value)), report: reportDraft });
+      draft = localDrafts.restored;
+      blank = localDrafts.blank;
+    } catch { reportDraft('本地草稿存储不可用，当前仅保留会话草稿。请及时下载 Markdown。', true); }
+  } else reportDraft('此浏览器不支持本地草稿保存，请及时下载 Markdown。', true);
   const handoff = readHandoff();
   try { await loadPolicy(); }
   catch (error) { setStatus(error.message, true); }
   if (policyDoc && policyDoc.autoPolicy) applyPolicy(policyDoc.autoPolicy);
 
-  // 恢复会话草稿（浏览示例库返回或刷新后仍在）。
-  if (revision === startedAt && draft && typeof draft.md === 'string' && draft.md.trim()) {
+  // 优先恢复持久草稿；存储不可用时保持原有会话恢复。
+  if (revision === startedAt && draft && typeof draft.md === 'string' && (draft.md.trim() || localDrafts)) {
     editor.value = draft.md;
     renderedTemplateType = typeof draft.previewType === 'string' ? draft.previewType : '';
     applyStoredOptions(draft.opts);
@@ -702,7 +743,9 @@ async function boot() {
   if (revision === startedAt && handoff && typeof handoff.md === 'string') {
     writeStore(HANDOFF_KEY, null);
     if (handoff.replaceConfirmed || await window.mdConfirmTemplate()) {
-      editor.value = handoff.md;
+      if (localDrafts) {
+        await localDrafts.replace({ md: handoff.md, opts: handoff.type ? { type: handoff.type } : {}, templateId: handoff.id || '', previewType: '' });
+      } else editor.value = handoff.md;
       window.currentTemplateId = handoff.id || '';
       if (handoff.type) {
         if (policyDoc && policyDoc.policy && policyDoc.policy[handoff.type]) applyPolicy(policyDoc.policy[handoff.type]);
@@ -712,12 +755,13 @@ async function boot() {
     } else {
       setStatus('已保留当前草稿。');
     }
-  } else if (!editor.value.trim()) {
+  } else if (!editor.value.trim() && !blank && !draft) {
     await loadDefaultExample();
   }
   if (currentTemplateEl && window.currentTemplateId) currentTemplateEl.dataset.templateId = window.currentTemplateId;
 
   initialized = true;
+  if (localDrafts) window.mdDrafts = localDrafts;
   saveDraft();
   editor.placeholder = '在此输入 Markdown…';
   updateCount();
@@ -726,7 +770,7 @@ async function boot() {
 }
 
 // ---------- 事件 ----------
-editor.addEventListener('input', () => { saveDraft(); schedulePreview(); });
+editor.addEventListener('input', () => { if (applyingDraft) return; saveDraft(); schedulePreview(); });
 // 滑块 ↔ 数值输入双向同步：任一控件变化都写回另一个；空值回到「默认」态（省略选项）。
 function syncRangeFromEvent(target) {
   if (!target || !target.getAttribute) return;
@@ -820,17 +864,21 @@ document.addEventListener('click', event => {
   const link = target && target.closest ? target.closest('#browse-examples, #examples-link-top') : null;
   if (link) saveDraft();
 }, true);
-window.addEventListener('md2pdf-template-created', () => {
+window.addEventListener('md2pdf-template-created', async () => {
   const handoff = readHandoff();
   if (!handoff || typeof handoff.md !== 'string') return;
+  try {
+    if (localDrafts) {
+      await localDrafts.replace({ md: handoff.md, opts: handoff.type ? { type: handoff.type } : {}, templateId: handoff.id || '', previewType: '' });
+    } else editor.value = handoff.md;
+  } catch { setStatus('草稿保存失败，已保留当前文档。', true); return; }
   writeStore(HANDOFF_KEY, null);
-  editor.value = handoff.md;
   window.currentTemplateId = handoff.id || '';
   if (handoff.type) {
     if (policyDoc?.policy?.[handoff.type]) applyPolicy(policyDoc.policy[handoff.type]);
     form.elements.type.value = handoff.type;
   }
-  writeStore(DRAFT_KEY, JSON.stringify({ md: handoff.md, opts: readFormOptions(), templateId: handoff.id, savedAt: Date.now() }));
+  if (!localDrafts) writeStore(DRAFT_KEY, JSON.stringify({ md: handoff.md, opts: readFormOptions(), templateId: handoff.id, savedAt: Date.now() }));
   saveDraft();
   if (currentTemplateEl && handoff.title) currentTemplateEl.textContent = ` · ${handoff.title}`;
   updateCount();
@@ -838,6 +886,7 @@ window.addEventListener('md2pdf-template-created', () => {
   setStatus('已从模板创建，正在排版…');
 });
 window.addEventListener('pagehide', saveDraft);
+window.addEventListener('pagehide', () => { localDrafts?.flush().catch(() => {}); });
 
 // 与 Markdown 下载共用命名：把浏览器端算出的基名随请求发送，PDF 与 Markdown 同文档同版本
 // 得到完全一致的基名（无版本时共享同一浏览器时间戳）。失败时留空，由服务端自行推导。
