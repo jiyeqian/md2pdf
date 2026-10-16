@@ -5,8 +5,6 @@
 -->
 ---
 name: my-skill
-tags:
-  - 技能分类
 description: 一句话说明技能做什么、适用于什么场景、不用于什么场景。description 是 Agent 选择技能的依据，务必具体。
 ---
 
