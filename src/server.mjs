@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { appCacheScript } from './app-cache.mjs';
 import { isIP } from 'node:net';
 import path from 'node:path';
 import os from 'node:os';
@@ -272,6 +273,26 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         if (origin && !allowedOrigins.includes(origin)) throw error(403, '不允许跨站请求');
       }
       if (closed) throw error(503, '服务正在关闭');
+      if (req.method === 'GET' && req.url === '/app/service-worker.js') {
+        const catalog = await exampleCatalog();
+        const bootstrap = [
+          ['/api/policy', webPolicyDocument()],
+          ['/api/frontmatter-values', frontmatterValueCatalog()],
+          ['/api/examples', { examples: catalog.map(({ id, type, title, summary }) => ({ id, type, title, description: summary })) }],
+          ['/api/example', { md: await defaultExampleSource() }],
+        ];
+        for (const { id } of catalog) {
+          const example = await findExample(id);
+          bootstrap.push(['/api/example?id=' + encodeURIComponent(id), { md: example.md, type: example.type, title: example.title }]);
+        }
+        res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
+        res.end(await appCacheScript(ROOT, staticRoutes, bootstrap)); return;
+      }
+      if (req.method === 'GET' && (req.url === '/app' || req.url === '/app/')) {
+        if (req.url === '/app') { res.writeHead(302, { Location: '/app/' }); res.end(); return; }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(await readFile(path.join(ROOT, 'web/index.html'))); return;
+      }
       if (req.method === 'GET' && staticRoutes.has(req.url)) {
         const [file, type] = staticRoutes.get(req.url);
         const target = path.join(ROOT, file);

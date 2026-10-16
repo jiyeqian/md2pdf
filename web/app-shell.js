@@ -13,7 +13,7 @@
   }
   function schedule() { if (!frame) frame = requestAnimationFrame(measure); }
   function network() {
-    if (!standalone()) return;
+    if (!standalone() && location.pathname !== '/app/') return;
     let notice = document.querySelector('#app-network-status');
     if (!notice) {
       notice = document.createElement('div');
@@ -94,6 +94,105 @@
     share.focus();
     return true;
   }
+  let registration, reloadForUpdate = false, checking = false;
+  const appEntry = () => location.pathname === '/app/';
+  function cacheNotice(message, label, action) {
+    let notice = document.querySelector('#app-cache-status');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'app-cache-status';
+      notice.setAttribute('role', 'status');
+      document.body.append(notice);
+    }
+    notice.replaceChildren(document.createTextNode(message));
+    if (label) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = label;
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try { await action(); }
+        catch { cacheNotice('操作未完成，当前文档已保留。', '重试', action); }
+      });
+      notice.append(button);
+    }
+    notice.hidden = false;
+  }
+  async function applyUpdate() {
+    if (!window.mdDrafts) throw new Error('草稿尚未就绪');
+    await window.mdDrafts.flush();
+    reloadForUpdate = true;
+    if (registration.waiting) registration.waiting.postMessage({ type:'APP_ACTIVATE' });
+    else location.replace('/app/');
+  }
+  function updateAvailable() {
+    cacheNotice('新版已准备好。', '保存草稿并更新', applyUpdate);
+  }
+  function requestStatus() {
+    navigator.serviceWorker.controller?.postMessage({ type:'APP_STATUS' });
+  }
+  async function checkUpdate() {
+    if (!registration || !navigator.onLine || checking) return;
+    checking = true;
+    try { await registration.update(); if (registration.waiting) updateAvailable(); }
+    catch { /* 保留已缓存的版本，联网后再检查。 */ }
+    finally { checking = false; }
+  }
+  async function prepareApp() {
+    if (!appEntry()) return;
+    if (!window.isSecureContext || !('serviceWorker' in navigator)) {
+      cacheNotice('离线启动需要受信任的 HTTPS 地址。'); return;
+    }
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data?.type === 'APP_ERROR') {
+        cacheNotice('离线资源未保存，请联网后重试，并检查浏览器可用空间。', '重试', () => {
+          navigator.serviceWorker.controller?.postMessage({ type:'APP_PREPARE' });
+          cacheNotice('正在准备离线编辑…');
+        }); return;
+      }
+      if (event.data?.type !== 'APP_STATUS') return;
+      if (registration?.waiting || event.data.pinned !== event.data.cache) { updateAvailable(); return; }
+      if (event.data.ready) {
+        cacheNotice('离线编辑已就绪。');
+        const notice = document.querySelector('#app-cache-status');
+        setTimeout(() => { if (notice.textContent === '离线编辑已就绪。') notice.hidden = true; }, 4000);
+      } else {
+        cacheNotice('离线资源不完整。', '重新准备', () => {
+          navigator.serviceWorker.controller?.postMessage({ type:'APP_PREPARE' });
+          cacheNotice('正在准备离线编辑…');
+        });
+      }
+    });
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloadForUpdate) location.replace('/app/');
+      else requestStatus();
+    });
+    cacheNotice('正在准备离线编辑…');
+    try {
+      registration = await navigator.serviceWorker.register('/app/service-worker.js', { scope:'/app/', updateViaCache:'none' });
+      registration.addEventListener('updatefound', () => {
+        const worker = registration.installing;
+        worker?.addEventListener('statechange', () => {
+          if (worker.state === 'installed' && registration.waiting) updateAvailable();
+          if (worker.state === 'redundant') cacheNotice('离线准备未完成，联网后可重试。', '重试', () => prepareApp());
+        });
+      });
+      if (registration.waiting) updateAvailable();
+      else requestStatus();
+    } catch { cacheNotice('离线准备未完成，联网后可重试。', '重试', () => prepareApp()); }
+  }
+  // 兼容之前从首页添加的主屏图标，等草稿恢复并写入后才迁移入口。
+  window.addEventListener('md-app-ready', async () => {
+    if (standalone() && location.pathname === '/' && window.isSecureContext && window.mdDrafts) {
+      try { await window.mdDrafts.flush(); location.replace('/app/'); }
+      catch { cacheNotice('草稿尚未保存，请稍后重新打开主屏 App。'); }
+    }
+  });
+  window.addEventListener('online', checkUpdate);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { checkUpdate(); requestStatus(); }
+  });
+  if (appEntry()) document.querySelector('.brand-icon')?.setAttribute('href', '/app/');
+  prepareApp();
   window.mdAppShell = { standalone, offerFile };
   display.addEventListener?.('change', updateMode);
   window.addEventListener('resize', schedule);
@@ -104,4 +203,5 @@
   window.addEventListener('online', network);
   window.addEventListener('offline', network);
   updateMode();
+  if (appEntry()) network();
 })();

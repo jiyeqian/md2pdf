@@ -74,7 +74,7 @@
   function navigate(view, push = true) {
     const editorView = document.querySelector('[data-view="editor"]');
     if (view === 'editor' && !editorView) { location.assign('/'); return; }
-    if (push) history.pushState({ ...(history.state || {}), md2pdfView: view }, '', '/');
+    if (push) history.pushState({ ...(history.state || {}), md2pdfView: view }, '', location.pathname === '/app/' ? '/app/' : '/');
     const libraryView = root.querySelector('.template-library-view');
     if (editorView) editorView.hidden = view === 'templates';
     root.hidden = view !== 'templates';
@@ -142,7 +142,7 @@
       state.status.textContent = event.data.error || '预览排版失败';
     }
   });
-  if (location.pathname !== '/') history.replaceState({ ...(history.state || {}), md2pdfView: 'templates' }, '', '/');
+  if (location.pathname !== '/' && location.pathname !== '/app/') history.replaceState({ ...(history.state || {}), md2pdfView: 'templates' }, '', '/');
 
   function createCard(example) {
     const item = document.createElement('li');
@@ -330,7 +330,7 @@
     const requestedTemplateView = window.__MD2PDF_INITIAL_VIEW__ === 'templates'
       || new URLSearchParams(location.search).get('view') === 'templates';
     const initial = requestedTemplateView || history.state?.md2pdfView === 'templates' ? 'templates' : 'editor';
-    history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', '/');
+    history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', location.pathname === '/app/' ? '/app/' : '/');
     navigate(initial, false);
   });
 })();

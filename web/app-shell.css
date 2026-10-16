@@ -18,7 +18,7 @@ html.app-standalone .workspace.md-editor-workspace.preview-focus {
   bottom: auto;
   height: max(120px, calc(var(--app-view-height, 100dvh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16px));
 }
-html.app-standalone #app-network-status {
+#app-network-status {
   position: fixed;
   left: 12px;
   right: 12px;
@@ -38,4 +38,33 @@ html.app-standalone #app-network-status {
     padding-left: max(14px, env(safe-area-inset-left, 0px));
     padding-right: max(14px, env(safe-area-inset-right, 0px));
   }
+}
+
+#app-cache-status {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  z-index: 1201;
+  padding: 8px 12px;
+  border: 1px solid #d7dfeb;
+  border-radius: 10px;
+  background: #fff;
+  color: #233e60;
+  box-shadow: 0 4px 16px #233e6020;
+  font: 13px/1.5 system-ui, sans-serif;
+}
+#app-cache-status[hidden] { display: none; }
+#app-cache-status button {
+  margin-left: 8px;
+  padding: 4px 8px;
+  border: 1px solid #c6d3e5;
+  border-radius: 6px;
+  background: #edf2f8;
+  color: #233e60;
+  font: inherit;
+  cursor: pointer;
 }
