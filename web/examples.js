@@ -109,20 +109,19 @@
     const id = button.dataset.createTemplate;
     const meta = catalog.find(entry => entry.id === id);
     if (!meta || !await window.mdConfirmTemplate()) return;
-    try {
-      const data = await loadExample(meta, false);
-      sessionStorage.setItem(HANDOFF_KEY, JSON.stringify({
-        id,
-        md: data.md,
-        type: data.type || meta.type || '',
-        title: meta.title || '',
-        replaceConfirmed: true,
-      }));
-      navigate('editor');
-    } catch (error) {
-      button.title = error.message || '浏览器无法保存模板交接，请重试。';
-    }
+    try { await createFromTemplate(meta); }
+    catch (error) { button.title = error.message || '浏览器无法保存模板交接，请重试。'; }
   });
+  async function createFromTemplate(meta) {
+    await window.mdDrafts?.flush();
+    const data = await loadExample(meta, false);
+    sessionStorage.setItem(HANDOFF_KEY, JSON.stringify({
+      id: meta.id, md: data.md, type: data.type || meta.type || '',
+      title: meta.title || '', replaceConfirmed: true,
+    }));
+    navigate('editor');
+  }
+  window.mdCreateFromTemplate = createFromTemplate;
   window.addEventListener('md2pdf-editor-view', () => {
     let handoff;
     try { handoff = JSON.parse(sessionStorage.getItem(HANDOFF_KEY) || 'null'); }

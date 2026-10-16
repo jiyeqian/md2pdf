@@ -141,7 +141,8 @@
     unsync: [{ d: 'M7 12l-2 2a3 3 0 0 1-4-4l2-2M13 8l2-2a3 3 0 0 1 4 4l-2 2M7 3l1 2M12 15l1 2' }],
     sync: [{ d: 'M8 12l-2 2a3 3 0 0 1-4-4l3-3a3 3 0 0 1 4 0M12 8l2-2a3 3 0 0 1 4 4l-3 3a3 3 0 0 1-4 0M7 13l6-6' }],
     insert: [{ rect: [4, 4, 12, 12], rx: 2 }, { d: 'M10 7v6' }, { d: 'M7 10h6' }],
-    // 从模板创建：文档轮廓（折角）+ 加号，与其它按钮同为 20×20 线性描边。
+    templateGrid: [{ d: 'M3 3h14v14H3zM3 7h14M8 7v10' }, { d: 'M10.5 12h4M12.5 10v4' }],
+    // 空白文档轮廓与加号。
     template: [{ d: 'M11.2 3.6H6.2a1.4 1.4 0 0 0-1.4 1.4v10a1.4 1.4 0 0 0 1.4 1.4h7.6a1.4 1.4 0 0 0 1.4-1.4V7.4z' }, { d: 'M11.2 3.6v3.8h3.4' }, { d: 'M7.8 11h4.4' }, { d: 'M10 8.8v4.4' }]
   };
 
@@ -463,11 +464,14 @@
 
     var files = make('div', { class: 'md-wt-group', role: 'group', 'aria-label': '打开与模板' });
     buildFileButtons(files);
-    var createButton = makeFileButton('创建 Markdown', 'template', function () {
-      import('./document-create.mjs').then(function (module) { module.openCreateMenu(createButton); }).catch(function (error) { fileStatus(error.message, true); });
+    var createButton = makeFileButton('从模板创建 Markdown', 'templateGrid', function () {
+      import('./document-create.mjs').then(function (module) { return module.openCreateMenu(createButton); }).catch(function (error) { fileStatus(error.message, true); });
     });
     createButton.setAttribute('id', 'create-markdown');
     files.appendChild(createButton);
+    files.appendChild(makeFileButton('创建空文件', 'template', function () {
+      window.mdCreateBlank().catch(function (error) { fileStatus(error.message, true); });
+    }));
     toolbar.appendChild(files);
     toolbar.appendChild(buildGroup('撤销重做与查找替换', 'md-wt-group--history', HISTORY_ITEMS));
     var formatGroup = buildBasicFormatControl();

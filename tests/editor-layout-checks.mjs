@@ -445,7 +445,7 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   assert.ok(!env.editorActions.children.includes(templateLink));
   assert.equal(templateLink.tagName, 'BUTTON', '创建入口应打开菜单');
   assert.equal(templateLink.getAttribute('type'), 'button');
-  assert.equal(templateLink.getAttribute('aria-label'), '创建 Markdown');
+  assert.equal(templateLink.getAttribute('aria-label'), '从模板创建 Markdown');
   assert.ok(templateLink.getAttribute('title'), '锚点需有 title');
   assert.ok((templateLink.children || []).some(c => c.tagName === 'SVG'), '锚点应含文档+图标');
 
@@ -661,7 +661,7 @@ test('从模板创建入口：位于 Markdown 标题栏全屏按钮之前（锚�
   assert.ok(!/>浏览示例库<\/a>/.test(indexHtml), '旧的示例入口文案应移除');
   assert.ok(!/>从模板创建<\/a>/.test(indexHtml), 'index 底部不再内联从模板创建');
   // editor-workspace.js 注入锚点：保持 id / href / aria-label，使用文档+图标。
-  assert.ok(wsJs.includes("makeFileButton('创建 Markdown'"));
+  assert.ok(wsJs.includes("makeFileButton('从模板创建 Markdown'"));
   assert.ok(wsJs.includes("import('./document-create.mjs')"));
   assert.ok(wsJs.includes("'create-markdown'"));
   assert.match(wsJs, /template: \[/, '需要线性文档+图标');
@@ -880,7 +880,7 @@ test('标题栏保留下载与全屏，打开与模板位于工具条最前', ()
   assert.deepEqual(labels, ['下载 Markdown', 'Markdown 全屏写作']);
   const toolbar = env.editorPanel.children.find(n => n.getAttribute && n.getAttribute('role') === 'toolbar');
   const first = toolbar.children[0].children.filter(n => ['BUTTON', 'A'].includes(n.tagName));
-  assert.deepEqual(first.map(n => n.getAttribute('aria-label')), ['打开 Markdown', '创建 Markdown']);
+  assert.deepEqual(first.map(n => n.getAttribute('aria-label')), ['打开 Markdown', '从模板创建 Markdown', '创建空文件']);
 });
 
 

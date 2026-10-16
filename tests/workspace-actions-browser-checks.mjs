@@ -22,7 +22,7 @@ const wait = async expression => {
 };
 const clickCreate = async () => {
   await evaluate(`document.querySelector('#create-markdown').click()`);
-  await wait(`document.querySelector('#md-create-menu:not([hidden])')`);
+  await wait(`document.querySelector('#md-create-menu:not([hidden]) [data-template-id]')`);
 };
 const geometry = () => evaluate(`(()=>{
   const menu=document.querySelector('.md-quick-actions'),r=menu.getBoundingClientRect(),c=mdEditor.coordsAtPos(mdEditor.getSelection().from),v=visualViewport;
@@ -47,7 +47,7 @@ try {
   await evaluate(`mdDrafts.schedule()`);
   assert.equal(await evaluate(`(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented})()`),false,'unchanged draft must not mark pending');
   await clickCreate();
-  assert.deepEqual(await evaluate(`[...document.querySelector('#md-create-menu').children].map(n=>n.textContent)`),['创建空文件','从模板创建']);
+  assert.deepEqual(await evaluate(`[...document.querySelector('#md-create-menu').children].map(n=>n.textContent)`),['通用文档','学术论文','国家标准','技能文档','浏览模板库…']);
   await evaluate(`document.querySelector('#browse-examples').click()`);
   await wait(`document.querySelector('[data-view="templates"]').hidden===false`);
   assert.equal(await evaluate('performance.timeOrigin'),origin,'template navigation stays in the same page');
@@ -56,9 +56,14 @@ try {
   assert.equal(await evaluate(`document.querySelector('[data-create-template]').getAttribute('aria-label')`),'从该模板创建');
   await evaluate(`document.querySelector('#examples-link-top').click()`);
   await wait(`document.querySelector('[data-view="editor"]').hidden===false`);
-  await clickCreate();
-  await evaluate(`document.querySelector('#md-create-menu button').click()`);
+  await evaluate(`document.querySelector('button[aria-label="创建空文件"]').click()`);
   await wait(`mdEditor.getValue()==='' && mdDrafts.current()===null`);
+  assert.equal(await evaluate(`mdDrafts.store.get(${JSON.stringify(original)}).then(d=>d.md)`),'# 保留此文档');
+  await clickCreate();
+  await evaluate(`document.querySelector('[data-template-id="paper"]').click()`);
+  await wait(`JSON.parse(sessionStorage.getItem('md2pdf:draft') || '{}').templateId==='paper' && mdEditor.getValue().trim()!==''`);
+  assert.equal(await evaluate(`document.querySelector('[data-view="editor"]').hidden`),false);
+  assert.equal(await evaluate('performance.timeOrigin'),origin);
   assert.equal(await evaluate(`mdDrafts.store.get(${JSON.stringify(original)}).then(d=>d.md)`),'# 保留此文档');
   // Footer layout preserves the gutter switch and aligns count/status on one row.
   assert.ok(await evaluate(`(()=>{const footer=document.querySelector('.editor-footer'),count=document.querySelector('#count'),status=document.querySelector('#draft-save-status');return footer.contains(count)&&footer.contains(status)&&!footer.querySelector('math')&&count.getBoundingClientRect().left<footer.getBoundingClientRect().left+90&&count.getBoundingClientRect().left<status.getBoundingClientRect().left&&Math.abs((count.getBoundingClientRect().top+count.getBoundingClientRect().bottom-status.getBoundingClientRect().top-status.getBoundingClientRect().bottom)/2)<2})()`));
