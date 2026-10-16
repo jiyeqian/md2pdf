@@ -932,15 +932,19 @@ download.addEventListener('click', async () => {
     if (exportName) pdfBody.filename = exportName;
     const response = await request('/api/pdf', pdfBody);
     const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
-    anchor.href = url;
     const disposition = response.headers.get('Content-Disposition') || '';
     const marker = "filename*=UTF-8''";
     const at = disposition.indexOf(marker);
     const encoded = at >= 0 ? disposition.slice(at + marker.length) : '';
     const decoded = encoded ? decodeURIComponent(encoded) : '';
     anchor.download = decoded || exportName || 'document.pdf';
+    if (window.mdAppShell?.offerFile(new File([blob], anchor.download, { type: 'application/pdf' }))) {
+      setStatus(revision === exportRevision ? 'PDF 已生成，请选择下载或分享。' : 'PDF 已生成（期间编辑未包含），请选择下载或分享。');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    anchor.href = url;
     document.body.append(anchor);
     anchor.click();
     anchor.remove();

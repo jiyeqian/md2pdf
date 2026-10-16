@@ -954,8 +954,10 @@
     var text = window.mdEditor.getValue();
     var files = await import('./editor-files.mjs');
     var blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+    var name = files.markdownDownloadName(text);
+    if (window.mdAppShell && window.mdAppShell.offerFile(new File([blob], name, { type: blob.type }))) return;
     var url = URL.createObjectURL(blob);
-    var link = make('a', { href: url, download: files.markdownDownloadName(text) });
+    var link = make('a', { href: url, download: name });
     document.body.appendChild(link);
     link.click();
     link.remove();
