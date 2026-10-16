@@ -1,4 +1,6 @@
 import http from 'node:http';
+import { appCacheScript } from './app-cache.mjs';
+import { isIP } from 'node:net';
 import path from 'node:path';
 import os from 'node:os';
 import { existsSync } from 'node:fs';
@@ -190,7 +192,17 @@ export async function webDocument(html, preview = false, type = 'general') {
   return html;
 }
 
-export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '', doiResolver = createDoiResolver().resolve } = {}) {
+function validateLanHost(lanHost, publicHost) {
+  if (!lanHost) return;
+  const [a, b] = lanHost.split('.').map(Number);
+  if (isIP(lanHost) !== 4 || !(a === 10 || a === 192 && b === 168 || a === 172 && b >= 16 && b <= 31)) {
+    throw new Error('MD2PDF_LAN_HOST 必须是本机的私有 IPv4 地址');
+  }
+  if (publicHost) throw new Error('局域网模式与公网模式不能同时启用');
+}
+
+export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '', lanHost = process.env.MD2PDF_LAN_HOST || '', doiResolver = createDoiResolver().resolve } = {}) {
+  validateLanHost(lanHost, publicHost);
   let browser, tmpRoot, closed = false, queued = 0, tail = Promise.resolve();
   let doiRequests = 0;
   // 公网部署时由反向代理转发，Host 为沙箱内部域名；本地开发保持仅本机可访问。
@@ -228,9 +240,12 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     try { return await task; } finally { queued--; }
   }
   const staticRoutes = new Map([['/', ['web/index.html', 'text/html']], ['/app.js', ['web/app.js', 'text/javascript']], ['/app.css', ['web/app.css', 'text/css']], ['/examples.js', ['web/examples.js', 'text/javascript']], ['/examples.css', ['web/examples.css', 'text/css']]]);
-  for (const file of ['editor-gutter.js', 'editor-gutter.css', 'panel-sidebars.js', 'panel-sidebars.css', 'template-confirm.js', 'editor-vendor.js', 'editor-vendor.LICENSE.txt', 'editor-core.js', 'editor-images.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-quick-actions.mjs', 'editor-files.mjs', 'workspace-navigation.mjs', 'draft-store.mjs', 'local-drafts.mjs', 'document-create.mjs', 'local-drafts.css', 'editor-core.css', 'editor-images.css', 'editor-pro.css', 'editor-workspace.css', 'editor-doi.js', 'editor-doi-helpers.mjs', 'editor-doi.css']) {
+  for (const file of ['editor-gutter.js', 'editor-gutter.css', 'panel-sidebars.js', 'panel-sidebars.css', 'template-confirm.js', 'editor-vendor.js', 'editor-vendor.LICENSE.txt', 'editor-core.js', 'editor-images.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-quick-actions.mjs', 'editor-files.mjs', 'workspace-navigation.mjs', 'draft-store.mjs', 'local-drafts.mjs', 'document-create.mjs', 'app-shell.js', 'app-shell.css', 'local-drafts.css', 'editor-core.css', 'editor-images.css', 'editor-pro.css', 'editor-workspace.css', 'editor-doi.js', 'editor-doi-helpers.mjs', 'editor-doi.css']) {
     staticRoutes.set('/' + file, ['web/' + file, file.endsWith('.css') ? 'text/css' : file.endsWith('.txt') ? 'text/plain' : 'text/javascript']);
   }
+  staticRoutes.set('/manifest.webmanifest', ['web/manifest.webmanifest', 'application/manifest+json']);
+  staticRoutes.set('/icons/app-icon.svg', ['web/icons/app-icon.svg', 'image/svg+xml']);
+  for (const size of [180, 192, 512]) staticRoutes.set('/icons/app-' + size + '.png', ['web/icons/app-' + size + '.png', 'image/png']);
   for (const id of ['general', 'paper', 'gb', 'skill']) staticRoutes.set('/template-previews/' + id + '.png', ['web/template-previews/' + id + '.png', 'image/png']);
   staticRoutes.set('/src/frontmatter-fields.mjs', ['src/frontmatter-fields.mjs', 'text/javascript']);
   for (const name of ['doi', 'bibtex']) staticRoutes.set('/icons/' + name + '.svg', ['web/icons/' + name + '.svg', 'image/svg+xml']);
@@ -245,7 +260,8 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       if (!publicHost) {
         // 本地模式：仅信任回环地址，Host 与 Origin 都必须匹配本机。
         const hosts = [`127.0.0.1:${port}`, `localhost:${port}`];
-        if (!hosts.includes(req.headers.host)) throw error(403, '仅允许本机访问');
+        if (lanHost) hosts.push(`${lanHost}:${port}`);
+        if (!hosts.includes(req.headers.host)) throw error(403, '仅允许已配置的本机或局域网地址访问');
         const origin = req.headers.origin;
         if (origin && !hosts.map(host => 'http://' + host).includes(origin)) throw error(403, '不允许跨站请求');
       } else {
@@ -257,11 +273,31 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         if (origin && !allowedOrigins.includes(origin)) throw error(403, '不允许跨站请求');
       }
       if (closed) throw error(503, '服务正在关闭');
+      if (req.method === 'GET' && req.url === '/app/service-worker.js') {
+        const catalog = await exampleCatalog();
+        const bootstrap = [
+          ['/api/policy', webPolicyDocument()],
+          ['/api/frontmatter-values', frontmatterValueCatalog()],
+          ['/api/examples', { examples: catalog.map(({ id, type, title, summary }) => ({ id, type, title, description: summary })) }],
+          ['/api/example', { md: await defaultExampleSource() }],
+        ];
+        for (const { id } of catalog) {
+          const example = await findExample(id);
+          bootstrap.push(['/api/example?id=' + encodeURIComponent(id), { md: example.md, type: example.type, title: example.title }]);
+        }
+        res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
+        res.end(await appCacheScript(ROOT, staticRoutes, bootstrap)); return;
+      }
+      if (req.method === 'GET' && (req.url === '/app' || req.url === '/app/')) {
+        if (req.url === '/app') { res.writeHead(302, { Location: '/app/' }); res.end(); return; }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(await readFile(path.join(ROOT, 'web/index.html'))); return;
+      }
       if (req.method === 'GET' && staticRoutes.has(req.url)) {
         const [file, type] = staticRoutes.get(req.url);
         const target = path.join(ROOT, file);
         if (!existsSync(target)) { json(404, { error: '页面不存在' }); return; }
-        res.writeHead(200, { 'Content-Type': `${type}; charset=utf-8` }); res.end(await readFile(target)); return;
+        res.writeHead(200, { 'Content-Type': type.startsWith('image/') ? type : `${type}; charset=utf-8` }); res.end(await readFile(target)); return;
       }
       // UI 页面由前端工作流后续补齐：仅在文件已存在时提供，缺失时按 404 处理而非 500。
       if (req.method === 'GET' && (req.url === '/examples' || req.url === '/examples/')) {
@@ -351,12 +387,13 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   } };
 }
 
-export function startServer({ port = Number(process.env.PORT || 3000), publicHost = process.env.MD2PDF_PUBLIC_HOST || '' } = {}) {
+export function startServer({ port = Number(process.env.PORT || 3000), publicHost = process.env.MD2PDF_PUBLIC_HOST || '', lanHost = process.env.MD2PDF_LAN_HOST || '' } = {}) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT 必须在 1–65535 之间');
-  const host = publicHost ? '0.0.0.0' : '127.0.0.1';
-  const app = createApp({ publicHost });
+  validateLanHost(lanHost, publicHost);
+  const host = publicHost || lanHost ? '0.0.0.0' : '127.0.0.1';
+  const app = createApp({ publicHost, lanHost });
   app.server.on('error', e => { console.error('md2pdf 服务启动失败：', e.message); process.exitCode = 1; });
-  app.server.listen(port, host, () => console.log(`md2pdf 工作台：http://${host}:${port}${publicHost ? `（公网域名 ${publicHost}）` : ''}`));
+  app.server.listen(port, host, () => console.log(`md2pdf 工作台：http://${lanHost || host}:${port}${publicHost ? `（公网域名 ${publicHost}）` : ''}`));
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { app.close().catch(e => { console.error(e.message); process.exitCode = 1; }); });
   return app;
 }

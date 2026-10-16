@@ -1,7 +1,15 @@
 import { openDraftStore, DRAFT_LIST_LIMIT, DraftConflict } from './draft-store.mjs';
 
 const signature = record => JSON.stringify([record.md, record.opts, record.templateId, record.previewType, record.filename]);
-const newId = () => crypto.randomUUID();
+const newId = () => {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  // 局域网 HTTP 没有 randomUUID，getRandomValues 仍可生成独立文档标识。
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const hex = Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+  return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-');
+};
 const menuFontSize = () => {
   const editor = document.querySelector('.cm-content, #markdown');
   return Math.min(12, editor ? parseFloat(getComputedStyle(editor).fontSize) || 13 : 13);

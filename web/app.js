@@ -594,6 +594,10 @@ function schedulePreview() {
 }
 
 async function renderPreview() {
+  if (location.pathname === '/app/' && !navigator.onLine) {
+    setStatus('当前离线，预览与 PDF 导出需要联网。');
+    return;
+  }
   const current = revision;
   if (!form.reportValidity()) { setStatus('请检查排版选项。', true); return; }
   if (!editor.value.trim()) {
@@ -767,6 +771,7 @@ async function boot() {
 
   initialized = true;
   if (localDrafts) window.mdDrafts = localDrafts;
+  window.dispatchEvent(new Event('md-app-ready'));
   saveDraft();
   editor.placeholder = '在此输入 Markdown…';
   updateCount();
@@ -903,6 +908,9 @@ async function downloadNameFor(md, ext) {
 }
 
 download.addEventListener('click', async () => {
+  if (location.pathname === '/app/' && !navigator.onLine) {
+    setStatus('PDF 导出需要联网。'); return;
+  }
   // 双重检查：按钮在配置无效时已被禁用，这里再挡一次，避免旧事件/程序化触发绕过。
   if (configInvalid) {
     setStatus('配置无效 · 无法生成 PDF，请先修正文档配置。', true);
@@ -932,15 +940,19 @@ download.addEventListener('click', async () => {
     if (exportName) pdfBody.filename = exportName;
     const response = await request('/api/pdf', pdfBody);
     const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
-    anchor.href = url;
     const disposition = response.headers.get('Content-Disposition') || '';
     const marker = "filename*=UTF-8''";
     const at = disposition.indexOf(marker);
     const encoded = at >= 0 ? disposition.slice(at + marker.length) : '';
     const decoded = encoded ? decodeURIComponent(encoded) : '';
     anchor.download = decoded || exportName || 'document.pdf';
+    if (window.mdAppShell?.offerFile(new File([blob], anchor.download, { type: 'application/pdf' }))) {
+      setStatus(revision === exportRevision ? 'PDF 已生成，请选择下载或分享。' : 'PDF 已生成（期间编辑未包含），请选择下载或分享。');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    anchor.href = url;
     document.body.append(anchor);
     anchor.click();
     anchor.remove();
@@ -973,3 +985,5 @@ window.md2pdfConfigErrors = {
 };
 
 boot();
+
+window.addEventListener('online', () => { if (location.pathname === '/app/' && initialized) schedulePreview(); });

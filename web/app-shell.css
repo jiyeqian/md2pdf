@@ -1,0 +1,70 @@
+/* 主屏模式专用，普通浏览器不应用这些布局规则。 */
+html.app-standalone .topbar {
+  height: calc(84px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: max(32px, env(safe-area-inset-left, 0px));
+  padding-right: max(32px, env(safe-area-inset-right, 0px));
+}
+html.app-standalone main {
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+html.app-standalone .workspace.md-editor-workspace.editor-focus,
+html.app-standalone .workspace.md-editor-workspace.preview-focus {
+  top: calc(var(--app-view-top, 0px) + env(safe-area-inset-top, 0px) + 8px);
+  left: max(8px, env(safe-area-inset-left, 0px));
+  right: max(8px, env(safe-area-inset-right, 0px));
+  bottom: auto;
+  height: max(120px, calc(var(--app-view-height, 100dvh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16px));
+}
+#app-network-status {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  z-index: 1200;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #233e60;
+  color: #fff;
+  font: 12px/1.5 system-ui, sans-serif;
+}
+.app-file-name { overflow-wrap: anywhere; }
+.app-file-actions a { display: inline-flex; align-items: center; text-decoration: none; padding: 9px 16px; border-radius: 7px; font-size: 13px; }
+@media (max-width: 700px) {
+  html.app-standalone .topbar {
+    height: calc(94px + env(safe-area-inset-top, 0px));
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+  }
+}
+
+#app-cache-status {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  z-index: 1201;
+  padding: 8px 12px;
+  border: 1px solid #d7dfeb;
+  border-radius: 10px;
+  background: #fff;
+  color: #233e60;
+  box-shadow: 0 4px 16px #233e6020;
+  font: 13px/1.5 system-ui, sans-serif;
+}
+#app-cache-status[hidden] { display: none; }
+#app-cache-status button {
+  margin-left: 8px;
+  padding: 4px 8px;
+  border: 1px solid #c6d3e5;
+  border-radius: 6px;
+  background: #edf2f8;
+  color: #233e60;
+  font: inherit;
+  cursor: pointer;
+}
