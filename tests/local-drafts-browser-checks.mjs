@@ -37,6 +37,7 @@ const openMenu = async () => {
 const accept = async text => {
   await wait(`document.querySelector('dialog[open]')`);
   assert.equal(await evaluate(`document.querySelector('dialog[open] p').textContent`), text);
+  assert.equal(await evaluate(`!!document.querySelector('dialog[open] .primary') && !!document.querySelector('dialog[open] .template-confirm-cancel')`),true);
   await evaluate(`[...document.querySelectorAll('dialog[open] button')].find(b=>b.textContent==='删除').click()`);
   await wait(`!document.querySelector('dialog[open]')`);
 };
@@ -129,6 +130,12 @@ try {
   await evaluate(`document.querySelector('#md-drafts-menu').hidden=true;await mdDrafts.openFile('# '+ '超长草稿标题'.repeat(20),'long.md')`);
   await openMenu();
   assert.ok(await evaluate(`(()=>{const menu=document.querySelector('#md-drafts-menu'),r=menu.getBoundingClientRect(),v=visualViewport;const name=menu.querySelector('.md-draft-title');return r.left>=v.offsetLeft&&r.right<=v.offsetLeft+v.width+1&&r.top>=v.offsetTop&&r.bottom<=v.offsetTop+v.height+1&&name.scrollWidth>name.clientWidth&&menu.querySelector('[data-draft-open]').title.length>20})()`));
+  assert.ok(await evaluate(`(()=>{const menu=document.querySelector('#md-drafts-menu'),row=menu.querySelector('.md-draft-row'),title=row.querySelector('.md-draft-title').getBoundingClientRect(),mark=row.querySelector('.md-draft-mark').getBoundingClientRect(),del=row.querySelector('.md-draft-delete').getBoundingClientRect();return menu.getBoundingClientRect().width<=276&&parseFloat(getComputedStyle(menu).fontSize)<=parseFloat(getComputedStyle(document.querySelector('.cm-content')).fontSize)&&Math.abs(title.top-mark.top)<1&&Math.abs(title.top-(del.top+parseFloat(getComputedStyle(row.querySelector('.md-draft-delete')).paddingTop)))<1&&Math.abs((title.left-mark.right)-(del.left-title.right))<1})()`));
+  await evaluate(`document.querySelector('#md-drafts-menu').dispatchEvent(new PointerEvent('pointerleave',{pointerType:'touch'}))`);
+  assert.equal(await evaluate(`document.querySelector('#md-drafts-menu').hidden`),false);
+  await evaluate(`document.querySelector('#md-drafts-menu').dispatchEvent(new PointerEvent('pointerleave',{pointerType:'mouse'}))`);
+  assert.equal(await evaluate(`document.querySelector('#md-drafts-menu').hidden`),true);
+  await openMenu();
   await evaluate(`document.querySelector('button[aria-label="打开 Markdown"]').click(); await mdDrafts.flush()`);
   assert.deepEqual(await evaluate(`(async()=>{
     const original=mdDrafts.store.save;const before=mdDrafts.current();const text=mdEditor.getValue();

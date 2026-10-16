@@ -2,11 +2,16 @@ import { openDraftStore, DRAFT_LIST_LIMIT, DraftConflict } from './draft-store.m
 
 const signature = record => JSON.stringify([record.md, record.opts, record.templateId, record.previewType, record.filename]);
 const newId = () => crypto.randomUUID();
+const menuFontSize = () => {
+  const editor = document.querySelector('.cm-content, #markdown');
+  return Math.min(12, editor ? parseFloat(getComputedStyle(editor).fontSize) || 13 : 13);
+};
 
 function confirmDelete(message) {
   return new Promise(resolve => {
     const dialog = document.createElement('dialog');
-    dialog.className = 'template-confirm';
+    dialog.className = 'template-confirm md-draft-confirm';
+    dialog.style.fontSize = menuFontSize() + 'px';
     dialog.setAttribute('aria-label', message);
     const text = document.createElement('p');
     text.textContent = message;
@@ -16,6 +21,7 @@ function confirmDelete(message) {
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = label;
+      button.className = accepted ? 'primary' : 'template-confirm-cancel';
       button.addEventListener('click', () => finish(accepted));
       actions.append(button);
     }
@@ -138,7 +144,8 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     const left = view?.offsetLeft || 0, top = view?.offsetTop || 0;
     const width = view?.width || innerWidth, height = view?.height || innerHeight;
     menu.style.maxHeight = Math.max(60, height - 16) + 'px';
-    menu.style.width = Math.min(340, width - 16) + 'px';
+    menu.style.fontSize = menuFontSize() + 'px';
+    menu.style.width = Math.min(276, width - 16) + 'px';
     menu.style.left = Math.max(left + 8, Math.min(bounds.left, left + width - menu.offsetWidth - 8)) + 'px';
     menu.style.top = Math.max(top + 8, Math.min(bounds.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
   }
@@ -165,10 +172,14 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       if (record.id === active?.id) open.setAttribute('aria-current', 'true');
       const title = document.createElement('span');
       title.className = 'md-draft-title';
-      title.textContent = (record.id === active?.id ? '✓ ' : '') + record.title;
+      title.textContent = record.title;
+      const mark = document.createElement('span');
+      mark.className = 'md-draft-mark';
+      mark.setAttribute('aria-hidden', 'true');
+      mark.textContent = record.id === active?.id ? '✓' : '';
       const time = document.createElement('small');
       time.textContent = new Date(record.savedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-      open.append(title, time);
+      open.append(mark, title, time);
       const del = button('×', () => remove([record]));
       del.className = 'md-draft-delete';
       del.setAttribute('aria-label', `删除草稿“${record.title}”`);
@@ -209,6 +220,9 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       window.visualViewport?.addEventListener('resize', positionMenu);
       window.visualViewport?.addEventListener('scroll', positionMenu);
       window.addEventListener('scroll', positionMenu, true);
+      menu.addEventListener('pointerleave', event => {
+        if (event.pointerType === 'mouse' && !document.querySelector('dialog[open]')) closeMenu();
+      });
     }
     menu.hidden = false;
     trigger.setAttribute('aria-controls', menu.id);
