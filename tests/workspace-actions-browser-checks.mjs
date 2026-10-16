@@ -47,7 +47,8 @@ try {
   await evaluate(`mdDrafts.schedule()`);
   assert.equal(await evaluate(`(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented})()`),false,'unchanged draft must not mark pending');
   await clickCreate();
-  assert.deepEqual(await evaluate(`[...document.querySelector('#md-create-menu').children].map(n=>n.textContent)`),['通用文档','学术论文','国家标准','技能文档','浏览模板库…']);
+  assert.deepEqual(await evaluate(`[...document.querySelector('#md-create-menu').children].map(n=>n.textContent)`),['通用文档','学术论文','国家标准','技能文档','从模板库选择…']);
+  assert.ok(await evaluate(`(()=>{const menu=document.querySelector('#md-create-menu'),a=menu.querySelector('a'),b=menu.querySelector('button'),r=menu.getBoundingClientRect();return r.width>=128&&r.width<200&&getComputedStyle(a).fontSize===getComputedStyle(b).fontSize&&getComputedStyle(a).color===getComputedStyle(b).color})()`));
   await evaluate(`document.querySelector('#browse-examples').click()`);
   await wait(`document.querySelector('[data-view="templates"]').hidden===false`);
   assert.equal(await evaluate('performance.timeOrigin'),origin,'template navigation stays in the same page');

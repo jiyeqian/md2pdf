@@ -146,7 +146,9 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     const width = view?.width || innerWidth, height = view?.height || innerHeight;
     menu.style.maxHeight = Math.max(60, height - 16) + 'px';
     menu.style.fontSize = menuFontSize() + 'px';
-    menu.style.width = Math.min(276, width - 16) + 'px';
+    menu.style.width = 'max-content';
+    menu.style.minWidth = Math.min(144, width - 16) + 'px';
+    menu.style.maxWidth = Math.min(276, width - 16) + 'px';
     menu.style.left = Math.max(left + 8, Math.min(bounds.left, left + width - menu.offsetWidth - 8)) + 'px';
     menu.style.top = Math.max(top + 8, Math.min(bounds.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
   }

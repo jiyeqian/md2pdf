@@ -12,7 +12,9 @@ function position() {
   const width = view?.width || innerWidth, height = view?.height || innerHeight;
   const editor = document.querySelector('.cm-content, #markdown');
   menu.style.fontSize = Math.min(12, parseFloat(getComputedStyle(editor).fontSize) || 13) + 'px';
-  menu.style.width = Math.min(220, width - 16) + 'px';
+  menu.style.width = 'max-content';
+  menu.style.minWidth = Math.min(128, width - 16) + 'px';
+  menu.style.maxWidth = Math.min(220, width - 16) + 'px';
   menu.style.left = Math.max(left + 8, Math.min(rect.left, left + width - menu.offsetWidth - 8)) + 'px';
   menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
 }
@@ -30,7 +32,7 @@ export async function openCreateMenu(anchor) {
     template.href = '/';
     template.dataset.viewLink = 'templates';
     template.className = 'md-drafts-browse';
-    template.textContent = '浏览模板库…';
+    template.textContent = '从模板库选择…';
     template.addEventListener('click', () => close());
     menu.append(template);
     document.body.append(menu);
@@ -89,7 +91,7 @@ export async function openCreateMenu(anchor) {
     } catch (error) {
       const status = document.querySelector('#status');
       if (status) { status.textContent = error.message; status.dataset.error = 'true'; }
-    } finally { browse.textContent = '浏览模板库…'; }
+    } finally { browse.textContent = '从模板库选择…'; }
   }
   position();
   if (!menu.hidden) (menu.querySelector('button') || browse).focus();

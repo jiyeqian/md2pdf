@@ -72,6 +72,8 @@ try {
   assert.equal(await evaluate('mdDrafts.current()'), secondId);
   assert.match(await evaluate('mdEditor.getValue()'), /title: B/);
   await openMenu();
+  const shortMenuWidth=await evaluate(`document.querySelector('#md-drafts-menu').getBoundingClientRect().width`);
+  assert.ok(shortMenuWidth>=144&&shortMenuWidth<276);
   await evaluate(`document.querySelector('[data-draft-open="${firstId}"]').click()`);
   await wait(`window.mdDrafts.current()===${JSON.stringify(firstId)}`);
   assert.equal(await evaluate('mdEditor.getValue()'), '# 改名后的标题');
@@ -129,6 +131,7 @@ try {
   await browser.send('Emulation.setDeviceMetricsOverride', { width:390, height:720, deviceScaleFactor:1, mobile:true });
   await evaluate(`document.querySelector('#md-drafts-menu').hidden=true;await mdDrafts.openFile('# '+ '超长草稿标题'.repeat(20),'long.md')`);
   await openMenu();
+  assert.ok(await evaluate(`document.querySelector('#md-drafts-menu').getBoundingClientRect().width`)>shortMenuWidth);
   assert.ok(await evaluate(`(()=>{const menu=document.querySelector('#md-drafts-menu'),r=menu.getBoundingClientRect(),v=visualViewport;const name=menu.querySelector('.md-draft-title');return r.left>=v.offsetLeft&&r.right<=v.offsetLeft+v.width+1&&r.top>=v.offsetTop&&r.bottom<=v.offsetTop+v.height+1&&name.scrollWidth>name.clientWidth&&menu.querySelector('[data-draft-open]').title.length>20})()`));
   assert.ok(await evaluate(`(()=>{const menu=document.querySelector('#md-drafts-menu'),row=menu.querySelector('.md-draft-row'),title=row.querySelector('.md-draft-title').getBoundingClientRect(),mark=row.querySelector('.md-draft-mark').getBoundingClientRect(),del=row.querySelector('.md-draft-delete').getBoundingClientRect(),range=document.createRange();range.selectNodeContents(row.querySelector('.md-draft-delete'));const glyph=range.getBoundingClientRect();return menu.getBoundingClientRect().width<=276&&parseFloat(getComputedStyle(menu).fontSize)<=parseFloat(getComputedStyle(document.querySelector('.cm-content')).fontSize)&&Math.abs(title.top-mark.top)<1&&Math.abs((glyph.left+glyph.right-del.left-del.right)/2)<1&&Math.abs((glyph.top+glyph.bottom-del.top-del.bottom)/2)<2&&Math.abs((title.left-mark.right)-(del.left-title.right))<1})()`));
   await evaluate(`document.querySelector('#md-drafts-menu').dispatchEvent(new PointerEvent('pointerleave',{pointerType:'touch'}))`);
