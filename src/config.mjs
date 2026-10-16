@@ -11,7 +11,7 @@
  * 命名约定：配置字段在 frontmatter 中同时接受 kebab-case（与 CLI 同名，如 font-size）
  * 与历史 camelCase（fontSize）；同一层两种写法取值一致时允许，矛盾时报错。
  * 普通元数据字段（name / author / 标准号 / description …）不做配置校验，原样保留，
- * 允许 null / 列表 / 对象。
+ * 允许 null / 列表 / 对象；keywords / tags 限定为字符串列表。
  *
  * 安全：解析结果经 sanitize 深拷贝，剔除 __proto__ / prototype / constructor，
  * 防止 YAML 反序列化污染原型；解析设置 maxAliasCount 上限，避免别名炸弹。
@@ -184,6 +184,11 @@ const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
  */
 function ingestLayer(raw, opts = {}) {
   const { positions = {}, allowRuntimeFeatures = false, warnings = [] } = opts;
+  for (const key of ['keywords', 'tags']) {
+    if (hasOwn(raw, key) && (!Array.isArray(raw[key]) || raw[key].some(item => typeof item !== 'string'))) {
+      throw cfgError(`字段 ${key} 必须为字符串列表（例如：${key}: ["词条一", "词条二"]）`, key, positions[key]);
+    }
+  }
   const fields = {};
   const enableList = [];
   const disableList = [];

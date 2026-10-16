@@ -290,3 +290,15 @@ test('colophon-enabled aliases the legacy camelCase flag without changing preced
   }
   assert.throws(() => resolveDocumentOptions({}, { 'colophon-enabled': false, colophonEnabled: true }), /冲突/);
 });
+
+
+test('keywords and tags require string lists with source field diagnostics', () => {
+  for (const field of ['keywords', 'tags']) {
+    assert.deepEqual(parseFrontmatter(FM(field + ': [甲, 乙]')).fm[field], ['甲', '乙']);
+    assert.deepEqual(parseFrontmatter(FM(field + ': []')).fm[field], []);
+    for (const value of ['旧字符串', 'null', 'true', '[甲, 1]', '[甲, null]', '{a: b}']) {
+      assert.throws(() => parseFrontmatter(FM(field + ': ' + value)), error => error instanceof ConfigError && error.configErrors[0].field === field && error.configErrors[0].line === 2);
+    }
+    assert.throws(() => validateFrontmatter({[field]:'旧字符串'}), ConfigError);
+  }
+});

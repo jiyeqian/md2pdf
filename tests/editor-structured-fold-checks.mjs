@@ -258,3 +258,39 @@ test('ordinary footnotes alone retain their existing folding behavior', () => {
   nodes(state);
   assert.equal(H.bibliographyGroups(V, state).length, 0);
 });
+
+
+test('fold markers use a fixed SVG chevron with distinct expanded and folded directions', () => {
+  const saved = globalThis.document;
+  const node = tag => ({tag, attrs:{}, children:[], setAttribute(k,v){this.attrs[k]=v;}, appendChild(child){this.children.push(child);}, addEventListener(){}});
+  globalThis.document = {createElement:node, createElementNS:(ns,tag) => node(tag)};
+  try {
+    const config = H.compactFoldGutter({...V, foldGutter:config => config})[2];
+    const expanded = config.markerDOM(true), folded = config.markerDOM(false);
+    assert.equal(expanded.children[0].tag, 'svg');
+    assert.equal(expanded.children[0].attrs.width, '8');
+    assert.equal(expanded.children[0].attrs.height, '8');
+    assert.notEqual(expanded.children[0].children[0].attrs.d, folded.children[0].children[0].attrs.d);
+    assert.equal(expanded.attrs['aria-label'], '折叠');
+    assert.equal(folded.attrs['aria-label'], '展开');
+  } finally { if(saved === undefined) delete globalThis.document; else globalThis.document = saved; }
+});
+
+
+test('a leading single-line ordinary reference opens individual/group choices instead of folding the group directly', () => {
+  const text = '[^plain]: 普通参考文献正文';
+  const state = stateFor(text + '\n\n' + entry('one'));
+  nodes(state);
+  const config = H.compactFoldGutter({...V, foldGutter:config => config})[2];
+  const anchor = {};
+  let choices, prevented = false;
+  const view = {state, dispatch(){assert.fail('点击应先弹出菜单');}, plugin:() => ({open:(button, individual, group) => choices = {button, individual, group}})};
+  const event = {target:{closest:() => ({querySelector:() => anchor})}, preventDefault(){prevented=true;}};
+  assert.equal(config.domEventHandlers.click(view, {from:0}, event), true);
+  assert.equal(prevented, true);
+  assert.equal(choices.button, anchor);
+  assert.equal(state.doc.sliceString(choices.individual.from, choices.individual.to), '普通参考文献正文');
+  assert.equal(choices.group.count, 2);
+  const folded = state.update({effects:V.foldEffect.of(choices.individual)}).state;
+  assert.deepEqual(ranges(folded), [choices.individual]);
+});
