@@ -37,7 +37,7 @@ export const PROFILES = {
   paper: {
     name: 'paper',
     // 论文 md：frontmatter 含 abstract 或 keywords
-    detect: ({ fm }) => !!(fm.abstract || fm.keywords),
+    detect: ({ fm }) => !!(fm.abstract || fm.keywords?.length),
     kicker: null,
     skillMeta: false,
     // 报头三件套：作者行 + 「摘要」块 + 「关键词」行

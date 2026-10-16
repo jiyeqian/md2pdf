@@ -416,6 +416,9 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   }
   assert.equal(all.filter(n => n.classList && n.classList.contains('md-wt-group')).length, 5, '应有 5 个操作分组');
   assert.equal(buttons.filter(b => b.getAttribute('aria-label') === '查找与替换').length, 1);
+  const searchButton = buttons.find(b => b.getAttribute('aria-label') === '查找与替换');
+  searchButton.dispatch('click'); searchButton.dispatch('click');
+  assert.deepEqual(calls.slice(-2), ['toggleSearch', 'toggleSearch'], '工具栏重复点击应请求开关，不改变快捷键的查找命令');
   assert.equal(buttons.filter(b => ['查找', '替换'].includes(b.getAttribute('aria-label'))).length, 0);
   assert.equal(buttons.filter(b => b.getAttribute('aria-label') === 'DOI参考文献').length, 1);
   assert.equal(buttons.filter(b => b.getAttribute('aria-label') === 'BibTeX参考文献').length, 1);

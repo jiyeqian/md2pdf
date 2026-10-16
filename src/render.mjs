@@ -717,7 +717,7 @@ export async function render(src, options = {}, context = {}) {
   const paperHtml = profile.paperHeader
     ? [
         fm.abstract ? '<div class="abstract"><span class="paper-label">摘要</span><span>' + esc(fm.abstract) + '</span></div>' : '',
-        fm.keywords ? '<div class="keywords"><span class="paper-label">关键词</span><span>' + esc(fm.keywords) + '</span></div>' : '',
+        fm.keywords?.length ? '<div class="keywords"><span class="paper-label">关键词</span><span>' + esc(fm.keywords.join('；')) + '</span></div>' : '',
       ].filter(Boolean).join('\n')
     : '';
   // 文末落款：CLI 与 Web 默认一致 —— 左侧官方仓库口号，右侧本次渲染生成时间（本机时区，带偏移）。
