@@ -130,7 +130,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         if (origin && !allowedOrigins.includes(origin)) throw error(403, '不允许跨站请求');
       }
       if (closed) throw error(503, '服务正在关闭');
-      if (req.method === 'GET' && req.url === '/app/service-worker.js') {
+      if (req.method === 'GET' && req.url === '/service-worker.js') {
         const catalog = await exampleCatalog();
         const bootstrap = [
           ['/api/policy', webPolicyDocument()],
@@ -144,11 +144,6 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         }
         res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
         res.end(await appCacheScript(ROOT, staticRoutes, bootstrap)); return;
-      }
-      if (req.method === 'GET' && (req.url === '/app' || req.url === '/app/')) {
-        if (req.url === '/app') { res.writeHead(302, { Location: '/app/' }); res.end(); return; }
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(await readFile(path.join(ROOT, 'web/index.html'))); return;
       }
       if (req.method === 'GET' && staticRoutes.has(req.url)) {
         const [file, type] = staticRoutes.get(req.url);

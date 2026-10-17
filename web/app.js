@@ -596,7 +596,7 @@ function schedulePreview() {
 }
 
 async function renderPreview() {
-  if (!window.__MD2PDF_STATIC_BASE__ && location.pathname === '/app/' && !navigator.onLine) {
+  if (!window.__MD2PDF_STATIC_BASE__ && !navigator.onLine) {
     setStatus('当前离线，预览与 PDF 导出需要联网。');
     return;
   }
@@ -910,7 +910,7 @@ async function downloadNameFor(md, ext) {
 }
 
 download.addEventListener('click', async () => {
-  if (!window.__MD2PDF_STATIC_BASE__ && location.pathname === '/app/' && !navigator.onLine) {
+  if (!window.__MD2PDF_STATIC_BASE__ && !navigator.onLine) {
     setStatus('PDF 导出需要联网。'); return;
   }
   // 双重检查：按钮在配置无效时已被禁用，这里再挡一次，避免旧事件/程序化触发绕过。
@@ -994,4 +994,4 @@ window.md2pdfConfigErrors = {
 
 boot();
 
-window.addEventListener('online', () => { if (location.pathname === '/app/' && initialized) schedulePreview(); });
+window.addEventListener('online', () => { if (initialized) schedulePreview(); });

@@ -9,7 +9,7 @@ export async function appCacheScript(root, routes, bootstrap) {
   const entries = [];
   for (const [url, [file]] of routes) {
     const body = await readFile(path.join(root, file));
-    entries.push({ url: url === '/' ? '/app/' : url, hash: digest(body) });
+    entries.push({ url, hash: digest(body) });
   }
   for (const [url, data] of bootstrap) entries.push({ url, hash: digest(JSON.stringify(data)) });
   const source = await readFile(path.join(root, 'web/app-worker.js'), 'utf8');

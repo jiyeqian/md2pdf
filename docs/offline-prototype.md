@@ -26,7 +26,7 @@ python3 -m http.server 8770 --bind 127.0.0.1 --directory dist
 
 构建输出位于 `dist/offline/`，已被 Git 忽略；重建会更新生成文件。输出中的 `build-info.json` 记录资源大小与版本，当前约 6.3 MB（未压缩，含 PDF 大纲处理库），不包含跨平台中文字体包。不要把输出目录当作源文件修改。
 
-127.0.0.1 入口仅供当前电脑使用。手机离线启动需要将该静态目录映射到可信 HTTPS 地址，或部署到 GitHub Pages；现有 `/app/` 仍是之前的离线编辑入口，未切换成此原型。
+127.0.0.1 入口仅供当前电脑使用。手机离线启动需要将该静态目录映射到可信 HTTPS 地址，或部署到 GitHub Pages；服务端 WebApp 使用根入口 `/`；正式静态部署见 [静态 WebApp](offline-web.md)。
 
 ## 验收步骤
 

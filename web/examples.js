@@ -3,7 +3,7 @@
 // 模板库与编辑器共用 / 页面，模板视图通过 history.state 导航。
 (() => {
   const appFetch = (...args) => window.__MD2PDF_STATIC_BASE__ ? import('./runtime-request.mjs').then(runtime => runtime.appFetch(...args)) : fetch(...args);
-  const workspacePath = () => window.__MD2PDF_STATIC_BASE__ ? new URL(window.__MD2PDF_STATIC_BASE__).pathname : location.pathname === '/app/' ? '/app/' : '/';
+  const workspacePath = () => window.__MD2PDF_STATIC_BASE__ ? new URL(window.__MD2PDF_STATIC_BASE__).pathname : '/';
   const HANDOFF_KEY = 'md2pdf:handoff';
   const DRAFT_KEY = 'md2pdf:draft';
   const root = document.querySelector('.template-library-page');
@@ -144,7 +144,7 @@
       state.status.textContent = event.data.error || '预览排版失败';
     }
   });
-  if (!window.__MD2PDF_STATIC_BASE__ && location.pathname !== '/' && location.pathname !== '/app/') history.replaceState({ ...(history.state || {}), md2pdfView: 'templates' }, '', '/');
+  if (!window.__MD2PDF_STATIC_BASE__ && location.pathname !== '/') history.replaceState({ ...(history.state || {}), md2pdfView: 'templates' }, '', '/');
 
   function createCard(example) {
     const item = document.createElement('li');

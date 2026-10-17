@@ -1,4 +1,4 @@
-/* 主屏 App 的视口与文件操作；普通浏览器继续沿用原来的编辑和下载流程。 */
+/* WebApp 共用安装与缓存；主屏模式按需适配视口和文件分享。 */
 (() => {
   const root = document.documentElement;
   const display = window.matchMedia('(display-mode: standalone)');
@@ -13,7 +13,6 @@
   }
   function schedule() { if (!frame) frame = requestAnimationFrame(measure); }
   function network() {
-    if (!standalone() && location.pathname !== '/app/') return;
     let notice = document.querySelector('#app-network-status');
     if (!notice) {
       notice = document.createElement('div');
@@ -95,7 +94,6 @@
     return true;
   }
   let registration, reloadForUpdate = false, checking = false;
-  const appEntry = () => location.pathname === '/app/';
   function cacheNotice(message, label, action) {
     let notice = document.querySelector('#app-cache-status');
     if (!notice) {
@@ -122,7 +120,7 @@
     await window.mdDrafts.flush();
     reloadForUpdate = true;
     if (registration.waiting) registration.waiting.postMessage({ type:'APP_ACTIVATE' });
-    else location.replace('/app/');
+    else location.replace('/');
   }
   function updateAvailable() {
     cacheNotice('新版已准备好。', '保存草稿并更新', applyUpdate);
@@ -138,7 +136,7 @@
     finally { checking = false; }
   }
   async function prepareApp() {
-    if (window.__MD2PDF_STATIC_BASE__ || !appEntry()) return;
+    if (window.__MD2PDF_STATIC_BASE__) return;
     if (!window.isSecureContext || !('serviceWorker' in navigator)) {
       cacheNotice('离线启动需要受信任的 HTTPS 地址。'); return;
     }
@@ -163,12 +161,12 @@
       }
     });
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (reloadForUpdate) location.replace('/app/');
+      if (reloadForUpdate) location.replace('/');
       else requestStatus();
     });
     cacheNotice('正在准备离线编辑…');
     try {
-      registration = await navigator.serviceWorker.register('/app/service-worker.js', { scope:'/app/', updateViaCache:'none' });
+      registration = await navigator.serviceWorker.register('/service-worker.js', { scope:'/', updateViaCache:'none' });
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
         worker?.addEventListener('statechange', () => {
@@ -180,18 +178,10 @@
       else requestStatus();
     } catch { cacheNotice('离线准备未完成，联网后可重试。', '重试', () => prepareApp()); }
   }
-  // 兼容之前从首页添加的主屏图标，等草稿恢复并写入后才迁移入口。
-  window.addEventListener('md-app-ready', async () => {
-    if (!window.__MD2PDF_STATIC_BASE__ && standalone() && location.pathname === '/' && window.isSecureContext && window.mdDrafts) {
-      try { await window.mdDrafts.flush(); location.replace('/app/'); }
-      catch { cacheNotice('草稿尚未保存，请稍后重新打开主屏 App。'); }
-    }
-  });
   window.addEventListener('online', checkUpdate);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') { checkUpdate(); requestStatus(); }
   });
-  if (appEntry()) document.querySelector('.brand-icon')?.setAttribute('href', '/app/');
   prepareApp();
   window.mdAppShell = { standalone, offerFile };
   display.addEventListener?.('change', updateMode);
@@ -203,5 +193,5 @@
   window.addEventListener('online', network);
   window.addEventListener('offline', network);
   updateMode();
-  if (appEntry()) network();
+  network();
 })();
