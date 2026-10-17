@@ -4,7 +4,7 @@
  * 用法：node tests/checks.mjs [项目根]
  *
  * 校验对象是"会真正影响输出"的约定，而不是文件是否存在这类表面项：
- *   1. 版本号一致（package.json ↔ src 里的 VERSION）
+ *   1. 版本号一致（package.json ↔ 共享版本模块 ↔ CLI）
  *   2. 模板占位符闭合：shell.html / base.css 里的 {{X}} 必须都有替换逻辑，
  *      且 src 里声明的每个占位符都真的出现在模板中（防拼错、防上次那种
  *      "{{TITLE}} 出现两次只替换一处" 的 bug）
@@ -18,7 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(process.argv[2] || path.join(HERE, '..'));
@@ -43,12 +43,17 @@ console.log(`校验目标：${ROOT}`);
 /* ---------- 1. 版本号一致 ---------- */
 const src = ['md2pdf.mjs', 'render.mjs', 'chrome.mjs', 'options.mjs'].map(f => read(path.join(ROOT, 'src', f))).join('\n');
 const pkg = JSON.parse(read(path.join(ROOT, 'package.json')));
-const vMatch = /const VERSION = '([^']+)'/.exec(src);
-ok('版本号：src 中声明 VERSION', !!vMatch, '未找到 const VERSION');
-if (vMatch) {
-  ok('版本号：package.json 与 VERSION 一致', pkg.version === vMatch[1],
-    `package.json=${pkg.version} src=${vMatch[1]}`);
-}
+const versionFile = path.join(ROOT, 'src', 'version.mjs');
+const versionRun = spawnSync(process.execPath, ['--input-type=module', '-e',
+  `const m = await import(${JSON.stringify(pathToFileURL(versionFile).href)}); console.log(JSON.stringify({version:m.VERSION,node:m.versionInfo('node').version,static:m.versionInfo('static').version}));`],
+  { cwd:ROOT, encoding:'utf8' });
+let versions;
+try { versions = JSON.parse(versionRun.stdout); } catch { /* 下方报告加载失败。 */ }
+ok('版本号：共享模块可读取产品版本', versionRun.status === 0 && !!versions,
+  versionRun.stderr?.trim() || '版本信息不可用');
+ok('版本号：共享模块与 package.json 一致',
+  !!versions && ['version', 'node', 'static'].every(key => versions[key] === pkg.version),
+  `package.json=${pkg.version} 模块=${JSON.stringify(versions)}`);
 
 /* ---------- 2. 模板占位符闭合 ---------- */
 const shell = read(shellFile);
@@ -104,7 +109,7 @@ const help = run(['--help']);
 ok('CLI：--help 退出码 0 且含用法', help.status === 0 && /md2pdf/.test(help.stdout),
   `status=${help.status}`);
 const ver = run(['--version']);
-ok('CLI：--version 输出与 package.json 一致', ver.stdout.trim() === pkg.version,
+ok('CLI：--version 输出与 package.json 一致', ver.status === 0 && ver.stdout.trim() === pkg.version,
   `输出=${ver.stdout.trim()} package.json=${pkg.version}`);
 
 /* ---------- 4b. 文档类型 Profile ---------- */
