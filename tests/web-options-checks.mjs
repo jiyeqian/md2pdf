@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { PROFILES } from '../src/profiles.mjs';
 import {
   webPolicyDocument, policyForType, effectiveOptions, assertOptionsAllowed, resolveWebType,
-  frontmatterOverrides, LINE_HEIGHT_RANGE, GB_LINE_HEIGHT, WEB_OPTION_SPEC,
+  frontmatterOverrides, normalizeSelections, LINE_HEIGHT_RANGE, GB_LINE_HEIGHT, WEB_OPTION_SPEC,
 } from '../src/web-options.mjs';
 
 const gb = PROFILES.gb.defaults;
@@ -174,4 +174,17 @@ test('effectiveOptions 反映 frontmatter，且显式优先', () => {
   assert.equal(effectiveOptions({}, 'general', fm).fontSize, 12);
   assert.equal(effectiveOptions({ theme: 'elegant' }, 'general', fm).theme, 'elegant');
   assert.throws(() => effectiveOptions({}, 'gb', { 'line-height': 2 }), { status: 400 });
+});
+
+
+test('页面方向在普通类型可切换、国标锁定，生效值可从文档继承并显式覆盖', () => {
+  for (const type of ['', 'general', 'paper', 'skill']) {
+    const control = policyForType(type, { landscape: true }).controls.landscape;
+    assert.equal(control.available, true);
+    assert.equal(control.fixedValue, true);
+  }
+  assert.equal(policyForType('gb').controls.landscape.available, false);
+  assert.equal(normalizeSelections({ landscape: 'true' }, 'gb').landscape, '');
+  assert.equal(effectiveOptions({}, 'general', { landscape: true }).landscape, true);
+  assert.equal(effectiveOptions({ landscape: false }, 'general', { landscape: true }).landscape, false);
 });

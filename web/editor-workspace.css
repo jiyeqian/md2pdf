@@ -44,7 +44,8 @@
   flex-direction: column;
   gap: 0;
   padding: 8px;
-  min-width: 220px;
+  width: max-content;
+  min-width: 0;
   max-width: min(92vw, 380px);
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -60,7 +61,7 @@
 @keyframes md-wt-menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .md-wt-basic-menu { animation: none; } }
 @media (max-width: 480px) {
-  .md-wt-basic-menu { padding: 6px; min-width: 200px; }
+  .md-wt-basic-menu { padding: 6px; }
   .md-wt-basic-menu .md-wt-menu-item { width: 28px; height: 28px; }
 }
 
@@ -378,3 +379,5 @@
 }
 
 .md-wt-toolbar button.is-active{background:#e9eff7;border-color:#8da2bb}
+
+.workspace.md-editor-workspace .preview-toolbar .icon-button{width:var(--panel-button,28px);height:var(--panel-button,28px)}

@@ -939,14 +939,23 @@
         text = text.replace(/^\uFEFF/, '');
         if (window.mdDrafts) await window.mdDrafts.openFile(text, file.name);
         else window.mdEditor.setValue(text);
-        focusEditor();
+        if (fullscreenMode() !== 'preview') focusEditor();
       } catch (e) { fileStatus('无法读取 Markdown 文件，请重试。', true); }
     });
-    var openButton = makeFileButton('打开 Markdown', 'open', function () {
-      if (window.mdDrafts) window.mdDrafts.openMenu(openButton, input).catch(function (error) { fileStatus(error.message, true); });
-      else input.click();
-    });
-    actions.appendChild(openButton);
+    function makeOpenButton() {
+      var button = makeFileButton('打开 Markdown', 'open', function () {
+        if (window.mdDrafts) window.mdDrafts.openMenu(button, input).catch(function (error) { fileStatus(error.message, true); });
+        else input.click();
+      });
+      return button;
+    }
+    actions.appendChild(makeOpenButton());
+    var previewToolbar = previewPanel.querySelector('.preview-toolbar');
+    if (previewToolbar) {
+      var previewOpen = makeOpenButton();
+      previewOpen.setAttribute('id', 'preview-open-markdown');
+      previewToolbar.insertBefore(previewOpen, previewToolbar.firstChild);
+    }
   }
 
   async function saveMarkdown() {

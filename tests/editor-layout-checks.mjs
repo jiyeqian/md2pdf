@@ -740,7 +740,7 @@ function fakeAppEnvironment() {
   const form = new FakeNode('form');
   const named = {};
   for (const name of ['type', 'theme', 'toc', 'numbering']) named[name] = new FakeNode('select');
-  for (const name of ['fontSize', 'margin', 'lineHeight']) named[name] = new FakeNode('input');
+  for (const name of ['fontSize', 'margin', 'lineHeight', 'landscape']) named[name] = new FakeNode('input');
   named.type.value = '';
   form.elements = named;
   const editor = new FakeNode('textarea');
@@ -893,15 +893,15 @@ test('privacy 下载保存与标题栏 Markdown 下载使用同一个动作', ()
   assert.equal(env.privacySave.listeners.click[0], download.listeners.click[0]);
 });
 
- test('预览排版工具条：位于预览标题之后，七项按图标逐个换行', () => {
+ test('预览排版工具条：位于预览标题之后，排版项按图标逐个换行', () => {
   const formAt = indexHtml.indexOf('<form id="options"');
   assert.ok(formAt > indexHtml.indexOf('id="preview-title"'));
   assert.ok(formAt < indexHtml.indexOf('id="config-errors"'));
   const form = indexHtml.slice(formAt, indexHtml.indexOf('</form>', formAt));
   const names = [...form.matchAll(/data-control="([^"]+)"/g)].map(match => match[1]);
-  assert.deepEqual(names, ['type', 'theme', 'toc', 'numbering', 'fontSize', 'margin', 'lineHeight']);
+  assert.deepEqual(names, ['type', 'theme', 'landscape', 'toc', 'numbering', 'fontSize', 'margin', 'lineHeight']);
   assert.equal((form.match(/<summary /g) || []).length, 7);
-  assert.equal((form.match(/class="preview-option-icon"/g) || []).length, 7);
+  assert.equal((form.match(/class="preview-option-icon"/g) || []).length, 8);
   assert.match(appCss, /\.preview-toolbar \.toolbar-field\{flex:0 0 auto;min-width:0/);
   assert.match(appJs, /slider.addEventListener\('keydown'/);
   assert.match(appJs, /slider.addEventListener\('blur', end\)/);
@@ -1047,4 +1047,39 @@ test('面板共享网格覆盖左右边缘，缩放轨道占两侧按钮间空�
     observers[0].callback();
     assert.ok(Number(style['--panel-columns']) > n, '观察面板实际尺寸变化后更新网格');
   }
+});
+
+
+test('preview and editor open buttons use the same picker and draft menu without leaving fullscreen', () => {
+  const env = fakeEnvironment();
+  const previewToolbar = new env.previewPanel.constructor('form');
+  env.previewPanel.q['.preview-toolbar'] = previewToolbar;
+  const menus = [];
+  env.sandbox.mdDrafts = {openMenu:(button,input) => {menus.push({button,input});return Promise.resolve();}};
+  vm.runInContext(wsJs, env.sandbox);
+  const toolbar = env.editorPanel.children.find(n => n.getAttribute && n.getAttribute('role') === 'toolbar');
+  const editorOpen = toolbar.children[0].children.find(n => n.getAttribute('aria-label') === '打开 Markdown');
+  const previewOpen = previewToolbar.children[0];
+  assert.equal(previewOpen.getAttribute('id'), 'preview-open-markdown');
+  env.workspace.classList.add('preview-focus');
+  editorOpen.dispatch('click'); previewOpen.dispatch('click');
+  assert.equal(menus.length, 2);
+  assert.equal(menus[0].input, menus[1].input);
+  assert.equal(menus[0].button, editorOpen);
+  assert.equal(menus[1].button, previewOpen);
+  assert.equal(env.workspace.classList.contains('preview-focus'), true);
+});
+
+
+test('页面方向空值跟随文档，显式纵向发送 boolean false，GB 清空覆盖', () => {
+  const env = fakeAppEnvironment();
+  vm.runInContext(appJs, env.sandbox);
+  assert.equal(vm.runInContext('collectedOptions().landscape', env.sandbox), undefined);
+  env.form.elements.landscape.value = 'false';
+  assert.equal(vm.runInContext('collectedOptions().landscape', env.sandbox), false);
+  env.form.elements.landscape.value = 'true';
+  assert.equal(vm.runInContext('collectedOptions().landscape', env.sandbox), true);
+  env.sandbox.applyPolicy({ type: 'gb', controls: { landscape: { available: false } } });
+  assert.equal(env.form.elements.landscape.value, '');
+  assert.equal(vm.runInContext('collectedOptions().landscape', env.sandbox), undefined);
 });
