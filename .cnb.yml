@@ -37,40 +37,20 @@
 
   tag_push:
     - name: 同步版本标签到 GitHub
-      docker:
-        image: node:22
-      imports:
-        - https://cnb.cool/jiyeqian/secrets/-/blob/main/github-md2pdf.yml
       stages:
         - name: 推送本次版本标签
-          script: |
-            set -eu
-            case "$CNB_BRANCH" in
-              v[0-9]*.[0-9]*.[0-9]*) ;;
-              *) echo "非版本标签，跳过同步"; exit 0 ;;
-            esac
-            node --input-type=module -e '
-              import { readFileSync } from "node:fs";
-              const { version } = JSON.parse(readFileSync("package.json", "utf8"));
-              if (process.env.CNB_BRANCH !== `v${version}`) {
-                console.error("标签必须与 package.json 版本一致");
-                process.exit(1);
-              }
-            '
-            # 凭据由 Git 按需读取，避免写入远端 URL 或输出到日志。
-            ASKPASS_FILE=$(mktemp)
-            trap 'rm -f "$ASKPASS_FILE"' EXIT
-            cat > "$ASKPASS_FILE" <<'EOF'
-            #!/bin/sh
-            case "$1" in
-              *Username*) printf '%s\n' "$GITHUB_SYNC_USERNAME" ;;
-              *) printf '%s\n' "$GITHUB_SYNC_TOKEN" ;;
-            esac
-            EOF
-            chmod 700 "$ASKPASS_FILE"
-            GIT_ASKPASS="$ASKPASS_FILE" GIT_TERMINAL_PROMPT=0 LC_ALL=C \
-              git -c credential.helper= push https://github.com/jiyeqian/md2pdf.git \
-              "refs/tags/$CNB_BRANCH:refs/tags/$CNB_BRANCH"
+          image: tencentcom/git-sync
+          imports:
+            - https://cnb.cool/jiyeqian/secrets/-/blob/main/github-md2pdf.yml
+          settings:
+            target_url: https://github.com/jiyeqian/md2pdf.git
+            auth_type: https
+            username: ${GITHUB_SYNC_USERNAME}
+            password: ${GITHUB_SYNC_TOKEN}
+            # 显式标签引用只推送本次标签，不批量推送历史标签。
+            branch: refs/tags/${CNB_BRANCH}
+            force: false
+            push_tags: false
     - name: 发布
       docker:
         image: node:22
