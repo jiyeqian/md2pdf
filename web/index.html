@@ -12,6 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="stylesheet" href="/app-shell.css">
   <script src="/app-shell.js" defer></script>
+  <script type="module" src="/version.mjs"></script>
   <title>make md2pdf great</title>
   <link rel="stylesheet" href="/app.css">
   <link rel="stylesheet" href="/editor-core.css">
@@ -85,7 +86,7 @@
         <div class="preview-footer"><span><math aria-label="持续改进预览与 PDF 一致性"><mrow><munder><mo>lim</mo><mrow><mtext>effort</mtext><mo lspace="0.08em" rspace="0.08em">→</mo><mo lspace="0" rspace="0">+</mo><mo lspace="0" rspace="0">∞</mo></mrow></munder><mtext>Preview</mtext><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><mtext>PDF</mtext><mo stretchy="false">(</mo><mi>t</mi><mo stretchy="false">)</mo></mrow></math></span><p id="status" role="status" aria-live="polite">正在加载示例…</p></div>
       </section>
     </div>
-    <p class="privacy">草稿保存在用户浏览器，服务器不保存，请及时<button id="privacy-save" type="button" aria-label="下载备份 Markdown">下载备份</button> Markdown。</p>
+    <div class="app-bottom"><p class="privacy">草稿保存在用户浏览器，服务器不保存，请及时<button id="privacy-save" type="button" aria-label="下载备份 Markdown">下载备份</button> Markdown。</p><button id="app-version" type="button" aria-label="查看版本信息" hidden></button></div>
   </main>
   </div>
   <div class="template-library-page" hidden>

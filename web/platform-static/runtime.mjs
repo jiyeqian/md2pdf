@@ -38,6 +38,7 @@ export async function renderDocument(body, preview = true) {
 export async function appFetch(input, init = {}) {
   const url = new URL(input, base);
   try {
+    if (url.pathname === '/api/version') return fetch(resource('version-data.json'));
     if (url.pathname === '/api/policy') return json(webPolicyDocument());
     if (url.pathname === '/api/frontmatter-values') return json(frontmatterValueCatalog());
     if (url.pathname === '/api/examples') return json({examples:catalog.examples});

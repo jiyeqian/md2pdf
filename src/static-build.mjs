@@ -3,7 +3,7 @@
 import { readFile, writeFile, mkdir, cp, readdir, rm, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execFileSync } from 'node:child_process';
+import { versionInfo } from './version.mjs';
 import { createHash } from 'node:crypto';
 import { exampleCatalog, findExample } from './web-examples.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -85,6 +85,8 @@ async function files(dir) {
   }
   return result.sort();
 }
+const product = versionInfo('static');
+await writeFile(path.join(out, 'version-data.json'), JSON.stringify(product));
 const entries = [];
 let bytes = 0;
 for (const file of await files(out)) {
@@ -94,10 +96,7 @@ for (const file of await files(out)) {
 const worker = await readFile(path.join(root, 'web/platform-static/cache.js'), 'utf8');
 const version = createHash('sha256').update(JSON.stringify(entries) + worker).digest('hex').slice(0,20);
 await writeFile(path.join(out, 'service-worker.js'), `const VERSION=${JSON.stringify(version)};\nconst FILES=${JSON.stringify(entries)};\n` + worker);
-const productVersion = JSON.parse(await readFile(path.join(root,'package.json'),'utf8')).version;
-let commit = '';
-try { commit = execFileSync('git',['rev-parse','--short','HEAD'],{cwd:root,stdio:['ignore','pipe','ignore']}).toString().trim(); } catch {}
-const info = { productVersion, commit, version, files:entries.length, bytes, pdf:'system-print', sharedRenderer:'src/render.mjs', builtAt:new Date().toISOString() };
+const info = { productVersion:product.version, commit:product.commit, version, files:entries.length, bytes, pdf:'system-print', sharedRenderer:'src/render.mjs', builtAt:new Date().toISOString() };
 await writeFile(path.join(out, 'build-info.json'), JSON.stringify(info, null, 2) + '\n');
 const backup = directory + '.previous';
 await rm(backup,{recursive:true,force:true});

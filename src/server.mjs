@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { versionInfo } from './version.mjs';
 import { appCacheScript } from './app-cache.mjs';
 import { isIP } from 'node:net';
 import path from 'node:path';
@@ -59,6 +60,7 @@ function validateLanHost(lanHost, publicHost) {
 
 export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '', lanHost = process.env.MD2PDF_LAN_HOST || '', doiResolver = createDoiResolver().resolve } = {}) {
   validateLanHost(lanHost, publicHost);
+  const productInfo = versionInfo('node');
   let browser, tmpRoot, closed = false, queued = 0, tail = Promise.resolve();
   let doiRequests = 0;
   // 公网部署时由反向代理转发，Host 为沙箱内部域名；本地开发保持仅本机可访问。
@@ -104,6 +106,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   for (const size of [180, 192, 512]) staticRoutes.set('/icons/app-' + size + '.png', ['web/icons/app-' + size + '.png', 'image/png']);
   for (const id of ['general', 'paper', 'gb', 'skill']) staticRoutes.set('/template-previews/' + id + '.png', ['web/template-previews/' + id + '.png', 'image/png']);
   staticRoutes.set('/src/frontmatter-fields.mjs', ['src/frontmatter-fields.mjs', 'text/javascript']);
+  staticRoutes.set('/version.mjs', ['web/version.mjs', 'text/javascript']);
   staticRoutes.set('/runtime-request.mjs', ['web/runtime-request.mjs', 'text/javascript']);
   for (const name of ['doi', 'bibtex']) staticRoutes.set('/icons/' + name + '.svg', ['web/icons/' + name + '.svg', 'image/svg+xml']);
   const server = http.createServer(async (req, res) => {
@@ -133,6 +136,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       if (req.method === 'GET' && req.url === '/service-worker.js') {
         const catalog = await exampleCatalog();
         const bootstrap = [
+          ['/api/version', productInfo],
           ['/api/policy', webPolicyDocument()],
           ['/api/frontmatter-values', frontmatterValueCatalog()],
           ['/api/examples', { examples: catalog.map(({ id, type, title, summary }) => ({ id, type, title, description: summary })) }],
@@ -162,6 +166,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         if (!example) { json(404, { error: '示例不存在' }); return; }
         res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' }); res.end(example.md); return;
       }
+      if (req.method === 'GET' && req.url === '/api/version') { json(200, productInfo); return; }
       if (req.method === 'GET' && req.url === '/api/frontmatter-values') { json(200, frontmatterValueCatalog()); return; }
       if (req.method === 'GET' && req.url === '/api/policy') { json(200, webPolicyDocument()); return; }
       if (req.method === 'GET' && req.url === '/api/examples') {
@@ -233,6 +238,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
 export function startServer({ port = Number(process.env.PORT || 3000), publicHost = process.env.MD2PDF_PUBLIC_HOST || '', lanHost = process.env.MD2PDF_LAN_HOST || '' } = {}) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT 必须在 1–65535 之间');
   validateLanHost(lanHost, publicHost);
+  const productInfo = versionInfo('node');
   const host = publicHost || lanHost ? '0.0.0.0' : '127.0.0.1';
   const app = createApp({ publicHost, lanHost });
   app.server.on('error', e => { console.error('md2pdf 服务启动失败：', e.message); process.exitCode = 1; });
