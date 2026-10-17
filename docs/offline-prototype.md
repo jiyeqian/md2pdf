@@ -1,4 +1,6 @@
-# 完整离线版验证原型
+# 离线排版原型记录与 PDF 大纲说明
+
+正式界面已整合为 [静态离线 Web](offline-web.md)。以下保留技术验证记录和 PDF 大纲规则；原型地址不再作为正式版本验收入口。
 
 ## 当前定位
 
@@ -16,13 +18,13 @@
 
 ```bash
 cd /Users/jiyeqian/.codex/worktrees/6654/md2pdf
-node scripts/build-offline-prototype.mjs
+node scripts/build-offline.mjs
 python3 -m http.server 8770 --bind 127.0.0.1 --directory dist
 ```
 
-电脑打开 <http://127.0.0.1:8770/offline-prototype/>。首次需要静态服务提供资源；等待“完整离线资源已就绪”后，可以停止静态服务，再刷新并更新预览。
+电脑打开 <http://127.0.0.1:8770/offline/>。首次需要静态服务提供资源；等待“完整离线资源已就绪”后，可以停止静态服务，再刷新并更新预览。
 
-构建输出位于 `dist/offline-prototype/`，已被 Git 忽略；重建会更新生成文件。输出中的 `build-info.json` 记录资源大小与版本，当前约 6.3 MB（未压缩，含 PDF 大纲处理库），不包含跨平台中文字体包。不要把输出目录当作源文件修改。
+构建输出位于 `dist/offline/`，已被 Git 忽略；重建会更新生成文件。输出中的 `build-info.json` 记录资源大小与版本，当前约 6.3 MB（未压缩，含 PDF 大纲处理库），不包含跨平台中文字体包。不要把输出目录当作源文件修改。
 
 127.0.0.1 入口仅供当前电脑使用。手机离线启动需要将该静态目录映射到可信 HTTPS 地址，或部署到 GitHub Pages；现有 `/app/` 仍是之前的离线编辑入口，未切换成此原型。
 
@@ -59,7 +61,7 @@ python3 -m http.server 8770 --bind 127.0.0.1 --directory dist
 
 GitHub Pages 只需托管生成的 HTML、CSS、JavaScript 和资源，见 [官方静态托管说明](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)。
 
-- 本地构建后，将 `dist/offline-prototype/` 目录的**内容**作为 Pages 发布产物，包含 `.nojekyll`，入口为 `index.html`。
+- 本地构建后，将 `dist/offline/` 目录的**内容**作为 Pages 发布产物，包含 `.nojekyll`，入口为 `index.html`。
 - 可通过项目现有 Pages 发布流程上传该目录；本次未配置自动发布、未推送或发布任何站点。
 - 发布为项目站点时，入口为 `https://<用户名>.github.io/<仓库名>/`；如发布到子目录，使用该子目录的完整末尾 `/` 地址。
 - 所有资源相对当前目录解析，无须把路径写死为 `/` 或 `/md2pdf/`。这里的 `/md2pdf/` 仅是构建适配器内部的虚拟路径，不是部署路径。

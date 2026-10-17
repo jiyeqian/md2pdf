@@ -1,3 +1,4 @@
+import { appFetch } from './runtime-request.mjs';
 // md2pdf web editor — 专业助手（ES module）
 //
 // 归属：本模块只提供「专业写作辅助」：编辑面板右侧的悬浮侧栏（大纲 / 引用与
@@ -482,7 +483,7 @@ function init() {
   currentType = inferType(value, formTypeValue());
 
   let frontmatterValues = {};
-  fetch('/api/frontmatter-values').then(response => response.ok ? response.json() : {}).then(values => { frontmatterValues = values; }).catch(() => {});
+  appFetch('/api/frontmatter-values').then(response => response.ok ? response.json() : {}).then(values => { frontmatterValues = values; }).catch(() => {});
 
   // 补全使用「当前文本」实时分析，避免节流导致候选过期。
   if (typeof editor.setCompletions === 'function') {

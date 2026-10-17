@@ -19,7 +19,7 @@
       notice = document.createElement('div');
       notice.id = 'app-network-status';
       notice.setAttribute('role', 'status');
-      notice.textContent = '网络已断开，可继续编辑和保存草稿；预览与 PDF 导出需要联网。';
+      notice.textContent = window.__MD2PDF_STATIC_BASE__ ? '网络已断开，可继续本地编辑、排版和导出；DOI 查询需要联网。' : '网络已断开，可继续编辑和保存草稿；预览与 PDF 导出需要联网。';
       document.body.append(notice);
     }
     notice.hidden = navigator.onLine;
@@ -138,7 +138,7 @@
     finally { checking = false; }
   }
   async function prepareApp() {
-    if (!appEntry()) return;
+    if (window.__MD2PDF_STATIC_BASE__ || !appEntry()) return;
     if (!window.isSecureContext || !('serviceWorker' in navigator)) {
       cacheNotice('离线启动需要受信任的 HTTPS 地址。'); return;
     }
@@ -182,7 +182,7 @@
   }
   // 兼容之前从首页添加的主屏图标，等草稿恢复并写入后才迁移入口。
   window.addEventListener('md-app-ready', async () => {
-    if (standalone() && location.pathname === '/' && window.isSecureContext && window.mdDrafts) {
+    if (!window.__MD2PDF_STATIC_BASE__ && standalone() && location.pathname === '/' && window.isSecureContext && window.mdDrafts) {
       try { await window.mdDrafts.flush(); location.replace('/app/'); }
       catch { cacheNotice('草稿尚未保存，请稍后重新打开主屏 App。'); }
     }

@@ -1,3 +1,4 @@
+import { appFetch } from './runtime-request.mjs';
 let menu, trigger, catalogPromise;
 const names = { general: '通用文档', paper: '学术论文', gb: '国家标准', skill: '技能文档' };
 function close(focus = false) {
@@ -29,7 +30,7 @@ export async function openCreateMenu(anchor) {
     menu.setAttribute('aria-label', '从模板创建 Markdown');
     const template = document.createElement('a');
     template.id = 'browse-examples';
-    template.href = '/';
+    template.href = window.__MD2PDF_STATIC_BASE__ || '/';
     template.dataset.viewLink = 'templates';
     template.className = 'md-drafts-browse';
     template.textContent = '从模板库选择…';
@@ -64,7 +65,7 @@ export async function openCreateMenu(anchor) {
   if (!menu.querySelector('[data-template-id]')) {
     browse.textContent = '正在加载模板…';
     try {
-      catalogPromise ||= fetch('/api/examples').then(async response => {
+      catalogPromise ||= appFetch('/api/examples').then(async response => {
         if (!response.ok) throw new Error('模板加载失败，请重试。');
         return (await response.json()).examples;
       }).catch(error => { catalogPromise = null; throw error; });

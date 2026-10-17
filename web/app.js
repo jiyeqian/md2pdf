@@ -1,5 +1,7 @@
 'use strict';
 
+const appFetch = (...args) => window.__MD2PDF_STATIC_BASE__ ? import('./runtime-request.mjs').then(runtime => runtime.appFetch(...args)) : fetch(...args);
+
 // md2pdf 在线工作台前端。
 // 选项策略来自 GET /api/policy（src/web-options.mjs 的 webPolicyDocument），
 // 自动识别走 POST /api/resolve，渲染走 POST /api/render（返回 {html,type,policy}）。
@@ -547,7 +549,7 @@ function collectedOptions() {
 
 // ---------- 网络 ----------
 async function request(url, body, signal) {
-  const response = await fetch(url, {
+  const response = await appFetch(url, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body), signal,
   });
@@ -594,7 +596,7 @@ function schedulePreview() {
 }
 
 async function renderPreview() {
-  if (location.pathname === '/app/' && !navigator.onLine) {
+  if (!window.__MD2PDF_STATIC_BASE__ && location.pathname === '/app/' && !navigator.onLine) {
     setStatus('当前离线，预览与 PDF 导出需要联网。');
     return;
   }
@@ -700,7 +702,7 @@ window.addEventListener('message', event => {
 
 // ---------- 启动 ----------
 async function loadPolicy() {
-  const response = await fetch('/api/policy');
+  const response = await appFetch('/api/policy');
   if (!response.ok) throw new Error(`选项策略加载失败（${response.status}）`);
   policyDoc = await response.json();
 }
@@ -708,7 +710,7 @@ async function loadPolicy() {
 async function loadDefaultExample() {
   const startedAt = revision;
   try {
-    const response = await fetch('/api/example');
+    const response = await appFetch('/api/example');
     if (!response.ok) throw new Error();
     const result = await response.json();
     if (startedAt !== revision) return;
@@ -908,7 +910,7 @@ async function downloadNameFor(md, ext) {
 }
 
 download.addEventListener('click', async () => {
-  if (location.pathname === '/app/' && !navigator.onLine) {
+  if (!window.__MD2PDF_STATIC_BASE__ && location.pathname === '/app/' && !navigator.onLine) {
     setStatus('PDF 导出需要联网。'); return;
   }
   // 双重检查：按钮在配置无效时已被禁用，这里再挡一次，避免旧事件/程序化触发绕过。
@@ -938,6 +940,12 @@ download.addEventListener('click', async () => {
     exportName = await downloadNameFor(exportMd, 'pdf');
     const pdfBody = { md: exportMd, opts: exportOptions };
     if (exportName) pdfBody.filename = exportName;
+    if (window.__MD2PDF_STATIC_BASE__) {
+      const runtime = await import('./runtime-request.mjs');
+      await runtime.exportPdf({ md:exportMd, opts:exportOptions, filename:exportName });
+      setStatus('本地 PDF 导出窗口已打开。');
+      return;
+    }
     const response = await request('/api/pdf', pdfBody);
     const blob = await response.blob();
     const anchor = document.createElement('a');

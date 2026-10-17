@@ -1,3 +1,4 @@
+import { appFetch } from './runtime-request.mjs';
 // md2pdf 编辑器 —— DOI 引用插入对话框
 //
 // 归属：工具条「DOI 引用」按钮的界面层。纯逻辑（规范化 / 扫描 / 插入计划 / 快照
@@ -321,7 +322,7 @@ function submitResolve() {
   setBusy(true);
   setMessage('busy', '');
 
-  fetch(API_URL, {
+  appFetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ doi: doi }),

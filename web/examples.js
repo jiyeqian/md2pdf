@@ -2,6 +2,8 @@
 
 // 模板库与编辑器共用 / 页面，模板视图通过 history.state 导航。
 (() => {
+  const appFetch = (...args) => window.__MD2PDF_STATIC_BASE__ ? import('./runtime-request.mjs').then(runtime => runtime.appFetch(...args)) : fetch(...args);
+  const workspacePath = () => window.__MD2PDF_STATIC_BASE__ ? new URL(window.__MD2PDF_STATIC_BASE__).pathname : location.pathname === '/app/' ? '/app/' : '/';
   const HANDOFF_KEY = 'md2pdf:handoff';
   const DRAFT_KEY = 'md2pdf:draft';
   const root = document.querySelector('.template-library-page');
@@ -38,7 +40,7 @@
     let type = draft?.previewType || '';
     if (!type && draft?.md) {
       try {
-        const response = await fetch('/api/resolve', {
+        const response = await appFetch('/api/resolve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ md: draft.md, opts: draft.opts?.type ? { type: draft.opts.type } : {} }),
@@ -74,7 +76,7 @@
   function navigate(view, push = true) {
     const editorView = document.querySelector('[data-view="editor"]');
     if (view === 'editor' && !editorView) { location.assign('/'); return; }
-    if (push) history.pushState({ ...(history.state || {}), md2pdfView: view }, '', location.pathname === '/app/' ? '/app/' : '/');
+    if (push) history.pushState({ ...(history.state || {}), md2pdfView: view }, '', workspacePath());
     const libraryView = root.querySelector('.template-library-view');
     if (editorView) editorView.hidden = view === 'templates';
     root.hidden = view !== 'templates';
@@ -142,7 +144,7 @@
       state.status.textContent = event.data.error || '预览排版失败';
     }
   });
-  if (location.pathname !== '/' && location.pathname !== '/app/') history.replaceState({ ...(history.state || {}), md2pdfView: 'templates' }, '', '/');
+  if (!window.__MD2PDF_STATIC_BASE__ && location.pathname !== '/' && location.pathname !== '/app/') history.replaceState({ ...(history.state || {}), md2pdfView: 'templates' }, '', '/');
 
   function createCard(example) {
     const item = document.createElement('li');
@@ -252,13 +254,13 @@
   async function loadExample(example, live = true) {
     let data = rendered.get(example.id);
     if (!data) {
-      const response = await fetch('/api/example?id=' + encodeURIComponent(example.id));
+      const response = await appFetch('/api/example?id=' + encodeURIComponent(example.id));
       if (!response.ok) throw new Error(`模板加载失败（${response.status}）`);
       data = await response.json();
       rendered.set(example.id, data);
     }
     if (!live || data.rendered) return data;
-    const renderResponse = await fetch('/api/render', {
+    const renderResponse = await appFetch('/api/render', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ md: data.md, opts: data.type ? { type: data.type } : {} }),
@@ -307,7 +309,7 @@
 
   async function loadCatalog() {
     try {
-    const response = await fetch('/api/examples');
+    const response = await appFetch('/api/examples');
       if (!response.ok) throw new Error(`模板目录加载失败（${response.status}）`);
       const data = await response.json();
       catalog = Array.isArray(data) ? data : data.examples || [];
@@ -330,7 +332,7 @@
     const requestedTemplateView = window.__MD2PDF_INITIAL_VIEW__ === 'templates'
       || new URLSearchParams(location.search).get('view') === 'templates';
     const initial = requestedTemplateView || history.state?.md2pdfView === 'templates' ? 'templates' : 'editor';
-    history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', location.pathname === '/app/' ? '/app/' : '/');
+    history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', workspacePath());
     navigate(initial, false);
   });
 })();

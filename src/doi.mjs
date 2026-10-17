@@ -96,10 +96,13 @@ async function readCapped(res, ctx) {
       }
       chunks.push(value);
     }
-    return Buffer.concat(chunks.map(c => Buffer.from(c))).toString('utf8');
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+    return new TextDecoder().decode(bytes);
   }
   const text = typeof res.text === 'function' ? await res.text() : '';
-  if (Buffer.byteLength(text) > MAX_BODY) {
+  if (new TextEncoder().encode(text).length > MAX_BODY) {
     try { ctx.controller.abort(); } catch { /* ignore */ }
     throw fail(502, '上游返回的响应体过大');
   }
