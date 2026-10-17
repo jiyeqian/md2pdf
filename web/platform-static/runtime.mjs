@@ -5,7 +5,7 @@ import { webPolicyDocument } from './src/web-options.mjs';
 import { prepareWebDocument } from './src/web-document.mjs';
 import { attachSourcePositions } from './src/editor-position.mjs';
 import { createDoiResolver } from './src/doi.mjs';
-import catalog from './offline-catalog.mjs';
+import catalog from './catalog.mjs';
 const base = new URL('./', import.meta.url);
 const doi = createDoiResolver();
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers:{'Content-Type':'application/json'} });

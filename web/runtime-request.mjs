@@ -2,7 +2,7 @@
 export async function appFetch(input, init) {
   if (!window.__MD2PDF_STATIC_BASE__) return fetch(input, init);
   init?.signal?.throwIfAborted();
-  const runtime = await import(new URL('offline-runtime.mjs', window.__MD2PDF_STATIC_BASE__).href);
+  const runtime = await import(new URL('runtime.mjs', window.__MD2PDF_STATIC_BASE__).href);
   const work = runtime.appFetch(input, init);
   if (!init?.signal) return work;
   let abort;
@@ -15,6 +15,6 @@ export async function appFetch(input, init) {
   } finally { if (abort) init.signal.removeEventListener('abort', abort); }
 }
 export async function exportPdf(document) {
-  const runtime = await import(new URL('offline-pdf.mjs', window.__MD2PDF_STATIC_BASE__).href);
+  const runtime = await import(new URL('pdf.mjs', window.__MD2PDF_STATIC_BASE__).href);
   return runtime.exportPdf(document);
 }

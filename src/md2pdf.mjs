@@ -49,7 +49,7 @@ md2pdf ${VERSION} — Markdown 转 PDF
 
 用法
   md2pdf <文件...> [选项]
-  md2pdf webapp [--port <端口>]  默认 3000，仅本机访问
+  md2pdf webapp [--static] [--port <端口>]  默认 3000，仅本机访问
   md2pdf skill install --help   查看具体用法
 
 选项

@@ -1,4 +1,4 @@
-import { renderDocument } from './offline-runtime.mjs';
+import { renderDocument } from './runtime.mjs';
 import { captureOutline, addPdfOutline } from './pdf-outline.mjs';
 export async function exportPdf(body) {
   const dialog = document.createElement('dialog');
