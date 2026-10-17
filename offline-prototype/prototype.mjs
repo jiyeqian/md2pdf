@@ -30,10 +30,10 @@ function store(mode, value) {
   });
 }
 async function save() {
-  if (!db) { saved.textContent = '草稿保存不可用，请下载 Markdown 备份。'; return; }
+  if (!db) { saved.textContent = '草稿保存不可用，请下载 Markdown 备份。'; return false; }
   const current = revision;
-  try { await store('readwrite', source.value); if (current === revision) saved.textContent = '草稿已保存到此原型的浏览器存储。'; }
-  catch { saved.textContent = '草稿保存失败，请下载 Markdown 备份。'; }
+  try { await store('readwrite', source.value); if (current === revision) saved.textContent = '草稿已保存到此原型的浏览器存储。'; return current === revision; }
+  catch { saved.textContent = '草稿保存失败，请下载 Markdown 备份。'; return false; }
 }
 source.addEventListener('input', () => {
   revision++; print.disabled = true; invalidatePrint();
@@ -146,18 +146,44 @@ document.querySelector('#file').addEventListener('change', async event => {
 async function prepareCache() {
   const cacheStatus = document.querySelector('#cache');
   if (!isSecureContext || !('serviceWorker' in navigator)) { cacheStatus.textContent = '离线启动需要可信 HTTPS 或 localhost。当前仍可本地排版。'; return; }
+  let registration;
+  function report(data) {
+    cacheStatus.replaceChildren();
+    if (data.current !== data.pinned) {
+      cacheStatus.append('新版已就绪。');
+      const update = document.createElement('button');
+      update.type = 'button'; update.textContent = '保存草稿并更新';
+      update.addEventListener('click', async () => {
+        if (renderBusy || outlineBusy) { say('请等待当前操作完成后再更新。'); return; }
+        update.disabled = true;
+        clearTimeout(saveTimer);
+        if (await save()) location.reload();
+        else { update.disabled = false; say('草稿尚未保存，已保留当前页面。请下载备份或稍后重试。', true); }
+      });
+      cacheStatus.append(update);
+    } else cacheStatus.textContent = data.ready ? '完整离线资源已就绪。' : '离线资源不完整，请联网重新准备。';
+  }
+  const requestStatus = () => navigator.serviceWorker.controller?.postMessage({ type:'APP_CACHE_STATUS' });
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type === 'APP_CACHE_STATUS') report(event.data);
+  });
+  navigator.serviceWorker.addEventListener('controllerchange', requestStatus);
+  async function checkUpdate() {
+    if (!navigator.onLine || !registration) return;
+    try { await registration.update(); requestStatus(); } catch { /* 保留可用的离线版本。 */ }
+  }
+  window.addEventListener('online', checkUpdate);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
   try {
-    const registration = await navigator.serviceWorker.register('./service-worker.js', { updateViaCache:'none' });
-    const report = () => { cacheStatus.textContent = registration.waiting ? '新版已下载，关闭全部原型窗口后重新打开即可更新。' : '完整离线资源已就绪。'; };
-    navigator.serviceWorker.addEventListener('controllerchange', report);
+    registration = await navigator.serviceWorker.register('./service-worker.js', { updateViaCache:'none' });
     registration.addEventListener('updatefound', () => {
       const worker = registration.installing;
       worker?.addEventListener('statechange', () => {
-        if (worker.state === 'installed') report();
+        if (worker.state === 'activated') requestStatus();
         if (worker.state === 'redundant') cacheStatus.textContent = '离线资源准备失败，请联网后重新打开。';
       });
     });
-    if (registration.active) report();
+    requestStatus();
   } catch { cacheStatus.textContent = '离线资源准备失败，请联网后重新打开。'; }
 }
 prepareCache();
