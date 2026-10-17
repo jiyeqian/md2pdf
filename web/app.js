@@ -22,7 +22,7 @@ const DRAFT_KEY = 'md2pdf:draft';
 const HANDOFF_KEY = 'md2pdf:handoff';
 let localDrafts = null;
 let applyingDraft = false;
-const CONTROL_ORDER = ['type', 'theme', 'toc', 'numbering', 'fontSize', 'margin', 'lineHeight'];
+const CONTROL_ORDER = ['type', 'theme', 'landscape', 'toc', 'numbering', 'fontSize', 'margin', 'lineHeight'];
 
 // ---------- 选项模型：范围滑块 + 「标题编号」合并菜单 ----------
 // 范围控件（字号 / 边距 / 行距）：number 输入是唯一取值来源，range 仅是同一取值的快捷输入。
@@ -388,7 +388,21 @@ function updateRangeScale(name, range) {
   if (max) max.textContent = String(range.max);
 }
 function rangeSummary(name) { const group = controlWrap(name); return group ? group.querySelector('summary.range-trigger') : null; }
+function updateOrientationTrigger() {
+  const field = form.elements.landscape;
+  const trigger = form.querySelector('[data-orientation-toggle]');
+  if (!field || !trigger) return;
+  const landscape = field.value === '' ? Boolean(renderedEffective.landscape) : field.value === 'true';
+  trigger.setAttribute('aria-pressed', String(landscape));
+  trigger.title = landscape ? '切换为纵向排版' : '切换为横向排版';
+  trigger.setAttribute('aria-label', trigger.title);
+  trigger.classList.toggle('is-explicit', field.value !== '');
+  trigger.disabled = currentPolicy?.controls.landscape?.available === false;
+  const page = trigger.querySelector('[data-orientation-page]');
+  if (page) for (const [key, value] of Object.entries(landscape ? { x: 3, y: 6, width: 18, height: 12 } : { x: 6, y: 3, width: 12, height: 18 })) page.setAttribute(key, value);
+}
 function updateOptionTriggers() {
+  updateOrientationTrigger();
   for (const name of ['type', 'theme', 'toc', 'numbering']) {
     const wrap = controlWrap(name);
     const trigger = wrap && wrap.querySelector('[data-option-trigger]');
@@ -538,6 +552,7 @@ function collectedOptions() {
     if (value === '') continue;
     if (name === 'margin') { const n = rangeOptionValue(name, value); if (n !== undefined) { options.marginTop = options.marginBottom = options.marginLeft = options.marginRight = n; } }
     else if (name === 'fontSize' || name === 'lineHeight') { const n = rangeOptionValue(name, value); if (n !== undefined) options[name] = n; }
+    else if (name === 'landscape') options.landscape = value === 'true';
     else if (name === 'toc') { options.toc = value !== 'false'; if (options.toc) options.tocDepth = value === '2' ? 2 : 1; }
     else if (name === 'numbering') Object.assign(options, headingOptionsFromToken(value, controls));
     else options[name] = value;
@@ -791,6 +806,13 @@ function syncRangeFromEvent(target) {
   const numberName = target.getAttribute('data-range-number');
   if (numberName) { if (target.value === '') showRangeDefault(numberName, currentRange(numberName)); else reflectRangeValue(numberName, target.value); }
 }
+form.querySelector('[data-orientation-toggle]')?.addEventListener('click', () => {
+  if (currentPolicy?.controls.landscape?.available === false) return;
+  const field = form.elements.landscape;
+  const landscape = field.value === '' ? Boolean(renderedEffective.landscape) : field.value === 'true';
+  field.value = String(!landscape);
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+});
 form.addEventListener('input', event => { syncRangeFromEvent(event.target); updateOptionTriggers(); saveDraft(); schedulePreview(); });
 // 「恢复默认」：清空取值 = 省略覆盖，交给模板默认（含不对称的默认页边距）。
 form.addEventListener('click', event => {

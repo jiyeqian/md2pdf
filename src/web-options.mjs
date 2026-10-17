@@ -51,11 +51,11 @@ export const WEB_OPTION_SPEC = {
  * - 未列出键 = 锁定：前端隐藏并说明，后端拒绝覆盖。
  * - 空类型 '' 表示「自动识别」阶段（尚未拿到服务端判定的类型），按最保守的非 GB 能力集渲染。
  */
-const GENERAL_CAPS = { theme: ['elegant', 'minimal'], numberScheme: ['arabic', 'cjk', 'chapter'], numbering: ['auto', 'force', 'none'], toc: true, margin: true, fontSize: true, lineHeight: true };
+const GENERAL_CAPS = { theme: ['elegant', 'minimal'], numberScheme: ['arabic', 'cjk', 'chapter'], numbering: ['auto', 'force', 'none'], toc: true, landscape: true, margin: true, fontSize: true, lineHeight: true };
 const TYPE_CAPABILITIES = {
   general: GENERAL_CAPS,
   skill: GENERAL_CAPS,
-  paper: { theme: ['elegant', 'minimal'], numberScheme: ['arabic', 'chapter'], numbering: ['auto', 'force', 'none'], toc: true, margin: true, fontSize: true, lineHeight: true },
+  paper: { theme: ['elegant', 'minimal'], numberScheme: ['arabic', 'chapter'], numbering: ['auto', 'force', 'none'], toc: true, landscape: true, margin: true, fontSize: true, lineHeight: true },
   // GB：仅目录可调；主题 / 编号方案 / 编号行为 / 字号 / 版式全部锁定（应用内置国家标准模板）
   gb: { toc: true },
 };
@@ -113,6 +113,7 @@ export function policyForType(type = '', effective = null) {
     // 类型选择本身始终可调：它是决定其余控件是否可用的开关。
     type: { name: 'type', label: '文档类型', available: true, values: PROFILE_NAMES.slice(), allowEmpty: true, emptyValue: '', emptyLabel: '自动识别' },
     theme: control('theme', caps.theme, { kind: 'enum', fixedValue: fixed.theme, fixedLabel: THEME_LABELS[fixed.theme] || fixed.theme }),
+    landscape: control('landscape', caps.landscape, { kind: 'boolean', allowEmpty: true, fixedValue: Boolean(pick('landscape', false)) }),
     toc: control('toc', caps.toc, { kind: 'tri', allowEmpty: true, fixedValue: type ? Boolean(pick('toc', WEB_BASELINE.toc)) : false, triValues: ['false', '1', '2'] }),
     fontSize: control('fontSize', caps.fontSize, { kind: 'number', allowEmpty: true, unsettable: true, min: FONT_SIZE_RANGE.min, max: FONT_SIZE_RANGE.max, step: FONT_SIZE_RANGE.step, defaultValue: WEB_BASELINE.fontSize, fixedValue: pick('fontSize', WEB_BASELINE.fontSize) }),
     lineHeight: control('lineHeight', caps.lineHeight, { kind: 'number', allowEmpty: true, unsettable: true, min: LINE_HEIGHT_RANGE.min, max: LINE_HEIGHT_RANGE.max, step: LINE_HEIGHT_RANGE.step, defaultValue: WEB_BASELINE.lineHeight, fixedValue: type === 'gb' ? GB_LINE_HEIGHT : pick('lineHeight', WEB_BASELINE.lineHeight) }),
