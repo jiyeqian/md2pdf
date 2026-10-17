@@ -55,7 +55,6 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .range-trigger::-webkit-details-marker{display:none}
 .range-trigger::after{content:"▾";color:#8290a2;font-size:11px;line-height:1}
 .range-trigger:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
-.range-pop[open] .range-trigger{border-color:#6f93bc;box-shadow:0 0 0 1px #6f93bc}
 .range-popover{position:absolute;z-index:30;top:calc(100% + 6px);left:0;width:max(260px,100%);max-width:calc(100vw - 24px);box-sizing:border-box;display:flex;flex-direction:column;gap:10px;padding:12px;background:#fff;border:1px solid #d9e0e9;border-radius:10px;box-shadow:0 10px 30px rgba(36,51,72,.16)}
 /* 直尺滑块（.ruler-control / .ruler-slider / .ruler-scale 为共享类，可供面板缩放等复用）：
  * 圆角灰轨道，保留 min/max 文字；thumb 中性灰且不填充进度。 */
@@ -127,8 +126,7 @@ a.text-button:focus-visible{outline:2px solid #6f93bc;outline-offset:2px}
 .preview-toolbar .range-pop{width:auto}
 .preview-toolbar .range-trigger{display:flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #dbe2ec;border-radius:6px;background:#fff;color:#33465e}
 .preview-toolbar .range-trigger::after{display:none}
-.preview-toolbar .range-trigger:hover{border-color:#b7c6da;background:#f2f6fb}
-.preview-toolbar .range-trigger.is-explicit{background:#e9f0f8;border-color:#c9d8e9;color:#315a86}
+.preview-toolbar .range-trigger:hover:not(:disabled),.preview-toolbar .range-trigger:active:not(:disabled){border-color:#b7c6da;background:#f2f6fb}
 .preview-option-icon{width:16px;height:16px;display:block}
 .preview-toolbar .range-popover{left:0;right:auto;width:260px;gap:10px;padding:15px 12px 12px}
 .preview-toolbar .option-label{display:flex;flex-direction:column;gap:8px;min-width:0;color:#677389;font-size:12px}
