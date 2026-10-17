@@ -47,7 +47,11 @@ cd /Users/jiyeqian/.codex/worktrees/6654/md2pdf
 - `https://jiyeqian.github.io/md2pdf/`
 - 绑定域名后的 `https://md2pdf.qianjiye.de/`
 
-构建自动处理资源路径与 Manifest，页面导航和缓存范围以当前部署目录为准；两种地址使用同一份构建产物。这里没有添加自动发布或改变 DNS/CNAME，实际发布仍需单独执行。
+构建自动处理资源路径与 Manifest，页面导航和缓存范围以当前部署目录为准；两种地址使用同一份构建产物。
+
+`.github/workflows/pages.yml` 仅在 GitHub 收到 `v版本号` 标签时构建并发布，普通分支 push 不触发。标签必须匹配 `package.json`；工作流运行一致性检查（同时生成 `dist/static/`），再发布该产物。失败后在 GitHub Actions 重跑原任务，无需新建标签。CNB 的独立标签同步任务只转发本次版本标签，不批量补推历史标签。
+
+仓库 Pages 使用 GitHub Actions 发布源，Custom domain 设置为 `md2pdf.qianjiye.de`；DNS 添加 `md2pdf` 的 CNAME，指向 `jiyeqian.github.io`，证书就绪后启用 Enforce HTTPS。绑定后默认 GitHub Pages 网址可能跳转到自定义域名。不同域名的草稿与缓存互不迁移，切换前下载 Markdown 备份。
 
 ## 验收清单
 
