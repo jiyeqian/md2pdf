@@ -1,6 +1,2 @@
-.offline-state { margin: 4px 32px; font: 12px/1.6 system-ui,sans-serif; color: #53667b; }
-.offline-state button { margin-left: 8px; padding: 3px 8px; color: #233e60; background: #edf2f8; border: 1px solid #cdd7e5; border-radius: 6px; font: inherit; cursor: pointer; }
-.offline-pdf-dialog { width: min(940px, calc(100vw - 32px)); max-width: none; }
-.offline-pdf-dialog iframe { width: 100%; height: min(58vh,600px); border: 1px solid #d7dfeb; }
-.offline-pdf-dialog .template-confirm-actions { flex-wrap: wrap; }
-@media(max-width:700px) { .offline-state { margin: 4px 14px; } }
+/* 留在可见视口中以免分页的 animationFrame 被浏览器节流；透明且不接收操作。 */
+.static-print-frame{position:fixed;left:0;top:0;width:900px;height:600px;border:0;opacity:0;z-index:-1;pointer-events:none}

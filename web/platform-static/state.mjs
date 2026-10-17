@@ -1,27 +1,41 @@
-const node = document.querySelector('#offline-cache');
+const footer = window.mdFooterStatus;
 const base = window.__MD2PDF_STATIC_BASE__;
-let registration;
+let registration, checking = false;
+const applyUpdate = () => footer.saveAndUpdate(async()=>location.reload());
 function report(data) {
-  node.replaceChildren();
-  if (data.current !== data.pinned) {
-    node.append('新版已就绪。');
-    const button=document.createElement('button');button.textContent='保存草稿并更新';button.type='button';
-    button.addEventListener('click',async()=>{
-      button.disabled=true;
-      try { if(!window.mdDrafts)throw new Error();await window.mdDrafts.flush();location.reload(); }
-      catch {node.firstChild.textContent='草稿尚未保存，请下载备份后重试。';button.disabled=false;}
-    });node.append(button);
-  } else node.textContent=data.ready?'完整离线资源已就绪。':'离线资源不完整，请联网重新准备。';
+  if (data.current !== data.pinned) footer.set('update','update',applyUpdate);
+  else footer.clear('update');
+  if(data.ready)footer.clear('cache');
+  else footer.set('cache','retry',prepare);
 }
-const status=()=>navigator.serviceWorker.controller?.postMessage({type:'APP_CACHE_STATUS'});
-if(isSecureContext&&'serviceWorker'in navigator){
+const status = () => navigator.serviceWorker.controller?.postMessage({type:'APP_CACHE_STATUS'});
+async function prepare() {
+  if (!isSecureContext || !('serviceWorker' in navigator)) {footer.set('cache','unsupported');return;}
+  footer.set('cache','preparing');
+  try {
+    registration = await navigator.serviceWorker.register(new URL('service-worker.js',base),{scope:base,updateViaCache:'none'});
+    registration.addEventListener('updatefound',()=>{
+      const worker=registration.installing;
+      worker?.addEventListener('statechange',()=>{
+        if(worker.state==='activated')status();
+        if(worker.state==='redundant')footer.set('cache','retry',prepare);
+      });
+    });
+    await registration.update();
+    status();
+  } catch {footer.set('cache','retry',prepare);}
+}
+if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('message',event=>{if(event.data?.type==='APP_CACHE_STATUS')report(event.data);});
   navigator.serviceWorker.addEventListener('controllerchange',status);
-  try{
-    registration=await navigator.serviceWorker.register(new URL('service-worker.js',base),{scope:base,updateViaCache:'none'});
-    registration.addEventListener('updatefound',()=>{const worker=registration.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='activated')status();if(worker.state==='redundant')node.textContent='离线资源准备失败，请联网重试。';});});status();
-  }catch{node.textContent='离线资源准备失败，请联网重试。';}
-}else node.textContent='离线启动需要可信 HTTPS 或 localhost。';
-async function check(){if(navigator.onLine&&registration){try{await registration.update();status();}catch{}}}
+}
+async function check() {
+  if(!navigator.onLine || !registration || checking)return;
+  checking=true;
+  try {await registration.update();footer.clear('check');status();}
+  catch {footer.set('check','checkError',check);}
+  finally {checking=false;}
+}
 window.addEventListener('online',check);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check();});
+await prepare();

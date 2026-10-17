@@ -943,7 +943,7 @@ download.addEventListener('click', async () => {
     if (window.__MD2PDF_STATIC_BASE__) {
       const runtime = await import('./runtime-request.mjs');
       await runtime.exportPdf({ md:exportMd, opts:exportOptions, filename:exportName });
-      setStatus('本地 PDF 导出窗口已打开。');
+      setStatus('已打开打印，请另存为 PDF。');
       return;
     }
     const response = await request('/api/pdf', pdfBody);

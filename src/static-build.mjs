@@ -63,7 +63,6 @@ await writeFile(path.join(out,'catalog.mjs'),'export default '+JSON.stringify({e
 let index=await readFile(path.join(out,'index.html'),'utf8');
 index=index.replace('<meta charset="utf-8">','<meta charset="utf-8"><script src="./boot.js"></script><link rel="stylesheet" href="./static.css">');
 index=index.replace(/(src|href)="\/([^"]*)"/g,'$1="./$2"');
-index=index.replace('</header>','</header><div id="offline-state" class="offline-state" role="status">静态部署 · 浏览器本地排版。<span id="offline-cache">正在准备离线资源…</span></div>');
 await writeFile(path.join(out,'index.html'),index);
 for(const file of await readdir(path.join(root,'web'))){
   if(!/\.(?:js|mjs)$/.test(file))continue;

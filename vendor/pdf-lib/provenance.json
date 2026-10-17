@@ -1,8 +1,0 @@
-{
-  "name": "pdf-lib",
-  "version": "1.17.1",
-  "license": "MIT",
-  "source": "https://registry.npmjs.org/pdf-lib/-/pdf-lib-1.17.1.tgz",
-  "integrity": "sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==",
-  "sha256": "72c052d97b4d5d9fa6cdbdcb7ad709f03d4ddb1122390cb3afeba4d88651d969"
-}
