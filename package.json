@@ -22,6 +22,7 @@
   },
   "scripts": {
     "validate": "bash scripts/validate.sh",
+    "check:consistency": "node scripts/check-consistency.mjs",
     "test": "bash scripts/validate.sh",
     "demo:pdf": "node src/md2pdf.mjs examples/general.md -o /tmp/md2pdf-general.pdf",
     "start": "node src/server.mjs",
