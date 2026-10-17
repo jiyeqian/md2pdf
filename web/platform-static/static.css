@@ -1,3 +1,2 @@
-.offline-pdf-dialog { width: min(940px, calc(100vw - 32px)); max-width: none; }
-.offline-pdf-dialog iframe { width: 100%; height: min(58vh,600px); border: 1px solid #d7dfeb; }
-.offline-pdf-dialog .template-confirm-actions { flex-wrap: wrap; }
+/* 留在可见视口中以免分页的 animationFrame 被浏览器节流；透明且不接收操作。 */
+.static-print-frame{position:fixed;left:0;top:0;width:900px;height:600px;border:0;opacity:0;z-index:-1;pointer-events:none}
