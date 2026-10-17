@@ -2,6 +2,6 @@
 window.__MD2PDF_STATIC_BASE__ = new URL('./', document.currentScript.src).href;
 window.addEventListener('DOMContentLoaded', () => {
   import(new URL('state.mjs', window.__MD2PDF_STATIC_BASE__).href).catch(() => {
-    document.querySelector('#offline-state').textContent = '离线资源启动失败，请联网刷新重试。';
+    window.mdFooterStatus.set('cache','retry',()=>window.mdFooterStatus.saveAndUpdate(async()=>location.reload()));
   });
 });

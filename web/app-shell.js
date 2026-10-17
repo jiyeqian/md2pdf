@@ -12,31 +12,16 @@
     root.style.setProperty('--app-view-top', (view?.offsetTop || 0) + 'px');
   }
   function schedule() { if (!frame) frame = requestAnimationFrame(measure); }
-  function network() {
-    let notice = document.querySelector('#app-network-status');
-    if (!notice) {
-      notice = document.createElement('div');
-      notice.id = 'app-network-status';
-      notice.setAttribute('role', 'status');
-      notice.textContent = window.__MD2PDF_STATIC_BASE__ ? '网络已断开，可继续本地编辑、排版和导出；DOI 查询需要联网。' : '网络已断开，可继续编辑和保存草稿；预览与 PDF 导出需要联网。';
-      document.body.append(notice);
-    }
-    notice.hidden = navigator.onLine;
-  }
   function updateMode() {
     root.classList.toggle('app-standalone', standalone());
     if (standalone()) {
       document.querySelector('meta[name="viewport"]').content = 'width=device-width,initial-scale=1,viewport-fit=cover';
       measure();
-      network();
-    } else {
-      document.querySelector('#app-network-status')?.remove();
     }
   }
   function resume() {
     if (!standalone() || document.visibilityState === 'hidden') return;
     measure();
-    network();
     window.mdEditor?.requestMeasure();
     window.dispatchEvent(new Event('resize'));
   }
@@ -94,89 +79,62 @@
     return true;
   }
   let registration, reloadForUpdate = false, checking = false;
-  function cacheNotice(message, label, action) {
-    let notice = document.querySelector('#app-cache-status');
-    if (!notice) {
-      notice = document.createElement('div');
-      notice.id = 'app-cache-status';
-      notice.setAttribute('role', 'status');
-      document.body.append(notice);
-    }
-    notice.replaceChildren(document.createTextNode(message));
-    if (label) {
-      const button = document.createElement('button');
-      button.type = 'button'; button.textContent = label;
-      button.addEventListener('click', async () => {
-        button.disabled = true;
-        try { await action(); }
-        catch { cacheNotice('操作未完成，当前文档已保留。', '重试', action); }
-      });
-      notice.append(button);
-    }
-    notice.hidden = false;
-  }
+  const footer = window.mdFooterStatus;
   async function applyUpdate() {
-    if (!window.mdDrafts) throw new Error('草稿尚未就绪');
-    await window.mdDrafts.flush();
-    reloadForUpdate = true;
-    if (registration.waiting) registration.waiting.postMessage({ type:'APP_ACTIVATE' });
-    else location.replace('/');
+    await footer.saveAndUpdate(async()=>{
+      reloadForUpdate = true;
+      if (registration?.waiting) registration.waiting.postMessage({ type:'APP_ACTIVATE' });
+      else location.reload();
+    });
   }
-  function updateAvailable() {
-    cacheNotice('新版已准备好。', '保存草稿并更新', applyUpdate);
-  }
-  function requestStatus() {
-    navigator.serviceWorker.controller?.postMessage({ type:'APP_STATUS' });
-  }
+  function updateAvailable() { footer.set('update','update',applyUpdate); }
+  function requestStatus() { navigator.serviceWorker.controller?.postMessage({ type:'APP_STATUS' }); }
   async function checkUpdate() {
     if (!registration || !navigator.onLine || checking) return;
     checking = true;
-    try { await registration.update(); if (registration.waiting) updateAvailable(); }
-    catch { /* 保留已缓存的版本，联网后再检查。 */ }
+    try { await registration.update(); footer.clear('check'); if (registration.waiting) updateAvailable(); }
+    catch { footer.set('check','checkError',checkUpdate); }
     finally { checking = false; }
   }
+  function retryPrepare() {
+    if (!navigator.serviceWorker.controller) return prepareApp();
+    footer.set('cache','preparing');
+    navigator.serviceWorker.controller.postMessage({type:'APP_PREPARE'});
+  }
+  let listening = false;
   async function prepareApp() {
     if (window.__MD2PDF_STATIC_BASE__) return;
     if (!window.isSecureContext || !('serviceWorker' in navigator)) {
-      cacheNotice('离线启动需要受信任的 HTTPS 地址。'); return;
+      footer.set('cache','unsupported'); return;
     }
-    navigator.serviceWorker.addEventListener('message', event => {
-      if (event.data?.type === 'APP_ERROR') {
-        cacheNotice('离线资源未保存，请联网后重试，并检查浏览器可用空间。', '重试', () => {
-          navigator.serviceWorker.controller?.postMessage({ type:'APP_PREPARE' });
-          cacheNotice('正在准备离线编辑…');
-        }); return;
-      }
-      if (event.data?.type !== 'APP_STATUS') return;
-      if (registration?.waiting || event.data.pinned !== event.data.cache) { updateAvailable(); return; }
-      if (event.data.ready) {
-        cacheNotice('离线编辑已就绪。');
-        const notice = document.querySelector('#app-cache-status');
-        setTimeout(() => { if (notice.textContent === '离线编辑已就绪。') notice.hidden = true; }, 4000);
-      } else {
-        cacheNotice('离线资源不完整。', '重新准备', () => {
-          navigator.serviceWorker.controller?.postMessage({ type:'APP_PREPARE' });
-          cacheNotice('正在准备离线编辑…');
-        });
-      }
-    });
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (reloadForUpdate) location.replace('/');
-      else requestStatus();
-    });
-    cacheNotice('正在准备离线编辑…');
+    if (!listening) {
+      listening = true;
+      navigator.serviceWorker.addEventListener('message', event => {
+        if (event.data?.type === 'APP_ERROR') {footer.set('cache','retry',retryPrepare);return;}
+        if (event.data?.type !== 'APP_STATUS') return;
+        if (registration?.waiting || event.data.pinned !== event.data.cache) updateAvailable();
+        else footer.clear('update');
+        if (event.data.ready) footer.clear('cache');
+        else footer.set('cache','retry',retryPrepare);
+      });
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloadForUpdate) location.reload();
+        else requestStatus();
+      });
+    }
+    footer.set('cache','preparing');
     try {
       registration = await navigator.serviceWorker.register('/service-worker.js', { scope:'/', updateViaCache:'none' });
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
         worker?.addEventListener('statechange', () => {
           if (worker.state === 'installed' && registration.waiting) updateAvailable();
-          if (worker.state === 'redundant') cacheNotice('离线准备未完成，联网后可重试。', '重试', () => prepareApp());
+          if (worker.state === 'redundant') footer.set('cache','retry',retryPrepare);
         });
       });
       if (registration.waiting) updateAvailable();
-      else requestStatus();
-    } catch { cacheNotice('离线准备未完成，联网后可重试。', '重试', () => prepareApp()); }
+      requestStatus();
+    } catch { footer.set('cache','retry',retryPrepare); }
   }
   window.addEventListener('online', checkUpdate);
   document.addEventListener('visibilitychange', () => {
@@ -190,8 +148,5 @@
   window.visualViewport?.addEventListener('scroll', schedule);
   window.addEventListener('pageshow', resume);
   document.addEventListener('visibilitychange', resume);
-  window.addEventListener('online', network);
-  window.addEventListener('offline', network);
   updateMode();
-  network();
 })();
