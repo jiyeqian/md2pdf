@@ -1,9 +1,13 @@
+import { captureOutline, addPdfOutline } from './pdf-outline.mjs';
 import { render } from './src/render.mjs';
 const source = document.querySelector('#source');
 const preview = document.querySelector('#preview');
 const status = document.querySelector('#status');
 const saved = document.querySelector('#saved');
 const print = document.querySelector('#print');
+const outline = document.querySelector('#outline');
+const outlineFile = document.querySelector('#outline-file');
+let printSnapshot = null, outlineEnabled = true, outlineBusy = false;
 let restored = false;
 let revision = 0, renderedRevision = -1, db, saveTimer, renderBusy = false;
 const say = (text, error = false) => { status.textContent = text; status.dataset.error = String(error); };
@@ -32,7 +36,7 @@ async function save() {
   catch { saved.textContent = '草稿保存失败，请下载 Markdown 备份。'; }
 }
 source.addEventListener('input', () => {
-  revision++; print.disabled = true;
+  revision++; print.disabled = true; invalidatePrint();
   saved.textContent = '正在保存草稿…';
   clearTimeout(saveTimer); saveTimer = setTimeout(save, 350);
 });
@@ -54,7 +58,7 @@ function waitReady(frame, current) {
 }
 async function updatePreview() {
   if (renderBusy) return;
-  renderBusy = true; print.disabled = true;
+  renderBusy = true; print.disabled = true; invalidatePrint();
   const current = revision;
   say('正在本地排版…');
   const started = performance.now();
@@ -66,14 +70,44 @@ async function updatePreview() {
     // 等本次文档真正加载，避免读到上一次 iframe 的完成标记。
     await loaded;
     const metrics = await waitReady(preview, current);
-    renderedRevision = current; print.disabled = false;
+    renderedRevision = current; outlineEnabled = result.printOptions.outline !== false; print.disabled = false;
+    printSnapshot = outlineEnabled ? { ...captureOutline(preview.contentDocument), revision } : null;
+    outline.disabled = !printSnapshot?.entries.length || outlineBusy;
     say(`离线排版完成 · ${metrics.pages} 页 · ${Math.round(performance.now() - started)} ms`);
   } catch (error) { say(error.message, true); }
   finally { renderBusy = false; }
 }
 print.addEventListener('click', () => {
   if (renderedRevision !== revision) { say('请先更新预览。'); return; }
-  preview.contentWindow.focus(); preview.contentWindow.print();
+  try {
+    printSnapshot = outlineEnabled ? { ...captureOutline(preview.contentDocument), revision } : null;
+    outline.disabled = !printSnapshot?.entries.length || outlineBusy;
+    preview.contentWindow.focus(); preview.contentWindow.print();
+    if (!outlineEnabled) say('当前文档配置已关闭 PDF 大纲。');
+  } catch (error) { invalidatePrint(); say(error.message, true); }
+});
+function invalidatePrint() {
+  printSnapshot = null; outline.disabled = true; outlineFile.value = '';
+}
+outline.addEventListener('click', () => {
+  if (!printSnapshot || printSnapshot.revision !== revision || renderBusy || outlineBusy) { say('请先完成当前文档的预览，再选择按该预览保存的 PDF。'); return; }
+  outlineFile.value = ''; outlineFile.click();
+});
+outlineFile.addEventListener('change', async () => {
+  const file = outlineFile.files[0], snapshot = printSnapshot;
+  if (!file || !snapshot || snapshot.revision !== revision || outlineBusy) return;
+  outlineBusy = true; outline.disabled = true;
+  say('正在本地补全 PDF 大纲…');
+  try {
+    const result = await addPdfOutline(await file.arrayBuffer(), snapshot);
+    if (snapshot !== printSnapshot || revision !== snapshot.revision) throw new Error('文档或预览已变化，请重新打印后再补全大纲。');
+    const url = URL.createObjectURL(new Blob([result.bytes], { type:'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = file.name.replace(/\.pdf$/i, '') + '-含大纲.pdf'; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    say(`已下载含大纲的 PDF · ${result.pages} 页 · ${result.count} 个书签。`);
+  } catch (error) { say(error.message, true); }
+  finally { outlineBusy = false; outline.disabled = !printSnapshot; }
 });
 document.querySelector('#render').addEventListener('click', updatePreview);
 document.querySelector('#save').addEventListener('click', () => {
