@@ -1,4 +1,4 @@
-/* 主题：minimal —— 纯黑白灰，无底色块，适合正式公文/报告 */
+/* 主题：minimal —— 用字号、字重和留白表达结构，减少装饰。 */
 :root {
   --ink: #141414;
   --ink-soft: #3d3d3d;
@@ -14,27 +14,41 @@
   --code-fg: #23272e;
 
   --font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-head: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-head: var(--font-body);
   --font-mono: "SF Mono", "Menlo", "Consolas", monospace;
 
-  --masthead-border: 1px solid #141414;
+  --masthead-border: none;
 }
 
-.kicker { color: var(--muted); }
-h2::before { width: 3px; background: #141414; }
+.kicker { color: var(--muted); letter-spacing: 0; }
+h2 { padding: 0; border-bottom: none; }
+h2::before { content: none; }
+em { font-style: italic; }
 
-.meta { border-left: 2px solid #141414; background: #fff; padding-left: 14px; }
-.toc { background: #fff; }
-blockquote { background: #fff; border-left: 2px solid #141414; }
+.meta { border: none; background: transparent; padding: 0; gap: 16px; }
+.meta-item + .meta-item { border-left: none; padding-left: 0; }
+.meta-label { letter-spacing: 0; }
+.toc { border: none; background: transparent; padding: 0; }
+.abstract, .keywords { border: none; background: transparent; padding: 0; }
+blockquote { background: transparent; border-left: 1px solid var(--accent-soft); }
+
+code { background: var(--code-bg); border: none; border-radius: 0; }
+pre { border: none; border-radius: 0; }
+.hljs [class] { color: inherit; }
 
 thead th {
-  background: #fff; color: var(--ink);
-  border-top: 1px solid #141414; border-bottom: 1px solid #141414;
+  background: transparent; color: var(--ink); letter-spacing: 0;
+  border-top: none; border-bottom: 1px solid var(--rule);
 }
-tbody tr:nth-child(even) { background: #fafafa; }
+tbody tr:nth-child(even) { background: transparent; }
+tbody td:first-child { font-weight: inherit; color: inherit; }
 
-ol li::before {
-  background: #fff; border: 1px solid #b8b8b8; border-radius: 0;
-  color: var(--ink);
-}
-ul li::before { background: #8c8c8c; border-radius: 0; }
+ol { list-style: decimal; padding-left: 1.6em; }
+ul { list-style: disc; padding-left: 1.3em; }
+ul ul { list-style: circle; }
+ul ul ul { list-style: square; }
+ul > li:has(> input[type="checkbox"]) { list-style: none; }
+ol > li, ul > li { padding-left: 0; }
+/* 在线分页会添加序号伪元素；原生标记保留 start/value，避免重复显示。 */
+ol > li::before, ul > li::before { display: none !important; }
+.toc ol, .references, .footnotes { list-style: none; padding-left: 0; }
