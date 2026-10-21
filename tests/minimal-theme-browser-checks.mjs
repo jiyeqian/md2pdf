@@ -98,14 +98,16 @@ try {
     if (theme === 'minimal') {
       const styles = await evaluate(`(()=>{const root=document.querySelector('.pagedjs_pages');const get=s=>getComputedStyle(root.querySelector(s));return {h2Border:get('h2').borderBottomStyle,h2Padding:get('h2').paddingLeft,em:get('em').fontStyle,ol:get('main ol:not(.references)').listStyleType,ul:get('main ul').listStyleType,start:root.querySelector('main ol').start,marker:getComputedStyle(root.querySelector('main ol li'),'::before').display,toc:get('.toc').borderTopStyle,code:get('pre').borderTopStyle,codeRadius:get('pre').borderRadius,row:get('tbody tr:nth-child(even)').backgroundColor,quote:get('blockquote').borderLeftWidth,checks:root.querySelectorAll('input[type=checkbox]').length,checked:root.querySelectorAll('input:checked').length,taskMarker:getComputedStyle(root.querySelector('input[type=checkbox]').parentElement).listStyleType,math:root.querySelectorAll('mjx-container').length}})()`);
       assert.deepEqual(styles, { h2Border: 'none', h2Padding: '0px', em: 'italic', ol: 'decimal', ul: 'disc', start: 3, marker: 'none', toc: 'solid', code: 'solid', codeRadius: '4px', row: 'rgba(0, 0, 0, 0)', quote: '3px', checks: 2, checked: 1, taskMarker: 'none', math: 1 });
-      const details = await evaluate(`(()=>{const root=document.querySelector('.pagedjs_pages'),css=s=>getComputedStyle(root.querySelector(s));const items=Array.from(root.querySelectorAll('main ul > li')).filter(li=>!li.parentElement.closest('li'));const task=root.querySelector('input[type=checkbox]');return {inlineBorder:css('p code').borderTopWidth,inlineRadius:css('p code').borderRadius,codeInnerBorder:css('pre code').borderTopWidth,tocBackground:css('.toc').backgroundColor,headerTop:css('thead th').borderTopWidth,headerBottom:css('thead th').borderBottomWidth,bodyRule:css('tbody td').borderBottomWidth,listLefts:items.map(li=>li.getBoundingClientRect().left),taskPosition:getComputedStyle(task).position,taskLeft:task.getBoundingClientRect().left,taskTextLeft:task.parentElement.getBoundingClientRect().left}})()`);
+      const details = await evaluate(`(()=>{const root=document.querySelector('.pagedjs_pages'),css=s=>getComputedStyle(root.querySelector(s));const items=Array.from(root.querySelectorAll('main ul > li')).filter(li=>!li.parentElement.closest('li'));const task=root.querySelector('input[type=checkbox]');return {inlineBorder:css('p code').borderTopWidth,inlineRadius:css('p code').borderRadius,codeInnerBorder:css('pre code').borderTopWidth,tocBackground:css('.toc').backgroundColor,headerTop:css('thead th').borderTopWidth,headerBottom:css('thead th').borderBottomWidth,bodyRule:css('tbody td').borderBottomWidth,tableBottom:css('table').borderBottomWidth,ruleColors:[css('thead th').borderTopColor,css('thead th').borderBottomColor,css('table').borderBottomColor],listLefts:items.map(li=>li.getBoundingClientRect().left),taskPosition:getComputedStyle(task).position,taskLeft:task.getBoundingClientRect().left,taskTextLeft:task.parentElement.getBoundingClientRect().left}})()`);
       assert.equal(details.inlineBorder, '1px');
       assert.equal(details.inlineRadius, '3px');
       assert.equal(details.codeInnerBorder, '0px');
       assert.equal(details.tocBackground, 'rgb(246, 246, 246)');
       assert.equal(details.headerTop, '2px');
-      assert.equal(details.headerBottom, '2px');
-      assert.equal(details.bodyRule, '1px');
+      assert.equal(details.headerBottom, '1px');
+      assert.equal(details.bodyRule, '0px');
+      assert.equal(details.tableBottom, '2px');
+      assert.deepEqual(details.ruleColors, ['rgb(184, 184, 184)', 'rgb(184, 184, 184)', 'rgb(184, 184, 184)']);
       assert.ok(details.listLefts.every(left=>Math.abs(left-details.taskTextLeft)<1),'task and unordered list text share the same left edge');
       assert.equal(details.taskPosition, 'absolute');
       assert.ok(details.taskLeft<details.taskTextLeft,'checkbox occupies the marker column');

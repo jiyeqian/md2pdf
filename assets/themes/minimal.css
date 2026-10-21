@@ -37,9 +37,11 @@ pre { border: 1px solid var(--rule); border-radius: 4px; }
 pre code { background: transparent; border: none; border-radius: 0; }
 .hljs [class] { color: inherit; }
 
+table { border-bottom: 2px solid var(--accent-soft); }
+tbody td { border-bottom: none; }
 thead th {
   background: transparent; color: var(--ink); letter-spacing: 0;
-  border-top: 2px solid var(--accent-soft); border-bottom: 2px solid var(--accent-soft);
+  border-top: 2px solid var(--accent-soft); border-bottom: 1px solid var(--accent-soft);
 }
 tbody tr:nth-child(even) { background: transparent; }
 tbody td:first-child { font-weight: inherit; color: inherit; }
