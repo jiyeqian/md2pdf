@@ -66,9 +66,9 @@ test('Chrome 打印路径页脚与 Paged 路径一致', async () => {
 test('参考文献标题可自定义；空串只去标题、保留条目与链接；无引用不生成', async () => {
   const md = '# 标题\n\n引用[^a]。\n\n[^a]: @article{k, title={T}, author={A}, journal={J}, year={2020}}\n';
   const def = await web(md);
-  assert.match(def.html, /<h2[^>]*>[\d\s]*参考文献<\/h2>/);
+  assert.match(def.html, /<h2[^>]*>[^<]*参考文献<\/h2>/);
   const custom = await web(md, { bibliographyTitle: '引用文献' });
-  assert.match(custom.html, /<h2[^>]*>[\d\s]*引用文献<\/h2>/);
+  assert.match(custom.html, /<h2[^>]*>[^<]*引用文献<\/h2>/);
   const none = await web(md, { bibliographyTitle: '' });
   assert.ok(!none.html.includes('参考文献<\/h2>'));
   assert.match(none.html, /class="references"/);
@@ -191,4 +191,16 @@ test('CLI and Web render list keywords identically, hide empty lists, and leave 
   const empty = await web('---\nkeywords: []\ntags: ["标签"]\n---\n# 标题');
   assert.equal(empty.type, 'general');
   assert.ok(!empty.html.includes('<div class="keywords">'));
+});
+
+test('通用文档默认中文编号，frontmatter 与显式选项可覆盖', async () => {
+  const md = '# 标题\n\n## 章节甲\n\n正文\n\n### 子标题';
+  const general = await web(md, { type: 'general' });
+  assert.match(general.html, /一、章节甲/);
+  assert.match(general.html, /（一）子标题/);
+  const frontmatter = await web('---\nnumber-scheme: arabic\n---\n' + md, { type: 'general' });
+  assert.match(frontmatter.html, /<h2[^>]*>1 章节甲/);
+  const explicit = await web(md, { type: 'general', numberScheme: 'arabic' });
+  assert.match(explicit.html, /<h2[^>]*>1 章节甲/);
+  for (const type of ['paper', 'skill']) assert.match((await web(md, { type })).html, /<h2[^>]*>1 章节甲/);
 });

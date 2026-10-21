@@ -175,3 +175,9 @@ test('effectiveOptions 反映 frontmatter，且显式优先', () => {
   assert.equal(effectiveOptions({ theme: 'elegant' }, 'general', fm).theme, 'elegant');
   assert.throws(() => effectiveOptions({}, 'gb', { 'line-height': 2 }), { status: 400 });
 });
+
+test('通用文档策略默认中文编号，并保留有效配置覆盖', () => {
+  assert.equal(policyForType('general').controls.numberScheme.fixedValue, 'cjk');
+  assert.equal(policyForType('general', {numberScheme:'arabic'}).controls.numberScheme.fixedValue, 'arabic');
+  assert.equal(policyForType('paper').controls.numberScheme.fixedValue, 'arabic');
+});

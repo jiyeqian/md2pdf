@@ -296,11 +296,11 @@ if (fs.existsSync(demo)) {
 
   // 章节编号：force 模式为 H2 加层次编号（demo 默认「一、二、三」会被覆盖为「1、2、3」）
   const outNum = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'md2pdf-ci-')), 'num.html');
-  const rNum = run(['examples/general.md', '--html-only', '--numbering', 'force', '-o', outNum]);
+  const rNum = run(['examples/general.md', '--html-only', '--numbering', 'force', '--number-scheme', 'arabic', '-o', outNum]);
   const numHtml = readIf(outNum);
   ok('编号：force 模式加层次编号（H2→1/2、H3→2.1）', rNum.status === 0 && /<h2[^>]*>1 总体指标/.test(numHtml) && /<h2[^>]*>2 控制流程/.test(numHtml) && /<h3[^>]*>2\.1 /.test(numHtml));
-  ok('编号：auto 模式自动加编号（demo 无编号）', /<h2[^>]*>1 总体指标/.test(html) && /<h3[^>]*>2\.1 /.test(html));
-  ok('编号：参考文献章节纳入编号体系', /<h2[^>]*>\d+ 参考文献/.test(html));
+  ok('编号：auto 模式自动加编号（demo 无编号）', /<h2[^>]*>一、总体指标/.test(html) && /<h3[^>]*>（一）/.test(html));
+  ok('编号：参考文献章节纳入编号体系', /<h2[^>]*>[一二三四五六七八九十]+、参考文献/.test(html));
 
   // 编号方案（--number-scheme）：arabic / gb / cjk / chapter
   const outSch = (n) => path.join(os.tmpdir(), 'md2pdf-ci-sch-' + n + '.html');

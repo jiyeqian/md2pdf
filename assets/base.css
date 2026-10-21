@@ -170,7 +170,7 @@ ol > li::before {
   font-family: var(--font-mono); font-size: .82em; font-weight: 700;
 }
 ul { list-style: none; }
-ul > li { position: relative; padding-left: 18px; margin-bottom: 11px; text-align: justify; }
+ul > li { position: relative; padding-left: 30px; margin-bottom: 11px; text-align: justify; }
 ul > li:last-child { margin-bottom: 0; }
 ul > li::before {
   content: ""; position: absolute; left: 2px; top: .82em;
@@ -178,6 +178,15 @@ ul > li::before {
 }
 li > ul, li > ol { margin: 8px 0 0; }
 li p { margin-bottom: 6px; }
+
+/* 任务勾选框替代列表标记，正文继承所在主题的列表缩进。 */
+li:has(> input[type="checkbox"]), li:has(> p > input[type="checkbox"]) { list-style: none; }
+li:has(> input[type="checkbox"])::before,
+li:has(> p > input[type="checkbox"])::before { display: none !important; }
+li > input[type="checkbox"], li > p > input[type="checkbox"] {
+  position: absolute; left: var(--task-marker-left, 0px); top: .45em;
+  width: 1em; height: 1em; margin: 0; accent-color: var(--ink-soft);
+}
 
 /* ---------- 行内 ---------- */
 strong { color: var(--ink); font-weight: 600; }

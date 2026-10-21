@@ -18,6 +18,7 @@
   --font-mono: "SF Mono", "Menlo", "Consolas", monospace;
 
   --masthead-border: none;
+  --task-marker-left: -1.6em;
 }
 
 .kicker { color: var(--muted); letter-spacing: 0; }
@@ -53,13 +54,6 @@ ol { list-style: decimal; padding-left: 1.6em; }
 ul { list-style: disc; padding-left: 1.6em; }
 ul ul { list-style: circle; }
 ul ul ul { list-style: square; }
-ul > li:has(> input[type="checkbox"]),
-ul > li:has(> p > input[type="checkbox"]) { list-style: none; }
-/* 勾选框放入标记栏，任务正文与同层普通列表保持同一起点。 */
-li > input[type="checkbox"], li > p > input[type="checkbox"] {
-  position: absolute; left: -1.6em; top: .45em;
-  width: 1em; height: 1em; margin: 0; accent-color: var(--ink-soft);
-}
 ol > li, ul > li { padding-left: 0; }
 /* 在线分页会添加序号伪元素；原生标记保留 start/value，避免重复显示。 */
 ol > li::before, ul > li::before { display: none !important; }
