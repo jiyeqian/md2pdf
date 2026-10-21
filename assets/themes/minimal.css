@@ -38,7 +38,10 @@ pre code { background: transparent; border: none; border-radius: 0; }
 .hljs [class] { color: inherit; }
 
 table { border-bottom: 2px solid var(--accent-soft); }
-tbody td { border-bottom: none; }
+tbody td { border-bottom: none; padding: .25em 10px; line-height: 1.5; }
+/* 首末行分别补偿字体行盒与边线的留白，使视觉间隔接近行间空白。 */
+tbody tr:first-child td { padding-top: .55em; }
+tbody tr:last-child td { padding-bottom: .35em; }
 thead th {
   background: transparent; color: var(--ink); letter-spacing: 0;
   border-top: 2px solid var(--accent-soft); border-bottom: 1px solid var(--accent-soft);

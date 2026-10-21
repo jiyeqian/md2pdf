@@ -45,6 +45,7 @@ toc: true
 | --- | ---: |
 | 第一行 | 42 |
 | 第二行 | 64 |
+| 第三行 | 86 |
 
 \`\`\`js
 const message = "简洁";
@@ -109,6 +110,9 @@ try {
       assert.equal(details.tableBottom, '2px');
       assert.deepEqual(details.ruleColors, ['rgb(184, 184, 184)', 'rgb(184, 184, 184)', 'rgb(184, 184, 184)']);
       assert.ok(details.listLefts.every(left=>Math.abs(left-details.taskTextLeft)<1),'task and unordered list text share the same left edge');
+      const gaps = await evaluate(`(()=>{const table=document.querySelector('.pagedjs_pages table'),cells=Array.from(table.querySelectorAll('tbody tr')).map(row=>row.cells[0]);const text=cells.map(cell=>{const range=document.createRange();range.selectNodeContents(cell);return range.getBoundingClientRect()});return [text[0].top-table.querySelector('thead').getBoundingClientRect().bottom,...text.slice(1).map((r,i)=>r.top-text[i].bottom),table.getBoundingClientRect().bottom-text.at(-1).bottom]})()`);
+      assert.ok(Math.max(...gaps)-Math.min(...gaps)<2,`table text gaps are balanced: ${gaps}`);
+      console.log(`minimal table whitespace (px): ${gaps.map(gap=>gap.toFixed(1)).join(', ')}`);
       assert.equal(details.taskPosition, 'absolute');
       assert.ok(details.taskLeft<details.taskTextLeft,'checkbox occupies the marker column');
     }
