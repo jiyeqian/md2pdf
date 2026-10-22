@@ -725,12 +725,15 @@ window.addEventListener('message', event => {
   }
   if (previewRevision !== revision) return;
   if (event.data.type === 'md2pdf-ready') {
+    window.__MD2PDF_PREVIEW_READY__ = true;
+    window.dispatchEvent(new Event('md-preview-ready'));
     finishPreviewTelemetry(true);
     clearTimeout(previewTimer);
     if (!downloading) setStatus('预览已更新');
   } else if (event.data.type === 'md2pdf-source' && Number.isSafeInteger(event.data.line) && event.data.line > 0 && event.data.line <= editor.value.split('\n').length) {
     document.dispatchEvent(new CustomEvent('md-preview-source', { detail: { line: event.data.line } }));
   } else if (event.data.type === 'md2pdf-error') {
+    window.dispatchEvent(new Event('md-preview-error'));
     finishPreviewTelemetry(false);
     clearTimeout(previewTimer);
     setStatus(event.data.error || '预览排版失败。', true);
@@ -810,6 +813,7 @@ async function boot() {
 
   initialized = true;
   if (localDrafts) window.mdDrafts = localDrafts;
+  window.__MD2PDF_APP_READY__ = true;
   window.dispatchEvent(new Event('md-app-ready'));
   saveDraft();
   editor.placeholder = '在此输入 Markdown…';

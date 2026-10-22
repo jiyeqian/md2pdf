@@ -81,11 +81,13 @@ try {
   assert.match(await evaluate(`document.querySelector('dialog .app-file-name').textContent`),/\.pdf$/);
   await evaluate(`document.querySelector('dialog .template-confirm-cancel').click()`);
   await browser.send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:-1,uploadThroughput:-1});
-  await wait(`document.querySelector('#app-network-status')?.hidden===false`);
-  await evaluate(`(async()=>{mdEditor.setValue('# 暂时断网也保存');await mdDrafts.flush()})()`);
+  await wait(`navigator.onLine===false`);
+  await evaluate(`(async()=>{mdEditor.setValue('# 暂时断网也保存');document.querySelector('#markdown').dispatchEvent(new Event('input',{bubbles:true}));await mdDrafts.flush()})()`);
+  await wait(`document.querySelector('#status').textContent==='当前离线，预览与 PDF 导出需要联网。'`);
   assert.equal(await evaluate(`mdDrafts.store.get(mdDrafts.current()).then(d=>d.md)`),'# 暂时断网也保存');
   await browser.send('Network.emulateNetworkConditions',{offline:false,latency:0,downloadThroughput:-1,uploadThroughput:-1});
-  await wait(`document.querySelector('#app-network-status').hidden===true`);
+  await wait(`navigator.onLine===true`);
+  assert.equal(await evaluate(`mdDrafts.store.get(mdDrafts.current()).then(d=>d.md)`),'# 暂时断网也保存');
   // LAN HTTP lacks randomUUID: the fallback must still create durable documents.
   await evaluate(`Object.defineProperty(crypto,'randomUUID',{value:undefined});`);
   await evaluate(`mdDrafts.openFile('# HTTP兼容','http.md')`);

@@ -49,6 +49,8 @@ test('manifest and real PNG app icons are served without adding a caching worker
     const page = await (await fetch(base)).text();
     assert.match(page, /apple-touch-icon/);
     assert.match(page, /apple-mobile-web-app-capable/);
-    assert.equal((await fetch(base+'/service-worker.js')).status,404);
+    const worker = await fetch(base+'/service-worker.js');
+    assert.equal(worker.status,200);
+    assert.match(await worker.text(), /APP_FILES/);
   } finally { await app.close(); }
 });

@@ -141,7 +141,24 @@
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') { checkUpdate(); requestStatus(); }
   });
-  prepareApp();
+  let appReady = window.__MD2PDF_APP_READY__ === true;
+  let previewReady = window.__MD2PDF_PREVIEW_READY__ === true;
+  let cacheStarted = false, fallbackDue = false;
+  const startCache = (force = false) => {
+    if (cacheStarted || (!force && document.visibilityState === 'hidden') || !appReady || (!previewReady && !fallbackDue)) return;
+    cacheStarted = true;
+    prepareApp();
+  };
+  window.addEventListener('md-app-ready', () => {
+    appReady = true;
+    const hasDocument = !!window.mdEditor?.getValue?.().trim();
+    setTimeout(() => { fallbackDue = true; startCache(); }, hasDocument ? 35000 : 10000);
+    startCache();
+  }, { once:true });
+  window.addEventListener('md-preview-ready', () => { previewReady = true; startCache(); }, { once:true });
+  window.addEventListener('md-preview-error', () => { fallbackDue = true; startCache(); }, { once:true });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') startCache(); });
+  setTimeout(() => { fallbackDue = true; startCache(true); }, 60000);
   window.mdAppShell = { standalone, offerFile };
   display.addEventListener?.('change', updateMode);
   window.addEventListener('resize', schedule);

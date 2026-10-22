@@ -31,9 +31,17 @@ try {
   // Navigation can destroy the preceding document's evaluation context before commit.
   const wait = async expression => {
     for (let attempt=0; attempt<5; attempt++) {
-      try { return await evaluate(`new Promise((resolve,reject)=>{let n=0;const timer=setInterval(()=>{if(${expression}){clearInterval(timer);resolve(true);}else if(++n>200){clearInterval(timer);reject(Error('browser wait timeout'));}},50);})`); }
+      try { return await evaluate(`new Promise((resolve,reject)=>{let n=0;const timer=setInterval(()=>{if(${expression}){clearInterval(timer);resolve(true);}else if(++n>1000){clearInterval(timer);reject(Error('browser wait timeout'));}},50);})`); }
       catch(error) { if(attempt===4 || !/Inspected target navigated or closed|Execution context was destroyed|Cannot find context/.test(error.message)) throw error; }
     }
+  };
+  const waitLong = async expression => {
+    for(let n=0;n<900;n++){
+      try{if(await evaluate(`Boolean(${expression})`))return;}
+      catch(error){if(!/Inspected target navigated or closed|Execution context was destroyed|Cannot find context/.test(error.message))throw error;}
+      await new Promise(resolve=>setTimeout(resolve,50));
+    }
+    throw new Error('browser wait timeout: '+expression);
   };
   browser.ws.addEventListener('message', async event => {
     const message = JSON.parse(event.data);
@@ -148,10 +156,13 @@ try {
   });
   try {
     await new Promise(resolve => staticServer.listen(0, '127.0.0.1', resolve));
-    await browser.send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.offlineSeen=[];window.addEventListener("md2pdf-offline-ready",event=>window.offlineSeen.push(event.detail.ready));' });
+    await browser.send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.offlineSeen=[];window.__benchAppReady=false;window.addEventListener("md2pdf-offline-ready",event=>window.offlineSeen.push(event.detail.ready));window.addEventListener("md-app-ready",()=>window.__benchAppReady=true);' });
     await browser.send('Page.navigate', { url: `http://127.0.0.1:${staticServer.address().port}/md2pdf/` });
     await wait('window.mdEditor && window.md2pdfAnalytics && document.querySelector(".analytics-settings")');
-    await wait('window.offlineSeen.includes(true)');
+    await wait('window.__benchAppReady');
+    assert.equal(await evaluate(`navigator.serviceWorker.getRegistration(new URL("./",location.href).href).then(Boolean)`),false,'offline cache preparation waits until a preview is ready');
+    await evaluate(`mdEditor.setValue('# 触发首次预览');document.querySelector('#markdown').dispatchEvent(new Event('input',{bubbles:true}))`);
+    await waitLong('window.offlineSeen.includes(true)');
     await browser.send('Network.enable');
     await browser.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
     await browser.send('Page.reload');

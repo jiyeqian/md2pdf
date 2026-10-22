@@ -20,11 +20,19 @@
 
 renderer 实际引用脚本的 HTML 大小：纯文档 699,524 B（仅 PagedJS，503,181 B 原始脚本）；公式文档 3,511,430 B（MathJax 2,108,580 B + PagedJS）；Mermaid 文档 4,129,840 B（Mermaid 2,571,900 B + PagedJS）。旧逻辑每次均内嵌三引擎，纯文档约 6,940,164 B；候选纯文档减少约 89.9%。这里测的是返回 HTML 字节，不是压缩网络传输量。
 
+## 缓存准备延后
+
+Node 与静态 WebApp 都在应用初始化、首次预览完成后再注册 service worker 并完整准备离线缓存。预览显式失败时立即开始准备；无内容文档在应用就绪 10 秒后、有内容文档 35 秒后使用有界兜底，60 秒硬兜底确保隐藏标签页也不会无限等待。worker 的完整资源清单、校验、原子完成标记和升级流程未变。
+
+真实 Chrome 集成验证在 `md-app-ready` 时尚无 service worker 注册，之后缓存就绪且离线重载成功。该用例通过首次输入触发预览，但本轮没有记录到样例 iframe 的 `md-preview-ready` 事件；因此离线缓存就绪不能作为“预览优先已被观察到”的证据。预览信号优先级由事件门控实现，自动化覆盖了门控的初始状态和兜底后离线可用性。
+
 ## 验证
 
 - `npm run check:consistency`：general、paper、gb、skill 的 CLI、Node 与静态 HTML、配置和错误诊断一致。
 - `npm run test:web`：385/385。
 - `npm run test:analytics-browser`：真实 Chrome 覆盖 Node/静态 UI、静态子路径、缓存就绪和离线刷新；线上统计请求由本地夹具拦截。
+- `npm run test:app-shell`：当前 service worker 资源路由、桌面/独立窗口几何、前后台切换及离线编辑行为。
+- `npm run test:local-drafts`：IndexedDB 草稿恢复、跨客户端冲突检测和删除竞态。
 - `npm run test:static-runtime`：只内嵌 renderer HTML 实际引用的引擎，并保留 data-only script CSP。
 
-尚未完成的验收包括首次/热缓存与弱网、草稿/加载竞态、复杂长文真实 PDF、缓存升级/失败重试，以及手动 Chrome 前后预览时延分布。本阶段不证明可输入时间或用户留存改善。
+尚未量化的项目包括弱网/CPU 降速下的预览时延分布、缓存升级/失败重试、复杂长文真实 PDF 的前后对照；当前数字只支持本机冷启动的模块请求、传输字节及 renderer HTML 体积结论。本阶段不证明可输入时间或用户留存改善。
