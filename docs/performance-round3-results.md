@@ -27,4 +27,4 @@ JavaScript 同步执行期间不能被 `AbortController` 抢占；latest-only �
 
 `check:consistency` 不覆盖浏览器后台节流、真实 PDF 版面与书签、手机打印和部署缓存；这些仍按 [跨运行时交接文档](cross-runtime-handoff.md) 人工验收。上一轮 `test:web` 中的字号断言差异不是本轮改动引入；本轮最终在获准 loopback 环境的完整 `test:web` 结果为 393/393。
 
-Node 与静态验收入口：`http://127.0.0.1:3190`、`http://127.0.0.1:3191/`。两者需从本报告对应的最终提交 `e76bfda` 启动；静态源码变化需重新构建并重启。
+Node 与静态验收入口：`http://127.0.0.1:3190`、`http://127.0.0.1:3191/`。交付时两者应从当前工作树 HEAD 启动；可分别读取 Node `/api/version` 和静态 `/version-data.json` 核对版本与提交号。静态源码变化需重新构建并重启。
