@@ -1,0 +1,152 @@
+{
+  "date": "2026-10-22",
+  "targets": [
+    [
+      "node",
+      "http://127.0.0.1:3190/"
+    ],
+    [
+      "static",
+      "http://127.0.0.1:3191/"
+    ]
+  ],
+  "scenarios": [
+    {
+      "name": "cold",
+      "rounds": 3,
+      "latency": 0,
+      "download": -1,
+      "cpu": 1
+    },
+    {
+      "name": "warm-reload",
+      "rounds": 1,
+      "latency": 0,
+      "download": -1,
+      "cpu": 1
+    },
+    {
+      "name": "weak-network-cpu",
+      "rounds": 1,
+      "latency": 150,
+      "download": 750000,
+      "cpu": 4
+    }
+  ],
+  "samples": [
+    {
+      "runtime": "node",
+      "scenario": "cold",
+      "round": 1,
+      "appReadyMs": 125.29999999701977,
+      "firstPreview": "md-preview-error",
+      "firstPreviewMs": 31934.09999999404,
+      "resourceCount": 52,
+      "transferBytes": 8451041,
+      "decodedBytes": 8435441
+    },
+    {
+      "runtime": "node",
+      "scenario": "cold",
+      "round": 2,
+      "appReadyMs": 138.5,
+      "firstPreview": "md-preview-error",
+      "firstPreviewMs": 31596.10000000894,
+      "resourceCount": 52,
+      "transferBytes": 8451041,
+      "decodedBytes": 8435441
+    },
+    {
+      "runtime": "node",
+      "scenario": "cold",
+      "round": 3,
+      "appReadyMs": 155.59999999403954,
+      "firstPreview": "md-preview-error",
+      "firstPreviewMs": 31624.79999999702,
+      "resourceCount": 52,
+      "transferBytes": 8451041,
+      "decodedBytes": 8435441
+    },
+    {
+      "runtime": "node",
+      "scenario": "warm-reload",
+      "round": 1,
+      "appReadyMs": 58.3999999910593,
+      "firstPreview": "md-preview-error",
+      "firstPreviewMs": 30851,
+      "resourceCount": 51,
+      "transferBytes": 6955257,
+      "decodedBytes": 8429632
+    },
+    {
+      "runtime": "node",
+      "scenario": "weak-network-cpu",
+      "round": 1,
+      "appReadyMs": 3730.7999999970198,
+      "firstPreview": "timeout",
+      "firstPreviewMs": null,
+      "resourceCount": 52,
+      "transferBytes": 8451041,
+      "decodedBytes": 8435441
+    },
+    {
+      "runtime": "static",
+      "scenario": "cold",
+      "round": 1,
+      "appReadyMs": 132.69999998807907,
+      "firstPreview": "md-preview-error",
+      "firstPreviewMs": 31827.79999999702,
+      "resourceCount": 72,
+      "transferBytes": 7153512,
+      "decodedBytes": 7131912
+    },
+    {
+      "runtime": "static",
+      "scenario": "cold",
+      "round": 2,
+      "appReadyMs": 140,
+      "firstPreview": "md-preview-error",
+      "firstPreviewMs": 31551.20000000298,
+      "resourceCount": 72,
+      "transferBytes": 7153512,
+      "decodedBytes": 7131912
+    },
+    {
+      "runtime": "static",
+      "scenario": "cold",
+      "round": 3,
+      "appReadyMs": 128.5,
+      "firstPreview": "md-preview-error",
+      "firstPreviewMs": 31564.59999999404,
+      "resourceCount": 72,
+      "transferBytes": 7153512,
+      "decodedBytes": 7131912
+    },
+    {
+      "runtime": "static",
+      "scenario": "warm-reload",
+      "round": 1,
+      "appReadyMs": 67,
+      "firstPreview": "md-preview-error",
+      "firstPreviewMs": 31688.60000000894,
+      "resourceCount": 71,
+      "transferBytes": 0,
+      "decodedBytes": 7117539
+    },
+    {
+      "runtime": "static",
+      "scenario": "weak-network-cpu",
+      "round": 1,
+      "appReadyMs": 3879,
+      "firstPreview": "md-preview-error",
+      "firstPreviewMs": 43525.40000000596,
+      "resourceCount": 72,
+      "transferBytes": 7153512,
+      "decodedBytes": 7131912
+    }
+  ],
+  "commit": "579bc9b",
+  "platform": "darwin arm64 27.0.0",
+  "node": "v26.12.0",
+  "chrome": "Google Chrome 155.0.8059.85"
+}

@@ -37,4 +37,13 @@ Node 与静态 WebApp 共用 `web/cache-readiness.mjs`，启动时先读取 read
 - `npm run test:cache-readiness`：共享门控状态与定时器的确定性覆盖。
 - `npm run test:cache-readiness-browser`、`npm run test:static-preview-browser`：真实 Chrome 时间线、显式预览结果、错误可见性与缓存注册顺序。
 
-`npm run bench:readiness` 提供 Node/静态版同机冷启动、同 profile 热重载、150 ms/750 KB/s 网络与 4× CPU 限速采样，默认写入 `docs/performance-samples-2026-10-22.json`。预览 error/timeout 单独记录，不计为成功预览时间。尚未量化缓存升级/失败重试与复杂长文真实 PDF 的前后对照。本阶段不证明可输入时间或用户留存改善。
+## 多场景采样
+
+可复跑脚本：`npm run bench:readiness`。先启动本工作树 Node/静态应用于 3190/3191；脚本各运行三轮独立 profile 冷启动，并各运行一次同 profile 热重载及 150 ms/750 KB/s 网络、4× CPU 降速。原始逐轮数据、平台与 Chrome 版本记录于 [performance-samples-2026-10-22.json](performance-samples-2026-10-22.json)，对应服务提交为 `579bc9b`。
+
+| 运行方式 | 冷态 `app-ready` 中位 | 热重载 `app-ready` | 限速 `app-ready` | 首预览结果 | 终态资源传输 |
+| --- | ---: | ---: | --- | --- | ---: |
+| Node | 138.5 ms | 58.4 ms | 3,731 ms | 冷/热为超时错误；限速样本 40 秒内未报告结果 | 冷 8.45 MB；热 6.96 MB；限速 8.45 MB |
+| 静态 | 132.7 ms | 67 ms | 3,879 ms | 冷/热为超时错误；限速约 43.5 秒报超时错误 | 冷 7.15 MB；热 0 B（service worker 命中）；限速 7.15 MB |
+
+这组测试在本机 loopback 上运行，限速由 Chrome CDP 模拟，不等于真实手机或公网链路。暖态只证明相同浏览器 profile 下资源缓存减少传输；所有冷/热正常场景都未获得成功预览样本，因此没有可用的首预览成功时延改善结论。弱网/CPU 只有候选版描述数据，没有同条件基线比较。尚未量化复杂长文真实 PDF 的前后时延；本阶段不证明可输入时间或用户留存改善。

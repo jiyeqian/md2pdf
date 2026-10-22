@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { Chrome, findChrome } from '../src/chrome.mjs';
 
 const targets=[['node',process.env.MD2PDF_NODE_URL||'http://127.0.0.1:3190/'],['static',process.env.MD2PDF_STATIC_URL||'http://127.0.0.1:3191/']];
+const chromePath=findChrome();
+const chromeVersion=spawnSync(chromePath,['--version'],{encoding:'utf8'}).stdout.trim();
+const commit=execFileSync('git',['rev-parse','--short','HEAD'],{encoding:'utf8'}).trim();
 const scenarios=[{name:'cold',rounds:3,latency:0,download:-1,cpu:1},{name:'warm-reload',rounds:1,latency:0,download:-1,cpu:1},{name:'weak-network-cpu',rounds:1,latency:150,download:750000,cpu:4}];
 const samples=[];
 async function sample(kind,url,scenario,round){
@@ -53,5 +57,5 @@ for(const [kind,url]of targets){
   }
 }
 const output=path.resolve(process.env.MD2PDF_PERF_OUTPUT||'docs/performance-samples-2026-10-22.json');
-await writeFile(output,JSON.stringify({date:'2026-10-22',targets,scenarios,samples},null,2)+'\n');
+await writeFile(output,JSON.stringify({date:'2026-10-22',commit,platform:`${process.platform} ${process.arch} ${os.release()}`,node:process.version,chrome:chromeVersion,targets,scenarios,samples},null,2)+'\n');
 console.log(`Samples: ${output}`);
