@@ -213,11 +213,11 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         finally { doiRequests--; }
         return;
       }
-      if (!['/api/render', '/api/pdf', '/api/resolve'].includes(req.url)) { json(404, { error: '页面不存在' }); return; }
+      if (!['/api/preview', '/api/render', '/api/pdf', '/api/resolve'].includes(req.url)) { json(404, { error: '页面不存在' }); return; }
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); json(405, { error: '请使用 POST' }); return; }
-      const { md, opts, filename, type, effective, policy, authorDiagnostics, parsedFrontmatter } = resolveWebInput(await readBody(req));
+      const { md, opts, filename, type, effective, policy, authorDiagnostics, parsedFrontmatter, resetOptions } = resolveWebInput(await readBody(req), { autoPreview: req.url === '/api/preview' });
       if (req.url === '/api/resolve') { json(200, { type, policy, authorDiagnostics }); return; }
-      if (req.url === '/api/render') {
+      if (req.url === '/api/render' || req.url === '/api/preview') {
         const controller = new AbortController();
         const abortOnDisconnect = () => { if (!res.writableEnded) controller.abort(); };
         if (req.aborted) abortOnDisconnect();
@@ -228,7 +228,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
           controller.signal.throwIfAborted();
           const html = await webDocument(attachSourcePositions(rendered.pagedHtml, md), true, rendered.type, controller.signal);
           controller.signal.throwIfAborted();
-          json(200, { html, type:rendered.type, policy:policyForType(rendered.type, effective), effective });
+          json(200, { html, type:rendered.type, policy:policyForType(rendered.type, effective), effective, resetOptions, authorDiagnostics });
         } finally {
           req.off('aborted', abortOnDisconnect);
           res.off('close', abortOnDisconnect);

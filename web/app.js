@@ -4,7 +4,7 @@ const appFetch = (...args) => window.__MD2PDF_STATIC_BASE__ ? import('./runtime-
 
 // md2pdf 在线工作台前端。
 // 选项策略来自 GET /api/policy（src/web-options.mjs 的 webPolicyDocument），
-// 自动识别走 POST /api/resolve，渲染走 POST /api/render（返回 {html,type,policy}）。
+// 自动预览通过 /api/preview 一次识别并渲染；显式模板使用 /api/render。
 // 控件按「生效类型」显示/隐藏：不可用的选项被隐藏并清除，避免把不兼容的旧设置发给服务端。
 
 const editor = document.querySelector('#markdown');
@@ -197,7 +197,7 @@ window.addEventListener('resize', updatePreviewVisibility);
 window.visualViewport?.addEventListener('resize', updatePreviewVisibility);
 let policyDoc = null;
 let currentPolicy = null;
-let resolveCache = { key: null, result: null };
+let previewResetOptions = [];
 let renderedTemplateType = '';
 // 上次成功渲染：是否已有一份可用预览，以及当前配置是否无效（无效时禁止导出 PDF）。
 let hasPreview = false;
@@ -246,7 +246,7 @@ function applyDraft(record) {
     window.currentTemplateId = record.templateId || '';
     renderedTemplateType = record.previewType || '';
     renderedEffective = {};
-    resolveCache = { key: null, result: null };
+    previewResetOptions = [];
     if (policyDoc) applyPolicy(policyDoc.policy?.[record.opts?.type] || policyDoc.autoPolicy);
     applyStoredOptions(record.opts);
     editor.value = record.md;
@@ -631,7 +631,7 @@ async function request(url, body, signal) {
   const response = await appFetch(url, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body), signal,
-    ...(url === '/api/render' && window.__MD2PDF_STATIC_BASE__ ? { md2pdfConsumer: 'editor' } : {}),
+    ...(['/api/render', '/api/preview'].includes(url) && window.__MD2PDF_STATIC_BASE__ ? { md2pdfConsumer: 'editor' } : {}),
   });
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}));
@@ -654,15 +654,6 @@ function injectRevision(html, rev) {
     .replaceAll("type:'md2pdf-exit-fullscreen'", `type:'md2pdf-exit-fullscreen',revision:${rev}`)
     .replaceAll("type:'md2pdf-open-repo'", `type:'md2pdf-open-repo',revision:${rev}`)
     .replaceAll("type:'md2pdf-preview-pointerdown'", `type:'md2pdf-preview-pointerdown',revision:${rev}`);
-}
-
-async function resolveDocument(signal) {
-  const key = editor.value;
-  if (resolveCache.key === key && resolveCache.result) return resolveCache.result;
-  const response = await request('/api/resolve', { md: editor.value, opts: {} }, signal);
-  const result = await response.json();
-  resolveCache = { key, result };
-  return result;
 }
 
 // ---------- 预览（保留原有防抖 450ms 与 revision 竞态保护） ----------
@@ -704,23 +695,18 @@ async function renderPreview() {
   setStatus('正在生成预览…');
   try {
     const explicit = form.elements.type.value;
-    if (!explicit) {
-      // 自动模式：先轻量识别类型，按识别结果适配控件，再渲染，避免发送被禁用的旧设置。
-      let resolved = null;
-      try { resolved = await resolveDocument(activeController.signal); }
-      catch (error) { if (error.name === 'AbortError') throw error; }
-      if (current !== revision || activeController.signal.aborted) return;
-      if (resolved && resolved.policy) applyPolicy(resolved.policy);
-    } else if (policyDoc && policyDoc.policy && policyDoc.policy[explicit]) {
+    if (explicit && policyDoc && policyDoc.policy && policyDoc.policy[explicit]) {
       applyPolicy(policyDoc.policy[explicit]);
     }
     if (current !== revision || activeController.signal.aborted) return;
     // 自动识别时不回填 type：让服务端按 frontmatter / 自动探测决定类型，避免灌入假的显式值。
     const opts = collectedOptions();
-    const response = await request('/api/render', { md: editor.value, opts }, activeController.signal);
+    const response = await request(explicit ? '/api/render' : '/api/preview', { md: editor.value, opts }, activeController.signal);
     const result = await response.json();
     if (current !== revision || activeController.signal.aborted) return;
     renderedEffective = result.effective || {};
+    previewResetOptions = result.resetOptions || [];
+    document.dispatchEvent(new CustomEvent('md-document-diagnostics', { detail: { source:editor.value, authorDiagnostics:result.authorDiagnostics || [] } }));
     renderedTemplateType = result.type || result.effective?.type || '';
     if (previewTelemetry?.revision === current) previewTelemetry.template = renderedTemplateType || 'general';
     if (result.policy) applyPolicy(result.policy);
@@ -786,7 +772,7 @@ window.addEventListener('message', event => {
     finishPreviewTelemetry(true);
     clearTimeout(previewTimer);
     previewWait = null;
-    if (!downloading) setStatus('预览已更新');
+    if (!downloading) setStatus(previewResetOptions.length ? `预览已更新 · 已按模板重置不适用选项：${[...new Set(previewResetOptions.map(key => policyDoc?.labels?.option?.[key] || key))].join('、')}` : '预览已更新');
   } else if (event.data.type === 'md2pdf-source' && Number.isSafeInteger(event.data.line) && event.data.line > 0 && event.data.line <= editor.value.split('\n').length) {
     document.dispatchEvent(new CustomEvent('md-preview-source', { detail: { line: event.data.line } }));
   } else if (event.data.type === 'md2pdf-error') {

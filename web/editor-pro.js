@@ -56,6 +56,10 @@ let initialized = false;
 let latestAnalysis = null;
 let latestAnalysisSource = null;
 let authorDiagnostics = [];
+let authorDiagnosticSource = null;
+function activeAuthorDiagnostics() {
+  return authorDiagnosticSource === getApi()?.getValue() ? authorDiagnostics : [];
+}
 let currentType = '';
 let renderTimer = null;
 let panel = null;
@@ -458,7 +462,7 @@ function renderOutline(analysis) {
 function renderDiagnostics(analysis) {
   const list = refs.diagList;
   clear(list);
-  const diagnostics = (analysis ? analysis.diagnostics : []).concat(authorDiagnostics);
+  const diagnostics = (analysis ? analysis.diagnostics : []).concat(activeAuthorDiagnostics());
   const shown = diagnostics.slice(0, MAX_DIAGNOSTICS);
   if (!shown.length) {
     list.append(el('p', 'md-pro-empty', '未发现引用、章节号或作者单位问题。'));
@@ -494,9 +498,9 @@ function render() {
   const counts = analysis ? analysis.counts : { headings: 0, targets: 0, occurrences: 0, diagnostics: 0, truncated: false };
   refs.typeLine.textContent = '文档类型：' + (TYPE_LABELS[currentType] || currentType || '自动识别');
   refs.status.textContent = '标题 ' + counts.headings + ' · 引用目标 ' + counts.targets
-    + ' · 引用出现 ' + counts.occurrences + ' · 检查项 ' + (counts.diagnostics + authorDiagnostics.length)
+    + ' · 引用出现 ' + counts.occurrences + ' · 检查项 ' + (counts.diagnostics + activeAuthorDiagnostics().length)
     + (counts.truncated ? '（诊断已截断）' : '');
-  refs.meta.textContent = (TYPE_LABELS[currentType] || currentType || '自动识别') + ' · ' + (counts.diagnostics + authorDiagnostics.length) + ' 项检查';
+  refs.meta.textContent = (TYPE_LABELS[currentType] || currentType || '自动识别') + ' · ' + (counts.diagnostics + activeAuthorDiagnostics().length) + ' 项检查';
   renderOutline(analysis);
   renderDiagnostics(analysis);
 }
@@ -508,16 +512,6 @@ function scheduleAnalysis() {
     if (!editor) return;
     const source = editor.getValue();
     analyzeAndCache(source);
-    authorDiagnostics = [];
-    if (/^---[ \t]*\r?\n/.test(source)) {
-      appFetch('/api/resolve', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({md:source,opts:{}})})
-        .then(response => response.ok ? response.json() : null)
-        .then(data => {
-          if (!data || editor.getValue() !== source) return;
-          authorDiagnostics = data.authorDiagnostics || [];
-          render();
-        }).catch(() => {});
-    }
     if (!currentType) currentType = inferType(editor.getValue(), formTypeValue());
     render();
   }, ANALYZE_DEBOUNCE);
@@ -552,12 +546,19 @@ function init() {
   document.addEventListener('md-editor-change', function (event) {
     const next = event && event.detail ? event.detail.value : null;
     authorDiagnostics = [];
+    authorDiagnosticSource = null;
     scheduleAnalysis();
     if (typeof next === 'string') analyzeAndCache(next); // 立即分析供快捷操作复用
   });
   document.addEventListener('md-document-type', function (event) {
     const type = event && event.detail ? event.detail.type : '';
     if (typeof type === 'string') { currentType = type; render(); }
+  });
+  document.addEventListener('md-document-diagnostics', function (event) {
+    if (event.detail?.source !== editor.getValue()) return;
+    authorDiagnostics = event.detail.authorDiagnostics || [];
+    authorDiagnosticSource = event.detail.source;
+    render();
   });
 
   render();

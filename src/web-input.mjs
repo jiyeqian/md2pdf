@@ -141,14 +141,26 @@ export function validateInput(body) {
 
 
 // 在线接口与静态适配器共用解析、优先级及可调选项校验。
-export function resolveWebInput(body) {
+export function resolveWebInput(body, { autoPreview = false } = {}) {
   const { md, opts, filename } = validateInput(body);
   const parsedFrontmatterResult = parseFrontmatter(md);
   const { fm, positions, warnings = [] } = parsedFrontmatterResult;
   const explicitType = opts.type ?? fm.type;
   if (explicitType !== undefined && explicitType !== '' && !PROFILE_NAMES.includes(explicitType)) throw error(400, `未知文档类型：${explicitType}（可用：${PROFILE_NAMES.join(', ')}）`);
   const type = detectProfile({ basename:'', fm, explicit:explicitType || undefined }).name;
+  const resetOptions = [];
+  if (autoPreview && !opts.type) {
+    const controls = policyForType(type).controls;
+    const controlName = key => key.startsWith('margin') ? 'margin' : key === 'tocDepth' ? 'toc' : key;
+    for (const key of Object.keys(opts)) {
+      const control = controls[controlName(key)];
+      if (control && (control.available === false || (['theme', 'numbering', 'numberScheme'].includes(key) && control.values && !control.values.includes(opts[key])))) resetOptions.push(key);
+    }
+    // A scheme change resets the combined heading selection, as the UI menu does.
+    if (resetOptions.includes('numberScheme') && Object.hasOwn(opts, 'numbering')) resetOptions.push('numbering');
+    for (const key of new Set(resetOptions)) delete opts[key];
+  }
   const effective = effectiveOptions(opts, type, fm, positions);
   assertOptionsAllowed(opts, type, frontmatterOverrides(fm));
-  return { md, opts, filename, type, effective, parsedFrontmatter: { source: md, parsed: parsedFrontmatterResult }, authorDiagnostics: warnings.filter(message => message.includes('未被任何作者引用')).map(message => ({ severity:'warning', message, line:positions.affiliations?.line })), policy:policyForType(type, effective) };
+  return { md, opts, filename, type, effective, resetOptions: [...new Set(resetOptions)], parsedFrontmatter: { source: md, parsed: parsedFrontmatterResult }, authorDiagnostics: warnings.filter(message => message.includes('未被任何作者引用')).map(message => ({ severity:'warning', message, line:positions.affiliations?.line })), policy:policyForType(type, effective) };
 }

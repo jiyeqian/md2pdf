@@ -214,7 +214,7 @@ test('配置无效：保留上次成功预览（不重置 iframe），状态标�
 
   env.sandbox.setFetch(url => {
     if (url.includes('/api/resolve')) return Promise.resolve({ ok: true, status: 200, json: async () => ({ type: 'general', policy: autoPolicy('general') }) });
-    if (url.includes('/api/render')) return Promise.resolve({ ok: false, status: 400, json: async () => ({ error: '配置无效', configErrors: [{ message: '字号超出范围', line: 4, field: 'fontSize' }] }) });
+    if ((url.includes('/api/render') || url.includes('/api/preview'))) return Promise.resolve({ ok: false, status: 400, json: async () => ({ error: '配置无效', configErrors: [{ message: '字号超出范围', line: 4, field: 'fontSize' }] }) });
     return new Promise(() => {});
   });
 
@@ -248,7 +248,7 @@ test('乱序响应：陈旧失败不得覆盖新成功（revision 守卫）', as
   let rejectRender;
   env.sandbox.setFetch(url => {
     if (url.includes('/api/resolve')) return Promise.resolve({ ok: true, status: 200, json: async () => ({ type: 'general', policy: autoPolicy('general') }) });
-    if (url.includes('/api/render')) return new Promise((_, reject) => { rejectRender = reject; });
+    if ((url.includes('/api/render') || url.includes('/api/preview'))) return new Promise((_, reject) => { rejectRender = reject; });
     return new Promise(() => {});
   });
   const pending = env.sandbox.renderPreview();
@@ -273,7 +273,7 @@ test('修正后自动恢复：成功渲染清除提示条并恢复导出', async
 
   env.sandbox.setFetch(url => {
     if (url.includes('/api/resolve')) return Promise.resolve({ ok: true, status: 200, json: async () => ({ type: 'general', policy: autoPolicy('general') }) });
-    if (url.includes('/api/render')) return Promise.resolve({ ok: true, status: 200, json: async () => ({ html: '<html>ok</html>', type: 'general', policy: autoPolicy('general') }) });
+    if ((url.includes('/api/render') || url.includes('/api/preview'))) return Promise.resolve({ ok: true, status: 200, json: async () => ({ html: '<html>ok</html>', type: 'general', policy: autoPolicy('general') }) });
     return new Promise(() => {});
   });
   await env.sandbox.renderPreview();

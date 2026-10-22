@@ -59,6 +59,12 @@ try {
     sameHtml(offline.html,online.html,type+': preview');
     assert.deepEqual(offline.effective,online.effective,type+': effective options');
     assert.deepEqual(offline.policy,online.policy,type+': control policy');
+    const automatic = {md,opts:{}};
+    const autoNode = await (await nativeFetch(base+'/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(automatic)})).json();
+    const autoStatic = await (await browser.appFetch('/api/preview',{body:JSON.stringify(automatic)})).json();
+    sameHtml(autoStatic.html,autoNode.html,type+': single-call automatic preview');
+    assert.deepEqual(autoStatic.effective,autoNode.effective,type+': automatic effective options');
+    assert.deepEqual(autoStatic.resetOptions,autoNode.resetOptions,type+': reset controls');
     sameHtml(online.html,await webDocument(attachSourcePositions(core.pagedHtml,md),true,type),type+': prepared HTML');
     console.log(`✓ ${type}: CLI HTML、共用核心、Node API、静态预览与配置一致`);
   }

@@ -9,7 +9,7 @@
 | A. 可见性与预览生命周期 | 完成 | iframe 通过带 revision 的消息暂停/恢复 readiness 检查；子页面真实 MathJax、Mermaid、Paged.js 错误仍立即上报。父页面只累计文档前台且 iframe 与视口相交的时间，累计 60 秒后有限超时。 | `tests/visible-time-budget-checks.mjs` 用虚拟时间覆盖连续滚动、前后台切换、视口外不累计、可见超时边界；Node `test:cache-readiness-browser`；静态 `test:static-preview-browser`。 |
 | A. 模板卡片消费者 | 完成 | 卡片以自身 revision 注入运行时，并在 iframe load 后恢复其 readiness；卡片预览独立于编辑器生命周期。 | Node `test:workspace-browser`；静态浏览器检查断言卡片 iframe 成功显示且 revision 大于 0。 |
 | B. 静态运行时 latest-only | 完成 | 每个消费者只保留尚未开始的最新任务；同一消费者的新任务 abort 其旧任务。编辑器 key 为 `editor`，每张卡片使用 `template:<id>`。不同 key 不互相取消。静态 PDF 走独立 `renderDocument(..., false)` 调用，不参加预览调度。 | `tests/latest-render-scheduler-checks.mjs` 断言排队旧工作调用次数为 0、运行中旧信号收到 abort、模板消费者仍独立完成、外部取消在启动前传递。Node 与静态卡片浏览器检查均通过。 |
-| C. 请求内 frontmatter 复用 | 完成 | Node `/api/render`、`/api/pdf` 和静态 `/api/render` 只传递本次请求解析结果；源 Markdown 不完全相同则重新解析。配置合并和校验照常运行，独立 `/api/resolve` 与 `/api/render` 不共享上下文。 | `test:config` 的解析复用等价性、诊断和不匹配回退测试；`check:consistency` 覆盖 CLI、核心、Node API 和静态构建。 |
+| C. 自动识别与渲染跨阶段复用 | 完成 | 自动预览改用 `/api/preview`，单次识别、策略适配、渲染；解析结果只在此次调用内传递。旧 `/api/resolve`、`/api/render` 和 PDF 路径兼容保留。 | `test:auto-preview` 通过 Inspector 实测 Node/静态解析次数 2→1；浏览器确认当前编辑器只发一次请求；`check:consistency` 覆盖新自动接口。 |
 
 ## 测试结果
 

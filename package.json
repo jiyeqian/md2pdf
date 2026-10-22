@@ -30,6 +30,7 @@
     "test:static-preview-retry-browser": "node tests/static-preview-retry-browser-checks.mjs",
     "test:cache-readiness-browser": "node tests/cache-readiness-browser-checks.mjs",
     "test:preview-version-compat-browser": "node tests/preview-version-compat-browser-checks.mjs",
+    "test:auto-preview": "node tests/auto-preview-checks.mjs",
     "bench:readiness": "node tests/performance-readiness-benchmark.mjs",
     "test:pdf-smoke": "node tests/performance-pdf-smoke.mjs",
     "test:static-runtime": "node tests/static-runtime-checks.mjs",

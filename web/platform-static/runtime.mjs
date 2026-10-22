@@ -66,10 +66,10 @@ async function documentAssets(html, signal) {
   signal?.throwIfAborted();
   return { scripts };
 }
-export async function renderDocument(body, preview = true, signal) {
+export async function renderDocument(body, preview = true, signal, autoPreview = false) {
   const { render, resolveWebInput, prepareWebDocument, attachSourcePositions } = await getRenderModules();
   signal?.throwIfAborted();
-  const resolved = resolveWebInput(body);
+  const resolved = resolveWebInput(body, { autoPreview });
   signal?.throwIfAborted();
   const rendered = await render(resolved.md, resolved.opts, {webSafe:true,signal,parsedFrontmatter:resolved.parsedFrontmatter});
   signal?.throwIfAborted();
@@ -80,7 +80,7 @@ export async function renderDocument(body, preview = true, signal) {
   const logo = rendered.type === 'gb' ? { logoUrl, logoData:await dataUrl(logoUrl, 'image/svg+xml', await assetBoundary(), signal) } : {};
   signal?.throwIfAborted();
   const prepared = prepareWebDocument(preview ? attachSourcePositions(html, resolved.md) : html, {...scripts,...logo,preview,type:rendered.type});
-  return { html:prepared, type:rendered.type, effective:resolved.effective, policy:resolved.policy, outline:rendered.printOptions.outline };
+  return { html:prepared, type:rendered.type, effective:resolved.effective, policy:resolved.policy, resetOptions:resolved.resetOptions, authorDiagnostics:resolved.authorDiagnostics, outline:rendered.printOptions.outline };
 }
 export async function appFetch(input, init = {}) {
   const url = new URL(input, base);
@@ -102,8 +102,8 @@ export async function appFetch(input, init = {}) {
     }
     const body = JSON.parse(init.body || '{}');
     if (url.pathname === '/api/resolve') { const { resolveWebInput } = await getRenderModules(); const {type,policy,authorDiagnostics} = resolveWebInput(body); return json({type,policy,authorDiagnostics}); }
-    if (url.pathname === '/api/render') {
-      return json(await scheduleRender(init.md2pdfConsumer, signal => renderDocument(body, true, signal), init.signal));
+    if (url.pathname === '/api/render' || url.pathname === '/api/preview') {
+      return json(await scheduleRender(init.md2pdfConsumer, signal => renderDocument(body, true, signal, url.pathname === '/api/preview'), init.signal));
     }
     return json({error:'静态版本不提供此服务。'},404);
   } catch (error) {
