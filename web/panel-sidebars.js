@@ -4,6 +4,9 @@
   const preview = document.querySelector('#preview');
   function create({ panel, title, id, width = 260, button, content }) {
     const actions = panel.querySelector('.panel-actions');
+    const main = panel.querySelector('.preview-surface') || panel.querySelector('.md-editor') || panel.querySelector('#markdown');
+    const dock = document.createElement('div'); dock.className = 'md-panel-body';
+    main.before(dock); dock.append(main);
     button = button || document.createElement('button');
     button.type = 'button'; button.className = 'icon-button md-sidebar-toggle';
     button.id = id + '-toggle'; button.title = title; button.setAttribute('aria-label', title);
@@ -23,17 +26,13 @@
     try { preferred = Number(localStorage.getItem('md2pdf.sidebar.' + id)) || width; } catch (_) {}
     function fit() {
       const panelWidth = panel.clientWidth;
-      const maximum = Math.max(0, panelWidth * .8);
+      const maximum = Math.max(0, panelWidth * .5);
       const actual = Math.min(Math.max(200, preferred), maximum);
-      element.style.width = actual + 'px';
-      const toolbar = panel.querySelector('.md-wt-toolbar, .md-editor-toolbar, .preview-toolbar');
-      const heading = panel.querySelector('.panel-heading');
-      const top = toolbar ? toolbar.offsetTop + toolbar.offsetHeight : heading.offsetTop + heading.offsetHeight;
-      element.style.top = top + 'px';
-      const footer = panel.querySelector('.editor-footer, .preview-footer'); element.style.bottom = (footer ? footer.offsetHeight : 0) + 'px';
+      const nextWidth = actual + 'px';
+      if (element.style.width !== nextWidth) element.style.width = nextWidth;
       resize.setAttribute('aria-valuenow', String(Math.round(actual))); resize.setAttribute('aria-valuemin', String(Math.min(200, maximum))); resize.setAttribute('aria-valuemax', String(Math.round(maximum)));
     }
-    function remember(next) { preferred = Math.max(200, Math.min(next, panel.clientWidth * .8)); fit(); try { localStorage.setItem('md2pdf.sidebar.' + id, String(preferred)); } catch (_) {} }
+    function remember(next) { preferred = Math.max(200, Math.min(next, panel.clientWidth * .5)); fit(); try { localStorage.setItem('md2pdf.sidebar.' + id, String(preferred)); } catch (_) {} }
     function notify() { if (preview?.contentWindow) preview.contentWindow.postMessage({ type: 'md2pdf-sidebar-open', open: sidebars.some(s => s.isOpen()) }, '*'); }
     const api = { element, body, content: body, button, isOpen: () => !element.hidden,
       open() { element.hidden = false; button.setAttribute('aria-expanded', 'true'); fit(); notify(); },
@@ -49,11 +48,10 @@
       resize.addEventListener('pointermove', move); resize.addEventListener('pointerup', end); resize.addEventListener('pointercancel', end);
     });
     resize.addEventListener('keydown', e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); remember(preferred + (e.key === 'ArrowLeft' ? 10 : -10)); } });
-    element.append(resize, header, body); panel.append(element); sidebars.push(api); new ResizeObserver(fit).observe(panel); new MutationObserver(fit).observe(panel, { childList: true, subtree: true }); fit(); return api;
+    element.append(resize, header, body); dock.append(element); sidebars.push(api); new ResizeObserver(fit).observe(panel); new MutationObserver(fit).observe(panel, { childList: true, subtree: true }); fit(); return api;
   }
   function closeAll() { const open = sidebars.filter(s => s.isOpen()); open.forEach(s => s.close()); return open.length > 0; }
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && closeAll()) { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
-  document.addEventListener('pointerdown', event => { if (event.target.closest('.md-panel-sidebar,.md-sidebar-toggle,.md-panel-mode,[data-panel-fullscreen]')) return; closeAll(); });
   window.mdPanelSidebars = { create, closeAll };
   const panel = document.querySelector('.preview-panel');
   if (!panel || !preview) return;
@@ -108,7 +106,6 @@
     if (data.type === 'md2pdf-outline' && Array.isArray(data.headings)) render(data.headings.filter(h => h && typeof h.text === 'string' && Number.isInteger(h.level) && h.level >= 1 && h.level <= 6).map(h => ({ text: h.text, level: h.level })));
     else if (data.type === 'md2pdf-outline-current' && Number.isSafeInteger(data.index)) select(data.index);
     else if (data.type === 'md2pdf-sidebar-escape') closeAll();
-    else if (data.type === 'md2pdf-preview-pointerdown') closeAll();
   });
   preview.addEventListener('load', () => preview.contentWindow.postMessage({ type: 'md2pdf-sidebar-open', open: sidebars.some(s => s.isOpen()) }, '*'));
 })();

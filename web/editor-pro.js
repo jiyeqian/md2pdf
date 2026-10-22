@@ -1,7 +1,7 @@
 import { appFetch } from './runtime-request.mjs';
 // md2pdf web editor — 专业助手（ES module）
 //
-// 归属：本模块只提供「专业写作辅助」：编辑面板右侧的悬浮侧栏（大纲 / 引用与
+// 归属：本模块只提供「专业写作辅助」：编辑面板右侧的停靠侧栏（大纲 / 引用与
 // 章节检查 / 状态）以及 window.mdEditorTools.insert(name) 插入工具。
 // 依赖：纯分析模块 editor-analysis.mjs、编辑器内核 window.mdEditor。不修改二者。
 //
@@ -48,7 +48,7 @@ const BLOCK_SELECT = {
 const HEADING_MARK = /^(#{1,6})[ \t]+/;
 // 标题层级（H1/H2/H3）与列表标记：由两级工具条的「基础格式」面板与快捷键使用。
 const HEADING_PREFIX = { heading: '## ', h1: '# ', h2: '## ', h3: '### ' };
-const LIST_MARK = { 'ul-star': '* ', 'ul-dash': '- ', 'ol': '1. ' };
+const LIST_MARK = { 'ul-star': '* ', 'ul-dash': '- ', 'ol': '1. ', 'task-list': '- [ ] ' };
 const ANY_LIST_MARK = /^(?:[ \t]*(?:[*+-]|\d+[.)])[ \t]+)/;
 
 let api = null;
@@ -173,7 +173,9 @@ function transformLines(sel, kind) {
     }
     if (listMark) {
       if (!line.trim()) return block.length === 1 ? listMark : line;
-      return ANY_LIST_MARK.test(line) ? line.replace(ANY_LIST_MARK, listMark) : listMark + line;
+      let content = line.replace(ANY_LIST_MARK, '');
+      if (kind === 'task-list') content = content.replace(/^\[[ xX]\][ \t]+/, '');
+      return listMark + content;
     }
     return quoting ? line.replace(/^\s*>\s?/, '') : '> ' + line;
   });
@@ -308,6 +310,7 @@ function insert(name) {
       case 'ul-star': transformLines(sel, 'ul-star'); break;
       case 'ul-dash': transformLines(sel, 'ul-dash'); break;
       case 'ol': transformLines(sel, 'ol'); break;
+      case 'task-list': transformLines(sel, 'task-list'); break;
       case 'ref': insertReference('ref'); break;
       case 'eqref': insertReference('eqref'); break;
       case 'noteref': insertReference('noteref'); break;
@@ -353,13 +356,18 @@ function buildPanel() {
   const outlineList = el('div', 'md-pro-outline');
   outlineSection.append(outlineHead, outlineList);
 
-  const diagSection = el('section', 'md-pro-section');
-  const diagHead = el('div', 'md-pro-section-head');
+  const diagSection = el('details', 'md-pro-section');
+  const diagHead = el('summary', 'md-pro-section-head');
   diagHead.append(el('h3', null, '引用与章节检查'), el('span', 'md-pro-count', ''));
   const diagList = el('div', 'md-pro-diags');
   diagSection.append(diagHead, diagList);
 
-  body.append(typeLine, meta, status, outlineSection, diagSection);
+  const typeSection = el('details', 'md-pro-section');
+  const typeHead = el('summary', 'md-pro-section-head');
+  typeHead.append(el('h3', null, '文档类型'));
+  typeSection.append(typeHead, typeLine, meta);
+  diagSection.append(status);
+  body.append(outlineSection, diagSection, typeSection);
   details.append(body);
 
   // 点击按钮时不让面板抢走编辑器选区。
@@ -385,6 +393,8 @@ function buildPanel() {
 
 function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
+const collapsedEditorOutline = new Set();
+
 function renderOutline(analysis) {
   const list = refs.outlineList;
   clear(list);
@@ -393,9 +403,21 @@ function renderOutline(analysis) {
   if (!shown.length) {
     list.append(el('p', 'md-pro-empty', '暂无标题。用“## 标题”或工具栏“标题”按钮添加章节。'));
   } else {
+    const stack = [{ level: 0, container: list, key: '' }];
+    const occurrences = new Map();
     for (const heading of shown) {
       const level = Math.min(Math.max(heading.level, 1), 6);
-      const button = el('button', 'md-pro-outline-item md-pro-lv' + level);
+      while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
+      const parent = stack[stack.length - 1];
+      const baseKey = JSON.stringify([parent.key, level, heading.text]);
+      const occurrence = occurrences.get(baseKey) || 0; occurrences.set(baseKey, occurrence + 1);
+      const key = JSON.stringify([baseKey, occurrence]);
+      const row = el('div', 'md-pro-outline-row');
+      const label = el('div', 'md-pro-outline-label');
+      const disclosure = el('button', 'md-pro-outline-disclosure');
+      disclosure.type = 'button'; disclosure.style.visibility = 'hidden';
+      disclosure.setAttribute('aria-label', '折叠或展开：' + heading.text);
+      const button = el('button', 'md-pro-outline-item');
       button.type = 'button';
       button.title = '跳到第 ' + heading.line + ' 行';
       button.textContent = 'H' + heading.level + '  ' + (heading.text || '(无标题)');
@@ -403,7 +425,19 @@ function renderOutline(analysis) {
         const editor = getApi();
         if (editor) { editor.goToLine(heading.line); editor.focus(); }
       });
-      list.append(button);
+      const children = el('div', 'md-pro-outline-children');
+      function updateExpanded() {
+        const expanded = !collapsedEditorOutline.has(key);
+        children.hidden = !expanded; disclosure.setAttribute('aria-expanded', String(expanded));
+        disclosure.textContent = expanded ? '⌄' : '›';
+      }
+      disclosure.addEventListener('click', () => {
+        if (collapsedEditorOutline.has(key)) collapsedEditorOutline.delete(key); else collapsedEditorOutline.add(key);
+        updateExpanded();
+      });
+      updateExpanded(); label.append(disclosure, button); row.append(label, children); parent.container.append(row);
+      if (parent.disclosure) parent.disclosure.style.visibility = '';
+      stack.push({ level, container: children, key, disclosure });
     }
   }
   refs.outlineCount.textContent = headings.length + ' 条'

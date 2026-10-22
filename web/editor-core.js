@@ -573,7 +573,7 @@
         backgroundColor: '#fff', border: '1px solid #dbe4f0', borderRadius: '4px',
         boxShadow: '0 2px 5px #233e6014', transform: 'translateY(-50%)', animation: 'md-fold-slide 90ms ease-out' },
       '.md-fold-menu button': { width: '22px', height: '22px', lineHeight: '22px', borderRadius: '2px' },
-      '.md-fold-menu button:hover, .md-fold-menu button:focus-visible': { backgroundColor: '#eef2f8', outline: '1px solid #bcd6f2' },
+      '.md-fold-menu button:hover, .md-fold-menu button:focus-visible': { backgroundColor: '#eef2f8', outline: 'none' },
       '@keyframes md-fold-slide': { from: { opacity: '0', transform: 'translate(-3px, -50%)' },
         to: { opacity: '1', transform: 'translate(0, -50%)' } },
       '@media (prefers-reduced-motion: reduce)': { '.md-fold-menu': { animation: 'none' } },

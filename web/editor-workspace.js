@@ -98,12 +98,13 @@
   // ---------------------------------------------------------------- 工具条
   // 分组：撤销重做/查找替换 · 文字格式 · 插入 · 学术 · 视图。
   // 每个控件都是固定紧凑尺寸的 SVG 图标按钮：title 显示功能与快捷键，
-  // aria-label 为中文，:focus-visible 有可见焦点环。图片按钮由图片模块挂到
+  // aria-label 为中文。图片按钮由图片模块挂到
   // 插入组的挂载点上，本模块不参与图片导入管线。
   // 图标：路径 / 圆 / 矩形描述，统一 20×20 线性描边，颜色随文字（currentColor）。
   // 默认开启的同步定位是一个带 aria-pressed 的图标开关按钮。
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var ICONS = {
+    taskList: [{ d: 'M8 5h10M8 11h10M8 17h10M2 5l1.5 1.5L6 3M2 11h3v3H2zM2 17h3v3H2z' }],
     indentMore: [{ d: 'M8 4h9M8 10h9M8 16h9M2 7l3 3-3 3' }],
     indentLess: [{ d: 'M8 4h9M8 10h9M8 16h9M5 7l-3 3 3 3' }],
     open: [{ d: 'M3 6h5l2 2h7v7H3z' }, { d: 'M3 6V4h5l2 2h5v2' }],
@@ -273,8 +274,11 @@
     { label: '列表', items: [
       { icon: 'listDash', label: '无序列表', action: 'ul-dash', insert: 'ul-dash' },
       { icon: 'listOl', label: '有序列表', action: 'ol', insert: 'ol' },
-      { icon: 'indentMore', label: '右缩进', command: 'indentMore' },
-      { icon: 'indentLess', label: '左缩进', command: 'indentLess' }
+      { icon: 'taskList', label: '任务列表', insert: 'task-list' }
+    ] },
+    { label: '缩进', items: [
+      { icon: 'indentLess', label: '左缩进', command: 'indentLess' },
+      { icon: 'indentMore', label: '右缩进', command: 'indentMore' }
     ] },
     { label: '行内元素', items: [
       { icon: 'link', label: '链接', action: 'link', insert: 'link' },

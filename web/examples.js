@@ -11,10 +11,22 @@
 
   const listEl = root.querySelector('#example-list');
   const listStatus = root.querySelector('#list-status');
-  const viewLabel = document.querySelector('#app-view-label');
-  const viewLink = document.querySelector('#examples-link-top');
-  const templateNavIcon = viewLink.querySelector('[data-nav-icon="templates"]');
-  const editorNavIcon = viewLink.querySelector('[data-nav-icon="editor"]');
+  const viewLinks = document.querySelectorAll('.topbar-actions [data-view-link]');
+  const topbar = document.querySelector('.topbar');
+  const logo = topbar?.querySelector('.brand-logo');
+  if (logo) {
+    const fitBrand = () => {
+      logo.hidden = false;
+      const style = getComputedStyle(topbar);
+      const available = topbar.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const required = topbar.querySelector('.brand').scrollWidth + topbar.querySelector('.topbar-actions').offsetWidth + 16;
+      logo.hidden = required > available;
+    };
+    const observer = new ResizeObserver(fitBrand);
+    for (const part of [topbar, topbar.querySelector('.topbar-actions')]) observer.observe(part);
+    document.fonts.ready.then(fitBrand);
+    fitBrand();
+  }
   const shortTemplateNames = { general: '通用文档', paper: '学术论文', gb: '国家标准', skill: '技能文档' };
   const templateOrder = ['general', 'paper', 'gb', 'skill'];
   let catalog = [];
@@ -81,12 +93,11 @@
     if (editorView) editorView.hidden = view === 'templates';
     root.hidden = view !== 'templates';
     libraryView.hidden = view !== 'templates';
-    viewLabel.textContent = view === 'templates' ? '模板库' : '编辑器';
-    viewLink.setAttribute('aria-label', view === 'templates' ? '返回编辑器' : '模板库');
-    viewLink.title = view === 'templates' ? '返回编辑器' : '模板库';
-    viewLink.dataset.viewLink = view === 'templates' ? 'editor' : 'templates';
-    templateNavIcon.hidden = view === 'templates';
-    editorNavIcon.hidden = view !== 'templates';
+    for (const link of viewLinks) {
+      if (link.dataset.viewLink === view) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    }
+    document.title = view === 'templates' ? '模板库 · md2pdf' : 'md2pdf';
     document.body.classList.toggle('show-template-library', view === 'templates');
     if (view === 'templates') {
       if (!catalog.length) loadCatalog();

@@ -30,7 +30,7 @@ try {
   await browser.send('Page.navigate', {url});
   await wait('window.mdEditor');
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=templates]')).display`),'block');
-  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=editor]')).display`),'none');
+  assert.equal(await evaluate(`document.querySelector('#editor-link-top').getAttribute('aria-current')`),'page');
   const md = '# 验收\n\n'+Array.from({length:30},(_,i)=>'## 章节'+i+'\n\n正文内容。\n\n').join('');
   await evaluate(`mdEditor.setValue(${JSON.stringify(md)})`);
   await wait('document.querySelector("#preview").srcdoc.length>100');
@@ -87,8 +87,8 @@ try {
   await browser.send('Page.navigate',{url:url+'/examples'});
   await wait('document.querySelector(".example-card[aria-current=true]")');
   assert.equal(await evaluate(`Array.from(document.querySelectorAll('.example-card')).map(card=>card.dataset.id).join(',')`),'general,paper,gb,skill');
-  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=templates]')).display`),'none');
-  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=editor]')).display`),'block');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#examples-link-top [data-nav-icon=templates]')).display`),'block');
+  assert.equal(await evaluate(`document.querySelector('#examples-link-top').getAttribute('aria-current')`),'page');
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true]').dataset.currentTemplate`),'true');
   assert.equal(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').textContent`),'学术论文');
   await wait('document.querySelector(".example-card[data-id=general] iframe")');
@@ -128,7 +128,7 @@ try {
   assert.ok(Math.abs(cardGeometry.frameHeight-cardGeometry.height)<=1,'preview frame clips before the second page');
   assert.match(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').title`),/^当前模板：/);
   assert.ok(await evaluate(`document.querySelector('.example-card[aria-current=true] .type-badge').classList.contains('is-current')`));
-  await evaluate(`document.querySelector('#examples-link-top').click()`);
+  await evaluate(`document.querySelector('#editor-link-top').click()`);
   await wait('document.querySelector("[data-view=editor]").hidden === false');
   await evaluate(`mdEditor.setValue(${JSON.stringify('---\ntype: skill\n---\n# 测试')})`);
   await wait('JSON.parse(sessionStorage.getItem("md2pdf:draft") || "{}").previewType === "skill"');

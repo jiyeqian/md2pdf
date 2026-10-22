@@ -25,11 +25,11 @@ const wsJs = await read('web/editor-workspace.js');
 const wsCss = await read('web/editor-workspace.css');
 
 // ---------------------------------------------------------------- index.html
-test('头部品牌：主标题 md2pdf，副标题编辑器，页面标题 md2pdf', () => {
-  assert.match(indexHtml, /<h1 class="brand-logo">md2pdf<\/h1>/);
-  assert.match(indexHtml, /<p class="brand-sub" id="app-view-label">编辑器<\/p>/);
+test('头部品牌只显示居中对齐的图标与主标题', () => {
+  assert.match(indexHtml, /<h1 class="brand-logo">MAKE MD2PDF GREAT<\/h1>/);
+  assert.ok(!indexHtml.includes('brand-sub') && !indexHtml.includes('app-view-label'));
   assert.equal((indexHtml.match(/<header class="topbar"/g) || []).length, 1, '单页应用只保留一个顶栏');
-  assert.match(indexHtml, /<title>make md2pdf great<\/title>/);
+  assert.match(indexHtml, /<title>md2pdf<\/title>/);
   assert.ok(!/Markdown 排版工作台<\/p>/.test(indexHtml), '不应残留旧的描述文案');
 });
 
@@ -47,21 +47,24 @@ test('导航栏示例库入口改为「模板库」，编辑器与库页标题�
   assert.match(indexHtml, /<a id="examples-link-top" class="button-link nav-square" href="\/" aria-label="模板库" title="模板库" data-view-link="templates"><svg[^>]*aria-hidden="true"/);
   assert.ok(!/示例库/.test(indexHtml), '编辑器不应再残留「示例库」字样');
   // 库页标题 / 副标题同步为「模板库」。
-  assert.match(examplesHtml, /<title>make md2pdf great · 模板库<\/title>/);
-  assert.match(examplesHtml, /<h1>md2pdf<\/h1><p id="app-view-label">模板库<\/p>/);
+  assert.match(examplesHtml, /<title>模板库 · md2pdf<\/title>/);
+  assert.match(examplesHtml, /<h1 class="brand-logo">MAKE MD2PDF GREAT<\/h1>/);
+  assert.ok(!examplesHtml.includes('app-view-label'));
   assert.ok(!/示例库/.test(examplesHtml), '库页不应再残留「示例库」标题');
 });
 
 test('空白会话草稿不阻止默认示例载入；模板库以预览卡片呈现', () => {
   assert.match(appJs, /draft\.md\.trim\(\)/, '空草稿不应覆盖启动默认示例');
   assert.match(examplesJs, /'use strict';[\s\S]*?\(\(\) => \{/, '模板脚本应隔离作用域，避免阻止编辑器脚本解析');
-  assert.match(examplesJs, /viewLink\.dataset\.viewLink = view === 'templates' \? 'editor' : 'templates'/, '共享顶栏导航目标应随当前页面切换');
+  assert.match(examplesJs, /link\.dataset\.viewLink === view/);
+  assert.match(examplesJs, /link\.setAttribute\('aria-current', 'page'\)/);
+  assert.ok(!examplesJs.includes('templateNavIcon.hidden'));
   assert.match(indexHtml, /<ul id="example-list" class="example-cards"/);
   assert.match(examplesJs, /className = 'template-card-preview'/);
   assert.match(examplesJs, /aria-label', '从该模板创建'/);
   assert.ok(!indexHtml.includes('template-search') && !indexHtml.includes('detail-source'), '模板库不显示搜索或 Markdown 源码区');
   assert.ok(!indexHtml.includes('examples-heading') && !examplesHtml.includes('examples-heading'), '模板库不显示额外标题区');
-  assert.match(indexHtml, /data-nav-icon="templates"[\s\S]*data-nav-icon="editor"/, '顶栏提供可切换的模板库与主页图标');
+  assert.match(indexHtml, /data-nav-icon="editor"[\s\S]*data-nav-icon="templates"/, '顶栏编辑器与模板库图标固定');
   assert.match(examplesCss, /\.example-cards\{[^}]*display:grid;grid-template-columns:repeat\(auto-fit/);
   assert.match(examplesCss, /@media\(max-width:760px\)[\s\S]*?\.example-cards\{grid-template-columns:1fr/);
   assert.match(examplesCss, /\.example-card-copy\{height:96px/);
@@ -489,7 +492,7 @@ test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执�
   const menuButtons = (basicMenu.children || []).reduce((out, row) => out.concat(row.children || []), []);
   const itemFor = label => menuButtons.find(b => b.getAttribute('aria-label') === label);
   const topButton = label => all.find(n => n.tagName === 'BUTTON' && n.getAttribute && n.getAttribute('aria-label') === label);
-  assert.deepEqual(menuButtons.filter(b => ['有序列表', '右缩进', '左缩进'].includes(b.getAttribute('aria-label'))).map(b => b.getAttribute('aria-label')), ['有序列表', '右缩进', '左缩进']);
+  assert.deepEqual(menuButtons.filter(b => ['有序列表', '左缩进', '右缩进'].includes(b.getAttribute('aria-label'))).map(b => b.getAttribute('aria-label')), ['有序列表', '左缩进', '右缩进']);
   assert.ok(itemFor('二级标题') && itemFor('行内公式'), '第二级应含标题与行内公式');
   assert.ok(topButton('图表引用') && topButton('公式引用'), '第一级应含图表引用与公式引用');
 
@@ -844,15 +847,18 @@ test('选项模型：范围默认值（元数据缺省回退），空值不发�
   assert.equal(model.rangeOptionValue('margin', undefined), undefined);
 });
 
-test('两页标语居中且弱化，模板页面文案一致', async () => {
+test('两页品牌标语单行展示，模板页面文案一致', async () => {
   const examples = await read('web/examples.html');
-  for (const html of [indexHtml, examples]) assert.match(html, /<p class="topbar-tagline">MAKE MD2PDF GREAT<\/p>/);
+  for (const html of [indexHtml, examples]) {
+    assert.match(html, /<h1 class="brand-logo">MAKE MD2PDF GREAT<\/h1>/);
+    assert.ok(!html.includes('topbar-tagline'));
+  }
   assert.match(examples, /id="example-list" class="example-cards"/);
   assert.ok(!examples.includes('examples-heading'));
   assert.match(examplesJs, /从该模板创建/);
   assert.ok(!examples.includes('使用此示例'));
   assert.ok(!examples.includes('template-search') && !examples.includes('detail-source'));
-  assert.match(appCss, /\.topbar-tagline\{[^}]*left:50%[^}]*color:#9aa5b3/);
+  assert.match(appCss, /\.brand-logo\{white-space:nowrap;color:#9aa5b3\}/);
 });
 
 test('预览点击关闭浮层仅接受当前 iframe 与当前 revision 的消息', () => {

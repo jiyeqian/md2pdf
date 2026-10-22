@@ -1,7 +1,7 @@
 /* md2pdf 编辑器专业助手面板（大纲 · 引用检查）
  *
  * 归属：仅服务 editor-pro.js 生成的 .md-pro-* 结构，不改动 app.css / editor-core.css。
- * 内容显示在面板右侧的可调宽悬浮侧栏，不改变正文布局。
+ * 内容显示在面板右侧的可调宽停靠侧栏。
  */
 
 .md-pro-panel { color: #35445a; font-size: 12px; }
@@ -88,3 +88,14 @@
 .md-quick-actions svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .md-quick-actions button:hover, .md-quick-actions button.is-active { background: #e8edf3; }
 .md-quick-actions button:focus-visible { outline: 2px solid #557ba6; }
+
+.md-pro-section>summary{cursor:pointer;list-style:none;align-items:center}
+.md-pro-section>summary::-webkit-details-marker{display:none}
+.md-pro-section>summary::before{content:'›';width:10px;flex:none}
+.md-pro-section[open]>summary::before{content:'⌄'}
+.md-pro-section>summary h3{flex:1}
+.md-pro-outline-label{display:flex;align-items:center;min-width:0}
+.md-pro-outline-label>.md-pro-outline-item{flex:1;min-width:0}
+.md-pro-outline-disclosure{width:18px;flex:0 0 18px;padding:3px 0;border:0;background:transparent;color:inherit;font:inherit;font-size:16px;cursor:pointer}
+.md-pro-outline-children{margin-left:12px}
+.md-pro-outline-children[hidden]{display:none}
