@@ -17,6 +17,20 @@ const emptyPreview = document.querySelector('#empty-preview');
 const configErrorsEl = document.querySelector('#config-errors');
 const topExamplesLink = document.querySelector('#examples-link-top');
 const currentTemplateEl = document.querySelector('#current-template');
+function trackUsage(event, properties) {
+  try { window.md2pdfAnalytics?.track(event, properties); } catch { /* 统计不得影响文档操作。 */ }
+}
+let previewTelemetry;
+function finishPreviewTelemetry(success) {
+  const sample = previewTelemetry;
+  if (!sample || sample.revision !== revision) return;
+  previewTelemetry = null;
+  const ms = Math.max(0, Date.now() - sample.started);
+  trackUsage('preview_finished', {
+    success, duration: ms < 1000 ? 'lt1s' : ms < 3000 ? '1to3s' : ms < 10000 ? '3to10s' : ms < 30000 ? '10to30s' : 'gte30s',
+    length: sample.length, template: sample.template,
+  });
+}
 
 const DRAFT_KEY = 'md2pdf:draft';
 const HANDOFF_KEY = 'md2pdf:handoff';
@@ -628,6 +642,10 @@ async function renderPreview() {
     return;
   }
   controller = new AbortController();
+  const size = editor.value.length;
+  previewTelemetry = { revision: current, started: Date.now(),
+    length: size < 1000 ? 'lt1k' : size < 10000 ? '1kto10k' : size < 50000 ? '10kto50k' : 'gte50k',
+    template: form.elements.type.value || 'general' };
   setStatus('正在生成预览…');
   try {
     const explicit = form.elements.type.value;
@@ -648,6 +666,7 @@ async function renderPreview() {
     if (current !== revision) return;
     renderedEffective = result.effective || {};
     renderedTemplateType = result.type || result.effective?.type || '';
+    if (previewTelemetry?.revision === current) previewTelemetry.template = renderedTemplateType || 'general';
     if (result.policy) applyPolicy(result.policy);
     if (currentTemplateEl) {
       const labels = policyDoc?.labels?.type || {};
@@ -664,10 +683,11 @@ async function renderPreview() {
     preview.srcdoc = injectRevision(result.html, current);
     saveDraft();
     setStatus('正在加载公式、图表与分页…');
-    previewTimer = setTimeout(() => { if (current === revision) setStatus('排版等待超时，请修改内容或重试。', true); }, 60000);
+    previewTimer = setTimeout(() => { if (current === revision) { finishPreviewTelemetry(false); setStatus('排版等待超时，请修改内容或重试。', true); } }, 60000);
   } catch (error) {
     // 乱序响应：已被更新的请求取代（Abort 或 revision 落后）时直接忽略，不让陈旧失败覆盖新成功。
     if (error.name === 'AbortError' || current !== revision) return;
+    finishPreviewTelemetry(false);
     if (Array.isArray(error.configErrors) && error.configErrors.length) {
       // 配置无效：保留上次成功预览（不重置 iframe），列出错误行号，禁止导出 PDF。
       showConfigErrors(error.configErrors, hasPreview);
@@ -705,11 +725,13 @@ window.addEventListener('message', event => {
   }
   if (previewRevision !== revision) return;
   if (event.data.type === 'md2pdf-ready') {
+    finishPreviewTelemetry(true);
     clearTimeout(previewTimer);
     if (!downloading) setStatus('预览已更新');
   } else if (event.data.type === 'md2pdf-source' && Number.isSafeInteger(event.data.line) && event.data.line > 0 && event.data.line <= editor.value.split('\n').length) {
     document.dispatchEvent(new CustomEvent('md-preview-source', { detail: { line: event.data.line } }));
   } else if (event.data.type === 'md2pdf-error') {
+    finishPreviewTelemetry(false);
     clearTimeout(previewTimer);
     setStatus(event.data.error || '预览排版失败。', true);
   }
@@ -887,6 +909,7 @@ document.addEventListener('keydown', event => {
 form.addEventListener('submit', event => event.preventDefault());
 form.elements.type.addEventListener('change', () => {
   const value = form.elements.type.value;
+  if (value) trackUsage('template_selected', { template: value, theme: form.elements.theme.value || 'elegant' });
   if (!value && policyDoc && policyDoc.autoPolicy) applyPolicy(policyDoc.autoPolicy);
   else if (value && policyDoc && policyDoc.policy && policyDoc.policy[value]) applyPolicy(policyDoc.policy[value]);
 });
@@ -908,6 +931,7 @@ window.addEventListener('md2pdf-template-created', async () => {
   } catch { setStatus('草稿保存失败，已保留当前文档。', true); return; }
   writeStore(HANDOFF_KEY, null);
   window.currentTemplateId = handoff.id || '';
+  trackUsage('template_selected', { template: handoff.type || handoff.id, theme: form.elements.theme.value || 'elegant' });
   if (handoff.type) {
     if (policyDoc?.policy?.[handoff.type]) applyPolicy(policyDoc.policy[handoff.type]);
     form.elements.type.value = handoff.type;
@@ -942,6 +966,8 @@ download.addEventListener('click', async () => {
     return;
   }
   if (!form.reportValidity()) return;
+  const exportMethod = window.__MD2PDF_STATIC_BASE__ ? 'browser-print' : 'server-pdf';
+  trackUsage('export_started', { method: exportMethod });
   downloading = true;
   updateCount();
   setDownloadState(true);
@@ -991,6 +1017,7 @@ download.addEventListener('click', async () => {
     else setStatus('PDF 已生成，下载已开始。');
   } catch (error) {
     // 下载请求同样可能因文档配置错误被拒：提示行号并禁用后续导出，Markdown 下载不受影响。
+    trackUsage('export_failed', { method: exportMethod, code: error.status === 504 ? 'timeout' : error.status === 503 ? 'unavailable' : 'failed' });
     if (Array.isArray(error.configErrors) && error.configErrors.length) {
       showConfigErrors(error.configErrors, hasPreview);
       setStatus('配置无效 · 无法生成 PDF，请先修正文档配置。', true);

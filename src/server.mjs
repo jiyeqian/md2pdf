@@ -1,5 +1,7 @@
 import http from 'node:http';
 import { versionInfo } from './version.mjs';
+import { analyticsConfig } from './analytics-config.mjs';
+import { createOperationalMetrics } from './operational-metrics.mjs';
 import { appCacheScript } from './app-cache.mjs';
 import { isIP } from 'node:net';
 import path from 'node:path';
@@ -58,9 +60,12 @@ function validateLanHost(lanHost, publicHost) {
   if (publicHost) throw new Error('局域网模式与公网模式不能同时启用');
 }
 
-export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '', lanHost = process.env.MD2PDF_LAN_HOST || '', doiResolver = createDoiResolver().resolve } = {}) {
+export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '', lanHost = process.env.MD2PDF_LAN_HOST || '', doiResolver = createDoiResolver().resolve, operationalMetrics, metricsFile = '' } = {}) {
   validateLanHost(lanHost, publicHost);
   const productInfo = versionInfo('node');
+  const analytics = analyticsConfig();
+  const metrics = createOperationalMetrics({ enabled: operationalMetrics ?? Boolean(publicHost), file: metricsFile });
+  const pageCsp = analytics.enabled ? PAGE_CSP.replace("connect-src 'self'", "connect-src 'self' " + new URL(analytics.endpoint).origin) : PAGE_CSP;
   let browser, tmpRoot, closed = false, queued = 0, tail = Promise.resolve();
   let doiRequests = 0;
   // 公网部署时由反向代理转发，Host 为沙箱内部域名；本地开发保持仅本机可访问。
@@ -107,13 +112,18 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   for (const id of ['general', 'paper', 'gb', 'skill']) staticRoutes.set('/template-previews/' + id + '.png', ['web/template-previews/' + id + '.png', 'image/png']);
   staticRoutes.set('/src/frontmatter-fields.mjs', ['src/frontmatter-fields.mjs', 'text/javascript']);
   staticRoutes.set('/version.mjs', ['web/version.mjs', 'text/javascript']);
+  for (const file of ['analytics.mjs', 'analytics-schema.mjs', 'analytics-bootstrap.mjs', 'analytics.css', 'privacy.html']) {
+    staticRoutes.set('/' + file, ['web/' + file, file.endsWith('.css') ? 'text/css' : file.endsWith('.html') ? 'text/html' : 'text/javascript']);
+  }
   staticRoutes.set('/runtime-request.mjs', ['web/runtime-request.mjs', 'text/javascript']);
   for (const name of ['doi', 'bibtex']) staticRoutes.set('/icons/' + name + '.svg', ['web/icons/' + name + '.svg', 'image/svg+xml']);
   const server = http.createServer(async (req, res) => {
+    const started = performance.now();
+    res.once('finish', () => metrics.record(req.method, req.url, res.statusCode, performance.now() - started));
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', PAGE_CSP);
+    res.setHeader('Content-Security-Policy', pageCsp);
     const json = (status, body) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(body)); };
     try {
       const port = server.address()?.port;
@@ -137,6 +147,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         const catalog = await exampleCatalog();
         const bootstrap = [
           ['/api/version', productInfo],
+          ['/analytics-config.json', analytics],
           ['/api/policy', webPolicyDocument()],
           ['/api/frontmatter-values', frontmatterValueCatalog()],
           ['/api/examples', { examples: catalog.map(({ id, type, title, summary }) => ({ id, type, title, description: summary })) }],
@@ -149,8 +160,10 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
         res.end(await appCacheScript(ROOT, staticRoutes, bootstrap)); return;
       }
-      if (req.method === 'GET' && staticRoutes.has(req.url)) {
-        const [file, type] = staticRoutes.get(req.url);
+      // 推广参数只用于来源分类，不改变静态资源路由。
+      const staticPath = new URL(req.url, 'http://localhost').pathname;
+      if (req.method === 'GET' && staticRoutes.has(staticPath)) {
+        const [file, type] = staticRoutes.get(staticPath);
         const target = path.join(ROOT, file);
         if (!existsSync(target)) { json(404, { error: '页面不存在' }); return; }
         res.writeHead(200, { 'Content-Type': type.startsWith('image/') ? type : `${type}; charset=utf-8` }); res.end(await readFile(target)); return;
@@ -167,6 +180,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8' }); res.end(example.md); return;
       }
       if (req.method === 'GET' && req.url === '/api/version') { json(200, productInfo); return; }
+      if (req.method === 'GET' && req.url === '/analytics-config.json') { json(200, analytics); return; }
       if (req.method === 'GET' && req.url === '/api/frontmatter-values') { json(200, frontmatterValueCatalog()); return; }
       if (req.method === 'GET' && req.url === '/api/policy') { json(200, webPolicyDocument()); return; }
       if (req.method === 'GET' && req.url === '/api/examples') {
@@ -222,7 +236,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   });
   server.requestTimeout = 15000;
   server.headersTimeout = 10000;
-  return { server, async close() {
+  return { server, operationalMetrics: metrics.snapshot, async close() {
     closed = true;
     const stopped = new Promise(resolve => server.listening ? server.close(resolve) : resolve());
     server.closeIdleConnections?.();
@@ -231,6 +245,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     await resetBrowser();
     server.closeAllConnections?.();
     await stopped;
+    metrics.close();
     if (tmpRoot) await rm(tmpRoot, { recursive: true, force: true });
   } };
 }
@@ -240,7 +255,9 @@ export function startServer({ port = Number(process.env.PORT || 3000), publicHos
   validateLanHost(lanHost, publicHost);
   const productInfo = versionInfo('node');
   const host = publicHost || lanHost ? '0.0.0.0' : '127.0.0.1';
-  const app = createApp({ publicHost, lanHost });
+  const enabled = Boolean(publicHost) && process.env.MD2PDF_OPERATIONAL_METRICS !== '0';
+  const metricsFile = enabled ? (process.env.MD2PDF_METRICS_FILE || path.join(os.homedir(), '.md2pdf', 'operational-metrics.json')) : '';
+  const app = createApp({ publicHost, lanHost, operationalMetrics: enabled, metricsFile });
   app.server.on('error', e => { console.error('md2pdf 服务启动失败：', e.message); process.exitCode = 1; });
   app.server.listen(port, host, () => console.log(`md2pdf 工作台：http://${lanHost || host}:${port}${publicHost ? `（公网域名 ${publicHost}）` : ''}`));
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { app.close().catch(e => { console.error(e.message); process.exitCode = 1; }); });

@@ -10,8 +10,10 @@
   function render() {
     const node = document.querySelector('#app-resource-status');
     if (!node) return;
-    const current = [...states.values()].sort((a,b)=>priority[b.state]-priority[a.state])[0];
+    const current = [...states.values()].filter(entry=>entry.state!=='unsupported').sort((a,b)=>priority[b.state]-priority[a.state])[0];
     node.replaceChildren();
+    const center = node.closest('.app-bottom-center');
+    if(center)center.title=[...states.values()].some(entry=>entry.state==='unsupported')?labels.unsupported:'';
     if (!current) return;
     const control = document.createElement(current.action ? 'button' : 'span');
     if (current.action) {control.type='button';control.disabled=busy;}

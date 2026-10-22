@@ -25,9 +25,20 @@ const wsJs = await read('web/editor-workspace.js');
 const wsCss = await read('web/editor-workspace.css');
 
 // ---------------------------------------------------------------- index.html
+test('底栏隐私与版本分栏，备份提示和更新状态共用中央位置', () => {
+  assert.match(indexHtml, /class="app-bottom-center"><div id="app-resource-status"[^>]*><\/div><p class="privacy">服务器不保存数据/);
+  assert.match(appCss, /\.app-bottom\{[^}]*grid-template-columns:minmax\(0,1fr\) auto minmax\(0,1fr\)/);
+  assert.match(appCss, /\.app-bottom-center\{grid-column:2/);
+  assert.match(appCss, /#app-resource-status:not\(:empty\)\+\.privacy\{display:none\}/);
+  assert.match(appCss, /#analytics-slot\{[^}]*justify-self:start;[^}]*font:inherit;color:inherit/);
+  assert.match(appCss, /#app-version\{[^}]*justify-self:end;[^}]*font:inherit;color:inherit/);
+  assert.match(appCss, /@media\(max-width:700px\)\{[\s\S]*?\.app-bottom-center\{grid-column:1\/-1;grid-row:2\}/);
+});
+
 test('头部品牌只显示居中对齐的图标与主标题', () => {
   assert.match(indexHtml, /<h1 class="brand-logo">MAKE MD2PDF GREAT<\/h1>/);
   assert.ok(!indexHtml.includes('brand-sub') && !indexHtml.includes('app-view-label'));
+
   assert.equal((indexHtml.match(/<header class="topbar"/g) || []).length, 1, '单页应用只保留一个顶栏');
   assert.match(indexHtml, /<title>md2pdf<\/title>/);
   assert.ok(!/Markdown 排版工作台<\/p>/.test(indexHtml), '不应残留旧的描述文案');

@@ -89,6 +89,7 @@ fi
 
 ( cd "$TARGET" && node --test tests/skill-install-checks.mjs ) || FAIL=1
 ( cd "$TARGET" && npm run test:config ) || FAIL=1
+( cd "$TARGET" && npm run test:analytics ) || FAIL=1
 
 # ------------------------------------------------- 反向自测（守卫真的会失败）
 # 只会"全绿"的校验等于没有校验：故意破坏一份副本，确认校验确实报错。
