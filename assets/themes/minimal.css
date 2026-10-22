@@ -1,40 +1,74 @@
-/* 主题：minimal —— 纯黑白灰，无底色块，适合正式公文/报告 */
+/* 主题：minimal —— 用字号、字重和留白表达结构，减少装饰。 */
 :root {
-  --ink: #141414;
-  --ink-soft: #3d3d3d;
-  --accent: #555555;
+  --ink: #000000;
+  --ink-soft: #000000;
+  --accent: #000000;
   --accent-soft: #b8b8b8;
   --paper: #ffffff;
   --tint: #ffffff;
   --rule: #dcdcdc;
-  --text: #1f1f1f;
-  --muted: #8c8c8c;
+  --text: #000000;
+  --muted: #000000;
 
   --code-bg: #f6f6f6;
-  --code-fg: #23272e;
+  --code-fg: #000000;
 
   --font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-head: "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-head: var(--font-body);
   --font-mono: "SF Mono", "Menlo", "Consolas", monospace;
 
-  --masthead-border: 1px solid #141414;
+  --masthead-border: none;
+  --task-marker-left: -1.6em;
 }
 
-.kicker { color: var(--muted); }
-h2::before { width: 3px; background: #141414; }
+.kicker { color: var(--muted); letter-spacing: 0; }
+h2 { padding: 0; border-bottom: none; }
+h2::before { content: none; }
+em { font-style: italic; }
 
-.meta { border-left: 2px solid #141414; background: #fff; padding-left: 14px; }
-.toc { background: #fff; }
-blockquote { background: #fff; border-left: 2px solid #141414; }
+.meta { border: none; background: transparent; padding: 0; gap: 16px; }
+.meta-item + .meta-item { border-left: none; padding-left: 0; }
+.meta-label { letter-spacing: 0; }
+.toc { border: 1px solid var(--rule); background: var(--code-bg); border-radius: 4px; padding: 14px 18px; }
+.abstract, .keywords { border: none; background: transparent; padding: 0; }
+blockquote { background: transparent; border-left: 3px solid #777777; }
 
+code { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 3px; }
+pre { border: 1px solid var(--rule); border-radius: 4px; }
+pre code { background: transparent; border: none; border-radius: 0; }
+.hljs [class] { color: inherit; }
+
+table { border-bottom: 2px solid var(--ink); }
+tbody td { border-bottom: none; padding: .25em 10px; line-height: 1.5; }
+/* 首末行分别补偿字体行盒与边线的留白，使视觉间隔接近行间空白。 */
+tbody tr:first-child td { padding-top: .55em; }
+tbody tr:last-child td { padding-bottom: .35em; }
 thead th {
-  background: #fff; color: var(--ink);
-  border-top: 1px solid #141414; border-bottom: 1px solid #141414;
+  background: transparent; color: var(--ink); letter-spacing: 0;
+  border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink);
 }
-tbody tr:nth-child(even) { background: #fafafa; }
+tbody tr:nth-child(even) { background: transparent; }
+tbody td:first-child { font-weight: inherit; color: inherit; }
 
-ol li::before {
-  background: #fff; border: 1px solid #b8b8b8; border-radius: 0;
-  color: var(--ink);
+ol { list-style: decimal; padding-left: 1.6em; }
+ul { list-style: disc; padding-left: 1.6em; }
+ul ul { list-style: circle; }
+ul ul ul { list-style: square; }
+ol > li, ul > li { padding-left: 0; }
+/* 在线分页会添加序号伪元素；原生标记保留 start/value，避免重复显示。 */
+ol > li::before, ul > li::before { display: none !important; }
+.toc ol, .references, .footnotes { list-style: none; padding-left: 0; }
+
+/* 自绘只读任务标记，避免浏览器禁用态将黑色淡化；勾线不依赖打印背景。 */
+li > input[type="checkbox"], li > p > input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  border: 1px solid #000; border-radius: 2px;
+  background: transparent; color: #000; opacity: 1;
 }
-ul li::before { background: #8c8c8c; border-radius: 0; }
+li > input[type="checkbox"]:checked::after,
+li > p > input[type="checkbox"]:checked::after {
+  content: ""; position: absolute; left: .27em; top: .08em;
+  width: .25em; height: .5em;
+  border: solid #000; border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}

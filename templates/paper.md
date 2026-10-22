@@ -1,13 +1,29 @@
-<!--
-  模板：paper（学术论文）—— frontmatter 含 abstract 或 keywords 即自动识别，
-  报头三件套（作者行 + 摘要 + 关键词）自动生成。
-  用法：md2pdf 本文件.md
-  完整示例见 examples/paper.md。
--->
 ---
+# 模板：paper（学术论文）—— frontmatter 含 abstract 或 keywords 即自动识别，
+# 报头三件套（作者行 + 摘要 + 关键词）自动生成。
+# 用法：md2pdf 本文件.md
+# 完整示例见 examples/paper.md。
 title: 论文标题
-author: 方鸿渐
-affiliation: 克莱登大学
+authors:
+  - name: 高松年
+    affiliations: [sanlu-mechanical]
+  - name: 朱千里
+    affiliations: [beiping]
+  - name: 赵辛楣
+    affiliations: [sanlu-automation]
+  - name: 方鸿渐
+    affiliations: [sanlu-automation, clayton]
+    corresponding: true
+    email: fanghongjian@clayton.edu
+affiliations:
+  - id: sanlu-mechanical
+    text: 三闾大学机械工程系
+  - id: beiping
+    text: 北平国学专修社
+  - id: sanlu-automation
+    text: 三闾大学自动化研究所
+  - id: clayton
+    text: 克莱登大学机械工程系
 abstract: 一段 200 字左右的摘要，说明问题、方法与主要结果。
 keywords:
   - 关键词一

@@ -146,7 +146,7 @@ md2pdf 文件名.md --theme minimal --toc
 | `-t, --toc` | 文首插入目录页（取自 H2），条目可点击跳转 |
 | `--bibliography-title <text>` | 参考文献自动渲染；设置章节标题，默认“参考文献”，空字符串隐藏标题 |
 | `--numbering <mode>` | 章节编号：`auto`（默认，识别到已有编号则不动）｜ `force`（强制）｜ `none`（不加） |
-| `--number-scheme <n>` | 编号方案：`arabic`（默认，`1` / `1.1`）｜ `gb`（章条制）｜ `cjk`（`一、` / `（一）`）｜ `chapter`（`第1章`）
+| `--number-scheme <n>` | 编号方案：`arabic`（`1` / `1.1`）｜ `gb`（章条制）｜ `cjk`（通用文档默认，`一、` / `（一）`）｜ `chapter`（`第1章`）
 | `--enable link-urls` | 正文链接后附 URL（纸质可读） |
 | `--enable landscape` / `--font-size <pt>` / `--margin <mm>` | 横向 / 字号（默认 10.5）/ 页边距（默认 20；可写 "20,18" = 上下,左右） |
 | `--footer-left <text>` / `--footer-center <text>` / `--footer-right <text>` | 设置页脚文字；中间未指定时显示页码；`--disable footer` 关闭整个页脚 |

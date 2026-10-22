@@ -28,6 +28,7 @@
   --font-mono: "SF Mono", "Menlo", "Consolas", monospace;
 
   --masthead-border: none;
+  --task-marker-left: -1.4em;
 
   /* 封面标准名称：官方封面嵌入字体为方正小标宋（FZXBSK），缺失时回退华文中宋/宋体 */
   --font-title: "方正小标宋_GBK", "方正小标宋", "STZhongsong", "Songti SC", serif;

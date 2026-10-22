@@ -11,12 +11,14 @@
  * 命名约定：配置字段在 frontmatter 中同时接受 kebab-case（与 CLI 同名，如 font-size）
  * 与历史 camelCase（fontSize）；同一层两种写法取值一致时允许，矛盾时报错。
  * 普通元数据字段（name / author / 标准号 / description …）不做配置校验，原样保留，
- * 允许 null / 列表 / 对象；keywords / tags 限定为字符串列表。
+ * 允许 null / 列表 / 对象；keywords / tags 限定为字符串列表，
+ * authors / affiliations 校验结构与单位引用。
  *
  * 安全：解析结果经 sanitize 深拷贝，剔除 __proto__ / prototype / constructor，
  * 防止 YAML 反序列化污染原型；解析设置 maxAliasCount 上限，避免别名炸弹。
  */
 import { TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from './frontmatter-fields.mjs';
+import { paperAuthorErrors, paperAuthorWarnings } from './paper-authors.mjs';
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { GLOBAL_OPTION_DEFAULTS, FEATURES, RUNTIME_FEATURES, listThemes } from './options.mjs';
 import { PROFILE_NAMES } from './profiles.mjs';
@@ -189,6 +191,9 @@ function ingestLayer(raw, opts = {}) {
       throw cfgError(`字段 ${key} 必须为字符串列表（例如：${key}: ["词条一", "词条二"]）`, key, positions[key]);
     }
   }
+  const authorErrors = paperAuthorErrors(raw);
+  if (authorErrors.length) throw new ConfigError(authorErrors[0].message, authorErrors.map(issue => ({...issue, ...(positions[issue.field] || positions.authors || positions.affiliations)})));
+  for (const message of paperAuthorWarnings(raw)) if (!warnings.includes(message)) warnings.push(message);
   const fields = {};
   const enableList = [];
   const disableList = [];

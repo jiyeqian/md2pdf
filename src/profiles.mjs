@@ -19,8 +19,7 @@ export const PROFILES = {
     kicker: null,
     // 元信息条不按技能文档样式渲染
     skillMeta: false,
-    // 不覆盖全局默认选项
-    defaults: {},
+    defaults: { numberScheme: 'cjk' },
   },
 
 

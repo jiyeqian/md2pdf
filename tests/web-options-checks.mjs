@@ -188,3 +188,9 @@ test('页面方向在普通类型可切换、国标锁定，生效值可从文�
   assert.equal(effectiveOptions({}, 'general', { landscape: true }).landscape, true);
   assert.equal(effectiveOptions({ landscape: false }, 'general', { landscape: true }).landscape, false);
 });
+
+test('通用文档策略默认中文编号，并保留有效配置覆盖', () => {
+  assert.equal(policyForType('general').controls.numberScheme.fixedValue, 'cjk');
+  assert.equal(policyForType('general', {numberScheme:'arabic'}).controls.numberScheme.fixedValue, 'arabic');
+  assert.equal(policyForType('paper').controls.numberScheme.fixedValue, 'arabic');
+});

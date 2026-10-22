@@ -46,8 +46,8 @@ export const FM_ALIASES = {
 };
 
 // Supported metadata from render.mjs and docs/gb-template.md; no type detection is needed.
-export const METADATA_FIELDS = ['version', 'name', 'description', 'category', 'author', 'affiliation', 'abstract', 'keywords', 'tags', 'standard', '中文名称', '英文名称', 'title_en', '标准号', '国际标准分类号', 'ICS', 'ics', '中国标准分类号', 'CCS', 'ccs', '发布日期', 'date', '实施日期', '全部代替标准', '代替标准', '发布单位', '发布机构', '发布机构2', '文件类别', '采标国际标准', '采标英文名称', '采标中文名称', '采标程度', 'gb_source_cover', '标准状态', '标准性质', '标准类别', '标准计划', '归口单位', '执行单位', '主管部门', '起草单位', '起草人'];
-export const ARRAY_FIELDS = new Set(['enable', 'disable', 'keywords', 'tags', '发布单位', '起草单位', '起草人']);
+export const METADATA_FIELDS = ['version', 'name', 'description', 'category', 'author', 'affiliation', 'authors', 'affiliations', 'abstract', 'keywords', 'tags', 'standard', '中文名称', '英文名称', 'title_en', '标准号', '国际标准分类号', 'ICS', 'ics', '中国标准分类号', 'CCS', 'ccs', '发布日期', 'date', '实施日期', '全部代替标准', '代替标准', '发布单位', '发布机构', '发布机构2', '文件类别', '采标国际标准', '采标英文名称', '采标中文名称', '采标程度', 'gb_source_cover', '标准状态', '标准性质', '标准类别', '标准计划', '归口单位', '执行单位', '主管部门', '起草单位', '起草人'];
+export const ARRAY_FIELDS = new Set(['enable', 'disable', 'keywords', 'tags', 'authors', 'affiliations', '发布单位', '起草单位', '起草人']);
 export const FRONTMATTER_FIELDS = [...new Set([...[...CONFIG_FIELDS].map(field => FM_ALIASES[field]?.[0] || field), ...METADATA_FIELDS.filter(field => field !== 'ics' && field !== 'ccs')])];
 export const canonicalFrontmatterField = key => Object.entries(FM_ALIASES).find(([, aliases]) => aliases.includes(key))?.[0] || key;
 

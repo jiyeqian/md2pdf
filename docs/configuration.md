@@ -1,5 +1,7 @@
 # 文档配置与兼容迁移
 
+通用文档默认采用中文编号方案（`number-scheme: cjk`，如“一、”“（一）”）；frontmatter 或显式选项仍可选择其他方案。学术论文、技能文档和国家标准的默认方案保持不变。
+
 ## 配置优先级
 
 CLI 显式参数或 Web App 显式控件 → frontmatter → 文档类型默认 → 全局默认。
@@ -107,3 +109,33 @@ CLI 对应 `--header-left/--header-center/--header-right <text>` 和 `--colophon
 模板与文档类型一一对应；每种类型可提供多个主题，国标可仅保留固定主题。模板库根据当前草稿的有效类型默认选中模板，并以反色类型标签标记；浏览其他模板不更改当前草稿。
 
 编辑器的 `⌘/Ctrl+S` 下载当前 Markdown，`⌘/Ctrl+O` 打开 Markdown，`⌘/Ctrl+P` 下载 PDF，预览获得焦点时也可使用。全屏与窗口共用同步开关；切换布局时保留内容位置。
+
+## 学术论文的作者与单位
+
+旧写法 `author: 姓名` 和 `affiliation: 单位` 继续支持。不同作者对应不同单位时，使用对象列表；作者顺序就是署名顺序，单位按 `affiliations` 列表顺序自动编号：
+
+```yaml
+authors:
+  - name: 张三
+    affiliations: [thu, cas]
+  - name: 李四
+    affiliations: [cas]
+  - name: 王五
+    affiliations: [thu]
+    corresponding: true
+    email: wang@example.com
+affiliations:
+  - id: thu
+    text: 清华大学自动化系，北京
+  - id: cas
+    text: 中国科学院自动化研究所，北京
+```
+
+- 一人可引用多个单位，多人可共享同一单位。ID 是字符串，不需要等于显示序号。
+- 单作者，或所有作者共享完全相同的一组单位时省略单位编号；作者归属存在差异时使用数字上标，与对应单位建立文内链接。
+- 未被任何作者引用的单位不显示，原文保留；过滤后连续编号。CLI 输出提醒，WebApp 专业助手的检查列表显示提醒，可定位到 `affiliations` 所在行。
+- `corresponding: true` 使用独立的星号标记，并列出通讯作者姓名和可选邮箱。支持多名通讯作者。
+- `authors` 与 `affiliations` 必须同时填写为非空对象列表；每位作者必须有非空 `name` 和非空单位 ID 列表。
+- 新写法不能与旧 `author`／`affiliation` 同时填写，即使旧字段为空也会提示冲突。重复单位 ID、不存在或重复的单位引用、字段拼写及类型错误都会报错。
+- `corresponding` 必须是布尔值；填写邮箱时必须是非空邮箱字符串。姓名与单位按纯文本处理，不执行其中的 HTML。
+- 这些字段使用共用解析和排版流程，适用于 CLI、服务端 WebApp 与静态 WebApp 的学术论文模板。模板识别仍按现有规则（`abstract`／`keywords`），或显式指定 `type: paper`。

@@ -62,7 +62,7 @@ md2pdf ${VERSION} — Markdown 转 PDF
       --line-height <倍数>   正文行距，默认 1.9
       --margin <mm>          页边距，支持“上下,左右”
       --numbering <模式>     章节编号：auto、force、none；默认 auto
-      --number-scheme <名称> 编号方案：${SCHEME_NAMES.join('、')}；默认 arabic
+      --number-scheme <名称> 编号方案：${SCHEME_NAMES.join('、')}；通用文档默认 cjk，其他模板沿用各自默认
   -t, --toc                  显示目录
       --toc-depth <层级>     目录深度：1、2；默认 1
       --header-{left,center,right} <文字>
@@ -103,6 +103,7 @@ md2pdf ${VERSION} — Markdown 转 PDF
 
 async function renderOne(mdPath, opts, chrome, tmpRoot) {
   const res = await render(await readFile(mdPath, 'utf8'), opts, { filename: mdPath });
+  for (const warning of res.warnings) console.warn('md2pdf: ' + warning);
   if (opts.htmlOnly) return { ...res, html: res.pagedHtml ?? res.html };
   const tmpDir = await mkdtemp(path.join(tmpRoot, 'doc-'));
   const htmlPath = path.join(tmpDir, 'index.html');
