@@ -28,6 +28,13 @@ try {
   await new Promise((resolve,reject)=>{app.server.once('error',reject);app.server.listen(0,'127.0.0.1',resolve);});
   const base=`http://127.0.0.1:${app.server.address().port}`;
   const md=await readFile(new URL('../web/examples/paper.md',import.meta.url),'utf8');
+  const unusedMd=md.replace('affiliations:\n', 'affiliations:\n  - id: unused\n    text: 未引用测试单位\n');
+  const warningBody=JSON.stringify({md:unusedMd,opts:{}});
+  const nodeWarnings=await(await nativeFetch(base+'/api/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:warningBody})).json();
+  const staticWarnings=await(await staticRuntime.appFetch('/api/resolve',{body:warningBody})).json();
+  assert.deepEqual(nodeWarnings,staticWarnings);
+  assert.equal(nodeWarnings.authorDiagnostics.length,1);
+  assert.match(nodeWarnings.authorDiagnostics[0].message,/未引用测试单位/);
   await chrome.start();
   await chrome.send('Emulation.setDeviceMetricsOverride',{width:820,height:1200,deviceScaleFactor:1,mobile:false});
   for (const theme of ['elegant','minimal']) {

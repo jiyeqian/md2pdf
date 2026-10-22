@@ -18,7 +18,7 @@
  * 防止 YAML 反序列化污染原型；解析设置 maxAliasCount 上限，避免别名炸弹。
  */
 import { TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from './frontmatter-fields.mjs';
-import { paperAuthorErrors } from './paper-authors.mjs';
+import { paperAuthorErrors, paperAuthorWarnings } from './paper-authors.mjs';
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { GLOBAL_OPTION_DEFAULTS, FEATURES, RUNTIME_FEATURES, listThemes } from './options.mjs';
 import { PROFILE_NAMES } from './profiles.mjs';
@@ -193,6 +193,7 @@ function ingestLayer(raw, opts = {}) {
   }
   const authorErrors = paperAuthorErrors(raw);
   if (authorErrors.length) throw new ConfigError(authorErrors[0].message, authorErrors.map(issue => ({...issue, ...(positions[issue.field] || positions.authors || positions.affiliations)})));
+  for (const message of paperAuthorWarnings(raw)) if (!warnings.includes(message)) warnings.push(message);
   const fields = {};
   const enableList = [];
   const disableList = [];

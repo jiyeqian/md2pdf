@@ -51,7 +51,7 @@ export async function appFetch(input, init = {}) {
       return json(await doi.resolve(JSON.parse(init.body).doi));
     }
     const body = JSON.parse(init.body || '{}');
-    if (url.pathname === '/api/resolve') { const {type,policy} = resolveWebInput(body); return json({type,policy}); }
+    if (url.pathname === '/api/resolve') { const {type,policy,authorDiagnostics} = resolveWebInput(body); return json({type,policy,authorDiagnostics}); }
     if (url.pathname === '/api/render') return json(await renderDocument(body));
     return json({error:'静态版本不提供此服务。'},404);
   } catch (error) { return json({error:error.message, ...(error.configErrors ? {configErrors:error.configErrors} : {})}, error.status || 500); }

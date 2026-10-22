@@ -89,3 +89,33 @@ test('论文模板、CLI 和 Web 示例统一使用指定的四位作者与四�
     assert.match(result.html,/通讯作者：方鸿渐/);
   }
 });
+
+test('隐藏未引用单位并提示，保留原始元数据且编号连续', async () => {
+  const fields={...people, affiliations:[{id:'unused',text:'闲置单位'},...people.affiliations]};
+  const md=source(fields);
+  const parsed=parseFrontmatter(md);
+  assert.equal(parsed.fm.affiliations.length,3);
+  assert.equal(parsed.warnings.length,1);
+  assert.match(parsed.warnings[0],/闲置单位.*未被任何作者引用/);
+  const {html,warnings}=await paper(fields);
+  assert.ok(!html.includes('闲置单位'));
+  assert.equal(warnings.length,1);
+  assert.match(html,/id="md2pdf-affiliation-1"><sup[^>]*>1<\/sup> 清华/);
+  const {resolveWebInput}=await import('../src/web-input.mjs');
+  const {authorDiagnostics}=resolveWebInput({md,opts:{type:'paper'}});
+  assert.equal(authorDiagnostics[0].message,warnings[0]);
+  assert.equal(authorDiagnostics[0].line,3);
+});
+test('单作者多单位和多人共享同一组单位均无需归属编号', async () => {
+  for (const authors of [[{name:'甲',affiliations:['thu','cas'],corresponding:true}],
+    [{name:'甲',affiliations:['thu','cas'],corresponding:true},{name:'乙',affiliations:['cas','thu']}]]) {
+    const {html}=await paper({authors,affiliations:people.affiliations});
+    assert.ok(!html.includes('href="#md2pdf-affiliation-'));
+    assert.match(html,/清华大学/);
+    assert.match(html,/中国科学院/);
+    assert.match(html,/href="#md2pdf-correspondence">\*/);
+  }
+});
+test('旧 affiliation 单独填写仍显示',async()=>{
+  assert.match((await paper({affiliation:'独立单位'})).html,/<span class="affil">独立单位<\/span>/);
+});

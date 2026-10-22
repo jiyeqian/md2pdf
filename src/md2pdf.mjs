@@ -103,6 +103,7 @@ md2pdf ${VERSION} — Markdown 转 PDF
 
 async function renderOne(mdPath, opts, chrome, tmpRoot) {
   const res = await render(await readFile(mdPath, 'utf8'), opts, { filename: mdPath });
+  for (const warning of res.warnings) console.warn('md2pdf: ' + warning);
   if (opts.htmlOnly) return { ...res, html: res.pagedHtml ?? res.html };
   const tmpDir = await mkdtemp(path.join(tmpRoot, 'doc-'));
   const htmlPath = path.join(tmpDir, 'index.html');

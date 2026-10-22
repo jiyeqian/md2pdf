@@ -143,11 +143,11 @@ export function validateInput(body) {
 // 在线接口与静态适配器共用解析、优先级及可调选项校验。
 export function resolveWebInput(body) {
   const { md, opts, filename } = validateInput(body);
-  const { fm, positions } = parseFrontmatter(md);
+  const { fm, positions, warnings = [] } = parseFrontmatter(md);
   const explicitType = opts.type ?? fm.type;
   if (explicitType !== undefined && explicitType !== '' && !PROFILE_NAMES.includes(explicitType)) throw error(400, `未知文档类型：${explicitType}（可用：${PROFILE_NAMES.join(', ')}）`);
   const type = detectProfile({ basename:'', fm, explicit:explicitType || undefined }).name;
   const effective = effectiveOptions(opts, type, fm, positions);
   assertOptionsAllowed(opts, type, frontmatterOverrides(fm));
-  return { md, opts, filename, type, effective, policy:policyForType(type, effective) };
+  return { md, opts, filename, type, effective, authorDiagnostics: warnings.filter(message => message.includes('未被任何作者引用')).map(message => ({ severity:'warning', message, line:positions.affiliations?.line })), policy:policyForType(type, effective) };
 }

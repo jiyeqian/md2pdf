@@ -523,7 +523,7 @@ export async function render(src, options = {}, context = {}) {
     link(token) { const label = this.parser.parseInline(token.tokens); return /^(https?:|mailto:|#)/i.test(token.href) ? `<a href="${esc(token.href)}">${label}</a>` : label; },
   } });
   // 配置解析与校验统一走 config 模块：YAML 语法/重复键/类型冲突在此抛 ConfigError。
-  const { fm, body: rawBody, positions } = parseFrontmatter(src);
+  const { fm, body: rawBody, positions, warnings = [] } = parseFrontmatter(src);
   const profile = detectProfile({ basename: path.basename(mdPath), fm, explicit: options.type || fm.type });
   // 有效配置：explicit(CLI/Web) > FM > profile.defaults > 全局默认，统一由 config.resolveDocumentOptions 合并。
   const eff = resolveDocumentOptions(options, fm, profile, { ...context, positions });
@@ -907,7 +907,7 @@ export async function render(src, options = {}, context = {}) {
   const headerTemplate = showHeader ? `<div style="width:100%;font-size:8px;color:#8a8578;display:flex;padding:0 12mm;">${['Left', 'Center', 'Right'].map(side => `<span style="flex:1;min-width:0;overflow-wrap:anywhere;text-align:${side.toLowerCase()};">${esc(eff['header' + side] || '')}</span>`).join('')}</div>` : '<span></span>';
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
-  return { title, html: assetHtml(toc && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
+  return { title, warnings, html: assetHtml(toc && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
     printOptions: { footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
       landscape: eff.landscape, outline: eff.outline !== false, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
 }

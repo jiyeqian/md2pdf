@@ -36,15 +36,25 @@ export function paperAuthorErrors(fm) {
   return errors;
 }
 
+export function paperAuthorWarnings(fm) {
+  if (!fm.authors || paperAuthorErrors(fm).length) return [];
+  const used = new Set(fm.authors.flatMap(author => author.affiliations.map(id => id.trim())));
+  return fm.affiliations.filter(unit => !used.has(unit.id.trim())).map(unit =>
+    `单位“${unit.text.trim()}”（${unit.id.trim()}）未被任何作者引用，已在排版中隐藏`);
+}
+
 export function paperAuthorsHtml(fm, esc) {
   if (!fm.authors) {
     return fm.author || fm.affiliation
       ? '<p class="authors">' + (fm.author ? '<span class="author">' + esc(fm.author) + '</span>' : '') + (fm.affiliation ? '<span class="affil">' + esc(fm.affiliation) + '</span>' : '') + '</p>'
       : '';
   }
-  const units = fm.affiliations.map((unit, index) => ({id: unit.id.trim(), text: unit.text.trim(), number: index + 1}));
+  const used = new Set(fm.authors.flatMap(author => author.affiliations.map(id => id.trim())));
+  const units = fm.affiliations.filter(unit => used.has(unit.id.trim())).map((unit, index) => ({id: unit.id.trim(), text: unit.text.trim(), number: index + 1}));
   const byId = new Map(units.map(unit => [unit.id, unit]));
-  const showNumbers = units.length > 1;
+  const firstRefs = new Set(fm.authors[0].affiliations.map(id => id.trim()));
+  const showNumbers = fm.authors.some(author => author.affiliations.length !== firstRefs.size
+    || author.affiliations.some(id => !firstRefs.has(id.trim())));
   const authors = fm.authors.map(author => {
     const refs = showNumbers ? author.affiliations.map(id => byId.get(id.trim())).sort((a,b) => a.number-b.number).map(unit => `<a href="#md2pdf-affiliation-${unit.number}">${unit.number}</a>`) : [];
     const marks = refs.join(',') + (author.corresponding ? '<a href="#md2pdf-correspondence">*</a>' : '');

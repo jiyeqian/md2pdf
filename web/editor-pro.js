@@ -54,6 +54,7 @@ const ANY_LIST_MARK = /^(?:[ \t]*(?:[*+-]|\d+[.)])[ \t]+)/;
 let api = null;
 let initialized = false;
 let latestAnalysis = null;
+let authorDiagnostics = [];
 let currentType = '';
 let renderTimer = null;
 let panel = null;
@@ -355,7 +356,7 @@ function buildPanel() {
 
   const diagSection = el('section', 'md-pro-section');
   const diagHead = el('div', 'md-pro-section-head');
-  diagHead.append(el('h3', null, '引用与章节检查'), el('span', 'md-pro-count', ''));
+  diagHead.append(el('h3', null, '引用、章节与作者单位检查'), el('span', 'md-pro-count', ''));
   const diagList = el('div', 'md-pro-diags');
   diagSection.append(diagHead, diagList);
 
@@ -413,10 +414,10 @@ function renderOutline(analysis) {
 function renderDiagnostics(analysis) {
   const list = refs.diagList;
   clear(list);
-  const diagnostics = analysis ? analysis.diagnostics : [];
+  const diagnostics = (analysis ? analysis.diagnostics : []).concat(authorDiagnostics);
   const shown = diagnostics.slice(0, MAX_DIAGNOSTICS);
   if (!shown.length) {
-    list.append(el('p', 'md-pro-empty', '未发现引用或章节号问题。'));
+    list.append(el('p', 'md-pro-empty', '未发现引用、章节号或作者单位问题。'));
   } else {
     for (const diag of shown) {
       const severity = diag.severity === 'warning' ? 'warning' : 'info';
@@ -449,9 +450,9 @@ function render() {
   const counts = analysis ? analysis.counts : { headings: 0, targets: 0, occurrences: 0, diagnostics: 0, truncated: false };
   refs.typeLine.textContent = '文档类型：' + (TYPE_LABELS[currentType] || currentType || '自动识别');
   refs.status.textContent = '标题 ' + counts.headings + ' · 引用目标 ' + counts.targets
-    + ' · 引用出现 ' + counts.occurrences + ' · 检查项 ' + counts.diagnostics
+    + ' · 引用出现 ' + counts.occurrences + ' · 检查项 ' + (counts.diagnostics + authorDiagnostics.length)
     + (counts.truncated ? '（诊断已截断）' : '');
-  refs.meta.textContent = (TYPE_LABELS[currentType] || currentType || '自动识别') + ' · ' + counts.diagnostics + ' 项检查';
+  refs.meta.textContent = (TYPE_LABELS[currentType] || currentType || '自动识别') + ' · ' + (counts.diagnostics + authorDiagnostics.length) + ' 项检查';
   renderOutline(analysis);
   renderDiagnostics(analysis);
 }
@@ -461,7 +462,18 @@ function scheduleAnalysis() {
   renderTimer = setTimeout(function () {
     const editor = getApi();
     if (!editor) return;
-    latestAnalysis = analyzeValue(editor.getValue());
+    const source = editor.getValue();
+    latestAnalysis = analyzeValue(source);
+    authorDiagnostics = [];
+    if (/^---[ \t]*\r?\n/.test(source)) {
+      appFetch('/api/resolve', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({md:source,opts:{}})})
+        .then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if (!data || editor.getValue() !== source) return;
+          authorDiagnostics = data.authorDiagnostics || [];
+          render();
+        }).catch(() => {});
+    }
     if (!currentType) currentType = inferType(editor.getValue(), formTypeValue());
     render();
   }, ANALYZE_DEBOUNCE);
@@ -495,6 +507,7 @@ function init() {
 
   document.addEventListener('md-editor-change', function (event) {
     const next = event && event.detail ? event.detail.value : null;
+    authorDiagnostics = [];
     scheduleAnalysis();
     if (typeof next === 'string') latestAnalysis = analyzeValue(next); // 立即反映当前值
   });
