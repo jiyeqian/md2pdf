@@ -489,7 +489,7 @@ test('引用插入展示已有候选；无候选保留空引用并提示', () =>
     const status = { textContent: '' };
     const sandbox = {
       getApi: () => ({ getValue: () => '', getSelection: () => ({ from: 0, to: 0 }), replaceRange: (a, b, text) => { inserted = text; }, startCompletion: () => { opened++; } }),
-      analyzeValue: () => ({}), provideCompletions: () => ({ options: candidates ? [{ label: 'existing' }] : [] }),
+      analyzeValue: () => ({}), analyzeAndCache: () => ({}), provideCompletions: () => ({ options: candidates ? [{ label: 'existing' }] : [] }),
       selectRange: (a, b) => { selection = [a, b]; }, document: { getElementById: () => status },
     };
     vm.runInNewContext(fn + `\n;insertReference('${mode}');`, sandbox);
@@ -507,6 +507,23 @@ test('short reference commands use icon entry rather than textual completion', (
   for (const input of ['\\', '\\r', '\\e', '\\b']) {
     assert.equal(provideCompletions({ text: input, pos: input.length }, analyzeMarkdown(input)), null);
   }
+});
+
+test('编辑即时分析可被防抖分析与快捷消费者复用', () => {
+  const source = fs.readFileSync(new URL('../web/editor-pro.js', import.meta.url), 'utf8');
+  const start = source.indexOf('function analyzeAndCache(');
+  const end = source.indexOf('\nfunction ', start + 1);
+  const helper = source.slice(start, end);
+  let calls = 0;
+  const sandbox = {
+    latestAnalysis: null,
+    latestAnalysisSource: null,
+    analyzeValue(value) { calls++; return { source: value }; },
+  };
+  vm.runInNewContext(helper + `\n;analyzeAndCache('paste'); analyzeAndCache('paste'); analyzeAndCache('paste');`, sandbox);
+  assert.equal(calls, 1, '同一粘贴内容的即时分析和防抖/快捷路径只分析一次');
+  vm.runInNewContext(`analyzeAndCache(${JSON.stringify('paste\n追加')});`, sandbox);
+  assert.equal(calls, 2, '新输入仍会立即分析');
 });
 
 test('frontmatter fields match independent of document type and preserve optimal caret', () => {

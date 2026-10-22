@@ -18,13 +18,15 @@ import { frontmatterValueCatalog } from './config.mjs';
 import { exampleCatalog, findExample, defaultExampleSource } from './web-examples.mjs';
 import { createDoiResolver } from './doi.mjs';
 import { documentDownloadName } from '../web/editor-files.mjs';
+import { createDocumentAssetCache } from '../web/platform-static/document-asset-cache.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LIMIT = 24 * 1024 * 1024;
 // srcdoc inherits the parent policy, so trusted in-document scripts/styles must also be allowed here.
 const PAGE_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' data:; style-src 'self' 'unsafe-inline'; frame-src 'self' about:; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 const assetFiles = ['vendor/mathjax/tex-svg.js', 'vendor/mermaid/mermaid.min.js', 'vendor/pagedjs/paged.polyfill.min.js'];
-let assetCache;
+const documentAssetCache = createDocumentAssetCache(4);
+const assetBoundary = versionInfo('node');
 const error = (status, message) => Object.assign(new Error(message), { status });
 
 export { imageBudget, validateInput } from './web-input.mjs';
@@ -43,12 +45,18 @@ async function readBody(req, limit = LIMIT) {
   catch { throw error(400, 'JSON 格式错误'); }
 }
 
-export async function webDocument(html, preview = false, type = 'general') {
-  if (!assetCache) assetCache = Promise.all(assetFiles.map(async file => [file, await readFile(path.join(ROOT, file), 'utf8')])).then(entries => new Map(entries));
-  const assets = await assetCache;
-  const scripts = [...assets].map(([file, js]) => [pathToFileURL(path.join(ROOT, file)).href, 'data:text/javascript;base64,' + Buffer.from(js).toString('base64')]);
-  const logo = await readFile(path.join(ROOT, 'assets/gb-logo.svg'));
-  return prepareWebDocument(html, { scripts, logoUrl:pathToFileURL(path.join(ROOT, 'assets/gb-logo.svg')).href, logoData:'data:image/svg+xml;base64,' + logo.toString('base64'), preview, type });
+export async function webDocument(html, preview = false, type = 'general', signal) {
+  signal?.throwIfAborted();
+  const dataUrl = (file, mime) => {
+    const url = pathToFileURL(path.join(ROOT, file)).href;
+    const key = `${assetBoundary.version}:${assetBoundary.commit}:${assetBoundary.deployment}|${url}`;
+    return documentAssetCache(key, async () => `data:${mime};base64,${(await readFile(path.join(ROOT, file))).toString('base64')}`).then(data => [url, data]);
+  };
+  const scripts = await Promise.all(assetFiles.map(file => dataUrl(file, 'text/javascript')));
+  signal?.throwIfAborted();
+  const logo = await dataUrl('assets/gb-logo.svg', 'image/svg+xml');
+  signal?.throwIfAborted();
+  return prepareWebDocument(html, { scripts, logoUrl:logo[0], logoData:logo[1], preview, type });
 }
 
 function validateLanHost(lanHost, publicHost) {
@@ -209,16 +217,25 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); json(405, { error: '请使用 POST' }); return; }
       const { md, opts, filename, type, effective, policy, authorDiagnostics } = resolveWebInput(await readBody(req));
       if (req.url === '/api/resolve') { json(200, { type, policy, authorDiagnostics }); return; }
-      const rendered = await render(md, opts, { webSafe: true });
       if (req.url === '/api/render') {
-        json(200, {
-          html: await webDocument(attachSourcePositions(rendered.pagedHtml, md), true, rendered.type),
-          type: rendered.type,
-          policy: policyForType(rendered.type, effective),
-          effective,
-        });
+        const controller = new AbortController();
+        const abortOnDisconnect = () => { if (!res.writableEnded) controller.abort(); };
+        if (req.aborted) abortOnDisconnect();
+        else req.once('aborted', abortOnDisconnect);
+        res.once('close', abortOnDisconnect);
+        try {
+          const rendered = await render(md, opts, { webSafe: true, signal:controller.signal });
+          controller.signal.throwIfAborted();
+          const html = await webDocument(attachSourcePositions(rendered.pagedHtml, md), true, rendered.type, controller.signal);
+          controller.signal.throwIfAborted();
+          json(200, { html, type:rendered.type, policy:policyForType(rendered.type, effective), effective });
+        } finally {
+          req.off('aborted', abortOnDisconnect);
+          res.off('close', abortOnDisconnect);
+        }
         return;
       }
+      const rendered = await render(md, opts, { webSafe: true });
       const pdf = await pdfTask(await webDocument(rendered.html), rendered.printOptions);
       // 与 Markdown 下载共用同一命名：客户端提交的 filename 优先（共享浏览器时间戳），
       // 否则服务端按同一 helper 从正文推导，保证直接调用 API 的命名同样合理。

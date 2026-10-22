@@ -32,6 +32,8 @@
     "bench:readiness": "node tests/performance-readiness-benchmark.mjs",
     "test:pdf-smoke": "node tests/performance-pdf-smoke.mjs",
     "test:static-runtime": "node tests/static-runtime-checks.mjs",
+    "test:document-assets": "node --test tests/document-asset-cache-checks.mjs",
+    "test:render-cancellation": "node --test tests/render-cancellation-checks.mjs",
     "test": "bash scripts/validate.sh",
     "demo:pdf": "node src/md2pdf.mjs examples/general.md -o /tmp/md2pdf-general.pdf",
     "start": "node src/server.mjs",

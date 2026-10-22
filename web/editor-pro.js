@@ -54,6 +54,7 @@ const ANY_LIST_MARK = /^(?:[ \t]*(?:[*+-]|\d+[.)])[ \t]+)/;
 let api = null;
 let initialized = false;
 let latestAnalysis = null;
+let latestAnalysisSource = null;
 let authorDiagnostics = [];
 let currentType = '';
 let renderTimer = null;
@@ -72,6 +73,15 @@ function getApi() {
 function analyzeValue(value) {
   try { return analyzeMarkdown(value == null ? '' : String(value)); }
   catch (err) { return null; }
+}
+
+function analyzeAndCache(value) {
+  const source = value == null ? '' : String(value);
+  if (source !== latestAnalysisSource) {
+    latestAnalysis = analyzeValue(source);
+    latestAnalysisSource = source;
+  }
+  return latestAnalysis;
 }
 
 function coreHelpers() {
@@ -104,7 +114,7 @@ function formTypeValue() {
 function collectTaken() {
   const editor = getApi();
   if (!editor) return new Set();
-  const analysis = analyzeValue(editor.getValue());
+  const analysis = analyzeAndCache(editor.getValue());
   const taken = new Set();
   if (analysis) {
     for (const target of analysis.targets) taken.add(target.id);
@@ -202,7 +212,7 @@ function insertReference(mode) {
   const close = mode === 'noteref' ? ']' : '}';
   let candidates = false;
   try {
-    const result = provideCompletions({ text: open, pos: open.length }, analyzeValue(editor.getValue()));
+    const result = provideCompletions({ text: open, pos: open.length }, analyzeAndCache(editor.getValue()));
     candidates = !!(result && Array.isArray(result.options) && result.options.length);
   } catch (err) { /* 分析失败时仍保留可编辑的空引用。 */ }
   editor.replaceRange(sel.from, sel.to, open + close);
@@ -497,7 +507,7 @@ function scheduleAnalysis() {
     const editor = getApi();
     if (!editor) return;
     const source = editor.getValue();
-    latestAnalysis = analyzeValue(source);
+    analyzeAndCache(source);
     authorDiagnostics = [];
     if (/^---[ \t]*\r?\n/.test(source)) {
       appFetch('/api/resolve', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({md:source,opts:{}})})
@@ -525,7 +535,7 @@ function init() {
 
   installQuickActions(editor);
   const value = editor.getValue();
-  latestAnalysis = analyzeValue(value);
+  analyzeAndCache(value);
   currentType = inferType(value, formTypeValue());
 
   let frontmatterValues = {};
@@ -534,8 +544,8 @@ function init() {
   // 补全使用「当前文本」实时分析，避免节流导致候选过期。
   if (typeof editor.setCompletions === 'function') {
     editor.setCompletions(function (context) {
-      latestAnalysis = analyzeValue(context.text);
-      return provideCompletions(Object.assign({}, context, { frontmatterValues }), latestAnalysis);
+      const analysis = analyzeAndCache(context.text);
+      return provideCompletions(Object.assign({}, context, { frontmatterValues }), analysis);
     });
   }
 
@@ -543,7 +553,7 @@ function init() {
     const next = event && event.detail ? event.detail.value : null;
     authorDiagnostics = [];
     scheduleAnalysis();
-    if (typeof next === 'string') latestAnalysis = analyzeValue(next); // 立即反映当前值
+    if (typeof next === 'string') analyzeAndCache(next); // 立即分析供快捷操作复用
   });
   document.addEventListener('md-document-type', function (event) {
     const type = event && event.detail ? event.detail.type : '';

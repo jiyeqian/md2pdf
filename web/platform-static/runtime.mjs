@@ -1,3 +1,4 @@
+import { createDocumentAssetCache } from './document-asset-cache.mjs';
 const base = new URL('./', import.meta.url);
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers:{'Content-Type':'application/json'} });
 const resource = file => new URL(file, base).href;
@@ -25,33 +26,57 @@ function base64(text) {
   for (let i=0;i<bytes.length;i+=32768) binary += String.fromCharCode(...bytes.subarray(i,i+32768));
   return btoa(binary);
 }
-const assets = new Map();
-async function documentAssets(html) {
+const assetDataUrls = createDocumentAssetCache(4);
+let assetBoundaryPromise;
+async function assetBoundary() {
+  if (!assetBoundaryPromise) {
+    const pending = fetch(resource('version-data.json')).then(async response => {
+      if (!response.ok) throw new Error('当前版本资源信息不可用。');
+      const info = await response.json();
+      return `${info.version || ''}:${info.commit || ''}:${info.deployment || 'static'}:${base.href}`;
+    });
+    const wrapped = pending.catch(error => {
+      if (assetBoundaryPromise === wrapped) assetBoundaryPromise = null;
+      throw error;
+    });
+    assetBoundaryPromise = wrapped;
+  }
+  return assetBoundaryPromise;
+}
+async function dataUrl(url, mime, boundary, signal) {
+  signal?.throwIfAborted();
+  const resolved = new URL(url, base).href;
+  const result = await assetDataUrls(`${boundary}|${resolved}`, async () => {
+    const response = await fetch(resolved);
+    if (!response.ok) throw new Error('离线排版资源缺失，请联网更新。');
+    return `data:${mime};base64,${base64(await response.text())}`;
+  });
+  signal?.throwIfAborted();
+  return result;
+}
+async function documentAssets(html, signal) {
   const files = ['vendor/mathjax/tex-svg.js','vendor/mermaid/mermaid.min.js','vendor/pagedjs/paged.polyfill.min.js'];
   const referenced = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>/g)].map(match => match[1]);
   const needed = files.map(file => referenced.find(src => src.endsWith('/' + file))).filter(Boolean);
-  const key = needed.join('|');
-  if (!assets.has(key)) assets.set(key, (async () => {
-    const scripts = await Promise.all(needed.map(async src => {
-      const response = await fetch(src);
-      if (!response.ok) throw new Error('离线排版资源缺失，请联网更新。');
-      return [src, 'data:text/javascript;base64,' + base64(await response.text())];
-    }));
-    return { scripts };
-  })());
-  try { return await assets.get(key); }
-  catch (error) { assets.delete(key); throw error; }
+  const boundary = await assetBoundary();
+  signal?.throwIfAborted();
+  const scripts = await Promise.all(needed.map(async src => [src, await dataUrl(src, 'text/javascript', boundary, signal)]));
+  signal?.throwIfAborted();
+  return { scripts };
 }
-export async function renderDocument(body, preview = true) {
+export async function renderDocument(body, preview = true, signal) {
   const { render, resolveWebInput, prepareWebDocument, attachSourcePositions } = await getRenderModules();
+  signal?.throwIfAborted();
   const resolved = resolveWebInput(body);
-  const rendered = await render(resolved.md, resolved.opts, {webSafe:true});
+  signal?.throwIfAborted();
+  const rendered = await render(resolved.md, resolved.opts, {webSafe:true,signal});
+  signal?.throwIfAborted();
   const html = rendered.pagedHtml || rendered.html;
-  const scripts = await documentAssets(html);
-  const logo = rendered.type === 'gb' ? await fetch(resource('assets/gb-logo.svg')).then(async response => {
-    if (!response.ok) throw new Error('离线标志资源缺失，请联网更新。');
-    return { logoUrl:resource('assets/gb-logo.svg'), logoData:'data:image/svg+xml;base64,' + base64(await response.text()) };
-  }) : {};
+  const scripts = await documentAssets(html, signal);
+  signal?.throwIfAborted();
+  const logoUrl = resource('assets/gb-logo.svg');
+  const logo = rendered.type === 'gb' ? { logoUrl, logoData:await dataUrl(logoUrl, 'image/svg+xml', await assetBoundary(), signal) } : {};
+  signal?.throwIfAborted();
   const prepared = prepareWebDocument(preview ? attachSourcePositions(html, resolved.md) : html, {...scripts,...logo,preview,type:rendered.type});
   return { html:prepared, type:rendered.type, effective:resolved.effective, policy:resolved.policy, outline:rendered.printOptions.outline };
 }
@@ -75,7 +100,10 @@ export async function appFetch(input, init = {}) {
     }
     const body = JSON.parse(init.body || '{}');
     if (url.pathname === '/api/resolve') { const { resolveWebInput } = await getRenderModules(); const {type,policy,authorDiagnostics} = resolveWebInput(body); return json({type,policy,authorDiagnostics}); }
-    if (url.pathname === '/api/render') return json(await renderDocument(body));
+    if (url.pathname === '/api/render') return json(await renderDocument(body, true, init.signal));
     return json({error:'静态版本不提供此服务。'},404);
-  } catch (error) { return json({error:error.message, ...(error.configErrors ? {configErrors:error.configErrors} : {})}, error.status || 500); }
+  } catch (error) {
+    if (error.name === 'AbortError') throw error;
+    return json({error:error.message, ...(error.configErrors ? {configErrors:error.configErrors} : {})}, error.status || 500);
+  }
 }

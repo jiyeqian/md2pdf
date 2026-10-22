@@ -3,6 +3,7 @@ export async function appFetch(input, init) {
   if (!window.__MD2PDF_STATIC_BASE__) return fetch(input, init);
   init?.signal?.throwIfAborted();
   const runtime = await import(new URL('runtime.mjs', window.__MD2PDF_STATIC_BASE__).href);
+  init?.signal?.throwIfAborted();
   const work = runtime.appFetch(input, init);
   if (!init?.signal) return work;
   let abort;

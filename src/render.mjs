@@ -507,8 +507,11 @@ function buildCover(fm, title, useDefaults = true) {
 }
 
 export async function render(src, options = {}, context = {}) {
+  const throwIfAborted = () => context.signal?.throwIfAborted();
+  throwIfAborted();
   const mdPath = context.filename || 'document.md';
   const { Marked } = await import(pathToFileURL(path.join(ROOT, 'vendor', 'marked.esm.js')).href);
+  throwIfAborted();
   const marked = new Marked({ gfm: true });
   const require = createRequire(import.meta.url);
   const hljs = require(path.join(ROOT, 'vendor', 'highlight', 'highlight.cjs'));
@@ -677,7 +680,9 @@ export async function render(src, options = {}, context = {}) {
   const themeFile = path.join(THEMES, `${effTheme}.css`);
   if (!existsSync(themeFile)) throw new Error(`未知主题：${effTheme}（可用：${listThemes().join(', ')}）`);
   const base = await readFile(path.join(ASSETS, 'base.css'), 'utf8');
+  throwIfAborted();
   const theme = await readFile(themeFile, 'utf8');
+  throwIfAborted();
   // 正文行距：webapp 选项 opts.lineHeight（有限数字 1.0–2.5，server 已校验范围）。
   // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 themes/gb.css 的
   // body{line-height:1.62} 直接覆盖，且 server 拒绝为 gb 传入 lineHeight。
@@ -830,6 +835,7 @@ export async function render(src, options = {}, context = {}) {
     (!profile.gbDoc && eff.footer !== false && eff.footerCenter === undefined ? 'auto' : 'off') + '">';
 
   let shell = await readFile(path.join(ASSETS, 'shell.html'), 'utf8');
+  throwIfAborted();
   if (profile.gbDoc && !coverHtml) {
     // Paged.js still assigns a page to the hidden masthead before named main.
     shell = shell.replace(/<header class="masthead">[\s\S]*?<\/header>/, '');

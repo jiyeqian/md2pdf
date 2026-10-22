@@ -641,7 +641,8 @@ async function renderPreview() {
     saveDraft();
     return;
   }
-  controller = new AbortController();
+  const activeController = new AbortController();
+  controller = activeController;
   const size = editor.value.length;
   previewTelemetry = { revision: current, started: Date.now(),
     length: size < 1000 ? 'lt1k' : size < 10000 ? '1kto10k' : size < 50000 ? '10kto50k' : 'gte50k',
@@ -652,18 +653,19 @@ async function renderPreview() {
     if (!explicit) {
       // 自动模式：先轻量识别类型，按识别结果适配控件，再渲染，避免发送被禁用的旧设置。
       let resolved = null;
-      try { resolved = await resolveDocument(controller.signal); }
+      try { resolved = await resolveDocument(activeController.signal); }
       catch (error) { if (error.name === 'AbortError') throw error; }
-      if (current !== revision) return;
+      if (current !== revision || activeController.signal.aborted) return;
       if (resolved && resolved.policy) applyPolicy(resolved.policy);
     } else if (policyDoc && policyDoc.policy && policyDoc.policy[explicit]) {
       applyPolicy(policyDoc.policy[explicit]);
     }
+    if (current !== revision || activeController.signal.aborted) return;
     // 自动识别时不回填 type：让服务端按 frontmatter / 自动探测决定类型，避免灌入假的显式值。
     const opts = collectedOptions();
-    const response = await request('/api/render', { md: editor.value, opts }, controller.signal);
+    const response = await request('/api/render', { md: editor.value, opts }, activeController.signal);
     const result = await response.json();
-    if (current !== revision) return;
+    if (current !== revision || activeController.signal.aborted) return;
     renderedEffective = result.effective || {};
     renderedTemplateType = result.type || result.effective?.type || '';
     if (previewTelemetry?.revision === current) previewTelemetry.template = renderedTemplateType || 'general';

@@ -1,0 +1,291 @@
+{
+  "date": "2026-10-22",
+  "runnerCommit": "66bc906",
+  "measurementStage": "pre-change-66bc906",
+  "resourceMetric": "top-frame ResourceTiming only; excludes service-worker/background fetch traffic and is not total network traffic",
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "deviceScaleFactor": 1,
+    "mobile": false
+  },
+  "platform": "darwin arm64 27.0.0",
+  "node": "v26.12.0",
+  "chrome": "Google Chrome 155.0.8059.85",
+  "targets": [
+    {
+      "name": "baseline-node",
+      "url": "http://127.0.0.1:3190/",
+      "runtime": "node"
+    },
+    {
+      "name": "baseline-static",
+      "url": "http://127.0.0.1:3191/",
+      "runtime": "static"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "cold-visible-desktop",
+      "rounds": 3,
+      "latency": 0,
+      "download": -1,
+      "cpu": 1,
+      "width": 1440,
+      "height": 1000,
+      "mobile": false
+    },
+    {
+      "name": "warm-visible-desktop",
+      "rounds": 1,
+      "latency": 0,
+      "download": -1,
+      "cpu": 1,
+      "width": 1440,
+      "height": 1000,
+      "mobile": false
+    },
+    {
+      "name": "weak-visible-desktop",
+      "rounds": 1,
+      "latency": 150,
+      "download": 750000,
+      "cpu": 4,
+      "width": 1440,
+      "height": 1000,
+      "mobile": false
+    }
+  ],
+  "samples": [
+    {
+      "target": "baseline-node",
+      "runtime": "node",
+      "targetCommit": "66bc906",
+      "scenario": "cold-visible-desktop",
+      "round": 1,
+      "appReadyMs": 180.90000000596046,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 864.9000000059605,
+      "previewAfterInputMs": 623.2000000029802,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 52,
+      "transferBytes": 2202192,
+      "decodedBytes": 2186592
+    },
+    {
+      "target": "baseline-node",
+      "runtime": "node",
+      "targetCommit": "66bc906",
+      "scenario": "cold-visible-desktop",
+      "round": 2,
+      "appReadyMs": 125.69999998807907,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 829.8999999910593,
+      "previewAfterInputMs": 613.7000000029802,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 52,
+      "transferBytes": 2202192,
+      "decodedBytes": 2186592
+    },
+    {
+      "target": "baseline-node",
+      "runtime": "node",
+      "targetCommit": "66bc906",
+      "scenario": "cold-visible-desktop",
+      "round": 3,
+      "appReadyMs": 139.29999999701977,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 753.4000000059605,
+      "previewAfterInputMs": 607.8000000119209,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 52,
+      "transferBytes": 2202192,
+      "decodedBytes": 2186592
+    },
+    {
+      "target": "baseline-node",
+      "runtime": "node",
+      "targetCommit": "66bc906",
+      "scenario": "warm-visible-desktop",
+      "round": 1,
+      "appReadyMs": 54.6000000089407,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 733.5,
+      "previewAfterInputMs": 610.2999999970198,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 51,
+      "transferBytes": 705930,
+      "decodedBytes": 2180783
+    },
+    {
+      "target": "baseline-node",
+      "runtime": "node",
+      "targetCommit": "66bc906",
+      "scenario": "weak-visible-desktop",
+      "round": 1,
+      "appReadyMs": 3741.5,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 5639,
+      "previewAfterInputMs": 1875.2000000029802,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 52,
+      "transferBytes": 2202192,
+      "decodedBytes": 2186592
+    },
+    {
+      "target": "baseline-static",
+      "runtime": "static",
+      "targetCommit": "66bc906",
+      "scenario": "cold-visible-desktop",
+      "round": 1,
+      "appReadyMs": 139.29999999701977,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 856.2000000029802,
+      "previewAfterInputMs": 638.2999999970198,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 72,
+      "transferBytes": 2475733,
+      "decodedBytes": 2454133
+    },
+    {
+      "target": "baseline-static",
+      "runtime": "static",
+      "targetCommit": "66bc906",
+      "scenario": "cold-visible-desktop",
+      "round": 2,
+      "appReadyMs": 138.20000000298023,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 859,
+      "previewAfterInputMs": 641.5999999940395,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 72,
+      "transferBytes": 2475733,
+      "decodedBytes": 2454133
+    },
+    {
+      "target": "baseline-static",
+      "runtime": "static",
+      "targetCommit": "66bc906",
+      "scenario": "cold-visible-desktop",
+      "round": 3,
+      "appReadyMs": 137.29999999701977,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 853.7000000029802,
+      "previewAfterInputMs": 634.1000000089407,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 72,
+      "transferBytes": 2475733,
+      "decodedBytes": 2454133
+    },
+    {
+      "target": "baseline-static",
+      "runtime": "static",
+      "targetCommit": "66bc906",
+      "scenario": "warm-visible-desktop",
+      "round": 1,
+      "appReadyMs": 223.90000000596046,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 909.8000000119209,
+      "previewAfterInputMs": 626.1000000089407,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 71,
+      "transferBytes": 0,
+      "decodedBytes": 2439760
+    },
+    {
+      "target": "baseline-static",
+      "runtime": "static",
+      "targetCommit": "66bc906",
+      "scenario": "weak-visible-desktop",
+      "round": 1,
+      "appReadyMs": 3878.7000000029802,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 6257.29999999702,
+      "previewAfterInputMs": 2356.7000000029802,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 72,
+      "transferBytes": 2475733,
+      "decodedBytes": 2454133
+    }
+  ]
+}
