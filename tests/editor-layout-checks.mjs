@@ -858,7 +858,7 @@ test('两页品牌标语单行展示，模板页面文案一致', async () => {
   assert.match(examplesJs, /从该模板创建/);
   assert.ok(!examples.includes('使用此示例'));
   assert.ok(!examples.includes('template-search') && !examples.includes('detail-source'));
-  assert.match(appCss, /\.brand-logo\{white-space:nowrap\}/);
+  assert.match(appCss, /\.brand-logo\{white-space:nowrap;color:#9aa5b3\}/);
 });
 
 test('预览点击关闭浮层仅接受当前 iframe 与当前 revision 的消息', () => {
