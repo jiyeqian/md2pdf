@@ -16,8 +16,8 @@ const chromePath=findChrome();
 const chromeVersion=spawnSync(chromePath,['--version'],{encoding:'utf8'}).stdout.trim();
 const commit=execFileSync('git',['rev-parse','--short','HEAD'],{encoding:'utf8'}).trim();
 const scenarios=process.env.MD2PDF_PERF_EXTRA==='1'?
-  [{name:'mobile-visible-short',rounds:1,latency:40,download:1500000,cpu:2,width:390,height:844,mobile:true,inputLength:300},
-    {name:'mobile-visible-long-paste',rounds:1,latency:40,download:1500000,cpu:2,width:390,height:844,mobile:true,inputLength:120000},
+  [{name:'mobile-visible-short',rounds:1,latency:40,download:1500000,cpu:2,width:390,height:844,mobile:true,inputLength:300,scrollPreviewIntoView:true},
+    {name:'mobile-visible-long-paste',rounds:1,latency:40,download:1500000,cpu:2,width:390,height:844,mobile:true,inputLength:120000,scrollPreviewIntoView:true},
     {name:'narrow-offscreen-long-paste',rounds:1,latency:0,download:-1,cpu:1,width:756,height:413,mobile:false,inputLength:120000,forceIframeOffscreen:true}]:
   [{name:'cold-visible-desktop',rounds:3,latency:0,download:-1,cpu:1,width:1440,height:1000,mobile:false},{name:'warm-visible-desktop',rounds:1,latency:0,download:-1,cpu:1,width:1440,height:1000,mobile:false},{name:'weak-visible-desktop',rounds:1,latency:150,download:750000,cpu:4,width:1440,height:1000,mobile:false}];
 const samples=[];
@@ -45,8 +45,9 @@ async function sample(kind,url,runtime,scenario,round){
       const appReady=await evaluate('window.__perfEvents.find(event=>event.type==="md-app-ready")||null');
       if(!appReady)return evaluate(`(()=>{const r=document.querySelector('#preview')?.getBoundingClientRect();return {appReadyMs:null,previewResult:'app-ready-timeout',previewEventMs:null,previewAfterInputMs:null,previewAfterAppReadyMs:null,visible:document.visibilityState==='visible',iframe:r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,intersects:r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth}:null}})()`);
       await evaluate('window.__previewMeasureStart=performance.now()');
+      if(scenario.scrollPreviewIntoView)await evaluate(`document.querySelector('#preview').scrollIntoView({block:'center'})`);
       if(scenario.forceIframeOffscreen)await evaluate(`document.querySelector('#preview').style.transform='translateY(2000px)'`);
-      await evaluate(`window.mdEditor.setValue(${JSON.stringify('# Performance sample\\n\\n'+'x'.repeat(scenario.inputLength||300))});document.querySelector('#markdown').dispatchEvent(new Event('input',{bubbles:true}))`);
+      await evaluate(`window.mdEditor.setValue(${JSON.stringify('# Performance sample\\n\\n'+'x'.repeat(scenario.inputLength||300))})`);
       for(let i=0;i<200;i++){
         if(await evaluate('window.__perfEvents?.find(event=>(event.type==="md-preview-ready"||event.type==="md-preview-error")&&event.at>=window.__previewMeasureStart)'))break;
         await new Promise(resolve=>setTimeout(resolve,100));
