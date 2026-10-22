@@ -39,6 +39,13 @@ Node 与静态 WebApp 共用 `web/cache-readiness.mjs`，启动时先读取 read
 
 ## 多场景采样
 
-可复跑脚本：`npm run bench:readiness`。脚本预期基线 Node/静态服务位于 3182/3183，候选 Node/静态服务位于 3190/3191；以每个目标自身版本端点记录提交号，固定 1440×1000 桌面视口，分开报告 app-ready 和严格成功的 preview-ready，并包含冷启动、同 profile 热重载及 150 ms/750 KB/s 网络、4× CPU 降速。前台普通场景要求 preview-ready 且 iframe 与视口相交。原样本使用无视口约束的 runner，预览耗时结论已作废；需在四个服务均可用时重新生成对照数据。隐藏/滚动与窄屏场景不计入桌面数据，尚待单独采样。
+可复跑脚本：`npm run bench:readiness`。脚本以每个目标自身版本端点记录提交号，固定 1440×1000 桌面视口，在 app-ready 后输入相同短文，分开报告 app-ready 与输入后的 preview-ready；正常场景要求成功事件和可视 iframe。包含三轮冷启动、一轮同 profile 热重载及一轮 150 ms/750 KB/s、4× CPU 降速。隐藏/滚动与窄屏场景不计入桌面数据，尚未采样。原始逐轮数据、平台与 Chrome 版本记录于 [performance-samples-2026-10-22.json](performance-samples-2026-10-22.json)。
 
-旧无视口数据不适用于预览时延结论；冷/热/弱网的候选与基线对比尚待重新采样，因此此处不报告性能差值。新的逐轮样本生成后再补表格。所有本机 loopback 与 CDP 限速结果只代表此环境，不等于真实手机或公网链路。
+| 运行方式 | 冷态 app-ready 中位 | 冷态输入后预览中位 | 冷态资源传输中位 | 弱网 app-ready | 弱网输入后预览 | 热重载 |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Node 基线 `38c6bdb` | 123 ms | 610 ms | 2.20 MB | 2,889 ms | 1,886 ms | app-ready timeout |
+| Node 候选 `95babae` | 137 ms | 629 ms | 2.20 MB | 3,544 ms | 2,352 ms | 57 ms / 608 ms 预览 |
+| 静态基线 `38c6bdb` | 127 ms | 706 ms | 1.98 MB | 3,872 ms | 1,362 ms | app-ready timeout |
+| 静态候选 `95babae` | 133 ms | 642 ms | 2.46 MB | 3,706 ms | 2,290 ms | app-ready timeout |
+
+候选静态冷态预览约快 64 ms，但传输量增加约 24%；Node 冷态变化较小。弱网样本中候选预览更慢，且每格只有一轮，不能据此推断稳定差异。静态热重载未就绪，基线 Node 热重载未就绪；不作热态比较。旧无视口数据不适用于预览时延结论。以上本机 loopback 与 CDP 限速结果不代表真实手机或公网链路。
