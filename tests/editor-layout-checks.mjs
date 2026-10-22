@@ -25,6 +25,16 @@ const wsJs = await read('web/editor-workspace.js');
 const wsCss = await read('web/editor-workspace.css');
 
 // ---------------------------------------------------------------- index.html
+test('底栏隐私、备份与版本分栏，资源状态独占一行', () => {
+  assert.match(indexHtml, /class="app-bottom"><div id="analytics-slot"><\/div><p class="privacy">服务器不保存数据，请及时<button id="privacy-save"[^>]*>下载备份<\/button>。<\/p><span id="app-version" hidden><\/span><div id="app-resource-status"/);
+  assert.match(appCss, /\.app-bottom\{[^}]*grid-template-columns:minmax\(0,1fr\) auto minmax\(0,1fr\)/, '等宽左右列使中间提示几何居中');
+  assert.match(appCss, /\.app-bottom \.privacy\{[^}]*text-align:center;font:inherit;color:inherit/);
+  assert.match(appCss, /#analytics-slot\{[^}]*justify-self:start;[^}]*font:inherit;color:inherit/);
+  assert.match(appCss, /#app-version\{[^}]*justify-self:end;[^}]*font:inherit;color:inherit/);
+  assert.match(appCss, /#app-resource-status\{grid-column:1\/-1/);
+  assert.match(appCss, /@media\(max-width:700px\)\{[\s\S]*?\.app-bottom \.privacy\{grid-column:1\/-1;grid-row:2\}/, '手机提示另起一行，保留左右操作空间');
+});
+
 test('头部品牌：主标题 md2pdf，副标题编辑器，页面标题 md2pdf', () => {
   assert.match(indexHtml, /<h1 class="brand-logo">md2pdf<\/h1>/);
   assert.match(indexHtml, /<p class="brand-sub" id="app-view-label">编辑器<\/p>/);

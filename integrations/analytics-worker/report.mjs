@@ -19,16 +19,28 @@ export function parseResults(output) {
   return value[0].results;
 }
 export function shapeReport(rows, days) {
-  const report = { periodDays: days, metric: 'events, not unique users or sessions', minimumDimensionCount: 5, dailyEvents: [], dimensions: {} };
+  const report = { periodDays: days, metric: 'event counts and consented active browsers, not unique people; no cross-site deduplication', minimumDimensionCount: 5, dailyEvents: [], activeBrowsers: { daily: [], period: [], sample: 'consented page views with a browser identifier; legacy events excluded; firstObserved means first record within retained history, not a new person or first install; daily distinct counts must not be summed into period counts' }, dimensions: {} };
   for (const row of rows) {
     if (!row || typeof row.group_name !== 'string' || typeof row.label !== 'string' || !Number.isSafeInteger(row.total) || row.total < 0) throw new Error('invalid-results');
     if (row.group_name === 'daily') {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(row.label) || typeof row.event !== 'string') throw new Error('invalid-results');
       report.dailyEvents.push({ day: row.label, event: row.event, count: row.total });
+    } else if (['active_daily', 'active_period', 'active_first_observed', 'active_returning'].includes(row.group_name)) {
+      if (typeof row.event !== 'string') throw new Error('invalid-results');
+      const item = { site: row.event, count: row.total };
+      if (row.group_name === 'active_daily') {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(row.label)) throw new Error('invalid-results');
+        report.activeBrowsers.daily.push({ day: row.label, ...item });
+      } else {
+        let period = report.activeBrowsers.period.find(entry => entry.site === row.event);
+        if (!period) { period = { site: row.event, count: 0, firstObserved: 0, returning: 0 }; report.activeBrowsers.period.push(period); }
+        period[row.group_name === 'active_period' ? 'count' : row.group_name === 'active_first_observed' ? 'firstObserved' : 'returning'] = row.total;
+      }
     } else if (row.total >= 5) {
       (report.dimensions[row.group_name] ||= []).push({ value: row.label, count: row.total });
     }
   }
+  report.activeBrowsers.period.sort((a, b) => a.site.localeCompare(b.site));
   return report;
 }
 export function reportSQL(days) {
@@ -43,9 +55,9 @@ export function reportSQL(days) {
     ['export_error', 'export_failed', "json_extract(properties,'$.code')"],
     ['offline_ready', 'offline_ready', "CAST(json_extract(properties,'$.ready') AS TEXT)"],
   ];
-  const entries = ["json_object('group_name','daily','label',substr(minute,1,10),'event',event)", ...dimensions.map(([name, event, expression]) => `CASE WHEN event='${event}' AND ${expression} IS NOT NULL THEN json_object('group_name','${name}','label',CAST(${expression} AS TEXT),'event',NULL) END`)];
+  const entries = ["json_object('group_name','daily','label',substr(minute,1,10),'event',event)", "CASE WHEN event='page_view' AND visitor_id IS NOT NULL THEN json_object('group_name','active_daily','label',substr(minute,1,10),'event',site) END", "CASE WHEN event='page_view' AND visitor_id IS NOT NULL THEN json_object('group_name','active_period','label','period','event',site) END", `CASE WHEN event='page_view' AND visitor_id IS NOT NULL THEN json_object('group_name',CASE WHEN first_minute >= strftime('%Y-%m-%dT%H:%M:00Z','now','-${days} days') THEN 'active_first_observed' ELSE 'active_returning' END,'label','period','event',site) END`, ...dimensions.map(([name, event, expression]) => `CASE WHEN event='${event}' AND ${expression} IS NOT NULL THEN json_object('group_name','${name}','label',CAST(${expression} AS TEXT),'event',NULL) END`)];
   // Expand dimensions with JSON rather than UNION: D1 limits compound SELECT terms.
-  return `WITH recent AS (SELECT * FROM events WHERE minute >= strftime('%Y-%m-%dT%H:%M:00Z','now','-${days} days')), expanded AS (SELECT json_extract(d.value,'$.group_name') AS group_name,json_extract(d.value,'$.label') AS label,json_extract(d.value,'$.event') AS event FROM recent,json_each(json_array(${entries.join(',')})) AS d WHERE d.value IS NOT NULL) SELECT group_name,label,event,count(*) AS total FROM expanded GROUP BY group_name,label,event HAVING group_name='daily' OR count(*) >= 5 ORDER BY group_name,label,event;`;
+  return `WITH first_seen AS (SELECT site,visitor_id,min(minute) AS first_minute FROM events WHERE event='page_view' AND visitor_id IS NOT NULL GROUP BY site,visitor_id), recent AS (SELECT e.*,f.first_minute FROM events e LEFT JOIN first_seen f ON e.site=f.site AND e.visitor_id=f.visitor_id WHERE minute >= strftime('%Y-%m-%dT%H:%M:00Z','now','-${days} days')), expanded AS (SELECT json_extract(d.value,'$.group_name') AS group_name,json_extract(d.value,'$.label') AS label,json_extract(d.value,'$.event') AS event,visitor_id FROM recent,json_each(json_array(${entries.join(',')})) AS d WHERE d.value IS NOT NULL) SELECT group_name,label,event,CASE WHEN group_name IN ('active_daily','active_period','active_first_observed','active_returning') THEN count(DISTINCT visitor_id) ELSE count(*) END AS total FROM expanded GROUP BY group_name,label,event HAVING group_name IN ('daily','active_daily','active_period','active_first_observed','active_returning') OR count(*) >= 5 ORDER BY group_name,label,event;`;
 }
 export function main(args) {
   const { days, local } = parseOptions(args);

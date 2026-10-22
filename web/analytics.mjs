@@ -1,5 +1,6 @@
 import { validateEvent } from './analytics-schema.mjs';
-const KEY='md2pdf.analytics.consent', POLICY=1, AGE=180*86400000;
+const KEY='md2pdf.analytics.consent', POLICY=2, AGE=180*86400000;
+const VISITOR_KEY='md2pdf.analytics.visitor';
 let active;
 export function track(event,properties={}) { return active?.track(event,properties)??false; }
 export function initAnalytics(config={}) {
@@ -9,7 +10,7 @@ export function initAnalytics(config={}) {
   let consent=null, storage=true, dead=false, pageSent=false, previewAt=-Infinity, count=0, minute=Date.now();
   const pending=new Set();
   const signal=()=>env.navigator?.globalPrivacyControl===true||env.navigator?.doNotTrack==='1'||env.doNotTrack==='1';
-  const enabled=()=>config.enabled===true&&env.location?.protocol==='https:'&&config.allowedHosts?.includes(env.location.hostname)&&(env.location.hostname!=='jiyeqian.github.io'||env.location.pathname.startsWith('/md2pdf/'))&&validEndpoint(config.endpoint);
+  const enabled=()=>config.enabled===true&&['http:','https:'].includes(env.location?.protocol)&&validEndpoint(config.endpoint);
   function readConsent() {
     const previous = consent;
     consent = null;
@@ -20,15 +21,28 @@ export function initAnalytics(config={}) {
         consent = { basic: value.basic, product: value.product };
       }
     } catch { storage = false; }
+    if (!consent?.basic || signal()) { clearVisitor(false); pageSent=false; }
     if (signal() || (previous?.basic && !consent?.basic) || (previous?.product && !consent?.product)) abort();
     return consent;
   }
   readConsent();
   function abort(){for(const p of pending)p.abort();pending.clear();}
+  function clearVisitor(forget){
+    let id;
+    try{id=env.localStorage.getItem(VISITOR_KEY);env.localStorage.removeItem(VISITOR_KEY);}catch{return;}
+    if(!forget||!id||!enabled()||signal()||env.navigator?.onLine===false)return;
+    // Withdrawal is the sole non-analytics request; never queue an offline deletion.
+    try{Promise.resolve(env.fetch(new URL('/forget',config.endpoint).href,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visitorId:id}),credentials:'omit',referrerPolicy:'no-referrer',mode:'cors',cache:'no-store',keepalive:true})).catch(()=>{});}catch{}
+  }
+  function visitor(){
+    try{let id=env.localStorage.getItem(VISITOR_KEY);if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id||'')){id=randomVisitorId(env.crypto);env.localStorage.setItem(VISITOR_KEY,id);}return id;}catch{return null;}
+  }
   function send(event,properties){
     readConsent();
     if(dead||!enabled()||!storage||signal()||env.navigator?.onLine===false||!(event==='page_view'?consent?.basic:consent?.product))return false;
-    const payload=validateEvent({event,version:config.version,deployment:config.deployment,properties});
+    const visitorId=event==='page_view'?visitor():null;
+    if(event==='page_view'&&!visitorId)return false;
+    const payload=validateEvent({event,version:config.version,deployment:config.deployment,site:site(env,config.deployment),properties,...(visitorId?{visitorId}:{})});
     if(!payload)return false;
     const now=Date.now();if(now-minute>=60000){minute=now;count=0;}
     if(count>=30||(event==='preview_finished'&&now-previewAt<30000))return false;
@@ -42,16 +56,30 @@ export function initAnalytics(config={}) {
   const controller={
     track:(event,properties={})=>event!=='page_view'&&send(event,properties),
     getConsent:()=>{readConsent();return {basic:!!(consent?.basic&&!signal()),product:!!(consent?.product&&!signal())};},
-    setConsent(next){abort();const choice={basic:next?.basic===true,product:next?.product===true};try{env.localStorage.setItem(KEY,JSON.stringify({...choice,policy:POLICY,savedAt:Date.now()}));storage=true;consent=choice;}catch{storage=false;consent=null;}ui?.refresh();page();return storage;},
+    setConsent(next){abort();const choice={basic:next?.basic===true,product:next?.product===true};if(!choice.basic){clearVisitor(true);pageSent=false;}try{env.localStorage.setItem(KEY,JSON.stringify({...choice,policy:POLICY,savedAt:Date.now()}));storage=true;consent=choice;}catch{storage=false;consent=null;}ui?.refresh();page();return storage;},
     destroy(){dead=true;abort();env.removeEventListener?.('storage',onStorage);env.removeEventListener?.('focus',refreshChoice);env.document?.removeEventListener?.('visibilitychange',refreshChoice);ui?.remove();if(active===controller)active=undefined;},
   };
-  function refreshChoice(){readConsent();ui?.refresh();}
+  function refreshChoice(){readConsent();ui?.refresh();page();}
   function onStorage(event){if(event.key===KEY||event.key===null){abort();refreshChoice();}}
   env.addEventListener?.('storage',onStorage);
   env.addEventListener?.('focus',refreshChoice);
   env.document?.addEventListener?.('visibilitychange',refreshChoice);
   if(env.document)ui=mount(env.document,controller,{enabled,signal,storage:()=>storage,hasChoice:()=>consent!==null});
   active=controller;page();return controller;
+}
+function randomVisitorId(crypto){
+  if(typeof crypto?.randomUUID==='function')return crypto.randomUUID();
+  // getRandomValues also works on HTTP self-hosted sites; Math.random is unsuitable.
+  const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+  const hex=[...bytes].map(value=>value.toString(16).padStart(2,'0')).join('');
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+}
+function site(env,deployment){
+  const host=env.location?.hostname||'';
+  if(host==='md2pdf.app.workbuddy.host'&&deployment==='server')return 'official-server';
+  if((host==='md2pdf.qianjiye.de'||host==='jiyeqian.github.io'&&env.location.pathname.startsWith('/md2pdf/'))&&deployment==='static')return 'official-static';
+  if(host==='localhost'||host.endsWith('.localhost')||host==='127.0.0.1'||host==='[::1]'||!host.includes('.')||/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host))return 'local';
+  return 'self-hosted';
 }
 function validEndpoint(value){try{const u=new URL(value);return u.protocol==='https:'&&u.pathname==='/events'&&!u.username&&!u.password&&!u.search&&!u.hash;}catch{return false;}}
 function visit(env){
@@ -62,12 +90,12 @@ function visit(env){
 }
 function mount(doc,controller,state){
   const root=doc.createElement('span');root.className='analytics-controls';
-  root.innerHTML=`<button type="button" class="analytics-settings">隐私与统计</button><span class="analytics-prompt" hidden>允许可选统计，帮助改进排版？ <button type="button" data-choice="all">允许全部</button> <button type="button" data-choice="none">拒绝全部</button> <button type="button" data-choice="settings">自定义</button></span><dialog class="analytics-dialog" aria-labelledby="analytics-title"><h2 id="analytics-title">隐私与统计</h2><p>不上传文档正文、文件名和图片。不收集姓名、邮箱、浏览器指纹或持久访客标识。</p><p>自愿开启后，统计通过 Cloudflare 接收；事件明细保留约 90 天，并由每日任务清理。服务商恢复备份另按其保留规则处理，详见完整隐私说明。统计不用于营销订阅。撤回立即停止后续发送，已接收的记录按期删除。</p><p class="analytics-status" role="status"></p><label><input type="checkbox" name="basic"> 访问统计：国家／地区（Cloudflare 推断的两位国家码）、来源类别、设备、浏览器、系统、语言类别及版本</label><label><input type="checkbox" name="product"> 产品统计：模板／主题、预览结果与耗时和长度区间、导出操作及离线资源状态</label><p>浏览器打印仅统计发起操作，无法确认 PDF 已保存。网络服务处理连接时会接触 IP 等请求信息，但应用不保存这些信息。详见 <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Cloudflare 隐私政策</a>。选择仅保存在此浏览器，180 天后重新询问；拒绝不影响编辑和导出。</p><p><a href="./privacy.html" target="_blank" rel="noopener noreferrer">完整隐私说明</a>。隐私问题请通过 <a href="https://github.com/jiyeqian/md2pdf/issues" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">项目反馈</a> 联系维护者，请勿公开个人信息或文档内容。</p><div class="analytics-actions"><button type="button" data-choice="all">允许全部</button><button type="button" data-choice="none">拒绝全部</button><button type="button" data-choice="save">保存选择</button><button type="button" data-choice="close">关闭</button></div></dialog>`;
+  root.innerHTML=`<button type="button" class="analytics-settings">隐私与统计</button><span class="analytics-prompt" hidden>允许可选统计，帮助改进排版？ <button type="button" data-choice="all">允许全部</button> <button type="button" data-choice="none">拒绝全部</button> <button type="button" data-choice="settings">自定义</button></span><dialog class="analytics-dialog" aria-labelledby="analytics-title"><h2 id="analytics-title">隐私与统计</h2><p>不上传文档正文、文件名和图片。不收集姓名、邮箱或浏览器指纹。访问统计使用仅限当前网站的随机浏览器标识，估算活跃和回访，不跨网站关联。</p><p>本地、局域网与其他自建网站也适用：自愿开启后，统计发送给 md2pdf 维护者的 Cloudflare 接收服务；事件明细保留约 90 天，并由每日任务清理。服务商恢复备份另按其保留规则处理，详见完整隐私说明。统计不用于营销订阅。撤回立即停止后续发送并清除本地标识，在线时尽力删除该标识关联的访问记录；无标识产品记录按期删除。</p><p class="analytics-status" role="status"></p><label><input type="checkbox" name="basic"> 访问与活跃统计：站点内随机标识、部署类别、国家／地区（Cloudflare 推断的两位国家码）、来源类别、设备、浏览器、系统、语言类别及版本</label><label><input type="checkbox" name="product"> 产品统计：模板／主题、预览结果与耗时和长度区间、导出操作及离线资源状态</label><p>浏览器打印仅统计发起操作，无法确认 PDF 已保存。网络服务处理连接时会接触 IP 等请求信息，但应用不保存这些信息。详见 <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Cloudflare 隐私政策</a>。选择仅保存在此浏览器，180 天后重新询问；拒绝不影响编辑和导出。</p><p><a href="./privacy.html" target="_blank" rel="noopener noreferrer">完整隐私说明</a>。隐私问题请通过 <a href="https://github.com/jiyeqian/md2pdf/issues" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">项目反馈</a> 联系维护者，请勿公开个人信息或文档内容。</p><div class="analytics-actions"><button type="button" data-choice="all">允许全部</button><button type="button" data-choice="none">拒绝全部</button><button type="button" data-choice="save">保存选择</button><button type="button" data-choice="close">关闭</button></div></dialog>`;
   const dialog=root.querySelector('dialog'),prompt=root.querySelector('.analytics-prompt'),basic=root.querySelector('[name="basic"]'),product=root.querySelector('[name="product"]');
   doc.body.append(dialog);
   function refresh(){const c=controller.getConsent();basic.checked=c.basic;product.checked=c.product;const blocked=!state.enabled()||state.signal()||!state.storage();basic.disabled=product.disabled=blocked;[...root.querySelectorAll('[data-choice="all"], [data-choice="save"]'), ...dialog.querySelectorAll('[data-choice="all"], [data-choice="save"]')].forEach(b=>{b.disabled=blocked;});prompt.hidden=state.hasChoice()||blocked;dialog.querySelector('.analytics-status').textContent=state.signal()?'已遵循浏览器“不跟踪／全球隐私控制”设置，统计已关闭。':!state.storage()?'无法保存隐私选择，统计保持关闭。':!state.enabled()?'此环境未启用统计，不会发送统计请求。':'两项统计均由你自愿选择，可随时撤回。';}
   const onClick=e=>{const b=e.target.closest('button');if(!b)return;const c=b.dataset.choice;if(b.classList.contains('analytics-settings')||c==='settings'){refresh();dialog.showModal();return;}if(['all','none','save'].includes(c)){controller.setConsent(c==='save'?{basic:basic.checked,product:product.checked}:{basic:c==='all',product:c==='all'});dialog.close();}else if(c==='close')dialog.close();};
   root.addEventListener('click',onClick);
   dialog.addEventListener('click',onClick);
-  (doc.querySelector('.app-bottom .privacy')||doc.querySelector('.app-bottom')||doc.body).append(root);refresh();return{refresh,remove:()=>{root.remove();dialog.remove();}};
+  (doc.querySelector('#analytics-slot')||doc.querySelector('.app-bottom .privacy')||doc.querySelector('.app-bottom')||doc.body).append(root);refresh();return{refresh,remove:()=>{root.remove();dialog.remove();}};
 }

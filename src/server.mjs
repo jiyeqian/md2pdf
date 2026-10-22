@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { versionInfo } from './version.mjs';
 import { analyticsConfig } from './analytics-config.mjs';
+import { createOperationalMetrics } from './operational-metrics.mjs';
 import { appCacheScript } from './app-cache.mjs';
 import { isIP } from 'node:net';
 import path from 'node:path';
@@ -59,10 +60,11 @@ function validateLanHost(lanHost, publicHost) {
   if (publicHost) throw new Error('局域网模式与公网模式不能同时启用');
 }
 
-export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '', lanHost = process.env.MD2PDF_LAN_HOST || '', doiResolver = createDoiResolver().resolve } = {}) {
+export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, { incognito: true }), taskTimeout = 60000, queueLimit = 3, chromeBinary, publicHost = process.env.MD2PDF_PUBLIC_HOST || '', lanHost = process.env.MD2PDF_LAN_HOST || '', doiResolver = createDoiResolver().resolve, operationalMetrics, metricsFile = '' } = {}) {
   validateLanHost(lanHost, publicHost);
   const productInfo = versionInfo('node');
   const analytics = analyticsConfig();
+  const metrics = createOperationalMetrics({ enabled: operationalMetrics ?? Boolean(publicHost), file: metricsFile });
   const pageCsp = analytics.enabled ? PAGE_CSP.replace("connect-src 'self'", "connect-src 'self' " + new URL(analytics.endpoint).origin) : PAGE_CSP;
   let browser, tmpRoot, closed = false, queued = 0, tail = Promise.resolve();
   let doiRequests = 0;
@@ -116,6 +118,8 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   staticRoutes.set('/runtime-request.mjs', ['web/runtime-request.mjs', 'text/javascript']);
   for (const name of ['doi', 'bibtex']) staticRoutes.set('/icons/' + name + '.svg', ['web/icons/' + name + '.svg', 'image/svg+xml']);
   const server = http.createServer(async (req, res) => {
+    const started = performance.now();
+    res.once('finish', () => metrics.record(req.method, req.url, res.statusCode, performance.now() - started));
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -232,7 +236,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   });
   server.requestTimeout = 15000;
   server.headersTimeout = 10000;
-  return { server, async close() {
+  return { server, operationalMetrics: metrics.snapshot, async close() {
     closed = true;
     const stopped = new Promise(resolve => server.listening ? server.close(resolve) : resolve());
     server.closeIdleConnections?.();
@@ -241,6 +245,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     await resetBrowser();
     server.closeAllConnections?.();
     await stopped;
+    metrics.close();
     if (tmpRoot) await rm(tmpRoot, { recursive: true, force: true });
   } };
 }
@@ -250,7 +255,9 @@ export function startServer({ port = Number(process.env.PORT || 3000), publicHos
   validateLanHost(lanHost, publicHost);
   const productInfo = versionInfo('node');
   const host = publicHost || lanHost ? '0.0.0.0' : '127.0.0.1';
-  const app = createApp({ publicHost, lanHost });
+  const enabled = Boolean(publicHost) && process.env.MD2PDF_OPERATIONAL_METRICS !== '0';
+  const metricsFile = enabled ? (process.env.MD2PDF_METRICS_FILE || path.join(os.homedir(), '.md2pdf', 'operational-metrics.json')) : '';
+  const app = createApp({ publicHost, lanHost, operationalMetrics: enabled, metricsFile });
   app.server.on('error', e => { console.error('md2pdf 服务启动失败：', e.message); process.exitCode = 1; });
   app.server.listen(port, host, () => console.log(`md2pdf 工作台：http://${lanHost || host}:${port}${publicHost ? `（公网域名 ${publicHost}）` : ''}`));
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { app.close().catch(e => { console.error(e.message); process.exitCode = 1; }); });

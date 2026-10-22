@@ -8,5 +8,5 @@ export function analyticsConfig(env = process.env) {
   const valid = url && url.protocol === 'https:' && !url.username && !url.password
     && !url.search && !url.hash && url.pathname === '/events';
   const enabled = env.MD2PDF_ANALYTICS_ENABLED === undefined ? config.enabled === true : env.MD2PDF_ANALYTICS_ENABLED === '1';
-  return { enabled: Boolean(enabled && valid), endpoint: valid ? url.href : '', allowedHosts: config.allowedHosts };
+  return { enabled: Boolean(enabled && valid), endpoint: valid ? url.href : '' };
 }

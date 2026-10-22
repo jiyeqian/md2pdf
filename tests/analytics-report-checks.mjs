@@ -15,7 +15,7 @@ test('small dimensions are suppressed; daily totals remain event counts', () => 
   const result = shapeReport([{ group_name: 'country', label: 'DE', total: 4 }, { group_name: 'country', label: 'US', total: 5 }, { group_name: 'daily', label: '2026-10-22', event: 'page_view', total: 2 }], 7);
   assert.deepEqual(result.dimensions.country, [{ value: 'US', count: 5 }]);
   assert.equal(result.dailyEvents[0].count, 2);
-  assert.match(result.metric, /not unique/);
+  assert.match(result.metric, /not unique people/);
   assert.throws(() => shapeReport([{ group_name: 'country', label: 'US', total: '5' }], 7));
 });
 test('fixed queries restrict country to page views and aggregate before output', () => {
@@ -31,10 +31,10 @@ test('real SQLite executes report against fixtures without compound SELECT', asy
 import sqlite3,json,sys,datetime
 c=sqlite3.connect(':memory:')
 c.row_factory=sqlite3.Row
-c.execute('CREATE TABLE events(minute TEXT,event TEXT,version TEXT,deployment TEXT,properties TEXT,country TEXT)')
+c.execute('CREATE TABLE events(minute TEXT,event TEXT,version TEXT,deployment TEXT,properties TEXT,country TEXT,site TEXT,visitor_id TEXT)')
 now=datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:00Z')
 def add(event,props,country,count):
- for i in range(count): c.execute('INSERT INTO events VALUES(?,?,?,?,?,?)',(now,event,'1.15.6','static',json.dumps(props),country))
+ for i in range(count): c.execute('INSERT INTO events VALUES(?,?,?,?,?,?,?,?)',(now,event,'1.15.6','static',json.dumps(props),country,'local',('visitor-'+str(i%2)) if event=='page_view' else None))
 add('page_view',{'device':'desktop','browser':'chrome','source':'direct'},'DE',5)
 add('page_view',{'device':'mobile','browser':'safari','source':'campaign','campaign':'github'},'US',4)
 add('export_started',{'method':'browser-print'},'XX',6)
@@ -55,4 +55,28 @@ print(json.dumps([dict(row) for row in c.execute(sys.argv[1])]))
   assert.deepEqual(report.dimensions.preview_success, [{ value: '1', count: 5 }]);
   assert.equal(report.dailyEvents.find((row) => row.event === 'page_view').count, 9);
   assert.equal(report.dailyEvents.length, 6);
+  assert.deepEqual(report.activeBrowsers.period, [{ site: 'local', count: 2, firstObserved: 2, returning: 0 }]);
+  assert.equal(report.activeBrowsers.daily[0].count, 2);
+});
+
+test('period browsers deduplicate repeat days and remain separated by site', async (t) => {
+  const { spawnSync } = await import('node:child_process');
+  const result = spawnSync('python3', ['-c', `
+import sqlite3,json,sys,datetime
+c=sqlite3.connect(':memory:');c.row_factory=sqlite3.Row
+c.execute('CREATE TABLE events(minute TEXT,event TEXT,version TEXT,deployment TEXT,properties TEXT,country TEXT,site TEXT,visitor_id TEXT)')
+for day in [0,1]:
+ stamp=(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=day)).strftime('%Y-%m-%dT%H:%M:00Z')
+ for site,visitor in [('local','a'),('local','a'),('official-static','a'),('legacy',None)]:
+  c.execute('INSERT INTO events VALUES(?,?,?,?,?,?,?,?)',(stamp,'page_view','1.15.6','static','{}','XX',site,visitor))
+old=(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=8)).strftime('%Y-%m-%dT%H:%M:00Z')
+c.execute('INSERT INTO events VALUES(?,?,?,?,?,?,?,?)',(old,'page_view','1.15.6','static','{}','XX','local','a'))
+print(json.dumps([dict(row) for row in c.execute(sys.argv[1])]))
+`, reportSQL(7)], { encoding: 'utf8' });
+  if (result.error?.code === 'ENOENT') { t.skip('python3 unavailable'); return; }
+  assert.equal(result.status, 0, result.stderr);
+  const report = shapeReport(JSON.parse(result.stdout), 7);
+  assert.deepEqual(report.activeBrowsers.period, [{ site: 'local', count: 1, firstObserved: 0, returning: 1 }, { site: 'official-static', count: 1, firstObserved: 1, returning: 0 }]);
+  assert.equal(report.activeBrowsers.daily.length, 4);
+  assert.equal(report.dailyEvents.reduce((sum, row) => sum + row.count, 0), 8);
 });

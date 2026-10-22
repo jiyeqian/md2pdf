@@ -28,7 +28,13 @@ try {
     assert.equal(response.exceptionDetails, undefined, JSON.stringify(response.exceptionDetails));
     return response.result.value;
   };
-  const wait = expression => evaluate(`new Promise((resolve,reject)=>{let n=0;const timer=setInterval(()=>{if(${expression}){clearInterval(timer);resolve(true);}else if(++n>200){clearInterval(timer);reject(Error('browser wait timeout'));}},50);})`);
+  // Navigation can destroy the preceding document's evaluation context before commit.
+  const wait = async expression => {
+    for (let attempt=0; attempt<5; attempt++) {
+      try { return await evaluate(`new Promise((resolve,reject)=>{let n=0;const timer=setInterval(()=>{if(${expression}){clearInterval(timer);resolve(true);}else if(++n>200){clearInterval(timer);reject(Error('browser wait timeout'));}},50);})`); }
+      catch(error) { if(attempt===4 || !/Inspected target navigated or closed|Execution context was destroyed|Cannot find context/.test(error.message)) throw error; }
+    }
+  };
   browser.ws.addEventListener('message', async event => {
     const message = JSON.parse(event.data);
     if (message.method !== 'Fetch.requestPaused') return;
@@ -36,9 +42,9 @@ try {
     try {
       let status = 200, body, headers;
       if (request.url.startsWith('https://metrics.example.com/')) {
-        if (request.method === 'POST') events.push({ body: JSON.parse(request.postData), headers: request.headers });
+        if (request.method === 'POST') events.push({ url: request.url, body: JSON.parse(request.postData), headers: request.headers });
         status = 204; body = Buffer.alloc(0);
-        headers = [{ name: 'Access-Control-Allow-Origin', value: 'https://md2pdf.qianjiye.de' }, { name: 'Access-Control-Allow-Headers', value: 'Content-Type' }, { name: 'Access-Control-Allow-Methods', value: 'POST, OPTIONS' }];
+        headers = [{ name: 'Access-Control-Allow-Origin', value: '*' }, { name: 'Access-Control-Allow-Headers', value: 'Content-Type' }, { name: 'Access-Control-Allow-Methods', value: 'POST, OPTIONS' }];
       } else {
         const url = new URL(request.url);
         const response = url.pathname === '/api/pdf'
@@ -75,7 +81,20 @@ try {
   assert.ok(events.some(entry => entry.body.event === 'export_failed' && entry.body.properties.code === 'unavailable'));
   assert.ok(!JSON.stringify(events).includes('PRIVATE_DOCUMENT_TITLE'));
   assert.ok(events.every(entry => !Object.keys(entry.headers).some(key => /cookie|referer/i.test(key))));
+  assert.match(events.find(entry => entry.body.event === 'page_view').body.visitorId, /^[0-9a-f-]{36}$/);
+  assert.ok(events.filter(entry => entry.body.event !== 'page_view').every(entry => !entry.body.visitorId));
+  await wait('!document.querySelector("#app-version").hidden');
+  const footer = await evaluate(`(()=>{const nodes=['.analytics-settings','.privacy','#app-version'].map(s=>document.querySelector(s));return nodes.map(n=>{const b=n.getBoundingClientRect(),s=getComputedStyle(n);return {left:b.left,right:b.right,center:(b.left+b.right)/2,font:s.fontFamily,size:s.fontSize,color:s.color};});})()`);
+  assert.equal(footer[0].font,footer[1].font);assert.equal(footer[1].font,footer[2].font);
+  assert.equal(footer[0].size,footer[1].size);assert.equal(footer[1].size,footer[2].size);
+  assert.equal(footer[0].color,footer[1].color);assert.equal(footer[1].color,footer[2].color);
+  assert.ok(footer[0].left<footer[1].left && footer[1].right<footer[2].right);
+  assert.ok(Math.abs(footer[1].center-(await evaluate('innerWidth'))/2)<2, 'notice geometrically centered');
+  await evaluate('document.querySelector(".app-bottom").scrollIntoView({block:"end"})');
+  await writeFile('/tmp/md2pdf-analytics-footer.png',Buffer.from((await browser.send('Page.captureScreenshot',{format:'png'})).data,'base64'));
   await evaluate('window.md2pdfAnalytics.setConsent({basic:false,product:false})');
+  await evaluate('new Promise(resolve=>setTimeout(resolve,150))');
+  assert.ok(events.some(entry=>entry.url.endsWith('/forget')), 'withdrawal requests deletion');
   const count = events.length;
   await evaluate('window.md2pdfAnalytics.track("export_started",{method:"browser-print"})');
   await evaluate('new Promise(resolve=>setTimeout(resolve,100))');
@@ -86,14 +105,21 @@ try {
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".analytics-dialog input")).width'), '16px');
   const screenshot = await browser.send('Page.captureScreenshot', { format: 'png' });
   await writeFile('/tmp/md2pdf-analytics-mobile.png', Buffer.from(screenshot.data, 'base64'));
+  process.env.MD2PDF_ANALYTICS_ENDPOINT=endpoint;
   const localApp = createApp();
+  if(previous.endpoint===undefined)delete process.env.MD2PDF_ANALYTICS_ENDPOINT;else process.env.MD2PDF_ANALYTICS_ENDPOINT=previous.endpoint;
   try {
     await new Promise(resolve => localApp.server.listen(0, '127.0.0.1', resolve));
     await browser.send('Page.navigate', { url: `http://127.0.0.1:${localApp.server.address().port}` });
     await wait('window.md2pdfAnalytics && document.querySelector(".analytics-settings")');
     await evaluate('window.md2pdfAnalytics.setConsent({basic:true,product:true});window.md2pdfAnalytics.track("export_started",{method:"server-pdf"})');
-    assert.equal(events.length, count, 'localhost never sends');
+    await evaluate('new Promise(resolve=>setTimeout(resolve,150))');
+    assert.ok(events.length>count, 'localhost sends only after consent');
+    assert.ok(events.slice(count).some(entry=>entry.body.event==='page_view' && entry.body.site==='local'));
+    assert.equal(app.operationalMetrics().counts.some(row=>row.route==='page'),true);
+    assert.deepEqual(localApp.operationalMetrics().counts,[], 'local operations never upload automatically');
   } finally { await localApp.close(); }
+  const offlineCount=events.length;
   const build = await buildStatic();
   const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
   const staticServer = http.createServer(async (request, response) => {
@@ -119,13 +145,13 @@ try {
     assert.equal(await evaluate('navigator.onLine'), false);
     await evaluate('document.querySelector(".analytics-settings").click()');
     assert.equal(await evaluate('document.querySelector(".analytics-dialog").open'), true);
-    assert.equal(events.length, count, 'static offline reload never sends');
+    assert.equal(events.length, offlineCount, 'static offline reload never sends');
   } finally {
     await browser.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
     await new Promise(resolve => staticServer.close(resolve));
   }
   assert.deepEqual(errors, []);
-  console.log('PASS: actual UI consent, sanitized source/events, withdrawal, mobile layout, localhost exclusion, static project path and offline reload; all HTTPS requests mocked locally.');
+  console.log('PASS: actual UI consent, sanitized source/events, withdrawal, mobile layout, localhost opt-in, footer alignment, static project path and offline reload; all HTTPS requests mocked locally.');
 } finally {
   await browser.stop(); await app.close(); await rm(directory, { recursive: true, force: true });
 }

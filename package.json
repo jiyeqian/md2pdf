@@ -23,7 +23,7 @@
   "scripts": {
     "validate": "bash scripts/validate.sh",
     "check:consistency": "node scripts/check-consistency.mjs",
-    "test:analytics": "node --test tests/analytics-client-checks.mjs tests/analytics-worker-checks.mjs tests/analytics-report-checks.mjs tests/analytics-integration-checks.mjs",
+    "test:analytics": "node --test tests/analytics-client-checks.mjs tests/analytics-worker-checks.mjs tests/analytics-report-checks.mjs tests/analytics-integration-checks.mjs tests/operational-metrics-checks.mjs",
     "test:analytics-browser": "node tests/analytics-browser-checks.mjs",
     "test": "bash scripts/validate.sh",
     "demo:pdf": "node src/md2pdf.mjs examples/general.md -o /tmp/md2pdf-general.pdf",

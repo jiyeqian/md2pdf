@@ -63,3 +63,7 @@ npm run check:consistency
 版本来源统一后，旧 `tests/checks.mjs` 仍搜索硬编码 VERSION，导致未破坏副本失败。现改为运行共享版本模块及 CLI，并与 `package.json` 比较。守卫自测由 `tests/guard-selftest.mjs` 执行：基线必须通过，每例从干净副本开始，确认实际修改及指定断言失败；版本破坏改为让共享模块返回错误版本，不再修改唯一版本来源制造假不一致。
 
 本地验收：`bash scripts/validate.sh`（包含基线和六个破坏用例）、`node --test tests/webapp-command-checks.mjs`、`npm run check:consistency`。另验证了只改 package 版本正常通过、基线失败立即停止。线上 CNB 日志无法直接读取，远端流水线须在获得推送授权后另行确认；本修复不改渲染、服务、tag 或其他工作树。
+
+## analytics 分层统计交接
+
+`codex/analytics` 将公网 Node 本机运营汇总与同意后的全环境浏览器统计分开；localhost 可同意上报，不再按域名白名单关闭。policy 2 需重新同意，仅访问事件携带站点内随机标识，撤回在线尝试删除。底栏左隐私、中备份提示、右版本统一字体。详见 [统计设计](analytics.md) 与接收器迁移说明。CLI、Node 和静态渲染规则不变；需运行一致性检查，并人工验收两种 WebApp 的编辑、真实 PDF／系统打印、手机和正式部署缓存。未经合并通知，其他工作树不应直接复制本分支界面文件。

@@ -20,8 +20,11 @@ const schemas = {
   offline_ready: { ready: 'boolean' },
 };
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+export function validateVisitorId(value) {
+  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) ? value.toLowerCase() : null;
+}
 export function validateEvent(value) {
-  if (!record(value) || Object.keys(value).sort().join(',') !== 'deployment,event,properties,version') return null;
+  if (!record(value) || Object.keys(value).some(key => !['deployment', 'event', 'properties', 'version', 'site', 'visitorId'].includes(key))) return null;
   if (typeof value.event !== 'string' || !Object.hasOwn(schemas, value.event)) return null;
   if (typeof value.version !== 'string' || value.version.length > 64 || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(value.version)) return null;
   if (!['server', 'static'].includes(value.deployment) || !record(value.properties)) return null;
@@ -34,5 +37,7 @@ export function validateEvent(value) {
   }
   for (const key of Object.keys(schema)) if (key !== 'campaign' && !Object.hasOwn(properties, key)) return null;
   if (value.event === 'page_view' && Object.hasOwn(properties, 'campaign') && properties.source !== 'campaign') return null;
-  return { event: value.event, version: value.version, deployment: value.deployment, properties };
+  if (Object.hasOwn(value, 'site') && !['official-server', 'official-static', 'local', 'self-hosted'].includes(value.site)) return null;
+  if (Object.hasOwn(value, 'visitorId') && (value.event !== 'page_view' || !validateVisitorId(value.visitorId))) return null;
+  return { event: value.event, version: value.version, deployment: value.deployment, properties, ...(value.site ? { site: value.site } : {}), ...(value.visitorId ? { visitorId: validateVisitorId(value.visitorId) } : {}) };
 }

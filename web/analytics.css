@@ -1,6 +1,9 @@
-.analytics-controls { font-size: .75rem; color: var(--muted, #666); }
+.analytics-controls { position: relative; display: inline-block; font: inherit; color: inherit; }
 .analytics-controls button, .analytics-dialog button { color: inherit; font: inherit; cursor: pointer; }
 .analytics-settings, .analytics-prompt button { border: 0; background: transparent; text-decoration: underline; padding: .3rem; }
+.analytics-settings { padding: 0; line-height: inherit; text-decoration: none; }
+.analytics-settings:hover { text-decoration: underline; }
+.analytics-prompt { position: fixed; z-index: 20; left: 1rem; bottom: 3.5rem; width: max-content; max-width: calc(100vw - 2rem); padding: .75rem; border: 1px solid #d9e0e9; border-radius: .5rem; background: #fff; box-shadow: 0 2px 12px rgb(0 0 0 / 10%); white-space: normal; font-size: .75rem; color: #35445a; }
 .analytics-prompt[hidden] { display: none; }
 .analytics-dialog { width: min(34rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); box-sizing: border-box; overflow: auto; border: 1px solid #888; border-radius: .75rem; padding: 1.25rem; color: #222; background: #fff; font-size: .875rem; line-height: 1.65; }
 .analytics-dialog::backdrop { background: rgb(0 0 0 / 35%); }
