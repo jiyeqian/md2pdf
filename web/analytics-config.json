@@ -1,0 +1,5 @@
+{
+  "enabled": true,
+  "endpoint": "https://md2pdf-analytics.jiye-qian.workers.dev/events",
+  "allowedHosts": ["md2pdf.qianjiye.de", "jiyeqian.github.io"]
+}

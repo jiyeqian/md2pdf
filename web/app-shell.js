@@ -112,6 +112,7 @@
       navigator.serviceWorker.addEventListener('message', event => {
         if (event.data?.type === 'APP_ERROR') {footer.set('cache','retry',retryPrepare);return;}
         if (event.data?.type !== 'APP_STATUS') return;
+        window.dispatchEvent(new CustomEvent('md2pdf-offline-ready', { detail: { ready: event.data.ready === true } }));
         if (registration?.waiting || event.data.pinned !== event.data.cache) updateAvailable();
         else footer.clear('update');
         if (event.data.ready) footer.clear('cache');

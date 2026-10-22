@@ -332,7 +332,8 @@
     const requestedTemplateView = window.__MD2PDF_INITIAL_VIEW__ === 'templates'
       || new URLSearchParams(location.search).get('view') === 'templates';
     const initial = requestedTemplateView || history.state?.md2pdfView === 'templates' ? 'templates' : 'editor';
-    history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', workspacePath());
+    // 首次进入保留推广参数，统计模块只提取白名单类别；之后导航沿用干净路径。
+    history.replaceState({ ...(history.state || {}), md2pdfView: initial }, '', workspacePath() + location.search);
     navigate(initial, false);
   });
 })();

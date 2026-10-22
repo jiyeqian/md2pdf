@@ -3,6 +3,7 @@ const base = window.__MD2PDF_STATIC_BASE__;
 let registration, checking = false;
 const applyUpdate = () => footer.saveAndUpdate(async()=>location.reload());
 function report(data) {
+  window.dispatchEvent(new CustomEvent('md2pdf-offline-ready', { detail: { ready: data.ready === true } }));
   if (data.current !== data.pinned) footer.set('update','update',applyUpdate);
   else footer.clear('update');
   if(data.ready)footer.clear('cache');

@@ -4,6 +4,7 @@ import { readFile, writeFile, mkdir, cp, readdir, rm, rename } from 'node:fs/pro
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { versionInfo } from './version.mjs';
+import { analyticsConfig } from './analytics-config.mjs';
 import { createHash } from 'node:crypto';
 import { exampleCatalog, findExample } from './web-examples.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -64,6 +65,7 @@ let index=await readFile(path.join(out,'index.html'),'utf8');
 index=index.replace('<meta charset="utf-8">','<meta charset="utf-8"><script src="./boot.js"></script><link rel="stylesheet" href="./static.css">');
 index=index.replace(/(src|href)="\/([^"]*)"/g,'$1="./$2"');
 await writeFile(path.join(out,'index.html'),index);
+await writeFile(path.join(out,'analytics-config.json'),JSON.stringify(analyticsConfig(),null,2)+'\n');
 for(const file of await readdir(path.join(root,'web'))){
   if(!/\.(?:js|mjs)$/.test(file))continue;
   const target=path.join(out,file);
