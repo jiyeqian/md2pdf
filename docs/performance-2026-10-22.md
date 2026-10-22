@@ -35,17 +35,17 @@ Node 与静态 WebApp 共用 `web/cache-readiness.mjs`，启动时先读取 read
 - `npm run test:local-drafts`：IndexedDB 草稿恢复、跨客户端冲突检测和删除竞态。
 - `npm run test:static-runtime`：只内嵌 renderer HTML 实际引用的引擎，并保留 data-only script CSP。
 - `npm run test:cache-readiness`：共享门控状态与定时器的确定性覆盖。
-- `npm run test:cache-readiness-browser`、`npm run test:static-preview-browser`：真实 Chrome 时间线、显式预览结果、错误可见性与缓存注册顺序。
+- `npm run test:cache-readiness-browser`、`npm run test:static-preview-browser`：真实 Chrome 正常路径要求预览成功并检查可视性；`npm run test:static-preview-retry-browser` 独立覆盖注册失败、重试和离线 ready。
 
 ## 多场景采样
 
 可复跑脚本：`npm run bench:readiness`。脚本以每个目标自身版本端点记录提交号，固定 1440×1000 桌面视口，在 app-ready 后输入相同短文，分开报告 app-ready 与输入后的 preview-ready；正常场景要求成功事件和可视 iframe。包含三轮冷启动、一轮同 profile 热重载及一轮 150 ms/750 KB/s、4× CPU 降速。隐藏/滚动与窄屏场景不计入桌面数据，尚未采样。原始逐轮数据、平台与 Chrome 版本记录于 [performance-samples-2026-10-22.json](performance-samples-2026-10-22.json)。
 
-| 运行方式 | 冷态 app-ready 中位 | 冷态输入后预览中位 | 冷态资源传输中位 | 弱网 app-ready | 弱网输入后预览 | 热重载 |
-| --- | ---: | ---: | ---: | ---: | ---: | --- |
-| Node 基线 `38c6bdb` | 123 ms | 610 ms | 2.20 MB | 2,889 ms | 1,886 ms | app-ready timeout |
-| Node 候选 `95babae` | 137 ms | 629 ms | 2.20 MB | 3,544 ms | 2,352 ms | 57 ms / 608 ms 预览 |
-| 静态基线 `38c6bdb` | 127 ms | 706 ms | 1.98 MB | 3,872 ms | 1,362 ms | app-ready timeout |
-| 静态候选 `95babae` | 133 ms | 642 ms | 2.46 MB | 3,706 ms | 2,290 ms | app-ready timeout |
+| 运行方式 | 冷态 app-ready / 输入后预览 | 冷态传输 | 热态 app-ready / 输入后预览 | 热态传输 | 弱网 app-ready / 输入后预览 | 弱网传输 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Node 基线 `38c6bdb` | 134 / 627 ms | 2.20 MB | 60 / 613 ms | 0.71 MB | 2,913 / 1,883 ms | 2.15 MB |
+| Node 候选 `2176d79` | 137 / 620 ms | 2.20 MB | 54 / 606 ms | 0.71 MB | 3,746 / 1,879 ms | 2.20 MB |
+| 静态基线 `38c6bdb` | 149 / 705 ms | 1.98 MB | 66 / 703 ms | 0 MB | 3,933 / 1,059 ms | 1.98 MB |
+| 静态候选 `2176d79` | 150 / 637 ms | 2.47 MB | 67 / 621 ms | 0 MB | 3,897 / 2,209 ms | 2.47 MB |
 
-候选静态冷态预览约快 64 ms，但传输量增加约 24%；Node 冷态变化较小。弱网样本中候选预览更慢，且每格只有一轮，不能据此推断稳定差异。静态热重载未就绪，基线 Node 热重载未就绪；不作热态比较。旧无视口数据不适用于预览时延结论。以上本机 loopback 与 CDP 限速结果不代表真实手机或公网链路。
+候选静态冷态预览约快 68 ms、热态约快 82 ms，但静态冷/弱网资源传输增加约 25%。Node 输入后预览仅有小幅变化；弱网下 Node app-ready 样本较慢，静态输入后预览也较慢。每个弱网场景只有一轮，不能据此判断稳定差异或称整体提速已证明。此轮修正了热重载导航竞态，并改为只测当前文档 app-ready 和当前样本文档完成；先前 JSON 中 warm timeout 数据作废并已被新轮次替换。旧无视口数据同样不用于预览时延结论。以上本机 loopback 与 CDP 限速结果不代表真实手机或公网链路。

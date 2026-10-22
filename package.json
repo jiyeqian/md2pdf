@@ -27,6 +27,7 @@
     "test:analytics-browser": "node tests/analytics-browser-checks.mjs",
     "test:cache-readiness": "node --test tests/cache-readiness-checks.mjs",
     "test:static-preview-browser": "node tests/static-preview-readiness-browser-checks.mjs",
+    "test:static-preview-retry-browser": "node tests/static-preview-retry-browser-checks.mjs",
     "test:cache-readiness-browser": "node tests/cache-readiness-browser-checks.mjs",
     "bench:readiness": "node tests/performance-readiness-benchmark.mjs",
     "test:pdf-smoke": "node tests/performance-pdf-smoke.mjs",

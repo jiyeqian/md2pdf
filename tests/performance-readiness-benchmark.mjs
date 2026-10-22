@@ -30,19 +30,19 @@ async function sample(kind,url,runtime,scenario,round){
     await browser.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
     await browser.send('Emulation.setCPUThrottlingRate',{rate:scenario.cpu});
     if(scenario.latency||scenario.download>0)await browser.send('Network.emulateNetworkConditions',{offline:false,latency:scenario.latency,downloadThroughput:scenario.download,uploadThroughput:250000,connectionType:scenario.latency?'cellular3g':'none'});
-    await browser.send('Page.addScriptToEvaluateOnNewDocument',{source:`window.__perfEvents=[];for(const type of ['md-app-ready','md-preview-ready','md-preview-error','md2pdf-offline-ready'])addEventListener(type,event=>window.__perfEvents.push({type,at:performance.now(),ready:event.detail?.ready}));addEventListener('message',event=>{if(event.data?.type==='md2pdf-ready'||event.data?.type==='md2pdf-error')window.__perfEvents.push({type:event.data.type==='md2pdf-ready'?'md-preview-ready':'md-preview-error',at:performance.now(),source:'iframe-message'})});`});
+    await browser.send('Page.addScriptToEvaluateOnNewDocument',{source:`window.__perfDocToken=crypto.randomUUID();window.__perfEvents=[];for(const type of ['md-app-ready','md-preview-ready','md-preview-error','md2pdf-offline-ready'])addEventListener(type,event=>window.__perfEvents.push({type,at:performance.now(),ready:event.detail?.ready}));addEventListener('message',event=>{const frame=document.querySelector('#preview');if(event.source!==frame?.contentWindow||!event.data||!['md2pdf-ready','md2pdf-error'].includes(event.data.type))return;try{if(event.data.revision!==previewRevision||previewRevision!==revision)return}catch{return}const type=event.data.type==='md2pdf-ready'?'md-preview-ready':'md-preview-error',at=performance.now();queueMicrotask(()=>{if(!window.__perfEvents.some(item=>item.type===type&&item.at>=at))window.__perfEvents.push({type,at,source:'validated-current-preview-revision'})})},true);`});
     const evaluate=async expression=>{const response=await browser.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});assert.equal(response.exceptionDetails,undefined,JSON.stringify(response.exceptionDetails));return response.result.value;};
     const loadAndMeasure=async()=>{
       for(let i=0;i<450;i++){
-        if(await evaluate('window.__perfEvents?.some(event=>event.type==="md-app-ready")||typeof window.mdEditor!=="undefined"'))break;
+        if(await evaluate('window.__perfEvents?.some(event=>event.type==="md-app-ready")'))break;
         await new Promise(resolve=>setTimeout(resolve,100));
       }
-      const appReady=await evaluate('window.__perfEvents.find(event=>event.type==="md-app-ready")|| (typeof window.mdEditor!=="undefined" ? {type:"mdEditor-ready-fallback",at:performance.now()} : null)');
+      const appReady=await evaluate('window.__perfEvents.find(event=>event.type==="md-app-ready")||null');
       if(!appReady)return evaluate(`(()=>{const r=document.querySelector('#preview')?.getBoundingClientRect();return {appReadyMs:null,previewResult:'app-ready-timeout',previewEventMs:null,previewAfterInputMs:null,previewAfterAppReadyMs:null,visible:document.visibilityState==='visible',iframe:r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,intersects:r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth}:null}})()`);
-      await evaluate(`window.mdEditor.setValue('# Performance sample\\n\\nPlain text.');document.querySelector('#markdown').dispatchEvent(new Event('input',{bubbles:true}))`);
       await evaluate('window.__previewMeasureStart=performance.now()');
+      await evaluate(`window.mdEditor.setValue('# Performance sample\\n\\nPlain text.');document.querySelector('#markdown').dispatchEvent(new Event('input',{bubbles:true}))`);
       for(let i=0;i<200;i++){
-        if(await evaluate('window.__perfEvents?.some(event=>event.type==="md-preview-ready"||event.type==="md-preview-error")&&window.__perfEvents.find(event=>event.type==="md-preview-ready"||event.type==="md-preview-error").at>=window.__previewMeasureStart'))break;
+        if(await evaluate('window.__perfEvents?.find(event=>(event.type==="md-preview-ready"||event.type==="md-preview-error")&&event.at>=window.__previewMeasureStart)'))break;
         await new Promise(resolve=>setTimeout(resolve,100));
       }
       return evaluate(`(()=>{const events=window.__perfEvents,appReady=events.find(event=>event.type==='md-app-ready'),preview=events.find(event=>(event.type==='md-preview-ready'||event.type==='md-preview-error')&&event.at>=window.__previewMeasureStart),entries=performance.getEntriesByType('resource'),r=document.querySelector('#preview')?.getBoundingClientRect();return {appReadyMs:appReady?.at??null,previewResult:preview?.type||'timeout',previewEventMs:preview?.at??null,previewAfterInputMs:preview?preview.at-window.__previewMeasureStart:null,previewAfterAppReadyMs:preview&&appReady?preview.at-appReady.at:null,visible:document.visibilityState==='visible',iframe:r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,intersects:r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth}:null,resourceCount:entries.length,transferBytes:entries.reduce((sum,entry)=>sum+(entry.transferSize||0),0),decodedBytes:entries.reduce((sum,entry)=>sum+(entry.decodedBodySize||0),0)}})()`);
@@ -56,7 +56,15 @@ async function sample(kind,url,runtime,scenario,round){
         await new Promise(resolve=>setTimeout(resolve,100));
       }
       assert.ok(await evaluate('window.__perfEvents?.some(event=>event.type==="md2pdf-offline-ready"&&event.ready===true)'),`${kind} offline cache must be ready before warm reload`);
+      const priorDocument=await evaluate('window.__perfDocToken');
       await browser.send('Page.reload');
+      let changedDocument=false;
+      for(let i=0;i<450;i++){
+        changedDocument=await evaluate(`window.__perfDocToken!==${JSON.stringify(priorDocument)}`);
+        if(changedDocument)break;
+        await new Promise(resolve=>setTimeout(resolve,100));
+      }
+      assert.ok(changedDocument,`${kind} reload must reach a new top-level document before warm measurement`);
     }
     const result=await loadAndMeasure();
     if(result.previewResult!=='app-ready-timeout'){
