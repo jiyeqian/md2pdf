@@ -16,6 +16,7 @@
 - `npm run test:web`：393 项通过。
 - `npm run check:consistency`：general、paper、gb、skill 四类样例的 CLI/共用核心/Node/静态结果一致，版本与提交号一致。
 - `npm run test:workspace-browser`：Chromium 通过 Node WebApp 编辑器、模板卡片、模板切换与布局流程。
+- `npm run test:cache-readiness-browser`：Node 预览和缓存注册顺序通过；浏览器检查将 `document.visibilityState` 切到 hidden，开始新 revision 并保持 1.2 秒，再切回 visible，预览成功且没有 error。该 Chromium 构建不支持 `Emulation.setPageVisibilityState`，因此此集成场景验证状态事件与恢复，不等同真实后台标签页节流；隐藏区间预算由虚拟时间单测覆盖。
 - `npm run test:static-preview-browser`：静态预览、离线就绪和模板卡片实时预览通过；最后观测主预览 ready 约 892ms，离线就绪约 1256ms，卡片 ready 约 4199ms。Node readiness 浏览器检查观测主预览约 741ms。这些是单次浏览器观测，不作性能基准。
 - `npm run test:document-assets`（3 项）、`npm run test:render-cancellation`（1 项）、`npm run test:static-runtime` 均通过。
 - `git diff --check` 通过。

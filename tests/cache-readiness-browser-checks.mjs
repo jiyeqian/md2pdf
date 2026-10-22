@@ -34,5 +34,21 @@ try{
   assert.equal(previewReady.visible,true,JSON.stringify(timeline));
   assert.equal(previewReady.iframe?.intersects,true,`preview iframe must intersect 1440x1000 viewport: ${JSON.stringify(timeline)}`);
   assert.ok(registration&&registration.at>=terminal.at,JSON.stringify(timeline));
-  console.log('PASS visible Node preview and cache ordering:',JSON.stringify({timeline,previewMs:previewReady.at-timeline.find(item=>item.name==='app-ready').at}));
+  await evaluate(`Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'))`);
+  await evaluate('window.measureStart=performance.now()');
+  await evaluate(`mdEditor.setValue('# Hidden then restored');document.querySelector('#markdown').dispatchEvent(new Event('input',{bubbles:true}))`);
+  for(let n=0;n<100;n++){
+    if(await evaluate(`document.querySelector('#preview').srcdoc.includes('Hidden then restored')`))break;
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  await new Promise(resolve=>setTimeout(resolve,1200));
+  await evaluate(`Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'))`);
+  for(let n=0;n<150;n++){
+    if(await evaluate(`window.timeline?.some(item=>['preview-ready','preview-error'].includes(item.name)&&item.at>=window.measureStart)`))break;
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  const recovery=await evaluate('window.timeline.filter(item=>item.at>=window.measureStart)');
+  assert.ok(recovery.some(item=>item.name==='preview-ready'),`preview recovers after foregrounding: ${JSON.stringify(recovery)}`);
+  assert.ok(!recovery.some(item=>item.name==='preview-error'),`background time must not produce a preview error: ${JSON.stringify(recovery)}`);
+  console.log('PASS Node visible preview, cache ordering, and hidden-to-visible recovery:',JSON.stringify({timeline:await evaluate('window.timeline'),previewMs:previewReady.at-timeline.find(item=>item.name==='app-ready').at,recovery}));
 }finally{await browser.stop();await app.close();await rm(dir,{recursive:true,force:true});}
