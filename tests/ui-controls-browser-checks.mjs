@@ -34,7 +34,7 @@ try {
     assert.ok(row.mainWidth > 100 && row.sideWidth > 150, JSON.stringify(row));
     assert.ok(Math.abs(row.mainRight-row.sideLeft)<1, 'sidebar occupies its own column: '+JSON.stringify(row));
   }
-  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant .md-pro-section-head h3'),e=>e.textContent)`),['文档大纲','引用与章节检查','文档类型']);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant .md-pro-section-head h3'),e=>e.textContent)`),['文档大纲','引用、章节与作者单位检查','文档类型']);
   assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant details'),e=>e.open)`),[false,false]);
   await evaluate(`document.querySelector('.md-pro-outline-disclosure').click()`);
   assert.equal(await evaluate(`document.querySelector('.md-pro-outline-children').hidden`),true);

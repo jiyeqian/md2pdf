@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 import * as helpers from '../web/editor-doi-helpers.mjs';
-const source=(await readFile(new URL('../web/editor-doi.js',import.meta.url),'utf8')).replace(/import\s*\{[\s\S]*?\}\s*from\s*'[^']+';/,'');
+const source=(await readFile(new URL('../web/editor-doi.js',import.meta.url),'utf8')).replace(/import\s*\{[\s\S]*?\}\s*from\s*'[^']+';/g,'');
 const bib='@article{k,title={Title},year={2026},doi={10.1000/example}}';
 const tick=()=>new Promise(r=>setImmediate(r));
 function fixture(fetchImpl){
@@ -20,7 +20,7 @@ function fixture(fetchImpl){
  const body=new Node('body'),row=new Node('div');let markdown='正文';const changes=[];
  const editor={getValue:()=>markdown,getSelection:()=>({from:2,to:2}),replaceRanges:plan=>{changes.push(plan);markdown=helpers.applyChanges(markdown,plan);},setSelection(){},focus(){}};
  const doc={body,activeElement:new Node('button'),createElement:t=>new Node(t),querySelector:()=>row,events:{},addEventListener(k,fn){(this.events[k]??=[]).push(fn);}};
- const window={mdEditor:editor};const context=vm.createContext({window,document:doc,AbortController,fetch:fetchImpl,setTimeout,clearTimeout,Date,...helpers});
+ const window={mdEditor:editor};const context=vm.createContext({window,document:doc,AbortController,fetch:fetchImpl,appFetch:fetchImpl,setTimeout,clearTimeout,Date,...helpers});
  vm.runInContext(source,context);
  const all=()=>{const out=[];function visit(n){out.push(n);n.children.forEach(visit);}visit(body);return out;};
  const byId=id=>all().find(n=>n.attrs.id===id);const button=text=>all().find(n=>n.tag==='button'&&n.textContent===text);
