@@ -26,10 +26,10 @@ const wsCss = await read('web/editor-workspace.css');
 
 // ---------------------------------------------------------------- index.html
 test('头部品牌只显示居中对齐的图标与主标题', () => {
-  assert.match(indexHtml, /<h1 class="brand-logo">md2pdf<\/h1>/);
+  assert.match(indexHtml, /<h1 class="brand-logo">MAKE MD2PDF GREAT<\/h1>/);
   assert.ok(!indexHtml.includes('brand-sub') && !indexHtml.includes('app-view-label'));
   assert.equal((indexHtml.match(/<header class="topbar"/g) || []).length, 1, '单页应用只保留一个顶栏');
-  assert.match(indexHtml, /<title>make md2pdf great<\/title>/);
+  assert.match(indexHtml, /<title>md2pdf<\/title>/);
   assert.ok(!/Markdown 排版工作台<\/p>/.test(indexHtml), '不应残留旧的描述文案');
 });
 
@@ -47,8 +47,8 @@ test('导航栏示例库入口改为「模板库」，编辑器与库页标题�
   assert.match(indexHtml, /<a id="examples-link-top" class="button-link nav-square" href="\/" aria-label="模板库" title="模板库" data-view-link="templates"><svg[^>]*aria-hidden="true"/);
   assert.ok(!/示例库/.test(indexHtml), '编辑器不应再残留「示例库」字样');
   // 库页标题 / 副标题同步为「模板库」。
-  assert.match(examplesHtml, /<title>make md2pdf great · 模板库<\/title>/);
-  assert.match(examplesHtml, /<h1 class="brand-logo">md2pdf<\/h1>/);
+  assert.match(examplesHtml, /<title>模板库 · md2pdf<\/title>/);
+  assert.match(examplesHtml, /<h1 class="brand-logo">MAKE MD2PDF GREAT<\/h1>/);
   assert.ok(!examplesHtml.includes('app-view-label'));
   assert.ok(!/示例库/.test(examplesHtml), '库页不应再残留「示例库」标题');
 });
@@ -847,15 +847,18 @@ test('选项模型：范围默认值（元数据缺省回退），空值不发�
   assert.equal(model.rangeOptionValue('margin', undefined), undefined);
 });
 
-test('两页标语居中且弱化，模板页面文案一致', async () => {
+test('两页品牌标语单行展示，模板页面文案一致', async () => {
   const examples = await read('web/examples.html');
-  for (const html of [indexHtml, examples]) assert.match(html, /<p class="topbar-tagline">MAKE MD2PDF GREAT<\/p>/);
+  for (const html of [indexHtml, examples]) {
+    assert.match(html, /<h1 class="brand-logo">MAKE MD2PDF GREAT<\/h1>/);
+    assert.ok(!html.includes('topbar-tagline'));
+  }
   assert.match(examples, /id="example-list" class="example-cards"/);
   assert.ok(!examples.includes('examples-heading'));
   assert.match(examplesJs, /从该模板创建/);
   assert.ok(!examples.includes('使用此示例'));
   assert.ok(!examples.includes('template-search') && !examples.includes('detail-source'));
-  assert.match(appCss, /\.topbar-tagline\{[^}]*left:50%[^}]*color:#9aa5b3/);
+  assert.match(appCss, /\.brand-logo\{white-space:nowrap\}/);
 });
 
 test('预览点击关闭浮层仅接受当前 iframe 与当前 revision 的消息', () => {

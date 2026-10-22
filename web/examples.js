@@ -13,17 +13,19 @@
   const listStatus = root.querySelector('#list-status');
   const viewLinks = document.querySelectorAll('.topbar-actions [data-view-link]');
   const topbar = document.querySelector('.topbar');
-  const tagline = topbar?.querySelector('.topbar-tagline');
-  if (tagline) {
-    const fitTagline = () => {
-      const brand = topbar.querySelector('.brand').getBoundingClientRect();
-      const actions = topbar.querySelector('.topbar-actions').getBoundingClientRect();
-      const text = tagline.getBoundingClientRect();
-      tagline.classList.toggle('is-hidden', brand.right + 16 > text.left || actions.left - 16 < text.right);
+  const logo = topbar?.querySelector('.brand-logo');
+  if (logo) {
+    const fitBrand = () => {
+      logo.hidden = false;
+      const style = getComputedStyle(topbar);
+      const available = topbar.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const required = topbar.querySelector('.brand').scrollWidth + topbar.querySelector('.topbar-actions').offsetWidth + 16;
+      logo.hidden = required > available;
     };
-    const observer = new ResizeObserver(fitTagline);
-    for (const part of [topbar, topbar.querySelector('.brand'), topbar.querySelector('.topbar-actions')]) observer.observe(part);
-    fitTagline();
+    const observer = new ResizeObserver(fitBrand);
+    for (const part of [topbar, topbar.querySelector('.topbar-actions')]) observer.observe(part);
+    document.fonts.ready.then(fitBrand);
+    fitBrand();
   }
   const shortTemplateNames = { general: '通用文档', paper: '学术论文', gb: '国家标准', skill: '技能文档' };
   const templateOrder = ['general', 'paper', 'gb', 'skill'];
@@ -95,6 +97,7 @@
       if (link.dataset.viewLink === view) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     }
+    document.title = view === 'templates' ? '模板库 · md2pdf' : 'md2pdf';
     document.body.classList.toggle('show-template-library', view === 'templates');
     if (view === 'templates') {
       if (!catalog.length) loadCatalog();

@@ -63,6 +63,7 @@ try {
   for (const row of feedback) assert.deepEqual([row.outline,row.shadow],['none','none'],JSON.stringify(row));
   await evaluate(`document.querySelector('#examples-link-top').click()`);
   await wait('document.querySelector("[data-view=editor]").hidden');
+  assert.equal(await evaluate('document.title'),'模板库 · md2pdf');
   assert.equal(await evaluate(`document.querySelector('#examples-link-top').getAttribute('aria-current')`),'page');
   assert.equal(await evaluate(`document.querySelector('#examples-link-top').dataset.viewLink`),'templates');
   assert.equal(await evaluate(`document.querySelectorAll('#examples-link-top svg').length`),1);
@@ -75,12 +76,15 @@ try {
   for (const width of [1440,780,390]) {
     await browser.send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});
     await settle();
-    const layout = await evaluate(`(()=>{const top=document.querySelector('.topbar'),brand=top.querySelector('.brand').getBoundingClientRect(),logo=top.querySelector('.brand-logo').getBoundingClientRect(),icon=top.querySelector('.brand-icon').getBoundingClientRect(),nav=top.querySelector('.topbar-actions').getBoundingClientRect(),tag=top.querySelector('.topbar-tagline'),text=tag.getBoundingClientRect(),style=getComputedStyle(tag);return {height:top.clientHeight,centerDelta:(logo.top+logo.bottom-icon.top-icon.bottom)/2,navRight:nav.right,brandRight:brand.right,navLeft:nav.left,tagVisible:style.display!=='none'&&style.visibility!=='hidden',textLeft:text.left,textRight:text.right,viewport:innerWidth}})()`);
+    const layout = await evaluate(`(()=>{const top=document.querySelector('.topbar'),brand=top.querySelector('.brand').getBoundingClientRect(),logo=top.querySelector('.brand-logo'),text=logo.getBoundingClientRect(),icon=top.querySelector('.brand-icon').getBoundingClientRect(),nav=top.querySelector('.topbar-actions').getBoundingClientRect();return {height:top.getBoundingClientRect().height,centerDelta:logo.hidden?0:(text.top+text.bottom-icon.top-icon.bottom)/2,navRight:nav.right,brandRight:brand.right,navLeft:nav.left,logoVisible:!logo.hidden,logoSize:getComputedStyle(logo).fontSize,iconWidth:icon.width,iconHeight:icon.height,buttons:Array.from(top.querySelectorAll('.nav-square'),e=>[e.offsetWidth,e.offsetHeight]),title:document.title}})()`);
     assert.ok(Math.abs(layout.centerDelta)<1,JSON.stringify(layout));
     assert.ok(layout.navRight<=width && layout.brandRight<layout.navLeft,JSON.stringify(layout));
-    if(layout.tagVisible) assert.ok(layout.textLeft>=layout.brandRight+15 && layout.textRight<=layout.navLeft-15,JSON.stringify(layout));
-    else if(width===1440) assert.fail('wide view must show tagline');
-    if(width===390) assert.ok(!layout.tagVisible && layout.height<=84,JSON.stringify(layout));
+    assert.equal(layout.height,60);
+    assert.equal(layout.logoSize,'21px');
+    assert.equal(layout.title,'md2pdf');
+    assert.deepEqual([layout.iconWidth,layout.iconHeight],[42,42]);
+    assert.ok(layout.buttons.every(([w,h])=>w===42&&h===42));
+    assert.equal(layout.logoVisible,width!==390,JSON.stringify(layout));
   }
   const {data} = await browser.send('Page.captureScreenshot',{format:'png'});
   await writeFile(path.join(os.tmpdir(),'md2pdf-controls-mobile.png'),Buffer.from(data,'base64'));
