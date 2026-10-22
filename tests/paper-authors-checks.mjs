@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { parseFrontmatter, validateFrontmatter, ConfigError } from '../src/config.mjs';
 import { render } from '../src/render.mjs';
@@ -70,4 +71,21 @@ for (const [name,change,field] of [
   assert.throws(()=>validateFrontmatter(fm),error=>error instanceof ConfigError&&error.status===400&&error.configErrors.some(issue=>issue.field===field));
   assert.throws(()=>parseFrontmatter(source(fm)),error=>error instanceof ConfigError&&error.configErrors.some(issue=>issue.field===field&&issue.line>1));
   await assert.rejects(paper(fm),ConfigError);
+});
+
+test('论文模板、CLI 和 Web 示例统一使用指定的四位作者与四个单位', async () => {
+  let expected;
+  for (const file of ['web/examples/paper.md','examples/paper.md','templates/paper.md']) {
+    const md=await readFile(new URL('../'+file,import.meta.url),'utf8');
+    const {fm}=parseFrontmatter(md);
+    assert.deepEqual(fm.authors.map(author=>author.name),['高松年','朱千里','赵辛楣','方鸿渐']);
+    assert.deepEqual(fm.affiliations.map(unit=>unit.text),['三闾大学机械工程系','北平国学专修社','三闾大学自动化研究所','克莱登大学机械工程系']);
+    assert.equal(fm.authors[3].corresponding,true);
+    assert.equal(fm.authors[3].email,'fanghongjian@clayton.edu');
+    const metadata={authors:fm.authors,affiliations:fm.affiliations};
+    if(expected)assert.deepEqual(metadata,expected);else expected=metadata;
+    const result=await render(md,{}, {webSafe:true});
+    assert.equal(result.type,'paper');
+    assert.match(result.html,/通讯作者：方鸿渐/);
+  }
 });

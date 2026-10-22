@@ -45,19 +45,19 @@ try {
     const pdf=await chrome.printHtml(online.html,{webSafe:true,waitPaged:true,outline:true});
     await evaluate(`new Promise(resolve=>{const check=()=>document.getElementById('md2pdf-preview-screen')?document.fonts.ready.then(resolve):setTimeout(check,50);check()})`);
     const authors=await evaluate(`(()=>{const root=document.querySelector('.pagedjs_pages'),block=root.querySelector('.authors');return {names:Array.from(block.querySelectorAll('.author-entry')).map(author=>author.textContent),units:Array.from(block.querySelectorAll('.affil')).map(unit=>unit.textContent),contact:block.querySelector('.correspondence').textContent,mark:getComputedStyle(block.querySelector('.author-mark')).verticalAlign,links:Array.from(block.querySelectorAll('a[href^="#"]')).every(link=>!!root.querySelector(link.getAttribute('href'))),email:block.querySelector('a[href^="mailto:"]').getAttribute('href'),page:block.closest('.pagedjs_page').getBoundingClientRect().top}})()`);
-    assert.deepEqual(authors.names,['方鸿渐1,2*','赵辛楣2','孙柔嘉1']);
-    assert.deepEqual(authors.units,['1 克莱登大学机械工程系','2 三闾大学自动化研究所']);
-    assert.equal(authors.contact,'* 通讯作者：方鸿渐（fang@example.com）');
+    assert.deepEqual(authors.names,['高松年1','朱千里2','赵辛楣3','方鸿渐3,4*']);
+    assert.deepEqual(authors.units,['1 三闾大学机械工程系','2 北平国学专修社','3 三闾大学自动化研究所','4 克莱登大学机械工程系']);
+    assert.equal(authors.contact,'* 通讯作者：方鸿渐（fanghongjian@clayton.edu）');
     assert.equal(authors.mark,'super');
     assert.equal(authors.links,true);
-    assert.equal(authors.email,'mailto:fang@example.com');
+    assert.equal(authors.email,'mailto:fanghongjian@clayton.edu');
     const clip=await evaluate(`(()=>{const r=document.querySelector('.pagedjs_page').getBoundingClientRect();return {x:r.x+scrollX,y:r.y+scrollY,width:r.width,height:r.height,scale:1}})()`);
     const shot=await chrome.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip});
     await writeFile(path.join(out,theme+'.png'),Buffer.from(shot.data,'base64'));
     await writeFile(path.join(out,theme+'.pdf'),pdf);
     console.log(`${theme}: authors, affiliations, correspondence, links, CLI/server/static parity and PDF passed`);
   }
-  for (const invalid of [md.replace('affiliations: [sanlu]','affiliations: [missing]'),md.replace('authors:','author: 旧作者\nauthors:')]) {
+  for (const invalid of [md.replace('affiliations: [sanlu-automation]','affiliations: [missing]'),md.replace('authors:','author: 旧作者\nauthors:')]) {
     const body=JSON.stringify({md:invalid,opts:{type:'paper'}});
     const online=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body});
     const offline=await staticRuntime.appFetch('/api/render',{body});
