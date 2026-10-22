@@ -647,6 +647,7 @@ async function request(url, body, signal) {
 function injectRevision(html, rev) {
   return String(html)
     .replace('var MD2PDF_PREVIEW_REVISION = 0;', `var MD2PDF_PREVIEW_REVISION = ${rev};`)
+    .replace('var MD2PDF_PREVIEW_MANAGED = false;', 'var MD2PDF_PREVIEW_MANAGED = true;')
     .replaceAll("type:'md2pdf-ready'", `type:'md2pdf-ready',revision:${rev}`)
     .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`)
     .replaceAll("type:'md2pdf-source'", `type:'md2pdf-source',revision:${rev}`)

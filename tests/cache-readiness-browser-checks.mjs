@@ -42,6 +42,8 @@ try{
     await new Promise(resolve=>setTimeout(resolve,100));
   }
   await new Promise(resolve=>setTimeout(resolve,1200));
+  assert.equal(await evaluate(`window.timeline.filter(item=>['preview-ready','preview-error'].includes(item.name)&&item.at>=window.measureStart).length`),0,'managed hidden preview stays paused until visible');
+  assert.equal(await evaluate(`document.querySelector('#preview').srcdoc.includes('MD2PDF_PREVIEW_MANAGED = true;')`),true);
   await evaluate(`Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});document.dispatchEvent(new Event('visibilitychange'))`);
   for(let n=0;n<150;n++){
     if(await evaluate(`window.timeline?.some(item=>['preview-ready','preview-error'].includes(item.name)&&item.at>=window.measureStart)`))break;

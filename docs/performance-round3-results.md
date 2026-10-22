@@ -25,6 +25,18 @@
 
 JavaScript 同步执行期间不能被 `AbortController` 抢占；latest-only 可合并尚未开始的任务，并在动态模块加载、渲染阶段已有的异步检查点停止已过时任务。过时响应也不会作为新任务结果显示。不同模板、编辑器和 PDF 不共享 latest key 或取消信号。没有引入跨请求解析或正文缓存。
 
-`check:consistency` 不覆盖浏览器后台节流、真实 PDF 版面与书签、手机打印和部署缓存；这些仍按 [跨运行时交接文档](cross-runtime-handoff.md) 人工验收。上一轮 `test:web` 中的字号断言差异不是本轮改动引入；本轮最终在获准 loopback 环境的完整 `test:web` 结果为 393/393。
+`check:consistency` 不覆盖浏览器后台节流、真实 PDF 版面与书签、手机打印和部署缓存；这些仍按 [跨运行时交接文档](cross-runtime-handoff.md) 人工验收。既有 PDF 页间距断言限制独立保留，不归为字号问题；本轮在获准 loopback 环境的完整 `test:web` 结果为 393/393。
+
+## 旧窗口与新服务的预览协议兼容修复
+
+用户实际 IAB 曾报告 Node 预览等待超时，静态端正常；发布方随后读取原页面和普通刷新均正常。历史 Paged.js `e.getAttribute is not a function` 日志没有本次失败 revision 或新的时间证据，不能据此确定根因，本次没有修改 Paged.js 或分页启动次数。
+
+源码确认一条独立、确定的兼容缺口：`web/app-worker.js` 为既有窗口固定旧 GET 缓存，而 POST `/api/render` 始终请求新服务。`ad3f803` 父页没有 visibility 消息，新服务生成的 iframe 默认 `suspended=true`，因此已完成分页也无法发送 ready。该缺口可复现用户描述的挂起，但缺少现场失败标志，不能认定就是用户那次 IAB 事件的根因。
+
+修复改为显式协议启用：iframe 的 `MD2PDF_PREVIEW_MANAGED` 默认 false，新编辑器和模板卡片在注入 HTML 时设为 true。旧父页不启用协议时正常检查就绪；新版保持暂停/恢复、父窗口来源和 revision 校验，无定时强制解除隐藏暂停。
+
+- 新增 `npm run test:preview-version-compat-browser`：在临时端口、新 Chrome profile 中使用真实历史 `ad3f803:web/app.js` 与当前 API。修复前 10 秒内没有 ready/error，状态为“正在加载公式、图表与分页…”；修复后成功。测试还安装真实 Service Worker 暖缓存，将服务器切到新 `app.js` 后重载，断言 `app.js` 网络请求次数没有增加、历史父页仍未启用 managed 协议且预览成功。该开发回归需要 Git 中保留 `ad3f803` 对象。
+- 新版 Node 浏览器检查新增断言：hidden 状态生成的新 revision 在恢复 visible 前既不 ready 也不 error，且 iframe 明确启用 managed 协议；恢复后成功。
+- Node 模板、静态主预览/离线与卡片浏览器回归均通过。实际 IAB 重启后仍交由发布方继续验收。
 
 Node 与静态验收入口：`http://127.0.0.1:3190`、`http://127.0.0.1:3191/`。交付时两者应从当前工作树 HEAD 启动；可分别读取 Node `/api/version` 和静态 `/version-data.json` 核对版本与提交号。静态源码变化需重新构建并重启。
