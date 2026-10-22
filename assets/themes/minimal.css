@@ -58,3 +58,17 @@ ol > li, ul > li { padding-left: 0; }
 /* 在线分页会添加序号伪元素；原生标记保留 start/value，避免重复显示。 */
 ol > li::before, ul > li::before { display: none !important; }
 .toc ol, .references, .footnotes { list-style: none; padding-left: 0; }
+
+/* 自绘只读任务标记，避免浏览器禁用态将黑色淡化；勾线不依赖打印背景。 */
+li > input[type="checkbox"], li > p > input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  border: 1px solid #000; border-radius: 2px;
+  background: transparent; color: #000; opacity: 1;
+}
+li > input[type="checkbox"]:checked::after,
+li > p > input[type="checkbox"]:checked::after {
+  content: ""; position: absolute; left: .27em; top: .08em;
+  width: .25em; height: .5em;
+  border: solid #000; border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
