@@ -1,0 +1,291 @@
+{
+  "date": "2026-10-22",
+  "runnerCommit": "8513d42",
+  "measurementStage": "candidate-visible-desktop-8513d42",
+  "resourceMetric": "top-frame ResourceTiming only; excludes service-worker/background fetch traffic and is not total network traffic",
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "deviceScaleFactor": 1,
+    "mobile": false
+  },
+  "platform": "darwin arm64 27.0.0",
+  "node": "v26.12.0",
+  "chrome": "Google Chrome 155.0.8059.85",
+  "targets": [
+    {
+      "name": "candidate-node",
+      "url": "http://127.0.0.1:3193/",
+      "runtime": "node"
+    },
+    {
+      "name": "candidate-static",
+      "url": "http://127.0.0.1:3192/",
+      "runtime": "static"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "cold-visible-desktop",
+      "rounds": 3,
+      "latency": 0,
+      "download": -1,
+      "cpu": 1,
+      "width": 1440,
+      "height": 1000,
+      "mobile": false
+    },
+    {
+      "name": "warm-visible-desktop",
+      "rounds": 1,
+      "latency": 0,
+      "download": -1,
+      "cpu": 1,
+      "width": 1440,
+      "height": 1000,
+      "mobile": false
+    },
+    {
+      "name": "weak-visible-desktop",
+      "rounds": 1,
+      "latency": 150,
+      "download": 750000,
+      "cpu": 4,
+      "width": 1440,
+      "height": 1000,
+      "mobile": false
+    }
+  ],
+  "samples": [
+    {
+      "target": "candidate-node",
+      "runtime": "node",
+      "targetCommit": "8513d42",
+      "scenario": "cold-visible-desktop",
+      "round": 1,
+      "appReadyMs": 125.40000000596046,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 766.7000000029802,
+      "previewAfterInputMs": 636.0999999940395,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 52,
+      "transferBytes": 2202192,
+      "decodedBytes": 2186592
+    },
+    {
+      "target": "candidate-node",
+      "runtime": "node",
+      "targetCommit": "8513d42",
+      "scenario": "cold-visible-desktop",
+      "round": 2,
+      "appReadyMs": 121.3999999910593,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 738.8999999910593,
+      "previewAfterInputMs": 614.5,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 52,
+      "transferBytes": 2202192,
+      "decodedBytes": 2186592
+    },
+    {
+      "target": "candidate-node",
+      "runtime": "node",
+      "targetCommit": "8513d42",
+      "scenario": "cold-visible-desktop",
+      "round": 3,
+      "appReadyMs": 122.5,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 738.2999999970198,
+      "previewAfterInputMs": 609.2999999970198,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 52,
+      "transferBytes": 2202192,
+      "decodedBytes": 2186592
+    },
+    {
+      "target": "candidate-node",
+      "runtime": "node",
+      "targetCommit": "8513d42",
+      "scenario": "warm-visible-desktop",
+      "round": 1,
+      "appReadyMs": 54.29999999701977,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 707.8999999910593,
+      "previewAfterInputMs": 604,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 51,
+      "transferBytes": 705930,
+      "decodedBytes": 2180783
+    },
+    {
+      "target": "candidate-node",
+      "runtime": "node",
+      "targetCommit": "8513d42",
+      "scenario": "weak-visible-desktop",
+      "round": 1,
+      "appReadyMs": 3732.8999999910593,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 5624.70000000298,
+      "previewAfterInputMs": 1869.5,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 52,
+      "transferBytes": 2202192,
+      "decodedBytes": 2186592
+    },
+    {
+      "target": "candidate-static",
+      "runtime": "static",
+      "targetCommit": "8513d42",
+      "scenario": "cold-visible-desktop",
+      "round": 1,
+      "appReadyMs": 148.19999998807907,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 799.8999999910593,
+      "previewAfterInputMs": 645.7999999970198,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 72,
+      "transferBytes": 2475733,
+      "decodedBytes": 2454133
+    },
+    {
+      "target": "candidate-static",
+      "runtime": "static",
+      "targetCommit": "8513d42",
+      "scenario": "cold-visible-desktop",
+      "round": 2,
+      "appReadyMs": 160.69999998807907,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 802.1999999880791,
+      "previewAfterInputMs": 636.2999999970198,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 72,
+      "transferBytes": 2475733,
+      "decodedBytes": 2454133
+    },
+    {
+      "target": "candidate-static",
+      "runtime": "static",
+      "targetCommit": "8513d42",
+      "scenario": "cold-visible-desktop",
+      "round": 3,
+      "appReadyMs": 126.70000000298023,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 772.1000000089407,
+      "previewAfterInputMs": 640.6000000089407,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 72,
+      "transferBytes": 2475733,
+      "decodedBytes": 2454133
+    },
+    {
+      "target": "candidate-static",
+      "runtime": "static",
+      "targetCommit": "8513d42",
+      "scenario": "warm-visible-desktop",
+      "round": 1,
+      "appReadyMs": 64.09999999403954,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 758,
+      "previewAfterInputMs": 632.3000000119209,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 71,
+      "transferBytes": 0,
+      "decodedBytes": 2439760
+    },
+    {
+      "target": "candidate-static",
+      "runtime": "static",
+      "targetCommit": "8513d42",
+      "scenario": "weak-visible-desktop",
+      "round": 1,
+      "appReadyMs": 3883.1000000089407,
+      "previewResult": "md-preview-ready",
+      "previewEventMs": 6270.9000000059605,
+      "previewAfterInputMs": 2366.1000000089407,
+      "previewEvents": 2,
+      "visible": true,
+      "iframe": {
+        "top": 169,
+        "bottom": 891,
+        "left": 736,
+        "right": 1407,
+        "intersects": true
+      },
+      "resourceCount": 72,
+      "transferBytes": 2475733,
+      "decodedBytes": 2454133
+    }
+  ]
+}

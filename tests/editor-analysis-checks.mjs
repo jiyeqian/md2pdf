@@ -509,21 +509,59 @@ test('short reference commands use icon entry rather than textual completion', (
   }
 });
 
-test('编辑即时分析可被防抖分析与快捷消费者复用', () => {
+test('编辑事件、防抖分析与补全复用同一份分析结果', () => {
   const source = fs.readFileSync(new URL('../web/editor-pro.js', import.meta.url), 'utf8');
-  const start = source.indexOf('function analyzeAndCache(');
-  const end = source.indexOf('\nfunction ', start + 1);
-  const helper = source.slice(start, end);
-  let calls = 0;
-  const sandbox = {
-    latestAnalysis: null,
-    latestAnalysisSource: null,
-    analyzeValue(value) { calls++; return { source: value }; },
+  const calls = [];
+  const modules = {
+    './runtime-request.mjs': { appFetch: async () => ({ ok:true, json:async () => ({}) }) },
+    './editor-quick-actions.mjs': { installQuickActions() {} },
+    './editor-analysis.mjs': {
+      analyzeMarkdown(value) { calls.push(value); return { source:value, headings:[], targets:[], footnotes:[], occurrences:[], diagnostics:[], counts:{headings:0,targets:0,occurrences:0,diagnostics:0,truncated:false} }; },
+      renderSnippet() { return {text:''}; }, provideCompletions(_context, analysis) { return {options:[{label:analysis.source}]}; },
+    },
   };
-  vm.runInNewContext(helper + `\n;analyzeAndCache('paste'); analyzeAndCache('paste'); analyzeAndCache('paste');`, sandbox);
-  assert.equal(calls, 1, '同一粘贴内容的即时分析和防抖/快捷路径只分析一次');
-  vm.runInNewContext(`analyzeAndCache(${JSON.stringify('paste\n追加')});`, sandbox);
-  assert.equal(calls, 2, '新输入仍会立即分析');
+  const listeners = new Map(), timers = new Map(); let nextTimer = 0, completion, currentValue = '';
+  const panel = { append(){} };
+  function fakeNode() {
+    const children=[];
+    return { classList:{add(){}}, append(...nodes){children.push(...nodes);}, appendChild(node){children.push(node);}, replaceChildren(...nodes){children.splice(0,children.length,...nodes);},
+      addEventListener(){}, setAttribute(){}, querySelector(){return fakeNode();}, querySelectorAll(){return [];}, closest(){return null;}, style:{}, dataset:{}, hidden:false, textContent:'', type:'' };
+  }
+  const doc = { addEventListener(type, fn) { listeners.set(type, fn); }, querySelector(selector) { return selector === '.editor-panel' ? panel : null; }, createElement:fakeNode };
+  const sidebarContent = fakeNode();
+  const sidebars = { create:()=>({content:sidebarContent}) };
+  const editor = { __mounted:true, getValue:()=>currentValue, getSelection:()=>({from:0,to:0,text:''}), setCompletions(fn){completion=fn;},
+    replaceRange(){}, setSelection(){}, focus(){}, dispatchEvent(){}, startCompletion(){} };
+  const sandbox = { console, window:{mdEditor:editor, mdEditorTools:{}, mdPanelSidebars:sidebars, requestAnimationFrame:fn=>fn()},
+    document:doc, CustomEvent:class { constructor(type,init){this.type=type;this.detail=init?.detail;} }, setTimeout(fn){const id=++nextTimer;timers.set(id,fn);return id;}, clearTimeout(id){timers.delete(id);},
+    setInterval(){}, clearInterval(){}, URL, fetch:async()=>({ok:true,json:async()=>({})}),
+    importModule:specifier=>modules[specifier] };
+  const transformed = source.replace(/^import \{ appFetch \} from '\.\/runtime-request\.mjs';\n/m,'')
+    .replace(/^import \{ installQuickActions \} from '\.\/editor-quick-actions\.mjs';\n/m,'')
+    .replace(/^import \{[\s\S]*?\} from '\.\/editor-analysis\.mjs';\n/m,'')
+    .replaceAll('appFetch(', 'fixture.importModule("./runtime-request.mjs").appFetch(')
+    .replaceAll('installQuickActions(', 'fixture.importModule("./editor-quick-actions.mjs").installQuickActions(')
+    .replaceAll('analyzeMarkdown(', 'fixture.importModule("./editor-analysis.mjs").analyzeMarkdown(')
+    .replaceAll('renderSnippet(', 'fixture.importModule("./editor-analysis.mjs").renderSnippet(')
+    .replaceAll('provideCompletions(', 'fixture.importModule("./editor-analysis.mjs").provideCompletions(');
+  // Run the actual module body in an isolated browser-like scope. Imports are replaced with counting fixtures.
+  const wrapped = transformed.replace("'use strict';", "'use strict';\nconst fixture=globalThis.__fixture;");
+  const context = vm.createContext({ __fixture:sandbox, fixture:sandbox, console, window:sandbox.window, document:doc, CustomEvent:sandbox.CustomEvent,
+    setTimeout:sandbox.setTimeout, clearTimeout:sandbox.clearTimeout, URL, Promise, Map, Set, Array, Object, String, Number, Math, RegExp, JSON });
+  vm.runInContext(wrapped, context);
+  listeners.get('md-editor-ready')();
+  assert.equal(calls.length,1,'initial document is analyzed once');
+  currentValue = '# 粘贴长文\n'.repeat(6000);
+  listeners.get('md-editor-change')({detail:{value:currentValue}});
+  assert.equal(calls.length,2,'real editor change event analyzes new paste once immediately');
+  [...timers.values()].forEach(fn=>fn());
+  assert.equal(calls.length,2,'debounced analysis/render reuses the event result');
+  const offered = completion({text:currentValue,pos:currentValue.length});
+  assert.equal(offered.options[0].label,currentValue);
+  assert.equal(calls.length,2,'completion consumer reuses the same analyzed text');
+  currentValue += '\n追加';
+  completion({text:currentValue,pos:currentValue.length});
+  assert.equal(calls.length,3,'a changed completion context is analyzed once');
 });
 
 test('frontmatter fields match independent of document type and preserve optimal caret', () => {

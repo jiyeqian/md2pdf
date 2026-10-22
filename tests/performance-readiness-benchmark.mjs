@@ -74,10 +74,10 @@ async function sample(kind,url,runtime,scenario,round){
       assert.ok(changedDocument,`${kind} reload must reach a new top-level document before warm measurement`);
     }
     const result=await loadAndMeasure();
-    if(result.previewResult!=='app-ready-timeout'&&result.previewResult!=='timeout'&&!scenario.forceIframeOffscreen){
+    if(!scenario.forceIframeOffscreen){
       assert.equal(result.previewResult,'md-preview-ready',`${kind} ${scenario.name} preview should succeed; iframe=${JSON.stringify(result.iframe)}`);
       assert.equal(result.visible,true,`${kind} document must be foreground-visible`);
-      if(!scenario.mobile)assert.equal(result.iframe?.intersects,true,`${kind} iframe must intersect viewport`);
+      assert.equal(result.iframe?.intersects,true,`${kind} iframe must intersect viewport`);
     }
     return {target:kind,runtime,targetCommit,scenario:scenario.name,round, ...result};
   }finally{await browser.stop();await rm(dir,{recursive:true,force:true});}

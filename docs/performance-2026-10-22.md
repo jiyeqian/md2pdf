@@ -49,3 +49,54 @@ Node 与静态 WebApp 共用 `web/cache-readiness.mjs`，启动时先读取 read
 | 静态候选 `2176d79` | 150 / 637 ms | 2.47 MB | 67 / 621 ms | 0 MB | 3,897 / 2,209 ms | 2.47 MB |
 
 候选静态冷态预览约快 68 ms、热态约快 82 ms，但静态冷/弱网资源传输增加约 25%。Node 输入后预览仅有小幅变化；弱网下 Node app-ready 样本较慢，静态输入后预览也较慢。每个弱网场景只有一轮，不能据此判断稳定差异或称整体提速已证明。此轮修正了热重载导航竞态，并改为只测当前文档 app-ready 和当前样本文档完成；先前 JSON 中 warm timeout 数据作废并已被新轮次替换。旧无视口数据同样不用于预览时延结论。以上本机 loopback 与 CDP 限速结果不代表真实手机或公网链路。
+
+## 第二轮：编辑与预览减负（2026-10-22）
+
+### 变更与边界
+
+- Node 与静态预览按版本身份和资源 URL 复用成功的引擎/国标标志 Data URL 转换；缓存有界，转换失败后可重试。没有缓存文档 HTML 或渲染结果。
+- 编辑辅助即时分析结果与 200ms 防抖分析、补全消费者共享同一份文本分析。真实模块夹具模拟 `md-editor-change` 后触发防抖回调及补全：同一份 36KB 文本只调用分析器一次；内容变化后调用一次。它核验调用次数，不作为主线程时延/内存基准。
+- 预览保留 450ms 防抖和 revision/AbortController 检查，在异步边界尽早退出。同步 JavaScript 执行期间无法被 AbortController 中断；PDF 导出不参与取消。
+
+### 桌面可见视口对照
+
+统一使用 1440×1000 headless Chrome。预览时延是输入后的 `md-preview-ready`。每个冷启动 3 轮取中位数；热态和弱网各 1 轮。逐轮数据见[66bc906 基线](performance-round2-baseline-66bc906.json)与[8513d42 候选](performance-round2-candidate-8513d42.json)。
+
+| 运行时 | 基线提交 | 候选提交 | 冷态 app-ready 中位数 | 冷态输入后预览中位数 |
+| --- | --- | --- | ---: | ---: |
+| Node | `66bc906` | `8513d42` | 139.3 → 122.5 ms | 613.7 → 614.5 ms |
+| 静态 | `66bc906` | `8513d42` | 138.2 → 148.2 ms | 638.3 → 640.6 ms |
+
+桌面冷态预览时间基本相近。热态 Node 610.3→604.0ms、静态 626.1→632.3ms；弱网 Node 1875.2→1869.5ms、静态 2356.7→2366.1ms。单轮热态/弱网数据不支持整体速度提升结论。页面 ResourceTiming 只记录顶层页面资源，不包括 Service Worker 和后台流量，也不等同总网络流量。
+
+### 移动与视口场景
+
+390×844、模拟 40ms 网络延迟、1.5MB/s 和 2× CPU 场景先将 iframe 滚入视口。短文和 120KB 粘贴均成功；Node 长文 2.35s，静态 1.41s（各一轮）。在 756×413 场景强制把 iframe 移出视口后，两端均未在测量窗口内收到完成事件；这是可见性节流观察，不是渲染错误。逐轮数据见[移动与视口样本](performance-round2-mobile-8513d42.json)。该文件的候选服务身份为 `8513d42`，测量 runner 也为 `8513d42`。
+
+### 复跑
+
+在当前工作树、端口按示例运行本地两种 WebApp 后：
+
+```bash
+MD2PDF_PERF_BASELINE_ONLY=1 \
+MD2PDF_BASELINE_NODE_URL=http://127.0.0.1:3182/ \
+MD2PDF_BASELINE_STATIC_URL=http://127.0.0.1:3183/ \
+MD2PDF_PERF_STAGE=pre-change-66bc906 \
+MD2PDF_PERF_OUTPUT=/tmp/md2pdf-baseline.json npm run bench:readiness
+
+MD2PDF_PERF_CANDIDATE_ONLY=1 \
+MD2PDF_NODE_URL=http://127.0.0.1:3190/ \
+MD2PDF_STATIC_URL=http://127.0.0.1:3191/ \
+MD2PDF_PERF_OUTPUT=/tmp/md2pdf-candidate.json npm run bench:readiness
+
+MD2PDF_PERF_CANDIDATE_ONLY=1 MD2PDF_PERF_EXTRA=1 \
+MD2PDF_NODE_URL=http://127.0.0.1:3190/ \
+MD2PDF_STATIC_URL=http://127.0.0.1:3191/ \
+MD2PDF_PERF_OUTPUT=/tmp/md2pdf-mobile.json npm run bench:readiness
+```
+
+正常可见场景必须收到成功预览事件并确认 iframe 在视口内；仅显式的 `forceIframeOffscreen` 场景允许观测超时。分析调用复用由 `node --test tests/editor-analysis-checks.mjs` 检查。
+
+### 验证范围与限制
+
+`test:document-assets`、`test:static-runtime`、`test:render-cancellation`、`test:workspace-browser`、`test:local-drafts`、静态预览/重试浏览器检查、Node 缓存就绪、`test:web`（独立复核 386/386）及 `check:consistency` 通过。`test:browser` 的既有字号断言实际为 13.0164px、预期 24px，单独失败，未归因于本轮改动。工作集未测量峰值内存；同步 render/parse 阶段不能被 AbortController 中断；没有推送或部署。
