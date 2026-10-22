@@ -11,24 +11,28 @@ const browser=new Chrome(findChrome(),dir);
 try{
   await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
   await browser.start();
-  await browser.send('Page.addScriptToEvaluateOnNewDocument',{source:`window.timeline=[];const mark=name=>window.timeline.push({name,at:performance.now()});window.addEventListener('md-app-ready',()=>mark('app-ready'));window.addEventListener('md-preview-ready',()=>mark('preview-ready'));window.addEventListener('md-preview-error',()=>mark('preview-error'));const original=navigator.serviceWorker.register.bind(navigator.serviceWorker);navigator.serviceWorker.register=(...args)=>{mark('service-worker-register');return original(...args)};`});
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  await browser.send('Page.addScriptToEvaluateOnNewDocument',{source:`window.timeline=[];window.measureStart=null;const mark=name=>window.timeline.push({name,at:performance.now(),visible:document.visibilityState==='visible',iframe:(()=>{const r=document.querySelector('#preview')?.getBoundingClientRect();return r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,intersects: r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth}:null})()});window.addEventListener('md-app-ready',()=>mark('app-ready'));window.addEventListener('md-preview-ready',()=>mark('preview-ready'));window.addEventListener('md-preview-error',()=>mark('preview-error'));const original=navigator.serviceWorker.register.bind(navigator.serviceWorker);navigator.serviceWorker.register=(...args)=>{mark('service-worker-register');return original(...args)};`});
   await browser.send('Page.navigate',{url:`http://127.0.0.1:${app.server.address().port}`});
   const evaluate=async expression=>{const result=await browser.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});assert.equal(result.exceptionDetails,undefined,JSON.stringify(result.exceptionDetails));return result.result.value;};
   for(let n=0;n<150;n++){if(await evaluate('window.__MD2PDF_APP_READY__===true'))break;await new Promise(resolve=>setTimeout(resolve,100));}
   assert.equal(await evaluate('window.__MD2PDF_APP_READY__'),true,'application reaches ready before preview is measured');
-  await evaluate('window.timeline=[]');
+  await evaluate('window.measureStart=performance.now()');
   await evaluate(`mdEditor.setValue('# Node readiness');document.querySelector('#markdown').dispatchEvent(new Event('input',{bubbles:true}))`);
-  for(let n=0;n<400;n++){
-    if(await evaluate(`window.timeline?.some(item=>['preview-ready','preview-error'].includes(item.name))`))break;
+  for(let n=0;n<250;n++){
+    if(await evaluate(`window.timeline?.some(item=>['preview-ready','preview-error'].includes(item.name)&&item.at>=window.measureStart)`))break;
     await new Promise(resolve=>setTimeout(resolve,100));
   }
   const timeline=await evaluate('window.timeline');
-  const previewReady=timeline.find(item=>item.name==='preview-ready');
-  const previewError=timeline.find(item=>item.name==='preview-error');
+  const measureStart=await evaluate('window.measureStart');
+  const previewReady=timeline.find(item=>item.name==='preview-ready'&&item.at>=measureStart);
+  const previewError=timeline.find(item=>item.name==='preview-error'&&item.at>=measureStart);
   const terminal=previewReady||previewError;
   const registration=timeline.find(item=>item.name==='service-worker-register');
-  assert.ok(terminal,`Node preview must explicitly report success or failure: ${JSON.stringify(timeline)}`);
+  assert.ok(terminal,`Node preview must report a result in a visible desktop viewport: ${JSON.stringify(timeline)}`);
+  assert.ok(previewReady,`normal Node preview must succeed: ${JSON.stringify(timeline)}`);
+  assert.equal(previewReady.visible,true,JSON.stringify(timeline));
+  assert.equal(previewReady.iframe?.intersects,true,`preview iframe must intersect 1440x1000 viewport: ${JSON.stringify(timeline)}`);
   assert.ok(registration&&registration.at>=terminal.at,JSON.stringify(timeline));
-  if(previewError)assert.match(await evaluate('document.querySelector("#status").textContent'),/超时|失败/);
-  console.log('PASS Node preview result and cache ordering:',JSON.stringify({timeline,result:previewError?'preview error was surfaced':'preview succeeded'}));
+  console.log('PASS visible Node preview and cache ordering:',JSON.stringify({timeline,previewMs:previewReady.at-timeline.find(item=>item.name==='app-ready').at}));
 }finally{await browser.stop();await app.close();await rm(dir,{recursive:true,force:true});}
