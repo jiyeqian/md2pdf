@@ -156,13 +156,22 @@ try {
   });
   try {
     await new Promise(resolve => staticServer.listen(0, '127.0.0.1', resolve));
-    await browser.send('Page.addScriptToEvaluateOnNewDocument', { source: 'window.offlineSeen=[];window.__benchAppReady=false;window.addEventListener("md2pdf-offline-ready",event=>window.offlineSeen.push(event.detail.ready));window.addEventListener("md-app-ready",()=>window.__benchAppReady=true);' });
+    await browser.send('Page.addScriptToEvaluateOnNewDocument', { source: `window.offlineSeen=[];window.__benchAppReady=false;window.__cacheTimeline=[];const mark=(event,detail)=>window.__cacheTimeline.push({event,at:performance.now(),detail});window.addEventListener("md2pdf-offline-ready",event=>window.offlineSeen.push(event.detail.ready));window.addEventListener("md-app-ready",()=>{window.__benchAppReady=true;mark("app-ready")});window.addEventListener("md-preview-ready",()=>mark("preview-ready"));window.addEventListener("md-preview-error",()=>mark("preview-error"));window.addEventListener("message",event=>{if(event.data?.type==="md2pdf-error"||event.data?.type==="md2pdf-ready")mark(event.data.type,event.data.error||"")});const originalRegister=navigator.serviceWorker?.register?.bind(navigator.serviceWorker);if(originalRegister)navigator.serviceWorker.register=(...args)=>{mark("sw-register");return originalRegister(...args)};` });
+    await browser.send('Network.enable');
     await browser.send('Page.navigate', { url: `http://127.0.0.1:${staticServer.address().port}/md2pdf/` });
     await wait('window.mdEditor && window.md2pdfAnalytics && document.querySelector(".analytics-settings")');
     await wait('window.__benchAppReady');
     assert.equal(await evaluate(`navigator.serviceWorker.getRegistration(new URL("./",location.href).href).then(Boolean)`),false,'offline cache preparation waits until a preview is ready');
     await evaluate(`mdEditor.setValue('# 触发首次预览');document.querySelector('#markdown').dispatchEvent(new Event('input',{bubbles:true}))`);
+    await wait('document.querySelector("#preview").srcdoc.includes("触发首次预览") && document.querySelector("#preview").srcdoc.includes("__md2pdfPagedReady")');
     await waitLong('window.offlineSeen.includes(true)');
+    const cacheTimeline=await evaluate('window.__cacheTimeline');
+    const previewTerminal=cacheTimeline.find(event=>event.event==='preview-ready'||event.event==='preview-error');
+    const registrationAt=cacheTimeline.find(event=>event.event==='sw-register')?.at;
+    assert.ok(previewTerminal,`the preview must report success or failure: ${JSON.stringify(cacheTimeline)}`);
+    assert.ok(Number.isFinite(registrationAt)&&registrationAt>=previewTerminal.at,`cache registration must follow an explicit preview result: ${JSON.stringify(cacheTimeline)}`);
+    if(previewTerminal.event==='preview-error')assert.match(await evaluate('document.querySelector("#status").textContent'),/超时|失败/,'preview failure remains visible to the user');
+    console.log('Static readiness timeline:',JSON.stringify(cacheTimeline));
     await browser.send('Network.enable');
     await browser.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 });
     await browser.send('Page.reload');

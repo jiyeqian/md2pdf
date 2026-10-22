@@ -1,3 +1,5 @@
+import { createCacheReadinessGate } from './cache-readiness.mjs';
+
 const footer = window.mdFooterStatus;
 const base = window.__MD2PDF_STATIC_BASE__;
 let registration, checking = false;
@@ -39,24 +41,4 @@ async function check() {
 }
 window.addEventListener('online',check);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check();});
-let appReady=window.__MD2PDF_APP_READY__===true, previewReady=window.__MD2PDF_PREVIEW_READY__===true;
-let cacheStarted=false, fallbackDue=false;
-const startCache=(force=false)=>{
-  if(cacheStarted||(!force&&document.visibilityState==='hidden')||!appReady||(!previewReady&&!fallbackDue))return;
-  cacheStarted=true;
-  prepare();
-};
-function scheduleFallback(){
-  const hasDocument=!!window.mdEditor?.getValue?.().trim();
-  setTimeout(()=>{fallbackDue=true;startCache();},hasDocument?35000:10000);
-}
-window.addEventListener('md-app-ready',()=>{
-  appReady=true;
-  scheduleFallback();
-  startCache();
-},{once:true});
-window.addEventListener('md-preview-ready',()=>{previewReady=true;startCache();},{once:true});
-window.addEventListener('md-preview-error',()=>{fallbackDue=true;startCache();},{once:true});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')startCache();});
-setTimeout(()=>{fallbackDue=true;startCache(true);},60000);
-if(appReady&&!previewReady)scheduleFallback();
+createCacheReadinessGate({ window, document, start:prepare });

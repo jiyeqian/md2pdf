@@ -733,6 +733,7 @@ window.addEventListener('message', event => {
   } else if (event.data.type === 'md2pdf-source' && Number.isSafeInteger(event.data.line) && event.data.line > 0 && event.data.line <= editor.value.split('\n').length) {
     document.dispatchEvent(new CustomEvent('md-preview-source', { detail: { line: event.data.line } }));
   } else if (event.data.type === 'md2pdf-error') {
+    window.__MD2PDF_PREVIEW_ERROR__ = true;
     window.dispatchEvent(new Event('md-preview-error'));
     finishPreviewTelemetry(false);
     clearTimeout(previewTimer);

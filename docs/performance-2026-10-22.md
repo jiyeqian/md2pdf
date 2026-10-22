@@ -22,9 +22,9 @@ renderer 实际引用脚本的 HTML 大小：纯文档 699,524 B（仅 PagedJS�
 
 ## 缓存准备延后
 
-Node 与静态 WebApp 都在应用初始化、首次预览完成后再注册 service worker 并完整准备离线缓存。预览显式失败时立即开始准备；无内容文档在应用就绪 10 秒后、有内容文档 35 秒后使用有界兜底，60 秒硬兜底确保隐藏标签页也不会无限等待。worker 的完整资源清单、校验、原子完成标记和升级流程未变。
+Node 与静态 WebApp 共用 `web/cache-readiness.mjs`，启动时先读取 ready 标志，再订阅事件；确定性测试覆盖 app/preview 先后、初始全 ready、预览错误、空白/有内容文档兜底、隐藏标签页与 60 秒硬兜底。预览显式失败时立即准备缓存；worker 的资源清单、校验、原子完成标记和升级流程未变。
 
-真实 Chrome 集成验证在 `md-app-ready` 时尚无 service worker 注册，之后缓存就绪且离线重载成功。该用例通过首次输入触发预览，但本轮没有记录到样例 iframe 的 `md-preview-ready` 事件；因此离线缓存就绪不能作为“预览优先已被观察到”的证据。预览信号优先级由事件门控实现，自动化覆盖了门控的初始状态和兜底后离线可用性。
+真实 Chrome 时间线记录了应用 ready、预览 ready/error 和 service worker 注册。缓存仅在明确的预览成功或失败之后开始；预览失败仍显示在状态栏。本机静态短文用例约 31 秒后收到“排版超时”，然后才注册 worker。同一脚本与输入在原始 `38c6bdb` 基线复测也发生相同超时，而基线 worker 更早注册。因此本轮没有把该用例说成“预览成功后缓存”的实测样本；此预览超时是两版本共有的既有问题。静态 Chrome 用例还模拟 worker 注册失败，验证重试入口可用，并在解除失败后确认缓存 ready 与离线重载。
 
 ## 验证
 
@@ -34,5 +34,7 @@ Node 与静态 WebApp 都在应用初始化、首次预览完成后再注册 ser
 - `npm run test:app-shell`：当前 service worker 资源路由、桌面/独立窗口几何、前后台切换及离线编辑行为。
 - `npm run test:local-drafts`：IndexedDB 草稿恢复、跨客户端冲突检测和删除竞态。
 - `npm run test:static-runtime`：只内嵌 renderer HTML 实际引用的引擎，并保留 data-only script CSP。
+- `npm run test:cache-readiness`：共享门控状态与定时器的确定性覆盖。
+- `npm run test:cache-readiness-browser`、`npm run test:static-preview-browser`：真实 Chrome 时间线、显式预览结果、错误可见性与缓存注册顺序。
 
-尚未量化的项目包括弱网/CPU 降速下的预览时延分布、缓存升级/失败重试、复杂长文真实 PDF 的前后对照；当前数字只支持本机冷启动的模块请求、传输字节及 renderer HTML 体积结论。本阶段不证明可输入时间或用户留存改善。
+`npm run bench:readiness` 提供 Node/静态版同机冷启动、同 profile 热重载、150 ms/750 KB/s 网络与 4× CPU 限速采样，默认写入 `docs/performance-samples-2026-10-22.json`。预览 error/timeout 单独记录，不计为成功预览时间。尚未量化缓存升级/失败重试与复杂长文真实 PDF 的前后对照。本阶段不证明可输入时间或用户留存改善。
