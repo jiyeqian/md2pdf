@@ -1,4 +1,5 @@
 import { createDocumentAssetCache } from './document-asset-cache.mjs';
+import { createLatestRenderScheduler } from './latest-render-scheduler.mjs';
 const base = new URL('./', import.meta.url);
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers:{'Content-Type':'application/json'} });
 const resource = file => new URL(file, base).href;
@@ -27,6 +28,7 @@ function base64(text) {
   return btoa(binary);
 }
 const assetDataUrls = createDocumentAssetCache(4);
+const scheduleRender = createLatestRenderScheduler();
 let assetBoundaryPromise;
 async function assetBoundary() {
   if (!assetBoundaryPromise) {
@@ -100,7 +102,9 @@ export async function appFetch(input, init = {}) {
     }
     const body = JSON.parse(init.body || '{}');
     if (url.pathname === '/api/resolve') { const { resolveWebInput } = await getRenderModules(); const {type,policy,authorDiagnostics} = resolveWebInput(body); return json({type,policy,authorDiagnostics}); }
-    if (url.pathname === '/api/render') return json(await renderDocument(body, true, init.signal));
+    if (url.pathname === '/api/render') {
+      return json(await scheduleRender(init.md2pdfConsumer, signal => renderDocument(body, true, signal), init.signal));
+    }
     return json({error:'静态版本不提供此服务。'},404);
   } catch (error) {
     if (error.name === 'AbortError') throw error;

@@ -37,5 +37,10 @@ try{
   assert.equal(preview.visible,true,JSON.stringify(timeline));
   assert.equal(preview.intersects,true,`iframe intersects fixed 1440x1000 viewport: ${JSON.stringify(timeline)}`);
   await wait(`window.timeline.some(item=>item.name==='offline-ready')`);
-  console.log('PASS visible static preview and offline readiness:',JSON.stringify({timeline:await evaluate('window.timeline'),flags}));
+  await evaluate(`document.querySelector('#examples-link-top').click()`);
+  await wait(`document.querySelector('.example-card[data-id="general"] iframe')`);
+  await wait(`getComputedStyle(document.querySelector('.example-card[data-id="general"] iframe')).opacity === '1'`);
+  const cardRevision = await evaluate(`document.querySelector('.example-card[data-id="general"] iframe').srcdoc.match(/MD2PDF_PREVIEW_REVISION = (\\d+)/)?.[1]`);
+  assert.ok(Number(cardRevision) > 0, `static template card runtime receives its own revision: ${cardRevision}`);
+  console.log('PASS visible static preview, offline readiness, and template-card readiness:',JSON.stringify({timeline:await evaluate('window.timeline'),flags,cardRevision}));
 }finally{await browser.stop();await new Promise(resolve=>server.close(resolve));await rm(dir,{recursive:true,force:true});}

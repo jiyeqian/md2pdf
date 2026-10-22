@@ -156,11 +156,11 @@ function previewVisible() {
 function updatePreviewVisibility(force = false) {
   if (!previewWait || previewWait.revision !== previewRevision || previewRevision !== revision) return;
   const visible = previewVisible();
-  if (visible === previewWait.visible && !force) return;
+  if (visible === previewWait.visible && force !== true) return;
+  previewWait.budget.setVisible(visible, Date.now());
   previewWait.visible = visible;
   preview.contentWindow?.postMessage({ type: 'md2pdf-visibility', revision: previewRevision, visible }, '*');
   if (visible) {
-    previewWait.started = Date.now();
     setStatus('正在加载公式、图表与分页…');
   } else {
     setStatus('预览已生成，滚动到预览区域后继续排版。');
@@ -169,25 +169,22 @@ function updatePreviewVisibility(force = false) {
 
 function armPreviewWait(current) {
   clearTimeout(previewTimer);
-  previewWait = { revision: current, visible: false, started: 0, elapsed: 0 };
+  const budget = new VisibleTimeBudget(60000);
+  previewWait = { revision: current, visible: false, budget };
   const tick = () => {
     if (!previewWait || previewWait.revision !== current || current !== revision) return;
     updatePreviewVisibility();
-    if (previewWait.visible) {
-      previewWait.elapsed += Math.max(0, Date.now() - previewWait.started);
-      previewWait.started = Date.now();
-      if (previewWait.elapsed >= 60000) {
-        finishPreviewTelemetry(false);
-        setStatus('排版等待超时，请修改内容或重试。', true);
-        previewWait = null;
-        return;
-      }
+    if (previewWait.budget.expired(Date.now())) {
+      finishPreviewTelemetry(false);
+      setStatus('排版等待超时，请修改内容或重试。', true);
+      previewWait = null;
+      return;
     }
     previewTimer = setTimeout(tick, 1000);
   };
   const visible = previewVisible();
+  budget.setVisible(visible, Date.now());
   previewWait.visible = visible;
-  previewWait.started = visible ? Date.now() : 0;
   preview.contentWindow?.postMessage({ type: 'md2pdf-visibility', revision: current, visible }, '*');
   if (!visible) setStatus('预览已生成，滚动到预览区域后继续排版。');
   previewTimer = setTimeout(tick, 1000);
@@ -634,6 +631,7 @@ async function request(url, body, signal) {
   const response = await appFetch(url, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body), signal,
+    ...(url === '/api/render' && window.__MD2PDF_STATIC_BASE__ ? { md2pdfConsumer: 'editor' } : {}),
   });
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}));

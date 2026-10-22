@@ -78,6 +78,7 @@
   function injectRevision(html, rev) {
     const cardCss = '@media screen { html.md2pdf-template-card, html.md2pdf-template-card body { overflow-anchor: none !important; } html.md2pdf-template-card body { padding: 12px 0 !important; } }';
     return String(html)
+      .replace('var MD2PDF_PREVIEW_REVISION = 0;', `var MD2PDF_PREVIEW_REVISION = ${rev};`)
       .replace('style.textContent = PREVIEW_CSS;', `document.documentElement.classList.add('md2pdf-template-card'); style.textContent = PREVIEW_CSS + ${JSON.stringify(cardCss)};`)
       .replace('Math.min(1, (document.documentElement.clientWidth - 24) / page.offsetWidth)', '((document.documentElement.clientWidth - 24) / page.offsetWidth)')
       .replace("parent.postMessage({type:'md2pdf-ready'", "scrollTo(0, 0); parent.postMessage({type:'md2pdf-ready'")
@@ -239,7 +240,7 @@
     status.hidden = true;
     preview.append(image, status);
     item.append(heading, copy, preview);
-    const card = { item, preview, image, frame: null, status, create, toggle, generation: 0 };
+    const card = { item, preview, image, frame: null, status, create, toggle, generation: 0, controller: null };
     toggle.addEventListener('change', () => {
       previewChoices.set(example.id, toggle.checked);
       updatePreview(example, card);
@@ -262,7 +263,7 @@
     }
   }
 
-  async function loadExample(example, live = true) {
+  async function loadExample(example, live = true, signal) {
     let data = rendered.get(example.id);
     if (!data) {
       const response = await appFetch('/api/example?id=' + encodeURIComponent(example.id));
@@ -275,6 +276,8 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ md: data.md, opts: data.type ? { type: data.type } : {} }),
+      signal,
+      md2pdfConsumer: `template:${example.id}`,
     });
     if (!renderResponse.ok) {
       const detail = await renderResponse.json().catch(() => ({}));
@@ -287,6 +290,8 @@
 
   async function updatePreview(example, card) {
     const generation = ++card.generation;
+    card.controller?.abort();
+    card.controller = null;
     if (card.frame) {
       previewFrames.delete(card.frame.contentWindow);
       card.frame.remove();
@@ -297,8 +302,10 @@
     if (!card.toggle.checked) return;
     card.status.hidden = false;
     card.status.textContent = '正在生成实时预览…';
+    const controller = new AbortController();
+    card.controller = controller;
     try {
-      const data = await loadExample(example);
+      const data = await loadExample(example, true, controller.signal);
       if (generation !== card.generation || !card.toggle.checked) return;
       const frame = document.createElement('iframe');
       frame.className = 'template-card-frame';
@@ -311,6 +318,9 @@
       card.preview.append(frame);
       const frameRevision = ++revision;
       previewFrames.set(frame.contentWindow, { revision: frameRevision, status: card.status, image: card.image, frame });
+      frame.addEventListener('load', () => frame.contentWindow?.postMessage({
+        type: 'md2pdf-visibility', revision: frameRevision, visible: true,
+      }, '*'), { once: true });
       frame.srcdoc = injectRevision(data.rendered.html, frameRevision);
     } catch (error) {
       if (generation !== card.generation) return;
