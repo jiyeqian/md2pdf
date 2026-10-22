@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
+import { paperAuthorsHtml } from './paper-authors.mjs';
 import { detectProfile } from './profiles.mjs';
 import { resolveNumberScheme } from './numbering.mjs';
 import { parseFrontmatter, resolveDocumentOptions } from './config.mjs';
@@ -700,12 +701,7 @@ export async function render(src, options = {}, context = {}) {
     : (fmStr(fm.kicker) || fmStr(fm.category) || (profile.kicker ?? ''));
 
   // 学术论文：报头三件套（作者行 + 「摘要」块 + 「关键词」行）
-  const authorsHtml = profile.paperHeader && (fm.author || fm.affiliation)
-    ? '<p class="authors">' +
-      (fm.author ? '<span class="author">' + esc(fm.author) + '</span>' : '') +
-      (fm.affiliation ? '<span class="affil">' + esc(fm.affiliation) + '</span>' : '') +
-      '</p>'
-    : '';
+  const authorsHtml = profile.paperHeader ? paperAuthorsHtml(fm, esc) : '';
   const sourceCover = fm.gb_source_cover === true || fm.gb_source_cover === 'true';
   const coverHtml = profile.gbDoc && eff.gbCover !== false && !sourceCover ? buildCover(fm, title, eff.gbDefaults !== false) : '';
   if (profile.gbDoc && !coverHtml) {

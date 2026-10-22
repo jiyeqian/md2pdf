@@ -244,6 +244,10 @@ img { max-width: 100%; height: auto; display: block; margin: 8px auto 14px; }
 
 /* ---------- 学术论文报头（作者 / 摘要 / 关键词） ---------- */
 .authors { margin: 2px 0 10px; font-size: .95em; color: var(--ink-soft); text-align: center; }
+.authors .author-entry { display: inline-block; white-space: nowrap; margin: 0 .35em; }
+.authors .author-mark { font-size: .7em; line-height: 0; vertical-align: super; font-weight: 400; }
+.authors a { border: none; text-decoration: none; }
+.authors .correspondence { margin-top: 6px; font-size: .85em; }
 .authors .author { font-weight: 600; color: var(--ink); }
 .authors .affil { display: block; margin-top: 3px; font-size: .85em; color: var(--muted); }
 .abstract, .keywords { margin: 0 0 10px; padding: 10px 14px; background: var(--tint); border-left: 3px solid var(--accent-soft); font-size: .92em; line-height: 1.85; text-align: justify; }

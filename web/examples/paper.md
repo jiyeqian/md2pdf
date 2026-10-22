@@ -1,7 +1,19 @@
 ---
 title: 面向非结构化环境的仿生抓取控制方法
-author: 方鸿渐
-affiliation: 克莱登大学
+authors:
+  - name: 方鸿渐
+    affiliations: [clayton, sanlu]
+    corresponding: true
+    email: fang@example.com
+  - name: 赵辛楣
+    affiliations: [sanlu]
+  - name: 孙柔嘉
+    affiliations: [clayton]
+affiliations:
+  - id: clayton
+    text: 克莱登大学机械工程系
+  - id: sanlu
+    text: 三闾大学自动化研究所
 abstract: 针对非结构化环境下抓取成功率偏低的问题，本文提出一种融合阻抗控制与深度强化学习的抓取方法。该方法以阻抗控制器为底层执行层，以强化学习策略在线整定刚度与阻尼参数。在自建数据集上，抓取成功率较基线方法提升 6.2 个百分点，单指响应延迟维持在 12 ms 以内。
 keywords:
   - 仿生机械手

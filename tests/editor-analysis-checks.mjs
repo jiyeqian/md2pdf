@@ -553,7 +553,7 @@ test('field catalog contains only config definitions and supported documented me
   assert.ok(FRONTMATTER_FIELDS.includes('toc-depth'));
   assert.ok(!FRONTMATTER_FIELDS.includes('tocDepth'));
   assert.ok(!FRONTMATTER_FIELDS.includes('colophon'));
-  const renderer = fs.readFileSync(new URL('../src/render.mjs', import.meta.url), 'utf8');
+  const renderer = ['render.mjs', 'paper-authors.mjs'].map(file => fs.readFileSync(new URL('../src/' + file, import.meta.url), 'utf8')).join('\n');
   const docs = fs.readFileSync(new URL('../docs/gb-template.md', import.meta.url), 'utf8');
   const files = fs.readFileSync(new URL('../web/editor-files.mjs', import.meta.url), 'utf8');
   for (const field of METADATA_FIELDS) assert.ok(renderer.includes(field) || docs.includes('`' + field + '`') || (field === 'version' && files.includes("frontmatterScalar(markdown, 'version')")), field);

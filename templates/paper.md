@@ -6,8 +6,20 @@
 -->
 ---
 title: 论文标题
-author: 方鸿渐
-affiliation: 克莱登大学
+authors:
+  - name: 方鸿渐
+    affiliations: [clayton, sanlu]
+    corresponding: true
+    email: fang@example.com
+  - name: 赵辛楣
+    affiliations: [sanlu]
+  - name: 孙柔嘉
+    affiliations: [clayton]
+affiliations:
+  - id: clayton
+    text: 克莱登大学机械工程系
+  - id: sanlu
+    text: 三闾大学自动化研究所
 abstract: 一段 200 字左右的摘要，说明问题、方法与主要结果。
 keywords:
   - 关键词一
