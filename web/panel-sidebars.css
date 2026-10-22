@@ -1,6 +1,8 @@
 .editor-panel,.preview-panel{position:relative}
 .md-panel-sidebar[hidden]{display:none!important}
-.md-panel-sidebar{position:absolute;right:0;z-index:30;display:flex;flex-direction:column;max-width:80%;min-height:0;background:#fff;border:1px solid #d6dfea;border-right:0;border-radius:8px 0 0 8px;box-shadow:-5px 4px 18px #1c304324;overflow:visible;color:#233e60}
+.md-panel-body{display:flex;flex:1 1 0;min-height:0;min-width:0;overflow:hidden}
+.md-panel-body>.md-editor,.md-panel-body>.preview-surface,.md-panel-body>#markdown{flex:1 1 0;min-width:0}
+.md-panel-sidebar{position:relative;flex:0 0 auto;display:flex;flex-direction:column;max-width:50%;min-height:0;background:#f8fafc;border:0;border-left:1px solid #d6dfea;overflow:visible;color:#233e60}
 .md-sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #e3e9f0;font-size:13px;flex:none}
 .md-sidebar-close{border:0;background:transparent;color:inherit;font-size:22px;line-height:24px;width:24px;height:24px;cursor:pointer}
 .md-sidebar-content{overflow:auto;min-height:0;flex:1;padding:8px}

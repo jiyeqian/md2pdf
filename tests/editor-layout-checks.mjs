@@ -25,9 +25,9 @@ const wsJs = await read('web/editor-workspace.js');
 const wsCss = await read('web/editor-workspace.css');
 
 // ---------------------------------------------------------------- index.html
-test('头部品牌：主标题 md2pdf，副标题编辑器，页面标题 md2pdf', () => {
+test('头部品牌只显示居中对齐的图标与主标题', () => {
   assert.match(indexHtml, /<h1 class="brand-logo">md2pdf<\/h1>/);
-  assert.match(indexHtml, /<p class="brand-sub" id="app-view-label">编辑器<\/p>/);
+  assert.ok(!indexHtml.includes('brand-sub') && !indexHtml.includes('app-view-label'));
   assert.equal((indexHtml.match(/<header class="topbar"/g) || []).length, 1, '单页应用只保留一个顶栏');
   assert.match(indexHtml, /<title>make md2pdf great<\/title>/);
   assert.ok(!/Markdown 排版工作台<\/p>/.test(indexHtml), '不应残留旧的描述文案');
@@ -48,20 +48,23 @@ test('导航栏示例库入口改为「模板库」，编辑器与库页标题�
   assert.ok(!/示例库/.test(indexHtml), '编辑器不应再残留「示例库」字样');
   // 库页标题 / 副标题同步为「模板库」。
   assert.match(examplesHtml, /<title>make md2pdf great · 模板库<\/title>/);
-  assert.match(examplesHtml, /<h1>md2pdf<\/h1><p id="app-view-label">模板库<\/p>/);
+  assert.match(examplesHtml, /<h1 class="brand-logo">md2pdf<\/h1>/);
+  assert.ok(!examplesHtml.includes('app-view-label'));
   assert.ok(!/示例库/.test(examplesHtml), '库页不应再残留「示例库」标题');
 });
 
 test('空白会话草稿不阻止默认示例载入；模板库以预览卡片呈现', () => {
   assert.match(appJs, /draft\.md\.trim\(\)/, '空草稿不应覆盖启动默认示例');
   assert.match(examplesJs, /'use strict';[\s\S]*?\(\(\) => \{/, '模板脚本应隔离作用域，避免阻止编辑器脚本解析');
-  assert.match(examplesJs, /viewLink\.dataset\.viewLink = view === 'templates' \? 'editor' : 'templates'/, '共享顶栏导航目标应随当前页面切换');
+  assert.match(examplesJs, /link\.dataset\.viewLink === view/);
+  assert.match(examplesJs, /link\.setAttribute\('aria-current', 'page'\)/);
+  assert.ok(!examplesJs.includes('templateNavIcon.hidden'));
   assert.match(indexHtml, /<ul id="example-list" class="example-cards"/);
   assert.match(examplesJs, /className = 'template-card-preview'/);
   assert.match(examplesJs, /aria-label', '从该模板创建'/);
   assert.ok(!indexHtml.includes('template-search') && !indexHtml.includes('detail-source'), '模板库不显示搜索或 Markdown 源码区');
   assert.ok(!indexHtml.includes('examples-heading') && !examplesHtml.includes('examples-heading'), '模板库不显示额外标题区');
-  assert.match(indexHtml, /data-nav-icon="templates"[\s\S]*data-nav-icon="editor"/, '顶栏提供可切换的模板库与主页图标');
+  assert.match(indexHtml, /data-nav-icon="editor"[\s\S]*data-nav-icon="templates"/, '顶栏编辑器与模板库图标固定');
   assert.match(examplesCss, /\.example-cards\{[^}]*display:grid;grid-template-columns:repeat\(auto-fit/);
   assert.match(examplesCss, /@media\(max-width:760px\)[\s\S]*?\.example-cards\{grid-template-columns:1fr/);
   assert.match(examplesCss, /\.example-card-copy\{height:96px/);

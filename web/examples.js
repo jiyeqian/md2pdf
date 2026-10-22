@@ -11,10 +11,20 @@
 
   const listEl = root.querySelector('#example-list');
   const listStatus = root.querySelector('#list-status');
-  const viewLabel = document.querySelector('#app-view-label');
-  const viewLink = document.querySelector('#examples-link-top');
-  const templateNavIcon = viewLink.querySelector('[data-nav-icon="templates"]');
-  const editorNavIcon = viewLink.querySelector('[data-nav-icon="editor"]');
+  const viewLinks = document.querySelectorAll('.topbar-actions [data-view-link]');
+  const topbar = document.querySelector('.topbar');
+  const tagline = topbar?.querySelector('.topbar-tagline');
+  if (tagline) {
+    const fitTagline = () => {
+      const brand = topbar.querySelector('.brand').getBoundingClientRect();
+      const actions = topbar.querySelector('.topbar-actions').getBoundingClientRect();
+      const text = tagline.getBoundingClientRect();
+      tagline.classList.toggle('is-hidden', brand.right + 16 > text.left || actions.left - 16 < text.right);
+    };
+    const observer = new ResizeObserver(fitTagline);
+    for (const part of [topbar, topbar.querySelector('.brand'), topbar.querySelector('.topbar-actions')]) observer.observe(part);
+    fitTagline();
+  }
   const shortTemplateNames = { general: '通用文档', paper: '学术论文', gb: '国家标准', skill: '技能文档' };
   const templateOrder = ['general', 'paper', 'gb', 'skill'];
   let catalog = [];
@@ -81,12 +91,10 @@
     if (editorView) editorView.hidden = view === 'templates';
     root.hidden = view !== 'templates';
     libraryView.hidden = view !== 'templates';
-    viewLabel.textContent = view === 'templates' ? '模板库' : '编辑器';
-    viewLink.setAttribute('aria-label', view === 'templates' ? '返回编辑器' : '模板库');
-    viewLink.title = view === 'templates' ? '返回编辑器' : '模板库';
-    viewLink.dataset.viewLink = view === 'templates' ? 'editor' : 'templates';
-    templateNavIcon.hidden = view === 'templates';
-    editorNavIcon.hidden = view !== 'templates';
+    for (const link of viewLinks) {
+      if (link.dataset.viewLink === view) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    }
     document.body.classList.toggle('show-template-library', view === 'templates');
     if (view === 'templates') {
       if (!catalog.length) loadCatalog();
