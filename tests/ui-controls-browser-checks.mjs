@@ -54,7 +54,7 @@ try {
   assert.ok((await geometry())[0].mainWidth > open[0].mainWidth + 100, 'closing sidebar restores writing width');
   await evaluate(`mdEditor.setValue(''); document.querySelector('#md-wt-basic-format').click(); document.querySelector('#md-wt-basic-menu [aria-label="任务列表"]').click()`);
   assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#md-wt-basic-menu .md-wt-menu-row[aria-label=列表] button'),e=>e.getAttribute('aria-label'))`),['无序列表','有序列表','任务列表']);
-  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#md-wt-basic-menu .md-wt-menu-row[aria-label=缩进] button'),e=>e.getAttribute('aria-label'))`),['右缩进','左缩进']);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#md-wt-basic-menu .md-wt-menu-row[aria-label=缩进] button'),e=>e.getAttribute('aria-label'))`),['左缩进','右缩进']);
   assert.equal(await evaluate('mdEditor.getValue()'),'- [ ] ');
   assert.deepEqual(await evaluate('mdEditor.getSelection()'),{from:6,to:6,text:''});
   await evaluate(`document.querySelector('.md-wt-toolbar [aria-label="查找与替换"]').click()`);

@@ -277,8 +277,8 @@
       { icon: 'taskList', label: '任务列表', insert: 'task-list' }
     ] },
     { label: '缩进', items: [
-      { icon: 'indentMore', label: '右缩进', command: 'indentMore' },
-      { icon: 'indentLess', label: '左缩进', command: 'indentLess' }
+      { icon: 'indentLess', label: '左缩进', command: 'indentLess' },
+      { icon: 'indentMore', label: '右缩进', command: 'indentMore' }
     ] },
     { label: '行内元素', items: [
       { icon: 'link', label: '链接', action: 'link', insert: 'link' },
