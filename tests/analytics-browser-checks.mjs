@@ -84,12 +84,23 @@ try {
   assert.match(events.find(entry => entry.body.event === 'page_view').body.visitorId, /^[0-9a-f-]{36}$/);
   assert.ok(events.filter(entry => entry.body.event !== 'page_view').every(entry => !entry.body.visitorId));
   await wait('!document.querySelector("#app-version").hidden');
+  // This mocked HTTPS origin has no real worker registration; exercise footer states explicitly.
+  await evaluate('["cache","check","update","save"].forEach(group=>window.mdFooterStatus.clear(group))');
   const footer = await evaluate(`(()=>{const nodes=['.analytics-settings','.privacy','#app-version'].map(s=>document.querySelector(s));return nodes.map(n=>{const b=n.getBoundingClientRect(),s=getComputedStyle(n);return {left:b.left,right:b.right,center:(b.left+b.right)/2,font:s.fontFamily,size:s.fontSize,color:s.color};});})()`);
   assert.equal(footer[0].font,footer[1].font);assert.equal(footer[1].font,footer[2].font);
   assert.equal(footer[0].size,footer[1].size);assert.equal(footer[1].size,footer[2].size);
   assert.equal(footer[0].color,footer[1].color);assert.equal(footer[1].color,footer[2].color);
   assert.ok(footer[0].left<footer[1].left && footer[1].right<footer[2].right);
   assert.ok(Math.abs(footer[1].center-(await evaluate('innerWidth'))/2)<2, 'notice geometrically centered');
+  await evaluate('window.mdFooterStatus.set("acceptance","update",()=>{window.analyticsUpdateClicked=true})');
+  assert.equal(await evaluate('getComputedStyle(document.querySelector(".privacy")).display'), 'none');
+  assert.equal(await evaluate('document.querySelector("#app-resource-status").textContent'), '↻保存并更新');
+  assert.equal(await evaluate('getComputedStyle(document.querySelector("#app-resource-status button")).color'), footer[0].color);
+  await evaluate('document.querySelector("#app-resource-status button").click()');
+  await wait('window.analyticsUpdateClicked===true');
+  await evaluate('window.mdFooterStatus.clear("acceptance");window.mdFooterStatus.set("passive","unsupported")');
+  assert.notEqual(await evaluate('getComputedStyle(document.querySelector(".privacy")).display'), 'none', 'passive offline status preserves backup notice');
+  await evaluate('window.mdFooterStatus.clear("passive")');
   await evaluate('document.querySelector(".app-bottom").scrollIntoView({block:"end"})');
   await writeFile('/tmp/md2pdf-analytics-footer.png',Buffer.from((await browser.send('Page.captureScreenshot',{format:'png'})).data,'base64'));
   await evaluate('window.md2pdfAnalytics.setConsent({basic:false,product:false})');
@@ -103,6 +114,9 @@ try {
   await evaluate('document.querySelector(".analytics-settings").click()');
   assert.equal(await evaluate('document.querySelector(".analytics-dialog").getBoundingClientRect().right <= innerWidth'), true);
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".analytics-dialog input")).width'), '16px');
+  await browser.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 568, deviceScaleFactor: 1, mobile: true });
+  assert.equal(await evaluate('document.querySelector(".analytics-dialog").scrollWidth <= document.querySelector(".analytics-dialog").clientWidth'),true);
+  assert.equal(await evaluate('document.querySelector(".analytics-actions [data-choice=save]").getBoundingClientRect().bottom <= innerHeight'),true,'all actions fit a small screen');
   const screenshot = await browser.send('Page.captureScreenshot', { format: 'png' });
   await writeFile('/tmp/md2pdf-analytics-mobile.png', Buffer.from(screenshot.data, 'base64'));
   process.env.MD2PDF_ANALYTICS_ENDPOINT=endpoint;
