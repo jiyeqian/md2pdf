@@ -1,17 +1,17 @@
 /* 主题：minimal —— 用字号、字重和留白表达结构，减少装饰。 */
 :root {
-  --ink: #141414;
-  --ink-soft: #3d3d3d;
-  --accent: #555555;
+  --ink: #000000;
+  --ink-soft: #000000;
+  --accent: #000000;
   --accent-soft: #b8b8b8;
   --paper: #ffffff;
   --tint: #ffffff;
   --rule: #dcdcdc;
-  --text: #1f1f1f;
-  --muted: #8c8c8c;
+  --text: #000000;
+  --muted: #000000;
 
   --code-bg: #f6f6f6;
-  --code-fg: #23272e;
+  --code-fg: #000000;
 
   --font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-head: var(--font-body);
@@ -29,23 +29,23 @@ em { font-style: italic; }
 .meta { border: none; background: transparent; padding: 0; gap: 16px; }
 .meta-item + .meta-item { border-left: none; padding-left: 0; }
 .meta-label { letter-spacing: 0; }
-.toc { border: 1px solid var(--rule); background: var(--code-bg); padding: 14px 18px; }
+.toc { border: 1px solid var(--rule); background: var(--code-bg); border-radius: 4px; padding: 14px 18px; }
 .abstract, .keywords { border: none; background: transparent; padding: 0; }
-blockquote { background: transparent; border-left: 3px solid var(--accent-soft); }
+blockquote { background: transparent; border-left: 3px solid #777777; }
 
 code { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 3px; }
 pre { border: 1px solid var(--rule); border-radius: 4px; }
 pre code { background: transparent; border: none; border-radius: 0; }
 .hljs [class] { color: inherit; }
 
-table { border-bottom: 2px solid var(--accent-soft); }
+table { border-bottom: 2px solid var(--ink); }
 tbody td { border-bottom: none; padding: .25em 10px; line-height: 1.5; }
 /* 首末行分别补偿字体行盒与边线的留白，使视觉间隔接近行间空白。 */
 tbody tr:first-child td { padding-top: .55em; }
 tbody tr:last-child td { padding-bottom: .35em; }
 thead th {
   background: transparent; color: var(--ink); letter-spacing: 0;
-  border-top: 2px solid var(--accent-soft); border-bottom: 1px solid var(--accent-soft);
+  border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink);
 }
 tbody tr:nth-child(even) { background: transparent; }
 tbody td:first-child { font-weight: inherit; color: inherit; }
