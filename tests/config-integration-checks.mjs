@@ -7,6 +7,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { render } from '../src/render.mjs';
 import { parseArgs } from '../src/options.mjs';
+import { resolveWebInput } from '../src/web-input.mjs';
 const exec = promisify(execFile);
 const root = new URL('..', import.meta.url).pathname;
 
@@ -27,6 +28,28 @@ test('explicit clearing and inherited frontmatter work through the public render
 test('invalid frontmatter cannot be masked by a higher explicit setting', async () => {
   await assert.rejects(render('---\nenable: [footer]\ndisable: [footer]\n---\n# 标题', { footer: true }), /footer/);
   await assert.rejects(render('---\ncolophon: null\n---\n# 标题', { colophon: '覆盖' }), /colophon/);
+});
+
+test('web resolution hands the exact parsed frontmatter to render without changing output or diagnostics', async () => {
+  const md = '---\ntype: general\nauthors:\n  - name: 甲\n    affiliations: [used]\naffiliations:\n  - id: used\n    text: 单位甲\n  - id: unused\n    text: 未引用单位\nfont-size: 11\n---\n# 标题\n\n正文';
+  const resolved = resolveWebInput({ md, opts: { fontSize: 12 }, filename: 'doc.md' });
+  assert.equal(resolved.parsedFrontmatter.source, resolved.md);
+  assert.equal(resolved.parsedFrontmatter.parsed.body, '# 标题\n\n正文');
+  assert.equal(resolved.authorDiagnostics.length, 1);
+  const reused = await render(resolved.md, resolved.opts, { filename: resolved.filename, webSafe: true, parsedFrontmatter: resolved.parsedFrontmatter });
+  const independent = await render(resolved.md, resolved.opts, { filename: resolved.filename, webSafe: true });
+  assert.equal(reused.type, independent.type);
+  assert.deepEqual(reused.effective, independent.effective);
+  assert.equal(reused.pagedHtml, independent.pagedHtml);
+  assert.equal(reused.html, independent.html);
+});
+
+test('request-local parsed frontmatter is ignored for mismatched source and invalid options still reject', async () => {
+  const resolved = resolveWebInput({ md: '---\ntype: gb\nstandard: GB/T 1—2020\n---\n# A', opts: {} });
+  const mismatch = await render('---\nfont-size: 11\n---\n# B', {}, { parsedFrontmatter: resolved.parsedFrontmatter });
+  assert.equal(mismatch.html.includes('>B<'), true);
+  await assert.rejects(render(resolved.md, {fontSize: 12}, {parsedFrontmatter: resolved.parsedFrontmatter}), /fontSize/);
+  assert.throws(() => resolveWebInput({ md: '---\nenable: [footer]\ndisable: [footer]\n---\n# X', opts: {footer:true} }), /footer/);
 });
 
 test('CLI rejects invalid configuration without creating an output; hidden aliases remain accepted', async t => {

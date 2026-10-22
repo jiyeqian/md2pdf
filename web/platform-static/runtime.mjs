@@ -69,7 +69,7 @@ export async function renderDocument(body, preview = true, signal) {
   signal?.throwIfAborted();
   const resolved = resolveWebInput(body);
   signal?.throwIfAborted();
-  const rendered = await render(resolved.md, resolved.opts, {webSafe:true,signal});
+  const rendered = await render(resolved.md, resolved.opts, {webSafe:true,signal,parsedFrontmatter:resolved.parsedFrontmatter});
   signal?.throwIfAborted();
   const html = rendered.pagedHtml || rendered.html;
   const scripts = await documentAssets(html, signal);

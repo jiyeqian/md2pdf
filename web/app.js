@@ -145,6 +145,59 @@ let downloading = false;
 let initialized = false;
 let previewTimer;
 let previewRevision = -1;
+let previewWait = null;
+
+function previewVisible() {
+  if (document.visibilityState !== 'visible' || !preview?.isConnected) return false;
+  const rect = preview.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth;
+}
+
+function updatePreviewVisibility(force = false) {
+  if (!previewWait || previewWait.revision !== previewRevision || previewRevision !== revision) return;
+  const visible = previewVisible();
+  if (visible === previewWait.visible && !force) return;
+  previewWait.visible = visible;
+  preview.contentWindow?.postMessage({ type: 'md2pdf-visibility', revision: previewRevision, visible }, '*');
+  if (visible) {
+    previewWait.started = Date.now();
+    setStatus('正在加载公式、图表与分页…');
+  } else {
+    setStatus('预览已生成，滚动到预览区域后继续排版。');
+  }
+}
+
+function armPreviewWait(current) {
+  clearTimeout(previewTimer);
+  previewWait = { revision: current, visible: false, started: 0, elapsed: 0 };
+  const tick = () => {
+    if (!previewWait || previewWait.revision !== current || current !== revision) return;
+    updatePreviewVisibility();
+    if (previewWait.visible) {
+      previewWait.elapsed += Math.max(0, Date.now() - previewWait.started);
+      previewWait.started = Date.now();
+      if (previewWait.elapsed >= 60000) {
+        finishPreviewTelemetry(false);
+        setStatus('排版等待超时，请修改内容或重试。', true);
+        previewWait = null;
+        return;
+      }
+    }
+    previewTimer = setTimeout(tick, 1000);
+  };
+  const visible = previewVisible();
+  previewWait.visible = visible;
+  previewWait.started = visible ? Date.now() : 0;
+  preview.contentWindow?.postMessage({ type: 'md2pdf-visibility', revision: current, visible }, '*');
+  if (!visible) setStatus('预览已生成，滚动到预览区域后继续排版。');
+  previewTimer = setTimeout(tick, 1000);
+}
+
+document.addEventListener('visibilitychange', updatePreviewVisibility);
+preview.addEventListener('load', () => updatePreviewVisibility(true));
+window.addEventListener('scroll', updatePreviewVisibility, true);
+window.addEventListener('resize', updatePreviewVisibility);
+window.visualViewport?.addEventListener('resize', updatePreviewVisibility);
 let policyDoc = null;
 let currentPolicy = null;
 let resolveCache = { key: null, result: null };
@@ -595,6 +648,7 @@ async function request(url, body, signal) {
 
 function injectRevision(html, rev) {
   return String(html)
+    .replace('var MD2PDF_PREVIEW_REVISION = 0;', `var MD2PDF_PREVIEW_REVISION = ${rev};`)
     .replaceAll("type:'md2pdf-ready'", `type:'md2pdf-ready',revision:${rev}`)
     .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`)
     .replaceAll("type:'md2pdf-source'", `type:'md2pdf-source',revision:${rev}`)
@@ -616,6 +670,7 @@ async function resolveDocument(signal) {
 function schedulePreview() {
   revision++;
   previewRevision = -1;
+  previewWait = null;
   clearTimeout(timer);
   clearTimeout(previewTimer);
   controller?.abort();
@@ -685,7 +740,7 @@ async function renderPreview() {
     preview.srcdoc = injectRevision(result.html, current);
     saveDraft();
     setStatus('正在加载公式、图表与分页…');
-    previewTimer = setTimeout(() => { if (current === revision) { finishPreviewTelemetry(false); setStatus('排版等待超时，请修改内容或重试。', true); } }, 60000);
+    armPreviewWait(current);
   } catch (error) {
     // 乱序响应：已被更新的请求取代（Abort 或 revision 落后）时直接忽略，不让陈旧失败覆盖新成功。
     if (error.name === 'AbortError' || current !== revision) return;
@@ -731,6 +786,7 @@ window.addEventListener('message', event => {
     window.dispatchEvent(new Event('md-preview-ready'));
     finishPreviewTelemetry(true);
     clearTimeout(previewTimer);
+    previewWait = null;
     if (!downloading) setStatus('预览已更新');
   } else if (event.data.type === 'md2pdf-source' && Number.isSafeInteger(event.data.line) && event.data.line > 0 && event.data.line <= editor.value.split('\n').length) {
     document.dispatchEvent(new CustomEvent('md-preview-source', { detail: { line: event.data.line } }));
@@ -739,6 +795,7 @@ window.addEventListener('message', event => {
     window.dispatchEvent(new Event('md-preview-error'));
     finishPreviewTelemetry(false);
     clearTimeout(previewTimer);
+    previewWait = null;
     setStatus(event.data.error || '预览排版失败。', true);
   }
 });

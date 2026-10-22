@@ -42,6 +42,16 @@ test('保留前端 revision 约定的字面量 ready/error 字符串', () => {
   assert.ok(out.includes("type:'md2pdf-error'"), 'error 字面量缺失');
 });
 
+test('分页等待按父页可见状态暂停，不以后台时钟超时报错', () => {
+  const js = injectedScript(enhancePreview(DOC, 'general'));
+  assert.match(js, /MD2PDF_PREVIEW_REVISION/);
+  assert.match(js, /md2pdf-visibility/);
+  assert.match(js, /event\.source !== parent/);
+  assert.match(js, /if \(suspended \|\| readySent\) return/);
+  assert.doesNotMatch(js, /排版超时/);
+  assert.match(js, /__md2pdfMermaidError \|\| window\.__md2pdfPagedError/);
+});
+
 test('目录项被写入两位显式序号', () => {
   const out = enhancePreview(DOC, 'general');
   assert.ok(out.includes('<li data-preview-index="01">'));
@@ -94,7 +104,7 @@ test('内链拦截：仅拦原生 #、安全解码、无选择器插值、外链
   assert.doesNotMatch(js, /location\.(?:hash|href|reload)\s*=/, '不得导航或刷新');
 });
 
-test('保留页码 / 字体就绪 / 自适应 / 错误与超时检测', () => {
+test('保留页码 / 字体就绪 / 自适应 / 错误检测', () => {
   const js = injectedScript(enhancePreview(DOC, 'general'));
   assert.match(js, /document\.fonts\.ready\.then/);
   assert.match(js, /web-page-number/);
@@ -102,7 +112,7 @@ test('保留页码 / 字体就绪 / 自适应 / 错误与超时检测', () => {
   assert.match(js, /\.style\.zoom/);
   assert.match(js, /__md2pdfMermaidError/);
   assert.match(js, /__md2pdfPagedError/);
-  assert.match(js, /30000/);
+  assert.doesNotMatch(js, /排版超时/);
 });
 
 test('安全边界不变：不注入 base、不改 CSP、不削弱沙箱约定', () => {

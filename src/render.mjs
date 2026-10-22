@@ -526,7 +526,8 @@ export async function render(src, options = {}, context = {}) {
     link(token) { const label = this.parser.parseInline(token.tokens); return /^(https?:|mailto:|#)/i.test(token.href) ? `<a href="${esc(token.href)}">${label}</a>` : label; },
   } });
   // 配置解析与校验统一走 config 模块：YAML 语法/重复键/类型冲突在此抛 ConfigError。
-  const { fm, body: rawBody, positions, warnings = [] } = parseFrontmatter(src);
+  const reusableParse = context.parsedFrontmatter?.source === src ? context.parsedFrontmatter.parsed : undefined;
+  const { fm, body: rawBody, positions, warnings = [] } = reusableParse || parseFrontmatter(src);
   const profile = detectProfile({ basename: path.basename(mdPath), fm, explicit: options.type || fm.type });
   // 有效配置：explicit(CLI/Web) > FM > profile.defaults > 全局默认，统一由 config.resolveDocumentOptions 合并。
   const eff = resolveDocumentOptions(options, fm, profile, { ...context, positions });

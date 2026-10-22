@@ -215,7 +215,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       }
       if (!['/api/render', '/api/pdf', '/api/resolve'].includes(req.url)) { json(404, { error: '页面不存在' }); return; }
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); json(405, { error: '请使用 POST' }); return; }
-      const { md, opts, filename, type, effective, policy, authorDiagnostics } = resolveWebInput(await readBody(req));
+      const { md, opts, filename, type, effective, policy, authorDiagnostics, parsedFrontmatter } = resolveWebInput(await readBody(req));
       if (req.url === '/api/resolve') { json(200, { type, policy, authorDiagnostics }); return; }
       if (req.url === '/api/render') {
         const controller = new AbortController();
@@ -224,7 +224,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         else req.once('aborted', abortOnDisconnect);
         res.once('close', abortOnDisconnect);
         try {
-          const rendered = await render(md, opts, { webSafe: true, signal:controller.signal });
+          const rendered = await render(md, opts, { webSafe: true, signal:controller.signal, parsedFrontmatter });
           controller.signal.throwIfAborted();
           const html = await webDocument(attachSourcePositions(rendered.pagedHtml, md), true, rendered.type, controller.signal);
           controller.signal.throwIfAborted();
@@ -235,7 +235,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         }
         return;
       }
-      const rendered = await render(md, opts, { webSafe: true });
+      const rendered = await render(md, opts, { webSafe: true, parsedFrontmatter });
       const pdf = await pdfTask(await webDocument(rendered.html), rendered.printOptions);
       // 与 Markdown 下载共用同一命名：客户端提交的 filename 优先（共享浏览器时间戳），
       // 否则服务端按同一 helper 从正文推导，保证直接调用 API 的命名同样合理。
