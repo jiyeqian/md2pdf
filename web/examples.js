@@ -12,21 +12,6 @@
   const listEl = root.querySelector('#example-list');
   const listStatus = root.querySelector('#list-status');
   const viewLinks = document.querySelectorAll('.topbar-actions [data-view-link]');
-  const topbar = document.querySelector('.topbar');
-  const logo = topbar?.querySelector('.brand-logo');
-  if (logo) {
-    const fitBrand = () => {
-      logo.hidden = false;
-      const style = getComputedStyle(topbar);
-      const available = topbar.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-      const required = topbar.querySelector('.brand').scrollWidth + topbar.querySelector('.topbar-actions').offsetWidth + 16;
-      logo.hidden = required > available;
-    };
-    const observer = new ResizeObserver(fitBrand);
-    for (const part of [topbar, topbar.querySelector('.topbar-actions')]) observer.observe(part);
-    document.fonts.ready.then(fitBrand);
-    fitBrand();
-  }
   const shortTemplateNames = { general: '通用文档', paper: '学术论文', gb: '国家标准', skill: '技能文档' };
   const templateOrder = ['general', 'paper', 'gb', 'skill'];
   let catalog = [];

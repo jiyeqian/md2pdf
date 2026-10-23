@@ -24,7 +24,7 @@ export function isProtected(text, from, to = from) {
 }
 export function selectionActions(text, from, to) {
   if (from === to || isProtected(text, from, to)) return [];
-  return text.slice(from,to).includes('\n') ? ['ul','ol','quote'] : ['link','bold','italic','strike'];
+  return text.slice(from,to).includes('\n') ? ['ul','ol','task-list','quote'] : ['link','bold','italic','strike'];
 }
 export function transformSelection(text, from, to, action) {
   if (!selectionActions(text,from,to).includes(action)) return null;
@@ -51,12 +51,12 @@ export function transformSelection(text, from, to, action) {
   const last = to > from && text[to-1] === '\n' ? to-1 : to;
   const next = text.indexOf('\n',last); const end = next < 0 ? text.length : next;
   const lines = text.slice(start,end).split('\n');
-  const parsed = lines.map(line => { const m = /^(\s*)(?:(?:[-+*]|\d+[.)])\s+|>\s?)/.exec(line); const indent = /^[ \t]*/.exec(line)[0]; return {line,indent,old:m ? m[0].length-indent.length : 0}; });
-  const same = parsed.every(p => action === 'quote' ? /^>\s?/.test(p.line.slice(p.indent.length)) : action === 'ol' ? /^\d+[.)]\s+/.test(p.line.slice(p.indent.length)) : /^[-+*]\s+/.test(p.line.slice(p.indent.length)));
+  const parsed = lines.map(line => { const m = /^([ \t]*)(?:(?:[-+*]|\d+[.)])[ \t]+(?:\[[ xX]\](?:[ \t]+|$))?|>[ \t]?)/.exec(line); const indent = /^[ \t]*/.exec(line)[0]; return {line,indent,old:m ? m[0].length-indent.length : 0}; });
+  const same = parsed.every(p => action === 'quote' ? /^>\s?/.test(p.line.slice(p.indent.length)) : action === 'task-list' ? /^(?:[-+*]|\d+[.)])[ \t]+\[[ xX]\](?:[ \t]+|$)/.test(p.line.slice(p.indent.length)) : action === 'ol' ? /^\d+[.)][ \t]+(?![ \t]*\[[ xX]\](?:[ \t]|$))/.test(p.line.slice(p.indent.length)) : /^[-+*][ \t]+(?![ \t]*\[[ xX]\](?:[ \t]|$))/.test(p.line.slice(p.indent.length)));
   let oldOffset=start,newOffset=start;
   const original = [from,to], mapped = [from,to];
   const values = parsed.map((p,index) => {
-    const prefix = same ? '' : action === 'ul' ? '- ' : action === 'ol' ? (index+1)+'. ' : '> ';
+    const prefix = same ? '' : action === 'ul' ? '- ' : action === 'ol' ? (index+1)+'. ' : action === 'task-list' ? '- [ ] ' : '> ';
     const oldPrefix=p.indent.length+p.old, newPrefix=p.indent.length+prefix.length;
     for (let i=0;i<2;i++) if (original[i] >= oldOffset && original[i] <= oldOffset+p.line.length) mapped[i]=newOffset+Math.max(newPrefix,original[i]-oldOffset-oldPrefix+newPrefix);
     const value=p.indent+prefix+p.line.slice(oldPrefix);
@@ -65,8 +65,8 @@ export function transformSelection(text, from, to, action) {
   if (to > end) mapped[1]=newOffset;
   return {from:start,to:end,text:values.join('\n'),anchor:mapped[0],head:mapped[1]};
 }
-const labels = {link:'链接',bold:'粗体',italic:'斜体',strike:'删除线',ul:'无序列表',ol:'有序列表',quote:'引用块',image:'图片',table:'表格',codeblock:'代码块',formula:'公式块',figure:'图表',footnote:'参考文献',bibliography:'BibTeX参考文献',doi:'DOI参考文献',ref:'图表引用',eqref:'公式引用',noteref:'文献引用'};
-const paths = {link:'M10 8l4-4a4 4 0 015 5l-4 4M14 16l-4 4a4 4 0 01-5-5l4-4M8 16l8-8',bold:'M7 4h6a4 4 0 010 8H7zm0 8h7a4 4 0 010 8H7z',italic:'M10 4h8M6 20h8M15 4L9 20',strike:'M5 12h14M17 6c-6-5-14 4-6 6 8 2 4 11-3 6',ul:'M8 6h12M8 12h12M8 18h12M3 6h1M3 12h1M3 18h1',ol:'M9 6h11M9 12h11M9 18h11M3 4h1v4M3 11h2l-2 3h2M3 17h2v3H3',quote:'M4 5h6v7H7l-3 6M14 5h6v7h-3l-3 6',image:'M3 4h18v16H3zM3 17l6-6 4 4 3-3 5 5M7 8h1',table:'M3 4h18v16H3zM3 10h18M10 4v16',codeblock:'M8 6l-5 6 5 6M16 6l5 6-5 6M14 3l-4 18',formula:'M5 2h10M5 18h10M6 5h8l-4.5 5 4.5 5H6'};
+const labels = {link:'链接',bold:'粗体',italic:'斜体',strike:'删除线',ul:'无序列表',ol:'有序列表','task-list':'任务列表',quote:'引用块',image:'图片',table:'表格',codeblock:'代码块',formula:'公式块',figure:'图表',footnote:'参考文献',bibliography:'BibTeX参考文献',doi:'DOI参考文献',ref:'图表引用',eqref:'公式引用',noteref:'文献引用'};
+const paths = {link:'M10 8l4-4a4 4 0 015 5l-4 4M14 16l-4 4a4 4 0 01-5-5l4-4M8 16l8-8',bold:'M7 4h6a4 4 0 010 8H7zm0 8h7a4 4 0 010 8H7z',italic:'M10 4h8M6 20h8M15 4L9 20',strike:'M5 12h14M17 6c-6-5-14 4-6 6 8 2 4 11-3 6',ul:'M8 6h12M8 12h12M8 18h12M3 6h1M3 12h1M3 18h1',ol:'M9 6h11M9 12h11M9 18h11M3 4h1v4M3 11h2l-2 3h2M3 17h2v3H3','task-list':'M9 6h11M9 12h11M9 18h11M3 5l1 1 2-2M3 11h3v3H3zM3 17h3v3H3z',quote:'M4 5h6v7H7l-3 6M14 5h6v7h-3l-3 6',image:'M3 4h18v16H3zM3 17l6-6 4 4 3-3 5 5M7 8h1',table:'M3 4h18v16H3zM3 10h18M10 4v16',codeblock:'M8 6l-5 6 5 6M16 6l5 6-5 6M14 3l-4 18',formula:'M5 2h10M5 18h10M6 5h8l-4.5 5 4.5 5H6'};
 export function slashActions(text, pos) {
   if (isProtected(text,pos)) return null;
   const before=text.slice(0,pos), line=before.slice(before.lastIndexOf('\n')+1);

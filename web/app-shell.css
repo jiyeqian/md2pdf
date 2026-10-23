@@ -1,14 +1,17 @@
 /* 主屏模式专用，普通浏览器不应用这些布局规则。 */
 html.app-standalone .topbar {
-  height: calc(84px + env(safe-area-inset-top, 0px));
+  height: calc(60px + env(safe-area-inset-top, 0px));
   padding-top: env(safe-area-inset-top, 0px);
-  padding-left: max(32px, env(safe-area-inset-left, 0px));
-  padding-right: max(32px, env(safe-area-inset-right, 0px));
+  padding-left: max(var(--app-inset), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--app-inset), env(safe-area-inset-right, 0px));
 }
-html.app-standalone main {
-  padding-left: max(14px, env(safe-area-inset-left, 0px));
-  padding-right: max(14px, env(safe-area-inset-right, 0px));
-  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+html.app-standalone main.editor-main,
+html.app-standalone .app-bottom {
+  padding-left: max(var(--app-inset), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--app-inset), env(safe-area-inset-right, 0px));
+}
+html.app-standalone .app-bottom {
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
 }
 html.app-standalone .workspace.md-editor-workspace.editor-focus,
 html.app-standalone .workspace.md-editor-workspace.preview-focus {
@@ -20,10 +23,3 @@ html.app-standalone .workspace.md-editor-workspace.preview-focus {
 }
 .app-file-name { overflow-wrap: anywhere; }
 .app-file-actions a { display: inline-flex; align-items: center; text-decoration: none; padding: 9px 16px; border-radius: 7px; font-size: 13px; }
-@media (max-width: 700px) {
-  html.app-standalone .topbar {
-    height: calc(94px + env(safe-area-inset-top, 0px));
-    padding-left: max(14px, env(safe-area-inset-left, 0px));
-    padding-right: max(14px, env(safe-area-inset-right, 0px));
-  }
-}

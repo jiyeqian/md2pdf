@@ -41,17 +41,26 @@ try {
   await evaluate(`document.querySelector('.md-pro-outline-disclosure').click(); document.querySelector('.cm-content').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); document.querySelector('#preview').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))`);
   assert.equal(await evaluate(`Array.from(document.querySelectorAll('.md-panel-sidebar')).every(e=>!e.hidden)`),true);
   await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
+  await wait('document.querySelector(".workspace").classList.contains("editor-focus")');
   await settle();
   assert.equal(await evaluate(`document.querySelector('#editor-assistant').hidden`),false);
   await evaluate(`document.querySelector('.preview-panel .md-panel-mode').click()`);
+  await wait('document.querySelector(".workspace").classList.contains("preview-focus")');
   await settle();
   assert.equal(await evaluate(`document.querySelector('#preview-outline').hidden`),false);
-  await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click(); document.querySelector('.editor-panel .md-panel-mode').click()`);
+  await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
+  await wait('!document.querySelector(".workspace").classList.contains("preview-focus")');
+  await evaluate(`document.querySelector('.editor-panel .md-panel-mode').click()`);
   await settle();
   assert.equal(await evaluate(`Array.from(document.querySelectorAll('.md-panel-sidebar')).every(e=>!e.hidden)`),true);
   await evaluate(`document.querySelector('#editor-assistant-toggle').click()`);
   await settle();
   assert.ok((await geometry())[0].mainWidth > open[0].mainWidth + 100, 'closing sidebar restores writing width');
+  await evaluate(`mdEditor.setValue(${JSON.stringify('One\nTwo')}); mdEditor.focus(); MDEditorVendor.EditorView.findFromDOM(document.querySelector('.cm-editor')).dispatch({selection:{anchor:0,head:7}})`);
+  await wait('!document.querySelector(".md-quick-actions").hidden && document.querySelector(".md-quick-actions").style.visibility === "visible"');
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.md-quick-actions button'),e=>e.getAttribute('aria-label'))`),['无序列表','有序列表','任务列表','引用块']);
+  await evaluate(`document.querySelector('.md-quick-actions [data-action="task-list"]').click()`);
+  assert.equal(await evaluate('mdEditor.getValue()'),'- [ ] One\n- [ ] Two');
   await evaluate(`mdEditor.setValue(''); document.querySelector('#md-wt-basic-format').click(); document.querySelector('#md-wt-basic-menu [aria-label="任务列表"]').click()`);
   assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#md-wt-basic-menu .md-wt-menu-row[aria-label=列表] button'),e=>e.getAttribute('aria-label'))`),['无序列表','有序列表','任务列表']);
   assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#md-wt-basic-menu .md-wt-menu-row[aria-label=缩进] button'),e=>e.getAttribute('aria-label'))`),['左缩进','右缩进']);
@@ -73,7 +82,8 @@ try {
   assert.equal(await evaluate(`document.querySelector('[data-view=editor]').hidden`),true,'template icon keeps its destination');
   await evaluate(`document.querySelector('#editor-link-top').click()`);
   await wait('!document.querySelector("[data-view=editor]").hidden');
-  for (const width of [1440,780,390]) {
+  for (const width of [2200,1440,780,390]) {
+    await evaluate('scrollTo(0,0)');
     await browser.send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});
     await settle();
     const layout = await evaluate(`(()=>{const top=document.querySelector('.topbar'),brand=top.querySelector('.brand').getBoundingClientRect(),logo=top.querySelector('.brand-logo'),text=logo.getBoundingClientRect(),icon=top.querySelector('.brand-icon').getBoundingClientRect(),nav=top.querySelector('.topbar-actions').getBoundingClientRect();return {height:top.getBoundingClientRect().height,centerDelta:logo.hidden?0:(text.top+text.bottom-icon.top-icon.bottom)/2,navRight:nav.right,brandRight:brand.right,navLeft:nav.left,logoVisible:!logo.hidden,logoSize:getComputedStyle(logo).fontSize,iconWidth:icon.width,iconHeight:icon.height,buttons:Array.from(top.querySelectorAll('.nav-square'),e=>[e.offsetWidth,e.offsetHeight]),title:document.title}})()`);
@@ -82,13 +92,29 @@ try {
     assert.equal(layout.height,60);
     assert.equal(layout.logoSize,'21px');
     assert.equal(layout.title,'md2pdf');
+    const frame = await evaluate(`(()=>{const footer=document.querySelector('.app-bottom'),bar=footer.getBoundingClientRect(),main=document.querySelector('.editor-main').getBoundingClientRect(),panel=document.querySelector('.workspace').getBoundingClientRect(),style=getComputedStyle(footer),topStyle=getComputedStyle(document.querySelector('.topbar'));return {bottom:bar.bottom,docHeight:document.documentElement.scrollHeight,mainBottom:main.bottom,top:bar.top,width:bar.width,height:bar.height,position:style.position,padding:style.paddingLeft,topPadding:topStyle.paddingLeft,bg:style.backgroundColor,workspaceBottom:panel.bottom}})()`);
+    assert.ok(frame.width===width && frame.height>=36 && frame.position==='static',JSON.stringify(frame));
+    assert.equal(frame.padding,frame.topPadding);
+    assert.equal(frame.bg,'rgb(255, 255, 255)');
+    assert.ok(Math.abs(frame.mainBottom-frame.top)<1,JSON.stringify(frame));
+    if(width===1440) assert.ok(Math.abs(frame.bottom-1000)<1,JSON.stringify(frame));
+    else assert.ok(Math.abs(frame.bottom-frame.docHeight)<1,JSON.stringify(frame));
     assert.deepEqual([layout.iconWidth,layout.iconHeight],[42,42]);
     assert.ok(layout.buttons.every(([w,h])=>w===42&&h===42));
-    assert.equal(layout.logoVisible,width!==390,JSON.stringify(layout));
+    assert.equal(layout.logoVisible,true,JSON.stringify(layout));
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('.brand-logo')).pointerEvents`),'none');
+    assert.ok(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),'background brand must not cause horizontal overflow');
+    if(width===390) {
+      await evaluate('scrollTo(0,0)');
+      await settle();
+      const overlap=await evaluate(`(()=>{const text=document.querySelector('.brand-logo').getBoundingClientRect(),nav=document.querySelector('.topbar-actions').getBoundingClientRect(),hit=document.elementFromPoint(nav.left+10,(text.top+text.bottom)/2);return {textRight:text.right,navLeft:nav.left,navTop:nav.top,textTop:text.top,covered:!!hit?.closest('.topbar-actions'),hit:hit?.outerHTML.slice(0,180),layers:document.elementsFromPoint(nav.left+10,(text.top+text.bottom)/2).slice(0,4).map(e=>e.tagName+'.'+e.className)}})()`);
+      assert.ok(overlap.textRight>overlap.navLeft && overlap.covered,JSON.stringify(overlap));
+    }
   }
+  await evaluate('scrollTo(0,0)');
   const {data} = await browser.send('Page.captureScreenshot',{format:'png'});
   await writeFile(path.join(os.tmpdir(),'md2pdf-controls-mobile.png'),Buffer.from(data,'base64'));
-  console.log('PASS: navigation, task insertion, docked sidebar geometry/persistence, focus feedback, 1440/780/390px layouts');
+  console.log('PASS: navigation, task insertion, docked sidebar geometry/persistence, focus feedback, 2200/1440/780/390px layouts');
 } finally {
   await browser.stop();
   if(app) await app.close();

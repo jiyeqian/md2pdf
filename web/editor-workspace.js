@@ -690,7 +690,7 @@
 
   function updateStackLayout() {
     var stacked = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
-    if (!stacked || fullscreenMode()) {
+    if (fullscreenMode()) {
       workspace.classList.remove('md-wt-stack-fit', 'md-wt-stack-scroll');
       return;
     }
@@ -698,16 +698,17 @@
     var viewportHeight = window.visualViewport && window.visualViewport.height || window.innerHeight;
     var topbar = document.querySelector('#app-topbar');
     var main = workspace.parentElement;
-    var privacy = main && main.querySelector('.privacy');
+    var footer = document.querySelector('.app-bottom');
     var mainStyle = main && window.getComputedStyle(main);
-    var privacyStyle = privacy && window.getComputedStyle(privacy);
     var reserved = (topbar ? topbar.getBoundingClientRect().height : 0)
       + (mainStyle ? parseFloat(mainStyle.paddingTop) + parseFloat(mainStyle.paddingBottom) : 0);
-    if (privacy && privacyStyle && !privacy.hidden) {
-      reserved += privacy.getBoundingClientRect().height
-        + parseFloat(privacyStyle.marginTop) + parseFloat(privacyStyle.marginBottom);
-    }
+    if (footer) reserved += footer.getBoundingClientRect().height;
     var available = Math.max(0, Math.floor(viewportHeight - reserved));
+    workspace.style.setProperty('--md-wt-available-height', available + 'px');
+    if (!stacked) {
+      workspace.classList.remove('md-wt-stack-fit', 'md-wt-stack-scroll');
+      return;
+    }
     var editorMinimum = stackPanelMinimum(editorPanel, '.cm-editor, #markdown', 180);
     var previewMinimum = stackPanelMinimum(previewPanel, '.preview-surface', 150);
     var minimum = Math.max(editorMinimum, previewMinimum);
@@ -735,10 +736,9 @@
     if (window.ResizeObserver) {
       var observer = new window.ResizeObserver(scheduleStackLayout);
       var topbar = document.querySelector('#app-topbar');
-      var main = workspace.parentElement;
-      var privacy = main && main.querySelector('.privacy');
+      var footer = document.querySelector('.app-bottom');
       if (topbar) observer.observe(topbar);
-      if (privacy) observer.observe(privacy);
+      if (footer) observer.observe(footer);
       [editorPanel, previewPanel].forEach(function (panel) {
         Array.from(panel.children).forEach(function (child) {
           if (!child.classList.contains('cm-editor') && child.getAttribute('id') !== 'markdown'
