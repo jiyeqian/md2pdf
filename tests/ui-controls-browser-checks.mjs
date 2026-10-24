@@ -24,6 +24,11 @@ try {
   await wait('window.mdEditor && document.querySelector("#editor-assistant-toggle")');
   await evaluate(`mdEditor.setValue(${JSON.stringify('# 标题\n\n## 子标题\n\n正文')}); document.querySelector('#editor-assistant-toggle').click(); document.querySelector('#preview-outline-toggle').click()`);
   await wait('document.querySelectorAll(".md-pro-outline-item").length === 2');
+  await wait(`document.querySelector('#preview-outline button[data-outline-index]')`);
+  assert.equal(await evaluate(`document.querySelector('#editor-assistant-view-outline .md-pro-section-head')`),null);
+  const outlineStyles=await evaluate(`['.md-pro-outline-item','#preview-outline button[data-outline-index]'].map(selector=>{const s=getComputedStyle(document.querySelector(selector));return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight,s.paddingTop,s.paddingBottom]})`);
+  assert.deepEqual(outlineStyles[0],outlineStyles[1],'editor and preview outlines share typography and spacing');
+
   await settle();
   const geometry = () => evaluate(`['.editor-panel','.preview-panel'].map(selector=>{const panel=document.querySelector(selector),dock=panel.querySelector('.md-panel-body'),main=dock.firstElementChild.getBoundingClientRect(),side=panel.querySelector('.md-panel-sidebar').getBoundingClientRect();return {mainWidth:main.width,mainRight:main.right,sideLeft:side.left,sideWidth:side.width,dockWidth:dock.clientWidth}})`);
   const open = await geometry();

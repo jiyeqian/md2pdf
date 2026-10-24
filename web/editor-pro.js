@@ -366,12 +366,9 @@ function buildPanel() {
   const typeLine = el('p', 'md-pro-type', '');
 
   const outlineSection = el('section', 'md-pro-section');
-  const outlineHead = el('div', 'md-pro-section-head');
-  outlineHead.classList.add('md-pro-outline-count');
-  outlineHead.append(el('span', 'md-pro-count', ''));
   outlineSection.setAttribute('aria-label', '文档大纲');
   const outlineList = el('div', 'md-pro-outline');
-  outlineSection.append(outlineHead, outlineList);
+  outlineSection.append(outlineList);
 
   const diagSection = el('details', 'md-pro-section');
   const diagHead = el('summary', 'md-pro-section-head');
@@ -401,7 +398,6 @@ function buildPanel() {
     meta: meta,
     status: status,
     typeLine: typeLine,
-    outlineCount: outlineHead.querySelector('.md-pro-count'),
     outlineList: outlineList,
     diagCount: diagHead.querySelector('.md-pro-count'),
     diagList: diagList,
@@ -458,8 +454,7 @@ function renderOutline(analysis) {
       stack.push({ level, container: children, key, disclosure });
     }
   }
-  refs.outlineCount.textContent = headings.length + ' 条'
-    + (headings.length > MAX_OUTLINE ? '（显示前 ' + MAX_OUTLINE + '）' : '');
+
 }
 
 function renderDiagnostics(analysis) {

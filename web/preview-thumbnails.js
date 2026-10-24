@@ -27,7 +27,7 @@
       const data = event.data;
       if (event.source !== parent || !data || data.token !== token) return;
       if (data.type === 'md2pdf-thumbnails-init' && Number.isSafeInteger(data.revision) && Array.isArray(data.pages)) {
-        revision = data.revision; metadata = data.pages;
+        revision = data.revision; metadata = data.pages; document.documentElement.classList.toggle("md2pdf-preview-flow", data.flow === true);
         document.querySelector('#document-styles').textContent = data.styles;
         Object.entries(data.typography || {}).forEach(([name, value]) => document.body.style.setProperty(name, value));
         list.replaceChildren(); rows.length = 0;
@@ -54,7 +54,7 @@
         const size = metadata[index], scale = width / size.width;
         row.style.width = width + 'px';
         row.querySelector('.page-copy').style.height = size.height * scale + 'px';
-        const page = row.querySelector('.pagedjs_page');
+        const page = row.querySelector('.pagedjs_page, #md2pdf-preview-flow');
         if (page) {page.style.transform = 'scale(' + scale + ')'; page.style.transformOrigin = 'top left';}
       });
       schedule();
@@ -69,7 +69,7 @@
     const nonce = crypto.randomUUID().replaceAll('-', '');
     const policy = "default-src 'none'; script-src 'nonce-" + nonce + "'; style-src 'unsafe-inline'; img-src data: blob: https: http:; font-src data: blob: https: http:; base-uri 'none'; form-action 'none'";
     return '<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="' + policy + '"><style id="document-styles"></style><style>'
-      + 'html,body{margin:0!important;padding:0!important;background:#f4f6f9!important}#pages{padding:12px;display:block!important}.thumbnail{position:relative;display:block;padding:0;margin:0 0 12px;border:0;background:transparent;cursor:pointer;color:#35445a}.page-copy{position:relative;overflow:hidden;background:white;box-shadow:0 1px 4px #0003;pointer-events:none}.page-copy>.pagedjs_page{position:absolute!important;top:0;left:0;margin:0!important;box-shadow:none!important;display:block!important}.number{display:block;font:12px/24px sans-serif;text-align:center}.thumbnail[aria-current]{color:#315a86;font-weight:bold}.pagedjs_pages{display:block!important}#md2pdf-preview-flow{display:none!important}'
+      + 'html,body{margin:0!important;padding:0!important;background:#f4f6f9!important}#pages{padding:12px;display:block!important}.thumbnail{position:relative;display:block;padding:0;margin:0 0 12px;border:0;background:transparent;cursor:pointer;color:#35445a}.page-copy{position:relative;overflow:hidden;background:white;box-shadow:0 1px 4px #0003;pointer-events:none}.page-copy>.pagedjs_page,.page-copy>#md2pdf-preview-flow{position:absolute!important;top:0;left:0;margin:0!important;zoom:1!important;box-shadow:none!important;display:block!important}.number{display:block;font:12px/24px sans-serif;text-align:center}.thumbnail[aria-current]{color:#315a86;font-weight:bold}.pagedjs_pages{display:block!important}.page-copy>#md2pdf-preview-flow{display:block!important}'
       + '</style></head><body><nav id="pages" aria-label="页面缩略图"></nav><script nonce="' + nonce + '">(' + thumbnailRuntime.toString() + ')(' + JSON.stringify(token) + ',' + MAX_VISIBLE + ');</script></body></html>';
   }
   function create(container) {
@@ -120,7 +120,7 @@
       if (event.source !== preview.contentWindow || data.revision !== revision || typeof data.request !== 'string' || !data.request.startsWith(session + ':')) return;
       if (data.type === 'md2pdf-thumbnails-meta' && !metadata && Array.isArray(data.pages) && typeof data.styles === 'string') {
         if (!data.pages.every(page => Number.isFinite(page.width) && page.width > 0 && Number.isFinite(page.height) && page.height > 0)) return;
-        metadata = {pages: data.pages, styles: data.styles, typography: data.typography}; initFrame();
+        metadata = {pages: data.pages, styles: data.styles, typography: data.typography, flow: data.flow}; initFrame();
       } else if (data.type === 'md2pdf-thumbnails-page' && pending.get(data.index) === data.request && typeof data.html === 'string') {
         pending.delete(data.index);
         if (wanted.includes(data.index)) frame.contentWindow.postMessage({type: 'md2pdf-thumbnails-deliver', token: session, revision, index: data.index, html: data.html}, '*');
@@ -131,11 +131,12 @@
     const api = {setActive(value) {
       const next = value === true; if (next === active) return;
       active = next;
-      if (active) {window.dispatchEvent(new CustomEvent('md-preview-request-paged')); build();} else dispose();
-    }, refresh() {if (active && (!frame || revision !== readyRevision)) build();}};
+      if (active) build(); else dispose();
+    }, refresh(force = false) {if (active && (force || !frame || revision !== readyRevision)) build();}};
     managers.add(api); return api;
   }
   addEventListener('message', event => {
+    if (event.source === preview.contentWindow && event.data?.type === 'md2pdf-thumbnail-mode' && event.data.revision === readyRevision) managers.forEach(manager => manager.refresh(true));
     if (event.source === preview.contentWindow && event.data?.type === 'md2pdf-ready' && Number.isSafeInteger(event.data.revision)) {
       readyRevision = event.data.revision; managers.forEach(manager => manager.refresh());
     }

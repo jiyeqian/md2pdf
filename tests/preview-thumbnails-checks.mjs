@@ -38,7 +38,7 @@ test('inactive thumbnails allocate no frame; active uses one nonce-only opaque s
   assert.ok(!frame.srcdoc.includes('allow-same-origin'));
   assert.match(frame.srcdoc, /script-src 'nonce-[^']+'/);
   assert.ok(!frame.srcdoc.includes("script-src 'unsafe-inline'"));
-  assert.equal(env.events[0], 'md-preview-request-paged');
+  assert.equal(env.events.length, 0, 'opening thumbnails preserves browsing mode');
   api.setActive(false); assert.equal(env.container.children.length, 0);
   api.setActive(true); assert.equal(env.frames.length, 2);
 });

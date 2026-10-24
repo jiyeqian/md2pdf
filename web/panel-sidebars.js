@@ -78,7 +78,7 @@
   }
   function closeAll() { const open = sidebars.filter(s => s.isOpen()); open.forEach(s => s.close()); return open.length > 0; }
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && closeAll()) { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
-  const icons = { outline: 'M8 5h13M8 12h13M8 19h13M3 5h1M3 12h1M3 19h1', assistant: 'M4 3h13v18H4zM8 7h5M8 11h5M8 15l2 2 5-5', thumbnails: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z' };
+  const icons = { outline: 'M8 5h13M8 12h13M8 19h13M3 5h1M3 12h1M3 19h1', assistant: 'M4 3h13v18H4zM8 7h5M8 11h5M8 15l2 2 5-5', thumbnails: 'M6 3h13v17H6zM3 6v16h13M9 7h7v6H9zM9 16h7' };
   window.mdPanelSidebars = { create, closeAll, icons };
   const panel = document.querySelector('.preview-panel');
   if (!panel || !preview) return;
@@ -87,7 +87,7 @@
   outline.addView({key: 'outline', label: '文档大纲', icon: icons.outline, content: list});
   const thumbnails = document.createElement('div'); thumbnails.className = 'md-preview-thumbnails';
   const thumbnailView = window.mdPreviewThumbnails.create(thumbnails);
-  outline.addView({key: 'thumbnails', label: '页面缩略图', hint: '页面缩略图（流式浏览时切回分页）', icon: icons.thumbnails, content: thumbnails, onActive: active => thumbnailView.setActive(active)});
+  outline.addView({key: 'thumbnails', label: '页面缩略图', icon: icons.thumbnails, content: thumbnails, onActive: active => thumbnailView.setActive(active)});
   let items = [], currentIndex = -1;
   const collapsedOutlinePaths = new Set();
   function showCurrent() {

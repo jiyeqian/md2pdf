@@ -30,4 +30,8 @@
 .md-sidebar-view:has(.md-preview-thumbnails){height:100%}
 .md-preview-thumbnails{height:100%;min-height:0}
 .md-preview-thumbnails iframe{width:100%;height:100%;border:0;background:transparent}
-.md-pro-outline-count{justify-content:flex-end;border:0;margin-top:0}
+.md-pro-outline{display:block;margin:0;gap:0}
+.md-pro-outline .md-pro-outline-item{display:block;width:100%;min-width:0;color:inherit;font:inherit;font-size:12px;font-weight:400;line-height:1.5;padding:5px 7px;border-radius:4px}
+.md-pro-outline .md-pro-outline-item:hover{background:#e9eff7;color:inherit}
+.md-pro-outline .md-pro-outline-disclosure{padding:5px 0;line-height:18px;text-align:center}
+.md-sidebar-view>.md-pro-section{margin:0;padding:0;border:0}

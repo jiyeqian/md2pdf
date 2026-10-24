@@ -73,8 +73,9 @@ try {
   assert.equal(await evaluate('window.modeRequestCount'),0,'view mode does not request or mutate rendering options');
   assert.equal(await evaluate(`document.querySelectorAll('.md-preview-thumbnails iframe').length`),0);
   await evaluate(`document.querySelector('[data-preview-mode-toggle]').click();document.querySelector('#preview-outline-tab-thumbnails').click()`);
-  await wait(`!document.documentElement.classList.contains('md2pdf-preview-flow')`,session);
+  await wait(`document.documentElement.classList.contains('md2pdf-preview-flow')`,session);
   await wait(`document.querySelectorAll('.md-preview-thumbnails iframe').length===1`);
+  async function findThumbnailSession(){
   let thumbnailSession;
   for(let attempt=0;attempt<100&&!thumbnailSession;attempt++){
     for(const target of (await browser.send('Target.getTargets')).targetInfos.filter(t=>t.type==='iframe')){
@@ -85,10 +86,20 @@ try {
     if(!thumbnailSession)await new Promise(resolve=>setTimeout(resolve,100));
   }
   assert.ok(thumbnailSession,'thumbnail frame available');
+  return thumbnailSession;
+  }
+  let thumbnailSession=await findThumbnailSession();
+  await wait(`document.querySelectorAll('.page-copy #md2pdf-preview-flow').length===1`,thumbnailSession);
+  assert.equal(await evaluate(`document.querySelectorAll('.thumbnail').length`,thumbnailSession),1);
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.page-copy #md2pdf-preview-flow')).display`,thumbnailSession),'block');
+  await evaluate(`document.querySelector('#preview-outline-tab-outline').click();document.querySelector('[data-preview-mode-toggle]').click()`);
+  await wait(`!document.documentElement.classList.contains('md2pdf-preview-flow')`,session);
+  await evaluate(`document.querySelector('#preview-outline-tab-thumbnails').click()`);
+  thumbnailSession=await findThumbnailSession();
   await wait(`document.querySelectorAll('.page-copy .pagedjs_page').length>0`,thumbnailSession);
   assert.ok(await evaluate(`document.querySelectorAll('.thumbnail').length>1&&document.querySelectorAll('.page-copy .pagedjs_page').length<=12`,thumbnailSession));
   await evaluate(`document.querySelectorAll('.thumbnail')[1].click()`,thumbnailSession);
-  await wait(`Math.abs(document.querySelectorAll('.pagedjs_pages > .pagedjs_page')[1].getBoundingClientRect().top)<50`,session);
+  await wait(`Math.abs(document.querySelectorAll('.pagedjs_pages > .pagedjs_page')[0].getBoundingClientRect().bottom)<1`,session);
   const thumbnailScreenshot=await browser.send('Page.captureScreenshot',{format:'png'});
   await writeFile(path.join(os.tmpdir(),'md2pdf-thumbnails-preview.png'),Buffer.from(thumbnailScreenshot.data,'base64'));
   await evaluate(`document.querySelector('#preview-outline-tab-outline').click()`);
