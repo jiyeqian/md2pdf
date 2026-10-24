@@ -31,8 +31,15 @@ export const PREVIEW_SCREEN_CSS = [
   '    align-items: center !important; gap: 12px !important; transform-origin: top center !important; }',
   '  .pagedjs_page { background: #fff !important; margin: 0 auto !important;',
   '    box-shadow: 0 1px 2px rgba(0,0,0,.30), 0 12px 32px rgba(0,0,0,.22) !important; }',
+  '  html.md2pdf-preview-flow .pagedjs_pages { display: none !important; }',
+  '  #md2pdf-preview-flow { display: none; background: #fff; margin: 0 auto; padding: 24px; box-sizing: border-box; overflow-wrap: anywhere; }',
+  '  html.md2pdf-preview-flow #md2pdf-preview-flow { display: block; }',
+  '  #md2pdf-preview-flow .web-page-number { display: none !important; }',
+  '  #md2pdf-preview-flow .cover { min-height: 0 !important; height: auto !important; }',
+  '  #md2pdf-preview-flow .toc a::after { content: none !important; }',
   '  .md2pdf-preview-target { outline: 3px solid #2f6fd0 !important; outline-offset: 3px !important; }',
   '}',
+  '@media print { #md2pdf-preview-flow { display: none !important; } }',
 ].join('\n');
 
 /* counter-free 序号样式，贴在被显式标记过的目录项与有序列表项上。
@@ -57,6 +64,25 @@ function stampToc(html) {
   });
 }
 
+// SVG fragments must resolve inside the visible flow copy, rather than hidden pages.
+function isolateFlowSvg(root) {
+  for (const svg of root.querySelectorAll('svg')) {
+    const nodes = [svg, ...svg.querySelectorAll('*')];
+    const ids = new Map(nodes.filter(node => node.id).map(node => [node.id, 'md2pdf-flow-' + node.id]));
+    const rewrite = value => value.replace(/url\((["']?)[^#)]*#([^)'"\s]+)\1\)/g,
+      (match, quote, id) => ids.has(id) ? 'url(#' + ids.get(id) + ')' : match);
+    for (const node of nodes) {
+      for (const attr of Array.from(node.attributes)) {
+        if (attr.name === 'id') node.id = ids.get(attr.value);
+        else if ((attr.name === 'href' || attr.name === 'xlink:href') && attr.value.startsWith('#') && ids.has(attr.value.slice(1))) node.setAttribute(attr.name, '#' + ids.get(attr.value.slice(1)));
+        else if (attr.name === 'aria-labelledby' || attr.name === 'aria-describedby') node.setAttribute(attr.name, attr.value.split(/\s+/).map(id => ids.get(id) || id).join(' '));
+        else node.setAttribute(attr.name, rewrite(attr.value));
+      }
+      if (node.localName === 'style') node.textContent = rewrite(node.textContent).replace(/#([\w:-]+)/g, (match, id) => ids.has(id) ? '#' + ids.get(id) : match);
+    }
+  }
+}
+
 // 运行时脚本：分页前同步写序号属性；分页后注入屏幕样式、页码、自适应缩放并回传状态。
 function runtimeScript(type) {
   const isGb = type === 'gb';
@@ -66,6 +92,30 @@ function runtimeScript(type) {
     '(function () {',
     '  var MD2PDF_PREVIEW_REVISION = 0;',
     '  var MD2PDF_PREVIEW_MANAGED = false;',
+    '  var MD2PDF_PREVIEW_FLOW = false;',
+    '  var flowRoot = null, flowSnapshot = null, flowStyles = "", flowTypography = {};',
+    '  // 克隆已完成公式/图表处理的原文；脱离 DOM 保存，避免参与分页。',
+    isolateFlowSvg.toString(),
+    '  window.__md2pdfPreviewSnapshot = function () {',
+    '    if (flowSnapshot) return;',
+    '    flowSnapshot = document.createDocumentFragment();',
+    '    flowStyles = Array.from(document.querySelectorAll("head style:not([data-pagedjs-inserted-styles])")).map(function (style) { return style.textContent; }).join(String.fromCharCode(10));',
+    '    var computed = getComputedStyle(document.body);',
+    '    Array.from(computed).filter(function (name) { return name.indexOf("--") === 0; }).forEach(function (name) { flowTypography[name] = computed.getPropertyValue(name); });',
+    '    ["font-family","font-size","line-height","color","text-align","letter-spacing"].forEach(function (name) { flowTypography[name] = computed.getPropertyValue(name); });',
+    '    Array.from(document.body.children).forEach(function (node) {',
+    '      if (node.tagName === "SCRIPT" || node.tagName === "STYLE" || node.classList.contains("pagedjs_pages")) return;',
+    '      var copy = node.cloneNode(true);',
+    '      copy.querySelectorAll("script").forEach(function (script) { script.remove(); });',
+    '      isolateFlowSvg(copy);',
+    '      flowSnapshot.appendChild(copy);',
+    '    });',
+    '  };',
+    '  function activeScope() { return MD2PDF_PREVIEW_FLOW && flowRoot ? flowRoot : document.querySelector(".pagedjs_pages"); }',
+    '  function activeNodes(selector) { var scope = activeScope(); return scope ? scope.querySelectorAll(selector) : []; }',
+    '  function applyPreviewMode() {',
+    '    document.documentElement.classList.toggle("md2pdf-preview-flow", MD2PDF_PREVIEW_FLOW && !!flowRoot);',
+    '  }',
     "  var IS_GB = " + JSON.stringify(isGb) + ';',
     '  var PREVIEW_CSS = ' + css + ';',
     '  var REPO_URL = ' + JSON.stringify(REPO_URL) + ';',
@@ -105,9 +155,9 @@ function runtimeScript(type) {
     '    return null;',
     '  }',
     '',
-    '  // 优先取「已分页的可见副本」：.pagedjs_pages 内的 id，其次 data-id，最后才回退整篇文档。',
+    '  // 只定位当前浏览模式的正文；按 id 或 data-id 查找，避免跳到隐藏副本。',
     '  function findTarget(id) {',
-    '    var scope = document.querySelector(".pagedjs_pages");',
+    '    var scope = activeScope();',
     '    if (scope) {',
     '      var hit = findByAttr(scope, "id", id) || findByAttr(scope, "data-id", id);',
     '      if (hit) return hit;',
@@ -163,14 +213,14 @@ function runtimeScript(type) {
     '    (document.head || document.documentElement).appendChild(style);',
     '  }',
     '  document.addEventListener("click", function (event) {',
-    '    var heading = event.target.closest && event.target.closest(".pagedjs_pages [data-md2pdf-source-line]");',
+    '    var heading = event.target.closest && event.target.closest("[data-md2pdf-source-line]");',
     '    if (heading && !event.target.closest("a")) {',
     "      parent.postMessage({type:'md2pdf-source',line:Number(heading.getAttribute('data-md2pdf-source-line'))}, '*');",
     '    }',
     '  });',
     "  var outlineHeadings = [], sidebarOpen = false;",
     "  function sendOutline() {",
-    "    outlineHeadings = Array.from(document.querySelectorAll('.pagedjs_pages h1,.pagedjs_pages h2,.pagedjs_pages h3,.pagedjs_pages h4,.pagedjs_pages h5,.pagedjs_pages h6')).filter(function (node) { return !node.closest('.toc') && !node.hasAttribute('data-split-from'); });",
+    "    outlineHeadings = Array.from(activeNodes('h1,h2,h3,h4,h5,h6')).filter(function (node) { return !node.closest('.toc') && !node.hasAttribute('data-split-from'); });",
     "    parent.postMessage({type:'md2pdf-outline',headings:outlineHeadings.map(function (node) { return {level:Number(node.tagName.slice(1)),text:node.textContent.trim()}; })}, '*');",
     "    updateOutlineCurrent();",
     "  }",
@@ -190,13 +240,29 @@ function runtimeScript(type) {
     "  });",
     "  var positionRevision = 0;",
     "  function capturePosition() {",
-    "    var headings = Array.from(document.querySelectorAll('.pagedjs_pages [data-md2pdf-source-line]'));",
+    "    var headings = Array.from(activeNodes('[data-md2pdf-source-line]'));",
     "    var node = headings.find(function (node) { return node.getBoundingClientRect().top >= 0; }) || headings[headings.length - 1];",
     "    var width = document.documentElement.clientWidth || 1;",
     "    return { line: node ? Number(node.getAttribute('data-md2pdf-source-line')) : 0,",
     "      offset: node ? node.getBoundingClientRect().top / width : 0,",
     "      ratio: scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight) };",
     "  }",
+    '  addEventListener("message", function (event) {',
+    '    var data = event.data;',
+    '    if (event.source !== parent || !data || data.type !== "md2pdf-preview-mode" || data.revision !== MD2PDF_PREVIEW_REVISION || (data.mode !== "paged" && data.mode !== "flow")) return;',
+    '    var next = data.mode === "flow";',
+    '    if (next === MD2PDF_PREVIEW_FLOW) return;',
+    '    var position = capturePosition();',
+    '    MD2PDF_PREVIEW_FLOW = next; applyPreviewMode(); fit(); sendOutline();',
+    '    var restoreRevision = ++positionRevision;',
+    '    requestAnimationFrame(function () {',
+    '      if (restoreRevision !== positionRevision) return;',
+    '      var node = Array.from(activeNodes("[data-md2pdf-source-line]")).find(function (node) { return Number(node.getAttribute("data-md2pdf-source-line")) === position.line; });',
+    '      if (node) scrollBy(0, node.getBoundingClientRect().top - position.offset * document.documentElement.clientWidth);',
+    '      else scrollTo(0, position.ratio * Math.max(1, document.documentElement.scrollHeight - innerHeight));',
+    '      updateOutlineCurrent();',
+    '    });',
+    '  });',
     "  addEventListener('message', function (event) {",
     "    if (event.source !== parent || !event.data) return;",
     "    if (event.data.type === 'md2pdf-capture-position') {",
@@ -208,7 +274,7 @@ function runtimeScript(type) {
     "      fit();",
     "      requestAnimationFrame(function () {",
     "        if (restoreRevision !== positionRevision) return;",
-    "        var nodes = document.querySelectorAll('.pagedjs_pages [data-md2pdf-source-line]');",
+    "        var nodes = activeNodes('[data-md2pdf-source-line]');",
     "        var node = Array.from(nodes).find(function (node) { return Number(node.getAttribute('data-md2pdf-source-line')) === position.line; });",
     "        if (node) scrollBy(0, node.getBoundingClientRect().top - position.offset * document.documentElement.clientWidth);",
     "        else scrollTo(0, position.ratio * Math.max(1, document.documentElement.scrollHeight - innerHeight));",
@@ -243,7 +309,7 @@ function runtimeScript(type) {
     '  addEventListener("message", function (event) {',
     '    if (event.source !== parent || !event.data || event.data.type !== "md2pdf-locate" || !Number.isSafeInteger(event.data.line) || event.data.line < 1) return;',
     '    positionRevision++; // 最新定位取消隐藏期间积压的旧位置恢复。',
-    '    var headings = document.querySelectorAll(".pagedjs_pages [data-md2pdf-source-line]"), best = null;',
+    '    var headings = activeNodes("[data-md2pdf-source-line]"), best = null;',
     '    for (var i = 0; i < headings.length; i++) {',
     '      var line = Number(headings[i].getAttribute("data-md2pdf-source-line"));',
     '      if (line <= event.data.line && (!best || line > Number(best.getAttribute("data-md2pdf-source-line")))) best = headings[i];',
@@ -259,6 +325,13 @@ function runtimeScript(type) {
     '',
     '  // 空间不足时临时缩小；保留用户期望比例，空间恢复后自动还原。',
     '  function fit() {',
+    '    if (typeof flowRoot !== "undefined" && flowRoot && MD2PDF_PREVIEW_FLOW) {',
+    '      var scale = zoom / 100;',
+    '      flowRoot.style.width = Math.max(1, (document.documentElement.clientWidth - 24) / scale) + "px";',
+    '      flowRoot.style.zoom = scale;',
+    '      parent.postMessage({type:"md2pdf-preview-zoom-state",zoom:zoom}, "*");',
+    '      return;',
+    '    }',
     '    var page = document.querySelector(".pagedjs_page");',
     '    var pages = document.querySelector(".pagedjs_pages");',
     '    if (page && pages) {',
@@ -292,7 +365,15 @@ function runtimeScript(type) {
     '            if (footer) { footer.classList.add("web-page-number"); footer.textContent = (index + 1) + " / " + pages.length; footer.style.fontSize = "8pt"; footer.style.color = "#8a8578"; }',
     '          });',
     '        }',
-    '        fit();',
+    '        if (!flowRoot && flowSnapshot) {',
+    '          flowRoot = document.createElement("div"); flowRoot.id = "md2pdf-preview-flow";',
+    '          flowRoot.appendChild(flowSnapshot); document.body.appendChild(flowRoot);',
+    '          Object.keys(flowTypography).forEach(function (name) { flowRoot.style.setProperty(name, flowTypography[name]); });',
+    '          var flowStyle = document.createElement("style"); flowStyle.media = "screen";',
+    '          flowStyle.textContent = "@scope (#md2pdf-preview-flow) {" + flowStyles + "}";',
+    '          document.head.appendChild(flowStyle);',
+    '        }',
+    '        applyPreviewMode(); fit();',
     '        addEventListener("resize", fit);',
     '        sendOutline();',
     '        if (!suspended && !readySent) { readySent = true; parent.postMessage({type:\'md2pdf-ready\'}, \'*\'); }',
@@ -314,6 +395,6 @@ function runtimeScript(type) {
 export function enhancePreview(html, type = 'general') {
   if (typeof html !== 'string') throw new TypeError('enhancePreview 需要 HTML 字符串');
   if (html.includes('data-' + PREVIEW_MARKER + '="1"')) return html; // 幂等：已增强过就不再注入
-  const enhanced = stampToc(html);
+  const enhanced = stampToc(html).replace(/window\.PagedPolyfill\.preview\(\)/g, '(window.__md2pdfPreviewSnapshot && window.__md2pdfPreviewSnapshot(), window.PagedPolyfill.preview())');
   return enhanced.includes('</body>') ? enhanced.replace('</body>', runtimeScript(type) + '\n</body>') : enhanced + runtimeScript(type);
 }

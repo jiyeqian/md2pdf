@@ -36,6 +36,7 @@ const DRAFT_KEY = 'md2pdf:draft';
 const HANDOFF_KEY = 'md2pdf:handoff';
 let localDrafts = null;
 let applyingDraft = false;
+let previewMode = 'paged';
 const CONTROL_ORDER = ['type', 'theme', 'landscape', 'toc', 'numbering', 'fontSize', 'margin', 'lineHeight'];
 
 // ---------- 选项模型：范围滑块 + 「标题编号」合并菜单 ----------
@@ -648,6 +649,7 @@ function injectRevision(html, rev) {
   return String(html)
     .replace('var MD2PDF_PREVIEW_REVISION = 0;', `var MD2PDF_PREVIEW_REVISION = ${rev};`)
     .replace('var MD2PDF_PREVIEW_MANAGED = false;', 'var MD2PDF_PREVIEW_MANAGED = true;')
+    .replace('var MD2PDF_PREVIEW_FLOW = false;', `var MD2PDF_PREVIEW_FLOW = ${previewMode === 'flow'};`)
     .replaceAll("type:'md2pdf-ready'", `type:'md2pdf-ready',revision:${rev}`)
     .replaceAll("type:'md2pdf-error'", `type:'md2pdf-error',revision:${rev}`)
     .replaceAll("type:'md2pdf-source'", `type:'md2pdf-source',revision:${rev}`)
@@ -767,6 +769,7 @@ window.addEventListener('message', event => {
   }
   if (previewRevision !== revision) return;
   if (event.data.type === 'md2pdf-ready') {
+    sendPreviewMode();
     window.__MD2PDF_PREVIEW_READY__ = true;
     window.dispatchEvent(new Event('md-preview-ready'));
     finishPreviewTelemetry(true);
@@ -877,6 +880,21 @@ function syncRangeFromEvent(target) {
   const numberName = target.getAttribute('data-range-number');
   if (numberName) { if (target.value === '') showRangeDefault(numberName, currentRange(numberName)); else reflectRangeValue(numberName, target.value); }
 }
+function sendPreviewMode() {
+  preview.contentWindow?.postMessage({ type: 'md2pdf-preview-mode', mode: previewMode, revision: previewRevision }, '*');
+}
+form.querySelector('[data-preview-mode-toggle]')?.addEventListener('click', () => {
+  previewMode = previewMode === 'paged' ? 'flow' : 'paged';
+  const trigger = form.querySelector('[data-preview-mode-toggle]');
+  trigger.setAttribute('aria-pressed', String(previewMode === 'flow'));
+  trigger.title = previewMode === 'flow' ? '切换为分页浏览' : '切换为流式浏览';
+  trigger.setAttribute('aria-label', trigger.title);
+  trigger.querySelector('[data-preview-mode-icon]').setAttribute('d', previewMode === 'flow'
+    ? 'M5 2h14v20H5zM8 6h8M8 10h8M8 14h8M8 18h8'
+    : 'M5 2h14v8H5zM5 14h14v8H5zM8 5h8M8 17h8');
+  sendPreviewMode();
+});
+preview.addEventListener('load', sendPreviewMode);
 form.querySelector('[data-orientation-toggle]')?.addEventListener('click', () => {
   if (currentPolicy?.controls.landscape?.available === false) return;
   const field = form.elements.landscape;

@@ -32,7 +32,7 @@ test('底栏隐私与版本分栏，备份提示和更新状态共用中央位�
   assert.match(appCss, /#app-resource-status:not\(:empty\)\+\.privacy\{display:none\}/);
   assert.match(appCss, /#analytics-slot\{[^}]*justify-self:start;[^}]*font:inherit;color:inherit/);
   assert.match(appCss, /#app-version\{[^}]*justify-self:end;[^}]*font:inherit;color:inherit/);
-  assert.match(appCss, /@media\(max-width:700px\)\{[\s\S]*?\.app-bottom-center\{grid-column:1\/-1;grid-row:2\}/);
+  assert.match(appCss, /@media\(max-width:700px\)\{[\s\S]*?\.app-bottom-center\{grid-column:1;grid-row:2\}/);
 });
 
 test('头部品牌只显示居中对齐的图标与主标题', () => {
@@ -918,7 +918,7 @@ test('privacy 下载保存与标题栏 Markdown 下载使用同一个动作', ()
   const names = [...form.matchAll(/data-control="([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual(names, ['type', 'theme', 'landscape', 'toc', 'numbering', 'fontSize', 'margin', 'lineHeight']);
   assert.equal((form.match(/<summary /g) || []).length, 7);
-  assert.equal((form.match(/class="preview-option-icon"/g) || []).length, 8);
+  assert.equal((form.match(/class="preview-option-icon"/g) || []).length, 9);
   assert.match(appCss, /\.preview-toolbar \.toolbar-field\{flex:0 0 auto;min-width:0/);
   assert.match(appJs, /slider.addEventListener\('keydown'/);
   assert.match(appJs, /slider.addEventListener\('blur', end\)/);

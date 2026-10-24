@@ -16,7 +16,7 @@ test('sidebar protocol accepts only the active preview frame and bounded heading
 });
 
 test('outline uses the paginated heading tree and reports scroll selection', () => {
-  assert.ok(html.includes('.pagedjs_pages h1,.pagedjs_pages h2'));
+  assert.ok(html.includes("activeNodes('h1,h2,h3,h4,h5,h6')"));
   assert.ok(html.includes("!node.closest('.toc')"));
   assert.ok(html.includes("!node.hasAttribute('data-split-from')"));
   assert.ok(html.includes("type:'md2pdf-outline-current'"));
