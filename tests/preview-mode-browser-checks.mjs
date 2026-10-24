@@ -71,6 +71,29 @@ try {
   await wait(`!document.documentElement.classList.contains('md2pdf-preview-flow')`,session);
   assert.notEqual(await evaluate(`getComputedStyle(document.querySelector('.pagedjs_pages')).display`,session),'none');
   assert.equal(await evaluate('window.modeRequestCount'),0,'view mode does not request or mutate rendering options');
+  assert.equal(await evaluate(`document.querySelectorAll('.md-preview-thumbnails iframe').length`),0);
+  await evaluate(`document.querySelector('[data-preview-mode-toggle]').click();document.querySelector('#preview-outline-tab-thumbnails').click()`);
+  await wait(`!document.documentElement.classList.contains('md2pdf-preview-flow')`,session);
+  await wait(`document.querySelectorAll('.md-preview-thumbnails iframe').length===1`);
+  let thumbnailSession;
+  for(let attempt=0;attempt<100&&!thumbnailSession;attempt++){
+    for(const target of (await browser.send('Target.getTargets')).targetInfos.filter(t=>t.type==='iframe')){
+      const attached=await browser.send('Target.attachToTarget',{targetId:target.targetId,flatten:true});
+      if(await evaluate(`!!document.querySelector('#pages')`,attached.sessionId)){thumbnailSession=attached.sessionId;break;}
+      await browser.send('Target.detachFromTarget',{sessionId:attached.sessionId});
+    }
+    if(!thumbnailSession)await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  assert.ok(thumbnailSession,'thumbnail frame available');
+  await wait(`document.querySelectorAll('.page-copy .pagedjs_page').length>0`,thumbnailSession);
+  assert.ok(await evaluate(`document.querySelectorAll('.thumbnail').length>1&&document.querySelectorAll('.page-copy .pagedjs_page').length<=12`,thumbnailSession));
+  await evaluate(`document.querySelectorAll('.thumbnail')[1].click()`,thumbnailSession);
+  await wait(`Math.abs(document.querySelectorAll('.pagedjs_pages > .pagedjs_page')[1].getBoundingClientRect().top)<50`,session);
+  const thumbnailScreenshot=await browser.send('Page.captureScreenshot',{format:'png'});
+  await writeFile(path.join(os.tmpdir(),'md2pdf-thumbnails-preview.png'),Buffer.from(thumbnailScreenshot.data,'base64'));
+  await evaluate(`document.querySelector('#preview-outline-tab-outline').click()`);
+  assert.equal(await evaluate(`document.querySelectorAll('.md-preview-thumbnails iframe').length`),0);
+  assert.equal(await evaluate('window.modeRequestCount'),0,'thumbnails reuse pagination without rendering requests');
   await evaluate(`document.querySelector('[data-preview-mode-toggle]').click();mdEditor.setValue(${JSON.stringify(md+'\n\nEDIT_MARKER')})`);
   await wait('window.__MD2PDF_PREVIEW_READY__===true && document.querySelector("#status").textContent.includes("预览已更新")');
   await browser.send('Target.detachFromTarget',{sessionId:session});

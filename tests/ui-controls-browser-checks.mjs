@@ -34,8 +34,16 @@ try {
     assert.ok(row.mainWidth > 100 && row.sideWidth > 150, JSON.stringify(row));
     assert.ok(Math.abs(row.mainRight-row.sideLeft)<1, 'sidebar occupies its own column: '+JSON.stringify(row));
   }
-  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant .md-pro-section-head h3'),e=>e.textContent)`),['文档大纲','引用、章节与作者单位检查','文档类型']);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant .md-pro-section-head h3'),e=>e.textContent)`),['引用、章节与作者单位检查','文档类型']);
   assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant details'),e=>e.open)`),[false,false]);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant .md-sidebar-header [role=tab]'),e=>[e.getAttribute('aria-label'),e.getAttribute('aria-selected')])`),[['文档大纲','true'],['专业助手','false']]);
+  const sidebarWidth = await evaluate(`document.querySelector('#editor-assistant').getBoundingClientRect().width`);
+  await evaluate(`document.querySelector('#editor-assistant-tab-assistant').click()`);
+  assert.equal(await evaluate(`document.querySelector('#editor-assistant-view-outline').hidden`),true);
+  assert.equal(await evaluate(`document.querySelector('#editor-assistant').getBoundingClientRect().width`),sidebarWidth);
+  await evaluate(`document.querySelector('#editor-assistant-toggle').click();document.querySelector('#editor-assistant-toggle').click()`);
+  assert.equal(await evaluate(`document.querySelector('#editor-assistant-tab-assistant').getAttribute('aria-selected')`),'true');
+  await evaluate(`document.querySelector('#editor-assistant-tab-outline').click()`);
   await evaluate(`document.querySelector('.md-pro-outline-disclosure').click()`);
   assert.equal(await evaluate(`document.querySelector('.md-pro-outline-children').hidden`),true);
   await evaluate(`document.querySelector('.md-pro-outline-disclosure').click(); document.querySelector('.cm-content').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); document.querySelector('#preview').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))`);

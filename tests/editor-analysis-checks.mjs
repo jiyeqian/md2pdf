@@ -529,7 +529,7 @@ test('编辑事件、防抖分析与补全复用同一份分析结果', () => {
   }
   const doc = { addEventListener(type, fn) { listeners.set(type, fn); }, querySelector(selector) { return selector === '.editor-panel' ? panel : null; }, createElement:fakeNode };
   const sidebarContent = fakeNode();
-  const sidebars = { create:()=>({content:sidebarContent}) };
+  const sidebars = { icons:{outline:"",assistant:""}, create:()=>({content:sidebarContent,addView({content}){sidebarContent.append(content);}}) };
   const editor = { __mounted:true, getValue:()=>currentValue, getSelection:()=>({from:0,to:0,text:''}), setCompletions(fn){completion=fn;},
     replaceRange(){}, setSelection(){}, focus(){}, dispatchEvent(){}, startCompletion(){} };
   const sandbox = { console, window:{mdEditor:editor, mdEditorTools:{}, mdPanelSidebars:sidebars, requestAnimationFrame:fn=>fn()},

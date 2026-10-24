@@ -895,6 +895,9 @@ form.querySelector('[data-preview-mode-toggle]')?.addEventListener('click', () =
   sendPreviewMode();
 });
 preview.addEventListener('load', sendPreviewMode);
+window.addEventListener('md-preview-request-paged', () => {
+  if (previewMode === 'flow') form.querySelector('[data-preview-mode-toggle]').click();
+});
 form.querySelector('[data-orientation-toggle]')?.addEventListener('click', () => {
   if (currentPolicy?.controls.landscape?.available === false) return;
   const field = form.elements.landscape;

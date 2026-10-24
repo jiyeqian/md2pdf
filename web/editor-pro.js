@@ -367,7 +367,9 @@ function buildPanel() {
 
   const outlineSection = el('section', 'md-pro-section');
   const outlineHead = el('div', 'md-pro-section-head');
-  outlineHead.append(el('h3', null, '文档大纲'), el('span', 'md-pro-count', ''));
+  outlineHead.classList.add('md-pro-outline-count');
+  outlineHead.append(el('span', 'md-pro-count', ''));
+  outlineSection.setAttribute('aria-label', '文档大纲');
   const outlineList = el('div', 'md-pro-outline');
   outlineSection.append(outlineHead, outlineList);
 
@@ -382,7 +384,7 @@ function buildPanel() {
   typeHead.append(el('h3', null, '文档类型'));
   typeSection.append(typeHead, typeLine, meta);
   diagSection.append(status);
-  body.append(outlineSection, diagSection, typeSection);
+  body.append(diagSection, typeSection);
   details.append(body);
 
   // 点击按钮时不让面板抢走编辑器选区。
@@ -390,8 +392,9 @@ function buildPanel() {
     if (event.target && event.target.closest('button')) event.preventDefault();
   });
 
-  const sidebar = window.mdPanelSidebars.create({panel: editorPanel, title: '专业助手', id: 'editor-assistant', width: 280});
-  sidebar.content.append(details);
+  const sidebar = window.mdPanelSidebars.create({panel: editorPanel, title: '编辑侧栏', id: 'editor-assistant', width: 280});
+  sidebar.addView({key: 'outline', label: '文档大纲', icon: window.mdPanelSidebars.icons.outline, content: outlineSection});
+  sidebar.addView({key: 'assistant', label: '专业助手', icon: window.mdPanelSidebars.icons.assistant, content: details});
 
   panel = details;
   refs = {

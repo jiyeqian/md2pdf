@@ -17,9 +17,10 @@
     const element = document.createElement('aside'); element.id = id; element.className = 'md-panel-sidebar'; element.hidden = true;
     element.setAttribute('aria-label', title);
     const header = document.createElement('div'); header.className = 'md-sidebar-header';
-    const label = document.createElement('strong'); label.textContent = title;
+    const tabs = document.createElement('div'); tabs.className = 'md-sidebar-tabs'; tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', title + '内容');
+    const views = new Map(); let selectedView = null;
     const closeButton = document.createElement('button'); closeButton.type = 'button'; closeButton.className = 'md-sidebar-close'; closeButton.textContent = '×'; closeButton.setAttribute('aria-label', '关闭' + title);
-    header.append(label, closeButton);
+    header.append(tabs, closeButton);
     const body = document.createElement('div'); body.className = 'md-sidebar-content'; if (content) body.append(content);
     const resize = document.createElement('div'); resize.className = 'md-sidebar-resize'; resize.tabIndex = 0; resize.setAttribute('role', 'separator'); resize.setAttribute('aria-orientation', 'vertical'); resize.setAttribute('aria-label', '调整' + title + '宽度');
     let preferred = width;
@@ -35,9 +36,34 @@
     function remember(next) { preferred = Math.max(200, Math.min(next, panel.clientWidth * .5)); fit(); try { localStorage.setItem('md2pdf.sidebar.' + id, String(preferred)); } catch (_) {} }
     function notify() { if (preview?.contentWindow) preview.contentWindow.postMessage({ type: 'md2pdf-sidebar-open', open: sidebars.some(s => s.isOpen()) }, '*'); }
     const api = { element, body, content: body, button, isOpen: () => !element.hidden,
-      open() { element.hidden = false; button.setAttribute('aria-expanded', 'true'); fit(); notify(); },
-      close() { element.hidden = true; button.setAttribute('aria-expanded', 'false'); notify(); },
-      toggle() { api.isOpen() ? api.close() : api.open(); } };
+      open() { element.hidden = false; button.setAttribute('aria-expanded', 'true'); fit(); notify(); updateViews(); },
+      close() { element.hidden = true; button.setAttribute('aria-expanded', 'false'); notify(); updateViews(); },
+      toggle() { api.isOpen() ? api.close() : api.open(); },
+      addView, selectView, get selectedView() { return selectedView; } };
+    function updateViews() {
+      for (const [key, view] of views) {
+        const selected = key === selectedView;
+        view.pane.hidden = !selected; view.tab.setAttribute('aria-selected', String(selected)); view.tab.tabIndex = selected ? 0 : -1;
+        const active = selected && api.isOpen();
+        if (active !== view.active) { view.active = active; view.onActive?.(active); }
+      }
+    }
+    function selectView(key) { if (!views.has(key)) return; selectedView = key; updateViews(); }
+    function addView({key, label, icon, content, onActive, hint}) {
+      const tab = document.createElement('button'); tab.type = 'button'; tab.className = 'md-sidebar-tab'; tab.setAttribute('role', 'tab'); tab.id = id + '-tab-' + key; tab.title = hint || label; tab.setAttribute('aria-label', label);
+      tab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + icon + '"/></svg>';
+      const pane = document.createElement('div'); pane.className = 'md-sidebar-view'; pane.id = id + '-view-' + key; pane.setAttribute('role', 'tabpanel'); pane.setAttribute('aria-labelledby', tab.id); tab.setAttribute('aria-controls', pane.id); if (content) pane.append(content);
+      tabs.append(tab); body.append(pane); views.set(key, {tab, pane, onActive, active: false});
+      tab.addEventListener('click', () => selectView(key));
+      tab.addEventListener('keydown', event => {
+        const keys = Array.from(views.keys()), at = keys.indexOf(key); let next;
+        if (event.key === 'ArrowRight') next = keys[(at + 1) % keys.length];
+        else if (event.key === 'ArrowLeft') next = keys[(at + keys.length - 1) % keys.length];
+        else if (event.key === 'Home') next = keys[0]; else if (event.key === 'End') next = keys[keys.length - 1];
+        if (next) { event.preventDefault(); selectView(next); views.get(next).tab.focus(); }
+      });
+      if (selectedView === null) selectedView = key; updateViews(); return pane;
+    }
     button.addEventListener('click', api.toggle); closeButton.addEventListener('click', () => { api.close(); button.focus(); });
     resize.addEventListener('pointerdown', event => {
       if (matchMedia('(max-width: 600px)').matches || event.button !== 0) return;
@@ -52,11 +78,16 @@
   }
   function closeAll() { const open = sidebars.filter(s => s.isOpen()); open.forEach(s => s.close()); return open.length > 0; }
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && closeAll()) { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
-  window.mdPanelSidebars = { create, closeAll };
+  const icons = { outline: 'M8 5h13M8 12h13M8 19h13M3 5h1M3 12h1M3 19h1', assistant: 'M4 3h13v18H4zM8 7h5M8 11h5M8 15l2 2 5-5', thumbnails: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z' };
+  window.mdPanelSidebars = { create, closeAll, icons };
   const panel = document.querySelector('.preview-panel');
   if (!panel || !preview) return;
-  const outline = create({ panel, title: '大纲', id: 'preview-outline', width: 240 });
-  const list = document.createElement('nav'); list.className = 'md-preview-outline'; list.setAttribute('aria-label', '预览标题'); outline.body.append(list);
+  const outline = create({ panel, title: '预览侧栏', id: 'preview-outline', width: 240 });
+  const list = document.createElement('nav'); list.className = 'md-preview-outline'; list.setAttribute('aria-label', '预览标题');
+  outline.addView({key: 'outline', label: '文档大纲', icon: icons.outline, content: list});
+  const thumbnails = document.createElement('div'); thumbnails.className = 'md-preview-thumbnails';
+  const thumbnailView = window.mdPreviewThumbnails.create(thumbnails);
+  outline.addView({key: 'thumbnails', label: '页面缩略图', hint: '页面缩略图（流式浏览时切回分页）', icon: icons.thumbnails, content: thumbnails, onActive: active => thumbnailView.setActive(active)});
   let items = [], currentIndex = -1;
   const collapsedOutlinePaths = new Set();
   function showCurrent() {
@@ -67,6 +98,7 @@
     else if (row.bottom > box.bottom) outline.body.scrollTop += row.bottom - box.bottom;
   }
   outline.button.addEventListener('click', showCurrent);
+  window.addEventListener('md-preview-sidebar-close', () => { outline.close(); outline.button.focus(); });
   function select(index) {
     currentIndex = index;
     const buttons = list.querySelectorAll('button[data-outline-index]');

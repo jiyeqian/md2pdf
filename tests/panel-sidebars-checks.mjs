@@ -47,8 +47,11 @@ test('outline branches use accessible disclosure controls and retain path collap
 
 
 const pro = readFileSync(new URL('../web/editor-pro.js', import.meta.url), 'utf8');
-test('assistant sections are ordered with collapsed diagnostics and type details', () => {
-  assert.ok(pro.includes('body.append(outlineSection, diagSection, typeSection)'));
+test('assistant and outline are separate views with collapsed diagnostics and type details', () => {
+  assert.ok(pro.includes('body.append(diagSection, typeSection)'));
+  assert.ok(pro.includes("sidebar.addView({key: 'outline'"));
+  assert.ok(pro.includes("sidebar.addView({key: 'assistant'"));
+  assert.ok(source.includes("outline.addView({key: 'thumbnails'"));
   assert.ok(pro.includes("const diagSection = el('details'"));
   assert.ok(pro.includes("const typeSection = el('details'"));
   assert.ok(!pro.includes('diagSection.open'));
