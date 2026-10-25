@@ -1,6 +1,6 @@
 {
   "name": "@jiyeqian/md2pdf",
-  "version": "1.15.6",
+  "version": "1.16.0",
   "description": "MAKE MD2PDF GREAT",
   "type": "module",
   "bin": {
