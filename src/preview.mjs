@@ -183,7 +183,7 @@ function runtimeScript(type) {
     '    if (!Number.isSafeInteger(data.index) || data.index < 0 || data.index >= pages.length) return;',
     '    var page = pages[data.index];',
     '    if (data.type === "md2pdf-thumbnails-locate") {',
-    '      positionRevision++; var previous = !flow && pages[data.index - 1]; var top = previous ? previous.getBoundingClientRect().bottom : page.getBoundingClientRect().top; window.scrollTo({top:window.scrollY + top,behavior:"smooth"}); return;',
+    '      positionRevision++; var previous = !flow && pages[data.index - 1]; var top = previous ? previous.getBoundingClientRect().bottom : page.getBoundingClientRect().top; window.scrollTo({top:previous ? window.scrollY + top : 0,behavior:"smooth"}); return;',
     '    }',
     '    var copy = page.cloneNode(true);',
     '    copy.querySelectorAll("script,iframe,object,embed,meta,link").forEach(function (node) { node.remove(); });',

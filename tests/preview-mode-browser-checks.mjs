@@ -100,6 +100,11 @@ try {
   assert.ok(await evaluate(`document.querySelectorAll('.thumbnail').length>1&&document.querySelectorAll('.page-copy .pagedjs_page').length<=12`,thumbnailSession));
   await evaluate(`document.querySelectorAll('.thumbnail')[1].click()`,thumbnailSession);
   await wait(`Math.abs(document.querySelectorAll('.pagedjs_pages > .pagedjs_page')[0].getBoundingClientRect().bottom)<1`,session);
+  const thumbnailStyle=await evaluate(`(()=>{const s=getComputedStyle(document.querySelectorAll('.thumbnail')[0]);return [s.color,s.fontWeight]})()`,thumbnailSession);
+  await evaluate(`document.querySelectorAll('.thumbnail')[0].click()`,thumbnailSession);
+  await wait(`window.scrollY===0&&document.querySelector('.pagedjs_pages > .pagedjs_page').getBoundingClientRect().top>0`,session);
+  assert.deepEqual(await evaluate(`(()=>{const s=getComputedStyle(document.querySelectorAll('.thumbnail')[0]);return [s.color,s.fontWeight]})()`,thumbnailSession),thumbnailStyle,'selection preserves thumbnail typography');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.thumbnail[aria-current]>.page-copy')).outlineStyle`,thumbnailSession),'solid');
   const thumbnailScreenshot=await browser.send('Page.captureScreenshot',{format:'png'});
   await writeFile(path.join(os.tmpdir(),'md2pdf-thumbnails-preview.png'),Buffer.from(thumbnailScreenshot.data,'base64'));
   await evaluate(`document.querySelector('#preview-outline-tab-outline').click()`);
