@@ -1,10 +1,8 @@
-# md2pdf
-
 <p align="center">
   <img src="https://raw.githubusercontent.com/jiyeqian/md2pdf/main/docs/showcase/readme-icon.svg" alt="md2pdf 图标" width="96">
 </p>
 
-<p align="center"><strong>Markdown 驱动的专业 PDF 排版工具</strong></p>
+<p align="center"><strong>md2pdf：Markdown 驱动的专业 PDF 排版工具</strong></p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@jiyeqian/md2pdf"><img src="https://img.shields.io/npm/v/@jiyeqian/md2pdf" alt="npm 版本"></a>
@@ -12,7 +10,9 @@
   <a href="https://cnb.cool/jiyeqian/md2pdf/-/build"><img src="https://cnb.cool/jiyeqian/md2pdf/-/badge/git/latest/ci/status/push?branch=main" alt="构建状态"></a>
 </p>
 
-md2pdf 将 Markdown 转为适合阅读、打印和分享的 PDF，支持 CLI、在线工作台和静态网页三种使用方式。
+---
+
+> md2pdf 将 Markdown 转为适合阅读、打印和分享的 PDF，支持 CLI、在线工作台和静态网页三种使用方式。
 
 ## 选择适合你的版本
 
