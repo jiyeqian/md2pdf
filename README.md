@@ -1,7 +1,7 @@
 # md2pdf
 
 <p align="center">
-  <img src="docs/showcase/readme-icon.svg" alt="md2pdf 图标" width="96">
+  <img src="https://raw.githubusercontent.com/jiyeqian/md2pdf/main/docs/showcase/readme-icon.svg" alt="md2pdf 图标" width="96">
 </p>
 
 <p align="center"><strong>Markdown 驱动的专业 PDF 排版工具</strong></p>
@@ -22,7 +22,7 @@ md2pdf 将 Markdown 转为适合阅读、打印和分享的 PDF，支持 CLI、�
 | **运行位置** | 自己的电脑；需安装 Node.js 和 Chrome、Edge 或 Chromium | 浏览器访问在线服务 | 浏览器本地运行；无需安装 |
 | **文档处理** | 在本机处理 | 排版请求发送到服务端；服务不保存文档 | 在浏览器本地处理，文档不离开当前设备 |
 | **PDF 导出** | 本机生成 PDF | 服务端生成并下载 PDF | 打开浏览器打印窗口，由用户保存 PDF |
-| **开始使用** | `md2pdf 文档.md --open` | [打开在线工作台](https://md2pdf.app.workbuddy.host/) | [打开静态版](https://md2pdf.qianjiye.de/)；本地启动：`md2pdf webapp --static` |
+| **开始使用** | `md2pdf 文档.md --open` | `md2pdf webapp`（[在线试用](https://md2pdf.app.workbuddy.host/)） | `md2pdf webapp --static`（[在线试用](https://md2pdf.qianjiye.de/)） |
 
 WebApp 只记录软件使用情况，不上传用户文档；可选统计可在页面底部的“隐私与统计”中管理。详见[完整隐私说明](https://md2pdf.qianjiye.de/privacy.html)。
 
@@ -39,15 +39,15 @@ WebApp 只记录软件使用情况，不上传用户文档；可选统计可在�
 
 **支持论文排版**
 
-![论文排版：Markdown 编辑与分页预览](docs/showcase/paper-layout.png)
+![论文排版：Markdown 编辑与分页预览](https://raw.githubusercontent.com/jiyeqian/md2pdf/main/docs/showcase/paper-layout.png)
 
 **支持国标排版**
 
-![国家标准封面与 Markdown 编辑](docs/showcase/gb-layout.png)
+![国家标准封面与 Markdown 编辑](https://raw.githubusercontent.com/jiyeqian/md2pdf/main/docs/showcase/gb-layout.png)
 
 **支持 LaTeX 参考文献**
 
-![LaTeX 风格参考文献与双向引用](docs/showcase/latex-references.png)
+![LaTeX 风格参考文献与双向引用](https://raw.githubusercontent.com/jiyeqian/md2pdf/main/docs/showcase/latex-references.png)
 
 ## 开始使用
 
