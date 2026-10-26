@@ -5,9 +5,15 @@
 <p align="center"><strong>md2pdf：Markdown 驱动的专业 PDF 排版工具</strong></p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@jiyeqian/md2pdf"><img src="https://img.shields.io/npm/v/@jiyeqian/md2pdf" alt="npm 版本"></a>
-  <a href="https://github.com/jiyeqian/md2pdf/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT 许可证"></a>
-  <a href="https://cnb.cool/jiyeqian/md2pdf/-/build"><img src="https://cnb.cool/jiyeqian/md2pdf/-/badge/git/latest/ci/status/push?branch=main" alt="构建状态"></a>
+  <a href="https://cnb.cool/jiyeqian/md2pdf/-/build"><img src="https://cnb.cool/jiyeqian/md2pdf/-/badge/git/latest/ci/status/push?branch=main" alt="CNB main 构建状态"></a>
+  <a href="https://github.com/jiyeqian/md2pdf/actions/workflows/pages.yml"><img src="https://img.shields.io/github/actions/workflow/status/jiyeqian/md2pdf/pages.yml?label=Pages%20deploy&logo=github" alt="GitHub Pages 部署状态"></a>
+  <a href="https://www.npmjs.com/package/@jiyeqian/md2pdf"><img src="https://img.shields.io/npm/v/@jiyeqian/md2pdf" alt="npm 最新版本"></a>
+  <a href="https://github.com/jiyeqian/md2pdf/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jiyeqian/md2pdf" alt="MIT 许可证"></a>
+</p>
+
+<p align="center">
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/node/v/%40jiyeqian/md2pdf?logo=node.js&logoColor=white" alt="所需 Node.js 版本"></a>
+  <a href="https://www.npmjs.com/package/@jiyeqian/md2pdf"><img src="https://img.shields.io/npm/dm/%40jiyeqian/md2pdf?label=downloads%2Fmonth&logo=npm" alt="npm 月下载量"></a>
 </p>
 
 ---
