@@ -1,7 +1,7 @@
 # md2pdf
 
 <p align="center">
-  <img src="web/icons/app-180.png" alt="md2pdf 图标" width="96">
+  <img src="docs/showcase/readme-icon.svg" alt="md2pdf 图标" width="96">
 </p>
 
 <p align="center"><strong>Markdown 驱动的专业 PDF 排版工具</strong></p>
@@ -16,11 +16,13 @@ md2pdf 将 Markdown 转为适合阅读、打印和分享的 PDF，支持 CLI、�
 
 ## 选择适合你的版本
 
-| 版本 | 适合场景 | 文档与隐私 | PDF 导出 |
+| 对比项 | CLI | 服务器版 | 静态版 |
 | --- | --- | --- | --- |
-| **CLI** | 本地批量转换、脚本或自动化流程 | 在自己的电脑上运行 | 本机生成 PDF |
-| **服务器版** | 无需安装，打开网页即可编辑 | 排版请求发送到服务端；服务不保存文档 | 服务端生成并下载 PDF；[在线试用](https://md2pdf.app.workbuddy.host/) |
-| **静态版** | 希望在浏览器本地编辑和排版 | 文档留在浏览器本地，可离线继续使用 | 调用浏览器打印并保存 PDF；[在线试用](https://md2pdf.qianjiye.de/) |
+| **推荐场景** | 本地批量转换、脚本自动化、需要直接生成 PDF | 临时使用或在不同设备上快速编辑，无需安装 | 重视本地处理、希望浏览器离线使用 |
+| **运行位置** | 自己的电脑；需安装 Node.js 和 Chrome、Edge 或 Chromium | 浏览器访问在线服务 | 浏览器本地运行；无需安装 |
+| **文档处理** | 在本机处理 | 排版请求发送到服务端；服务不保存文档 | 在浏览器本地处理，文档不离开当前设备 |
+| **PDF 导出** | 本机生成 PDF | 服务端生成并下载 PDF | 打开浏览器打印窗口，由用户保存 PDF |
+| **开始使用** | `md2pdf 文档.md --open` | [打开在线工作台](https://md2pdf.app.workbuddy.host/) | [打开静态版](https://md2pdf.qianjiye.de/)；本地启动：`md2pdf webapp --static` |
 
 WebApp 只记录软件使用情况，不上传用户文档；可选统计可在页面底部的“隐私与统计”中管理。详见[完整隐私说明](https://md2pdf.qianjiye.de/privacy.html)。
 
