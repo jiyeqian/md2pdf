@@ -306,6 +306,19 @@ function insertSkill(sel) {
   else selectRange(sel.from, sel.from);
 }
 
+function insertPagebreak(sel) {
+  const editor = getApi();
+  const text = editor.getValue();
+  const at = sel.to;
+  const prefix = at > 0 && text[at - 1] !== '\n' ? '\n' : '';
+  const reuseNewline = text[at] === '\n';
+  const insertion = prefix + '<!-- pagebreak -->' + (reuseNewline ? '' : '\n');
+  // Insert after the selection, preserving its text, in one undo transaction.
+  editor.replaceRange(at, at, insertion);
+  const cursor = at + insertion.length + (reuseNewline ? 1 : 0);
+  selectRange(cursor, cursor);
+}
+
 function insert(name) {
   const editor = getApi();
   if (!editor || typeof name !== 'string') return false;
@@ -326,6 +339,7 @@ function insert(name) {
       case 'ul-dash': transformLines(sel, 'ul-dash'); break;
       case 'ol': transformLines(sel, 'ol'); break;
       case 'task-list': transformLines(sel, 'task-list'); break;
+      case 'pagebreak': insertPagebreak(sel); break;
       case 'ref': insertReference('ref'); break;
       case 'eqref': insertReference('eqref'); break;
       case 'noteref': insertReference('noteref'); break;

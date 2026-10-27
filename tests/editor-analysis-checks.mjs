@@ -698,3 +698,22 @@ test('version is recommended as a quoted filename metadata field',()=>{
  assert.equal(result.options[0].apply,'version: ""');
  assert.equal(result.options[0].selectionOffset,'version: "'.length);
 });
+
+
+test('pagebreak insertion preserves selections, isolates the marker and reuses existing newlines', () => {
+  const source=fs.readFileSync(new URL('../web/editor-pro.js',import.meta.url),'utf8');
+  const start=source.indexOf('function insertPagebreak(');
+  const fn=source.slice(start,source.indexOf('\nfunction ',start+1));
+  for(const [input,from,to,expected,cursor] of [
+    ['',0,0,'<!-- pagebreak -->\n',19],
+    ['abc',1,1,'a\n<!-- pagebreak -->\nbc',21],
+    ['abc',0,3,'abc\n<!-- pagebreak -->\n',23],
+    ['abc\nnext',0,3,'abc\n<!-- pagebreak -->\nnext',23],
+    ['abc\n\nnext',4,4,'abc\n<!-- pagebreak -->\nnext',23],
+  ]){
+    let value=input,position,edits=0;
+    const sandbox={getApi:()=>({getValue:()=>value,replaceRange(a,b,insert){value=value.slice(0,a)+insert+value.slice(b);edits++;}}),selectRange(a,b){assert.equal(a,b);position=a;}};
+    vm.runInNewContext(fn+`\ninsertPagebreak({from:${from},to:${to}});`,sandbox);
+    assert.equal(value,expected);assert.equal(position,cursor);assert.equal(edits,1);
+  }
+});

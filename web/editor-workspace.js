@@ -104,6 +104,7 @@
   // 默认开启的同步定位是一个带 aria-pressed 的图标开关按钮。
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var ICONS = {
+    pageBreak: [{ d: 'M4 2h12v5H4zM4 13h12v5H4zM2 10h3m3 0h2m3 0h2m3 0h1' }],
     taskList: [{ d: 'M8 5h10M8 11h10M8 17h10M2 5l1.5 1.5L6 3M2 11h3v3H2zM2 17h3v3H2z' }],
     indentMore: [{ d: 'M8 4h9M8 10h9M8 16h9M2 7l3 3-3 3' }],
     indentLess: [{ d: 'M8 4h9M8 10h9M8 16h9M5 7l-3 3 3 3' }],
@@ -274,7 +275,8 @@
     { label: '列表', items: [
       { icon: 'listDash', label: '无序列表', action: 'ul-dash', insert: 'ul-dash' },
       { icon: 'listOl', label: '有序列表', action: 'ol', insert: 'ol' },
-      { icon: 'taskList', label: '任务列表', insert: 'task-list' }
+      { icon: 'taskList', label: '任务列表', insert: 'task-list' },
+      { icon: 'pageBreak', label: '插入分页符', insert: 'pagebreak' }
     ] },
     { label: '缩进', items: [
       { icon: 'indentLess', label: '左缩进', command: 'indentLess' },
