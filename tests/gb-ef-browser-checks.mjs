@@ -127,15 +127,8 @@ try {
   })()`);
   await writeFile(path.join(out, 'gb-ef-browser.json'), JSON.stringify(state, null, 2));
   assert.equal(state.error, null, 'Paged.js completed');
-  const coverOrigin=state.pages[0].box;
-  near(state.cover.stdno.right,state.cover.sup.right,.2,'cover number rows right aligned');
-  for(const role of ['stdno','sup']) near(state.cover.rule.right-state.cover[role].right,px(5),.3,`cover ${role} 5 mm inside rule end`);
-  near(state.cover.rule.y-coverOrigin.y,px(75),.3,'upper cover rule at 75 mm');
-  near(state.cover.sup.y-state.cover.stdno.bottom,px(3),.3,'number rows gap 3 mm');
-  near(state.cover.stdno.y-state.cover.head.bottom,px(9),.3,'number 9 mm below banner');
-  near(coverOrigin.bottom-state.cover['date-rule'].y,px(40),.3,'date rule 40 mm from bottom');
-  near(state.publish[0].x-state.cover['org-names'].right,px(5),.3,'issuer to 发 gap 5 mm');
-  near(state.publish[1].x-state.publish[0].right,px(3),.3,'发 to 布 gap 3 mm');
+  // Cover geometry is tested against PDF ink in gb-cover-e5-checks.mjs;
+  // line boxes no longer represent the annotated character edges.
   assert.ok(state.pages.at(-1).name.includes('gb-back-cover'), 'back cover is the last sheet, without a trailing empty page');
   assert.ok(state.pages.length >= 7, 'covers front matter, multi-page body and back matter');
   assert.equal(state.index.marker,'none','index has no list marker');
@@ -190,6 +183,13 @@ try {
   for (const webSafe of [true,false]) await assert.rejects(chrome.printHtml(missingFontHtml,{...core.printOptions,webSafe,waitPaged:true}),/Document rendering failed/,'missing required local font must fail');
   const overlong = await staticRuntime.renderDocument({md:md.replace(/^发布日期:.*$/m,'').replace(/^实施日期:.*$/m,'').replace('国家标准排版综合验收方法','超长标准名称'.repeat(80)),opts},false);
   await assert.rejects(chrome.printHtml(overlong.html,{...core.printOptions,webSafe:true,waitPaged:true}),/Document rendering failed/,'overlong cover must not overlap issuer when dates absent');
+  for (const [label, invalidMd] of [
+    ['overwide standard number',md.replace('GB/T 39999—2026','GB/T '+'9'.repeat(180)+'—2026')],
+    ['overlapping dates',md.replace('2026-01-01','D'.repeat(40)).replace('2026-07-01','D'.repeat(40))],
+  ]) {
+    const invalid=await staticRuntime.renderDocument({md:invalidMd,opts},false);
+    await assert.rejects(chrome.printHtml(invalid.html,{...core.printOptions,webSafe:true,waitPaged:true}),/Document rendering failed/,label);
+  }
   console.log(`PASS: CLI/core/Node/static, GB E/F browser and PDF checks; artifacts: ${out}`);
 } finally {
   globalThis.fetch = nativeFetch;

@@ -84,3 +84,7 @@ npm run check:consistency
 本轮从 main `a28c3c6` 开始，修改共用 gb 模板、语义块及分页标签／续表，CLI、Node、静态采用同一逻辑；未分发测试字体。新增 `src/gb-content.mjs`、`src/gb-footnotes.mjs`、`src/gb-layout.mjs` 由静态构建自动包含，不在静态适配层复制业务规则。专业助手的大纲仍只识别普通标题，语义块的术语编号不会自动成为目录标题。
 
 同步本轮提交后须从自己的工作树重启服务；静态服务重新构建。执行 `npm run test:gb-ef` 与 `npm run check:consistency`；前者需要本机方正书宋_GBK、方正黑体_GBK、方正小标宋_GBK，以及 Chrome 和 Poppler。没有这些字体的服务器、手机或静态站点不在本轮验收范围，不能将本机结果冒充部署通过。封面专用字候选状态及后续检查见 `docs/gb-ef-acceptance.md`。
+
+## 2026-10-27 图 E.5 封面墨迹校准
+
+国家标准封面以实际字形边缘定位；名称区采用共同零原点，避免 DOM 与 PDF 流式绘制位置取整不同。显式提供一个发布机构时不再补入默认第二机构。三端共用 `prepareGbLayout`，无独立业务副本。完整 23 项尺寸台账和两例六份 PDF 的测量数据见[校准记录](gb-cover-e5-calibration.md)。运行 `npm run test:gb-cover`、`npm run test:gb-ef`、`npm run check:consistency`；人工打开图例与实际范例封面核对，静态系统打印和专用字确认单独验收。模板卡片首屏截图随本轮更新。服务须在 f96a 工作树重启后验收；未合并 main。

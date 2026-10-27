@@ -58,7 +58,7 @@ body { font-size: 10.5pt; line-height: 1.62; text-align: justify; }
 }
 .cover { page: gb-cover; break-after: page; position: relative; width: 210mm; height: 297mm; text-align: center; }
 .cover-ics { position: absolute; top: 10mm; left: 25mm; text-align: left; font: 10.5pt/1.3 var(--font-head); }
-.cover-logo { position: absolute; top: 13mm; left: 144mm; width: 40mm; height: 20mm; margin: 0; object-fit: contain; }
+.cover-logo { position: absolute; top: 13mm; left: 144mm; width: 40mm; height: 20mm; margin: 0; object-fit: fill; }
 /* 专用字候选；尺寸按图 E.5，具体字样须由发布部门核验。 */
 .cover-head { position: absolute; top: 42mm; left: 25mm; width: 170mm; height: 8mm;
   display: flex; justify-content: space-between; font: 22.67717pt/1 var(--font-title); }
@@ -68,10 +68,13 @@ body { font-size: 10.5pt; line-height: 1.62; text-align: justify; }
 .cover-stdno { font: 14pt/1 var(--font-head); }
 .cover-sup { font: 10.5pt/1 var(--font-head); }
 .cover-rule { position: absolute; top: 75mm; left: 25mm; width: 170mm; height: 1pt; background: #000; margin: 0; }
-.cover-main { position: absolute; top: 115mm; left: 25mm; width: 170mm; }
+/* 用整张封面零原点承载标题，避免 PDF 对分数像素流式坐标逐层取整。
+ * prepareGbLayout 按实际字形边界定位，字号、可选行及自然换行保持不变。 */
+.cover-main { position: absolute; top: 0; left: 0; width: 210mm; }
+.cover-cn, .cover-en, .cover-iso { position: absolute; top: 0; left: 0; width: 170mm; }
 .cover-cn { font: 26pt/calc(26pt + 3mm) var(--font-head); font-weight: 400; }
-.cover-en { font: 14pt/1.3 var(--font-head); margin-top: 10mm; }
-.cover-iso { font: 14pt/1.3 var(--font-head); margin: 15mm auto 0; max-width: 100%; }
+.cover-en { font: 14pt/1.3 var(--font-head); margin: 0; }
+.cover-iso { font: 14pt/1.3 var(--font-head); margin: 0; max-width: 100%; }
 .cover-foot { position: absolute; inset: 0; margin: 0 !important; }
 .cover-dates { position: absolute; bottom: 41.5mm; left: 25mm; width: 170mm; display: flex; justify-content: space-between;
   font: 14pt/1 var(--font-head); padding: 0; border: none; }
@@ -228,3 +231,5 @@ main section .gb-index ul.gb-index-entries > li::before { display: none !importa
 .gb-index-term { padding-left: 0; }
 .gb-index-dots { height: .9em; align-self: auto; }
 .gb-table-notes .gb-table-note { border: none; padding: 0; }
+
+.gb-cover-ics-line { display: inline-block; }

@@ -1,0 +1,229 @@
+{
+  "source": {
+    "standard": "GB/T 1.1—2020",
+    "figure": "E.5",
+    "image": "Screenshot 2026-10-27 at 20.48.03.png",
+    "unit": "mm",
+    "origin": "纸张左上角",
+    "count": 23,
+    "sha256": "eec5a541810dd9eff248ebf75d3b5cea617406dd40641bc95e01954e6ebe5a90"
+  },
+  "measurement": {
+    "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
+    "graphics": "可见图形外接矩形；横线取上缘",
+    "toleranceMm": 0.2,
+    "toleranceNote": "工程验收阈值，非标准规定的容差；PDF 以 600 dpi、灰度小于128的像素测量",
+    "missing": "不适用，不能计为通过"
+  },
+  "constraints": [
+    {
+      "id": "paper-width",
+      "mm": 210,
+      "from": "page.left",
+      "to": "page.right",
+      "axis": "x",
+      "description": "纸张宽度"
+    },
+    {
+      "id": "paper-height",
+      "mm": 297,
+      "from": "page.top",
+      "to": "page.bottom",
+      "axis": "y",
+      "description": "纸张高度"
+    },
+    {
+      "id": "ics-left",
+      "mm": 25,
+      "from": "page.left",
+      "to": "ics.left",
+      "axis": "x",
+      "description": "ICS 左端距纸左边"
+    },
+    {
+      "id": "ics-top",
+      "mm": 10,
+      "from": "page.top",
+      "to": "ics.top",
+      "axis": "y",
+      "description": "ICS 上缘距纸顶"
+    },
+    {
+      "id": "logo-right-center",
+      "mm": 46,
+      "from": "logo.centerX",
+      "to": "page.right",
+      "axis": "x",
+      "description": "GB 图形中心线至纸右边"
+    },
+    {
+      "id": "logo-width",
+      "mm": 40,
+      "from": "logo.left",
+      "to": "logo.right",
+      "axis": "x",
+      "description": "GB 图形宽度"
+    },
+    {
+      "id": "logo-height",
+      "mm": 20,
+      "from": "logo.top",
+      "to": "logo.bottom",
+      "axis": "y",
+      "description": "GB 图形高度"
+    },
+    {
+      "id": "upper-rule-top",
+      "mm": 75,
+      "from": "page.top",
+      "to": "rule.top",
+      "axis": "y",
+      "description": "上部横线距纸顶"
+    },
+    {
+      "id": "upper-rule-left",
+      "mm": 25,
+      "from": "page.left",
+      "to": "rule.left",
+      "axis": "x",
+      "description": "上部横线左端距纸左边"
+    },
+    {
+      "id": "upper-rule-width",
+      "mm": 170,
+      "from": "rule.left",
+      "to": "rule.right",
+      "axis": "x",
+      "description": "上部横线长度"
+    },
+    {
+      "id": "banner-height",
+      "mm": 8,
+      "from": "head.top",
+      "to": "head.bottom",
+      "axis": "y",
+      "description": "国家标准横幅可见字高"
+    },
+    {
+      "id": "banner-rule-gap",
+      "mm": 25,
+      "from": "head.bottom",
+      "to": "rule.top",
+      "axis": "y",
+      "description": "横幅下缘至上部横线"
+    },
+    {
+      "id": "logo-rule-gap",
+      "mm": 42,
+      "from": "logo.bottom",
+      "to": "rule.top",
+      "axis": "y",
+      "description": "GB 图形下缘至上部横线"
+    },
+    {
+      "id": "banner-number-gap",
+      "mm": 9,
+      "from": "head.bottom",
+      "to": "stdno.top",
+      "axis": "y",
+      "description": "横幅下缘至文件编号上缘"
+    },
+    {
+      "id": "number-replacement-gap",
+      "mm": 3,
+      "from": "stdno.bottom",
+      "to": "sup.top",
+      "axis": "y",
+      "description": "文件编号下缘至被代替编号上缘"
+    },
+    {
+      "id": "replacement-right",
+      "mm": 5,
+      "from": "sup.right",
+      "to": "rule.right",
+      "axis": "x",
+      "description": "被代替编号末端至横线右端定位线"
+    },
+    {
+      "id": "rule-title-gap",
+      "mm": 40,
+      "from": "rule.top",
+      "to": "cn.top",
+      "axis": "y",
+      "description": "上部横线至中文名称上缘"
+    },
+    {
+      "id": "title-translation-gap",
+      "mm": 10,
+      "from": "cn.bottom",
+      "to": "en.top",
+      "axis": "y",
+      "description": "中文名称下缘至英文译名上缘"
+    },
+    {
+      "id": "translation-equivalence-gap",
+      "mm": 15,
+      "from": "en.bottom",
+      "to": "iso.top",
+      "axis": "y",
+      "description": "英文译名下缘至一致性标识上缘"
+    },
+    {
+      "id": "date-rule-bottom",
+      "mm": 40,
+      "from": "date-rule.top",
+      "to": "page.bottom",
+      "axis": "y",
+      "description": "日期行下横线至纸底"
+    },
+    {
+      "id": "issuer-bottom",
+      "mm": 20,
+      "from": "org-names.bottom",
+      "to": "page.bottom",
+      "axis": "y",
+      "description": "发布机构文字下缘至纸底"
+    },
+    {
+      "id": "issuer-fa-gap",
+      "mm": 5,
+      "from": "org-names.right",
+      "to": "fa.left",
+      "axis": "x",
+      "description": "发布机构右缘至发字左缘"
+    },
+    {
+      "id": "fa-bu-gap",
+      "mm": 3,
+      "from": "fa.right",
+      "to": "bu.left",
+      "axis": "x",
+      "description": "发字右缘至布字左缘"
+    }
+  ],
+  "derived": {
+    "regionLeft": 25,
+    "regionRight": 195,
+    "regionCenter": 110,
+    "upperRuleY": 75,
+    "logoCenterX": 164,
+    "logoLeft": 144,
+    "logoTop": 13,
+    "logoBottom": 33,
+    "bannerTop": 42,
+    "bannerBottom": 50,
+    "numberTop": 59,
+    "numberRight": 190,
+    "titleTop": 115,
+    "dateRuleY": 257,
+    "issuerBottom": 277
+  },
+  "unmarked": [
+    "横线线宽",
+    "日期文字与横线间隙",
+    "文字基线",
+    "专用字字体文件",
+    "中文名称与英文译名行高",
+    "工程验收容差"
+  ]
+}

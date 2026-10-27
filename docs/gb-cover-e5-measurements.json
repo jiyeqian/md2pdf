@@ -1,0 +1,3002 @@
+[
+  {
+    "case": "diagram",
+    "runtime": "cli",
+    "rendererFilesSha256": {
+      "src/render.mjs": "07aa2d191f203467aeffc70b1d3d4ba5e0519185de37a051a584fd2970c3bcbf",
+      "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
+      "assets/themes/gb.css": "645d9d8b1bc35dd4a47a51e221220d885296dffdf87e65b19b27a4a311da93d2",
+      "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
+    },
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/155.0.8059.86",
+      "revision": "@804d6b05f089b27af8342622a36558c49401a1d4",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "jsVersion": "15.5.35.25"
+    },
+    "sourceSha256": "470c74139307b56c03fe1422213f59ecce9d83f1543e561aeaf7b50e208369f1",
+    "pdfSha256": "b727df2288224da763b4bfd0f2964b427561efbe962aabeaa4e629363396ce40",
+    "measurement": {
+      "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
+      "graphics": "可见图形外接矩形；横线取上缘",
+      "toleranceMm": 0.2,
+      "toleranceNote": "工程验收阈值，非标准规定的容差；PDF 以 600 dpi、灰度小于128的像素测量",
+      "missing": "不适用，不能计为通过"
+    },
+    "locator": "Independent printable DOM used only for crop locations; production PDF first-page raster compared byte-for-byte against locator raster. Static checks printable HTML through Chrome, not the OS print dialog.",
+    "ink": {
+      "page": {
+        "left": 0,
+        "top": 0,
+        "right": 209.88866666666667,
+        "bottom": 297.0106666666666
+      },
+      "ics": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.937333333333335,
+        "bottom": 17.56833333333333,
+        "centerX": 36.957
+      },
+      "logo": {
+        "left": 143.93333333333334,
+        "top": 12.953999999999999,
+        "right": 183.896,
+        "bottom": 33.062333333333335,
+        "centerX": 163.91466666666668
+      },
+      "head": {
+        "left": 24.976666666666667,
+        "top": 42.07933333333333,
+        "right": 194.945,
+        "bottom": 49.911,
+        "centerX": 109.96083333333333
+      },
+      "stdno": {
+        "left": 142.95966666666666,
+        "top": 58.97033333333333,
+        "right": 189.94966666666667,
+        "bottom": 62.65333333333333,
+        "centerX": 166.45466666666667
+      },
+      "sup": {
+        "left": 146.26166666666666,
+        "top": 65.65899999999999,
+        "right": 189.94966666666667,
+        "bottom": 68.961,
+        "centerX": 168.10566666666665
+      },
+      "rule": {
+        "left": 24.849666666666668,
+        "top": 74.88766666666666,
+        "right": 194.98733333333334,
+        "bottom": 75.39566666666667,
+        "centerX": 109.9185
+      },
+      "cn": {
+        "left": 91.90566666666666,
+        "top": 114.97733333333333,
+        "right": 128.05833333333334,
+        "bottom": 123.27466666666666,
+        "centerX": 109.982
+      },
+      "en": {
+        "left": 88.13799999999999,
+        "top": 133.26533333333333,
+        "right": 131.78366666666668,
+        "bottom": 137.75266666666667,
+        "centerX": 109.96083333333333
+      },
+      "iso": {
+        "left": 76.62333333333333,
+        "top": 152.781,
+        "right": 143.383,
+        "bottom": 157.77633333333333,
+        "centerX": 110.00316666666666
+      },
+      "date-rule": {
+        "left": 24.849666666666668,
+        "top": 256.921,
+        "right": 194.98733333333334,
+        "bottom": 257.429,
+        "centerX": 109.9185
+      },
+      "org-names": {
+        "left": 77.93566666666666,
+        "top": 271.1873333333333,
+        "right": 125.01033333333334,
+        "bottom": 276.94466666666665,
+        "centerX": 101.473
+      },
+      "fa": {
+        "left": 130.048,
+        "top": 271.9493333333333,
+        "right": 134.53533333333334,
+        "bottom": 276.352,
+        "centerX": 132.29166666666666
+      },
+      "bu": {
+        "left": 137.58333333333334,
+        "top": 271.9493333333333,
+        "right": 142.02833333333334,
+        "bottom": 276.39433333333335,
+        "centerX": 139.80583333333334
+      },
+      "issued": {
+        "left": 25.019,
+        "top": 252.01033333333334,
+        "right": 67.77566666666667,
+        "bottom": 256.45533333333333,
+        "centerX": 46.39733333333333
+      },
+      "implementation": {
+        "left": 152.06133333333332,
+        "top": 252.05266666666665,
+        "right": 194.945,
+        "bottom": 256.49766666666665,
+        "centerX": 173.50316666666666
+      },
+      "ics-first": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.937333333333335,
+        "bottom": 12.784666666666666,
+        "centerX": 36.957
+      },
+      "ics-second": {
+        "left": 24.976666666666667,
+        "top": 14.816666666666666,
+        "right": 41.952333333333335,
+        "bottom": 17.56833333333333,
+        "centerX": 33.4645
+      }
+    },
+    "rows": [
+      {
+        "id": "paper-width",
+        "mm": 210,
+        "from": "page.left",
+        "to": "page.right",
+        "axis": "x",
+        "description": "纸张宽度",
+        "measuredMm": 209.88866666666667,
+        "errorMm": -0.1113333333333344,
+        "status": "pass"
+      },
+      {
+        "id": "paper-height",
+        "mm": 297,
+        "from": "page.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "纸张高度",
+        "measuredMm": 297.0106666666666,
+        "errorMm": 0.01066666666662286,
+        "status": "pass"
+      },
+      {
+        "id": "ics-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "ics.left",
+        "axis": "x",
+        "description": "ICS 左端距纸左边",
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ics-top",
+        "mm": 10,
+        "from": "page.top",
+        "to": "ics.top",
+        "axis": "y",
+        "description": "ICS 上缘距纸顶",
+        "measuredMm": 10.033,
+        "errorMm": 0.032999999999999474,
+        "status": "pass"
+      },
+      {
+        "id": "logo-right-center",
+        "mm": 46,
+        "from": "logo.centerX",
+        "to": "page.right",
+        "axis": "x",
+        "description": "GB 图形中心线至纸右边",
+        "measuredMm": 45.97399999999999,
+        "errorMm": -0.02600000000001046,
+        "status": "pass"
+      },
+      {
+        "id": "logo-width",
+        "mm": 40,
+        "from": "logo.left",
+        "to": "logo.right",
+        "axis": "x",
+        "description": "GB 图形宽度",
+        "measuredMm": 39.96266666666665,
+        "errorMm": -0.03733333333335054,
+        "status": "pass"
+      },
+      {
+        "id": "logo-height",
+        "mm": 20,
+        "from": "logo.top",
+        "to": "logo.bottom",
+        "axis": "y",
+        "description": "GB 图形高度",
+        "measuredMm": 20.108333333333334,
+        "errorMm": 0.10833333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-top",
+        "mm": 75,
+        "from": "page.top",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "上部横线距纸顶",
+        "measuredMm": 74.88766666666666,
+        "errorMm": -0.11233333333333917,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "rule.left",
+        "axis": "x",
+        "description": "上部横线左端距纸左边",
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-width",
+        "mm": 170,
+        "from": "rule.left",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "上部横线长度",
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "banner-height",
+        "mm": 8,
+        "from": "head.top",
+        "to": "head.bottom",
+        "axis": "y",
+        "description": "国家标准横幅可见字高",
+        "measuredMm": 7.8316666666666706,
+        "errorMm": -0.16833333333332945,
+        "status": "pass"
+      },
+      {
+        "id": "banner-rule-gap",
+        "mm": 25,
+        "from": "head.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "横幅下缘至上部横线",
+        "measuredMm": 24.97666666666666,
+        "errorMm": -0.023333333333340533,
+        "status": "pass"
+      },
+      {
+        "id": "logo-rule-gap",
+        "mm": 42,
+        "from": "logo.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "GB 图形下缘至上部横线",
+        "measuredMm": 41.825333333333326,
+        "errorMm": -0.17466666666667408,
+        "status": "pass"
+      },
+      {
+        "id": "banner-number-gap",
+        "mm": 9,
+        "from": "head.bottom",
+        "to": "stdno.top",
+        "axis": "y",
+        "description": "横幅下缘至文件编号上缘",
+        "measuredMm": 9.059333333333328,
+        "errorMm": 0.05933333333332769,
+        "status": "pass"
+      },
+      {
+        "id": "number-replacement-gap",
+        "mm": 3,
+        "from": "stdno.bottom",
+        "to": "sup.top",
+        "axis": "y",
+        "description": "文件编号下缘至被代替编号上缘",
+        "measuredMm": 3.005666666666663,
+        "errorMm": 0.005666666666662934,
+        "status": "pass"
+      },
+      {
+        "id": "replacement-right",
+        "mm": 5,
+        "from": "sup.right",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "被代替编号末端至横线右端定位线",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "rule-title-gap",
+        "mm": 40,
+        "from": "rule.top",
+        "to": "cn.top",
+        "axis": "y",
+        "description": "上部横线至中文名称上缘",
+        "measuredMm": 40.08966666666667,
+        "errorMm": 0.08966666666667322,
+        "status": "pass"
+      },
+      {
+        "id": "title-translation-gap",
+        "mm": 10,
+        "from": "cn.bottom",
+        "to": "en.top",
+        "axis": "y",
+        "description": "中文名称下缘至英文译名上缘",
+        "measuredMm": 9.99066666666667,
+        "errorMm": -0.009333333333330529,
+        "status": "pass"
+      },
+      {
+        "id": "translation-equivalence-gap",
+        "mm": 15,
+        "from": "en.bottom",
+        "to": "iso.top",
+        "axis": "y",
+        "description": "英文译名下缘至一致性标识上缘",
+        "measuredMm": 15.028333333333336,
+        "errorMm": 0.028333333333335986,
+        "status": "pass"
+      },
+      {
+        "id": "date-rule-bottom",
+        "mm": 40,
+        "from": "date-rule.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "日期行下横线至纸底",
+        "measuredMm": 40.08966666666663,
+        "errorMm": 0.08966666666663059,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-bottom",
+        "mm": 20,
+        "from": "org-names.bottom",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "发布机构文字下缘至纸底",
+        "measuredMm": 20.065999999999974,
+        "errorMm": 0.06599999999997408,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-fa-gap",
+        "mm": 5,
+        "from": "org-names.right",
+        "to": "fa.left",
+        "axis": "x",
+        "description": "发布机构右缘至发字左缘",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "fa-bu-gap",
+        "mm": 3,
+        "from": "fa.right",
+        "to": "bu.left",
+        "axis": "x",
+        "description": "发字右缘至布字左缘",
+        "measuredMm": 3.048000000000002,
+        "errorMm": 0.04800000000000182,
+        "status": "pass"
+      },
+      {
+        "id": "number-rows-right-aligned",
+        "mm": 0,
+        "measuredMm": 0,
+        "errorMm": 0,
+        "status": "pass"
+      },
+      {
+        "id": "banner-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "banner-width",
+        "mm": 170,
+        "measuredMm": 169.96833333333333,
+        "errorMm": -0.03166666666666629,
+        "status": "pass"
+      },
+      {
+        "id": "ics-first-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ccs-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "issued-left",
+        "mm": 25,
+        "measuredMm": 25.019,
+        "errorMm": 0.01899999999999835,
+        "status": "pass"
+      },
+      {
+        "id": "implementation-right",
+        "mm": 195,
+        "measuredMm": 194.945,
+        "errorMm": -0.05500000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-left",
+        "mm": 25,
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-width",
+        "mm": 170,
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-group-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "cn-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "en-center",
+        "mm": 110,
+        "measuredMm": 109.96083333333333,
+        "errorMm": -0.03916666666667368,
+        "status": "pass"
+      },
+      {
+        "id": "iso-center",
+        "mm": 110,
+        "measuredMm": 110.00316666666666,
+        "errorMm": 0.0031666666666581023,
+        "status": "pass"
+      }
+    ]
+  },
+  {
+    "case": "diagram",
+    "runtime": "node",
+    "rendererFilesSha256": {
+      "src/render.mjs": "07aa2d191f203467aeffc70b1d3d4ba5e0519185de37a051a584fd2970c3bcbf",
+      "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
+      "assets/themes/gb.css": "645d9d8b1bc35dd4a47a51e221220d885296dffdf87e65b19b27a4a311da93d2",
+      "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
+    },
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/155.0.8059.86",
+      "revision": "@804d6b05f089b27af8342622a36558c49401a1d4",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "jsVersion": "15.5.35.25"
+    },
+    "sourceSha256": "470c74139307b56c03fe1422213f59ecce9d83f1543e561aeaf7b50e208369f1",
+    "pdfSha256": "1e98b8682dd81aaec85cd0ae13b472c7ea36402475dfe81f6f0f8060b3146415",
+    "measurement": {
+      "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
+      "graphics": "可见图形外接矩形；横线取上缘",
+      "toleranceMm": 0.2,
+      "toleranceNote": "工程验收阈值，非标准规定的容差；PDF 以 600 dpi、灰度小于128的像素测量",
+      "missing": "不适用，不能计为通过"
+    },
+    "locator": "Independent printable DOM used only for crop locations; production PDF first-page raster compared byte-for-byte against locator raster. Static checks printable HTML through Chrome, not the OS print dialog.",
+    "ink": {
+      "page": {
+        "left": 0,
+        "top": 0,
+        "right": 209.88866666666667,
+        "bottom": 297.0106666666666
+      },
+      "ics": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.937333333333335,
+        "bottom": 17.56833333333333,
+        "centerX": 36.957
+      },
+      "logo": {
+        "left": 143.93333333333334,
+        "top": 12.953999999999999,
+        "right": 183.896,
+        "bottom": 33.062333333333335,
+        "centerX": 163.91466666666668
+      },
+      "head": {
+        "left": 24.976666666666667,
+        "top": 42.07933333333333,
+        "right": 194.945,
+        "bottom": 49.911,
+        "centerX": 109.96083333333333
+      },
+      "stdno": {
+        "left": 142.95966666666666,
+        "top": 58.97033333333333,
+        "right": 189.94966666666667,
+        "bottom": 62.65333333333333,
+        "centerX": 166.45466666666667
+      },
+      "sup": {
+        "left": 146.26166666666666,
+        "top": 65.65899999999999,
+        "right": 189.94966666666667,
+        "bottom": 68.961,
+        "centerX": 168.10566666666665
+      },
+      "rule": {
+        "left": 24.849666666666668,
+        "top": 74.88766666666666,
+        "right": 194.98733333333334,
+        "bottom": 75.39566666666667,
+        "centerX": 109.9185
+      },
+      "cn": {
+        "left": 91.90566666666666,
+        "top": 114.97733333333333,
+        "right": 128.05833333333334,
+        "bottom": 123.27466666666666,
+        "centerX": 109.982
+      },
+      "en": {
+        "left": 88.13799999999999,
+        "top": 133.26533333333333,
+        "right": 131.78366666666668,
+        "bottom": 137.75266666666667,
+        "centerX": 109.96083333333333
+      },
+      "iso": {
+        "left": 76.62333333333333,
+        "top": 152.781,
+        "right": 143.383,
+        "bottom": 157.77633333333333,
+        "centerX": 110.00316666666666
+      },
+      "date-rule": {
+        "left": 24.849666666666668,
+        "top": 256.921,
+        "right": 194.98733333333334,
+        "bottom": 257.429,
+        "centerX": 109.9185
+      },
+      "org-names": {
+        "left": 77.93566666666666,
+        "top": 271.1873333333333,
+        "right": 125.01033333333334,
+        "bottom": 276.94466666666665,
+        "centerX": 101.473
+      },
+      "fa": {
+        "left": 130.048,
+        "top": 271.9493333333333,
+        "right": 134.53533333333334,
+        "bottom": 276.352,
+        "centerX": 132.29166666666666
+      },
+      "bu": {
+        "left": 137.58333333333334,
+        "top": 271.9493333333333,
+        "right": 142.02833333333334,
+        "bottom": 276.39433333333335,
+        "centerX": 139.80583333333334
+      },
+      "issued": {
+        "left": 25.019,
+        "top": 252.01033333333334,
+        "right": 67.77566666666667,
+        "bottom": 256.45533333333333,
+        "centerX": 46.39733333333333
+      },
+      "implementation": {
+        "left": 152.06133333333332,
+        "top": 252.05266666666665,
+        "right": 194.945,
+        "bottom": 256.49766666666665,
+        "centerX": 173.50316666666666
+      },
+      "ics-first": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.937333333333335,
+        "bottom": 12.784666666666666,
+        "centerX": 36.957
+      },
+      "ics-second": {
+        "left": 24.976666666666667,
+        "top": 14.816666666666666,
+        "right": 41.952333333333335,
+        "bottom": 17.56833333333333,
+        "centerX": 33.4645
+      }
+    },
+    "rows": [
+      {
+        "id": "paper-width",
+        "mm": 210,
+        "from": "page.left",
+        "to": "page.right",
+        "axis": "x",
+        "description": "纸张宽度",
+        "measuredMm": 209.88866666666667,
+        "errorMm": -0.1113333333333344,
+        "status": "pass"
+      },
+      {
+        "id": "paper-height",
+        "mm": 297,
+        "from": "page.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "纸张高度",
+        "measuredMm": 297.0106666666666,
+        "errorMm": 0.01066666666662286,
+        "status": "pass"
+      },
+      {
+        "id": "ics-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "ics.left",
+        "axis": "x",
+        "description": "ICS 左端距纸左边",
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ics-top",
+        "mm": 10,
+        "from": "page.top",
+        "to": "ics.top",
+        "axis": "y",
+        "description": "ICS 上缘距纸顶",
+        "measuredMm": 10.033,
+        "errorMm": 0.032999999999999474,
+        "status": "pass"
+      },
+      {
+        "id": "logo-right-center",
+        "mm": 46,
+        "from": "logo.centerX",
+        "to": "page.right",
+        "axis": "x",
+        "description": "GB 图形中心线至纸右边",
+        "measuredMm": 45.97399999999999,
+        "errorMm": -0.02600000000001046,
+        "status": "pass"
+      },
+      {
+        "id": "logo-width",
+        "mm": 40,
+        "from": "logo.left",
+        "to": "logo.right",
+        "axis": "x",
+        "description": "GB 图形宽度",
+        "measuredMm": 39.96266666666665,
+        "errorMm": -0.03733333333335054,
+        "status": "pass"
+      },
+      {
+        "id": "logo-height",
+        "mm": 20,
+        "from": "logo.top",
+        "to": "logo.bottom",
+        "axis": "y",
+        "description": "GB 图形高度",
+        "measuredMm": 20.108333333333334,
+        "errorMm": 0.10833333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-top",
+        "mm": 75,
+        "from": "page.top",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "上部横线距纸顶",
+        "measuredMm": 74.88766666666666,
+        "errorMm": -0.11233333333333917,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "rule.left",
+        "axis": "x",
+        "description": "上部横线左端距纸左边",
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-width",
+        "mm": 170,
+        "from": "rule.left",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "上部横线长度",
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "banner-height",
+        "mm": 8,
+        "from": "head.top",
+        "to": "head.bottom",
+        "axis": "y",
+        "description": "国家标准横幅可见字高",
+        "measuredMm": 7.8316666666666706,
+        "errorMm": -0.16833333333332945,
+        "status": "pass"
+      },
+      {
+        "id": "banner-rule-gap",
+        "mm": 25,
+        "from": "head.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "横幅下缘至上部横线",
+        "measuredMm": 24.97666666666666,
+        "errorMm": -0.023333333333340533,
+        "status": "pass"
+      },
+      {
+        "id": "logo-rule-gap",
+        "mm": 42,
+        "from": "logo.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "GB 图形下缘至上部横线",
+        "measuredMm": 41.825333333333326,
+        "errorMm": -0.17466666666667408,
+        "status": "pass"
+      },
+      {
+        "id": "banner-number-gap",
+        "mm": 9,
+        "from": "head.bottom",
+        "to": "stdno.top",
+        "axis": "y",
+        "description": "横幅下缘至文件编号上缘",
+        "measuredMm": 9.059333333333328,
+        "errorMm": 0.05933333333332769,
+        "status": "pass"
+      },
+      {
+        "id": "number-replacement-gap",
+        "mm": 3,
+        "from": "stdno.bottom",
+        "to": "sup.top",
+        "axis": "y",
+        "description": "文件编号下缘至被代替编号上缘",
+        "measuredMm": 3.005666666666663,
+        "errorMm": 0.005666666666662934,
+        "status": "pass"
+      },
+      {
+        "id": "replacement-right",
+        "mm": 5,
+        "from": "sup.right",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "被代替编号末端至横线右端定位线",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "rule-title-gap",
+        "mm": 40,
+        "from": "rule.top",
+        "to": "cn.top",
+        "axis": "y",
+        "description": "上部横线至中文名称上缘",
+        "measuredMm": 40.08966666666667,
+        "errorMm": 0.08966666666667322,
+        "status": "pass"
+      },
+      {
+        "id": "title-translation-gap",
+        "mm": 10,
+        "from": "cn.bottom",
+        "to": "en.top",
+        "axis": "y",
+        "description": "中文名称下缘至英文译名上缘",
+        "measuredMm": 9.99066666666667,
+        "errorMm": -0.009333333333330529,
+        "status": "pass"
+      },
+      {
+        "id": "translation-equivalence-gap",
+        "mm": 15,
+        "from": "en.bottom",
+        "to": "iso.top",
+        "axis": "y",
+        "description": "英文译名下缘至一致性标识上缘",
+        "measuredMm": 15.028333333333336,
+        "errorMm": 0.028333333333335986,
+        "status": "pass"
+      },
+      {
+        "id": "date-rule-bottom",
+        "mm": 40,
+        "from": "date-rule.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "日期行下横线至纸底",
+        "measuredMm": 40.08966666666663,
+        "errorMm": 0.08966666666663059,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-bottom",
+        "mm": 20,
+        "from": "org-names.bottom",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "发布机构文字下缘至纸底",
+        "measuredMm": 20.065999999999974,
+        "errorMm": 0.06599999999997408,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-fa-gap",
+        "mm": 5,
+        "from": "org-names.right",
+        "to": "fa.left",
+        "axis": "x",
+        "description": "发布机构右缘至发字左缘",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "fa-bu-gap",
+        "mm": 3,
+        "from": "fa.right",
+        "to": "bu.left",
+        "axis": "x",
+        "description": "发字右缘至布字左缘",
+        "measuredMm": 3.048000000000002,
+        "errorMm": 0.04800000000000182,
+        "status": "pass"
+      },
+      {
+        "id": "number-rows-right-aligned",
+        "mm": 0,
+        "measuredMm": 0,
+        "errorMm": 0,
+        "status": "pass"
+      },
+      {
+        "id": "banner-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "banner-width",
+        "mm": 170,
+        "measuredMm": 169.96833333333333,
+        "errorMm": -0.03166666666666629,
+        "status": "pass"
+      },
+      {
+        "id": "ics-first-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ccs-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "issued-left",
+        "mm": 25,
+        "measuredMm": 25.019,
+        "errorMm": 0.01899999999999835,
+        "status": "pass"
+      },
+      {
+        "id": "implementation-right",
+        "mm": 195,
+        "measuredMm": 194.945,
+        "errorMm": -0.05500000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-left",
+        "mm": 25,
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-width",
+        "mm": 170,
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-group-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "cn-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "en-center",
+        "mm": 110,
+        "measuredMm": 109.96083333333333,
+        "errorMm": -0.03916666666667368,
+        "status": "pass"
+      },
+      {
+        "id": "iso-center",
+        "mm": 110,
+        "measuredMm": 110.00316666666666,
+        "errorMm": 0.0031666666666581023,
+        "status": "pass"
+      }
+    ]
+  },
+  {
+    "case": "diagram",
+    "runtime": "static",
+    "rendererFilesSha256": {
+      "src/render.mjs": "07aa2d191f203467aeffc70b1d3d4ba5e0519185de37a051a584fd2970c3bcbf",
+      "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
+      "assets/themes/gb.css": "645d9d8b1bc35dd4a47a51e221220d885296dffdf87e65b19b27a4a311da93d2",
+      "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
+    },
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/155.0.8059.86",
+      "revision": "@804d6b05f089b27af8342622a36558c49401a1d4",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "jsVersion": "15.5.35.25"
+    },
+    "sourceSha256": "470c74139307b56c03fe1422213f59ecce9d83f1543e561aeaf7b50e208369f1",
+    "pdfSha256": "868a6f5f59327b3efd95c0f5f34cce60093c16ae14ce71c9947e5fb0eee35c52",
+    "measurement": {
+      "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
+      "graphics": "可见图形外接矩形；横线取上缘",
+      "toleranceMm": 0.2,
+      "toleranceNote": "工程验收阈值，非标准规定的容差；PDF 以 600 dpi、灰度小于128的像素测量",
+      "missing": "不适用，不能计为通过"
+    },
+    "locator": "Independent printable DOM used only for crop locations; production PDF first-page raster compared byte-for-byte against locator raster. Static checks printable HTML through Chrome, not the OS print dialog.",
+    "ink": {
+      "page": {
+        "left": 0,
+        "top": 0,
+        "right": 209.88866666666667,
+        "bottom": 297.0106666666666
+      },
+      "ics": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.937333333333335,
+        "bottom": 17.56833333333333,
+        "centerX": 36.957
+      },
+      "logo": {
+        "left": 143.93333333333334,
+        "top": 12.953999999999999,
+        "right": 183.896,
+        "bottom": 33.062333333333335,
+        "centerX": 163.91466666666668
+      },
+      "head": {
+        "left": 24.976666666666667,
+        "top": 42.07933333333333,
+        "right": 194.945,
+        "bottom": 49.911,
+        "centerX": 109.96083333333333
+      },
+      "stdno": {
+        "left": 142.95966666666666,
+        "top": 58.97033333333333,
+        "right": 189.94966666666667,
+        "bottom": 62.65333333333333,
+        "centerX": 166.45466666666667
+      },
+      "sup": {
+        "left": 146.26166666666666,
+        "top": 65.65899999999999,
+        "right": 189.94966666666667,
+        "bottom": 68.961,
+        "centerX": 168.10566666666665
+      },
+      "rule": {
+        "left": 24.849666666666668,
+        "top": 74.88766666666666,
+        "right": 194.98733333333334,
+        "bottom": 75.39566666666667,
+        "centerX": 109.9185
+      },
+      "cn": {
+        "left": 91.90566666666666,
+        "top": 114.97733333333333,
+        "right": 128.05833333333334,
+        "bottom": 123.27466666666666,
+        "centerX": 109.982
+      },
+      "en": {
+        "left": 88.13799999999999,
+        "top": 133.26533333333333,
+        "right": 131.78366666666668,
+        "bottom": 137.75266666666667,
+        "centerX": 109.96083333333333
+      },
+      "iso": {
+        "left": 76.62333333333333,
+        "top": 152.781,
+        "right": 143.383,
+        "bottom": 157.77633333333333,
+        "centerX": 110.00316666666666
+      },
+      "date-rule": {
+        "left": 24.849666666666668,
+        "top": 256.921,
+        "right": 194.98733333333334,
+        "bottom": 257.429,
+        "centerX": 109.9185
+      },
+      "org-names": {
+        "left": 77.93566666666666,
+        "top": 271.1873333333333,
+        "right": 125.01033333333334,
+        "bottom": 276.94466666666665,
+        "centerX": 101.473
+      },
+      "fa": {
+        "left": 130.048,
+        "top": 271.9493333333333,
+        "right": 134.53533333333334,
+        "bottom": 276.352,
+        "centerX": 132.29166666666666
+      },
+      "bu": {
+        "left": 137.58333333333334,
+        "top": 271.9493333333333,
+        "right": 142.02833333333334,
+        "bottom": 276.39433333333335,
+        "centerX": 139.80583333333334
+      },
+      "issued": {
+        "left": 25.019,
+        "top": 252.01033333333334,
+        "right": 67.77566666666667,
+        "bottom": 256.45533333333333,
+        "centerX": 46.39733333333333
+      },
+      "implementation": {
+        "left": 152.06133333333332,
+        "top": 252.05266666666665,
+        "right": 194.945,
+        "bottom": 256.49766666666665,
+        "centerX": 173.50316666666666
+      },
+      "ics-first": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.937333333333335,
+        "bottom": 12.784666666666666,
+        "centerX": 36.957
+      },
+      "ics-second": {
+        "left": 24.976666666666667,
+        "top": 14.816666666666666,
+        "right": 41.952333333333335,
+        "bottom": 17.56833333333333,
+        "centerX": 33.4645
+      }
+    },
+    "rows": [
+      {
+        "id": "paper-width",
+        "mm": 210,
+        "from": "page.left",
+        "to": "page.right",
+        "axis": "x",
+        "description": "纸张宽度",
+        "measuredMm": 209.88866666666667,
+        "errorMm": -0.1113333333333344,
+        "status": "pass"
+      },
+      {
+        "id": "paper-height",
+        "mm": 297,
+        "from": "page.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "纸张高度",
+        "measuredMm": 297.0106666666666,
+        "errorMm": 0.01066666666662286,
+        "status": "pass"
+      },
+      {
+        "id": "ics-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "ics.left",
+        "axis": "x",
+        "description": "ICS 左端距纸左边",
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ics-top",
+        "mm": 10,
+        "from": "page.top",
+        "to": "ics.top",
+        "axis": "y",
+        "description": "ICS 上缘距纸顶",
+        "measuredMm": 10.033,
+        "errorMm": 0.032999999999999474,
+        "status": "pass"
+      },
+      {
+        "id": "logo-right-center",
+        "mm": 46,
+        "from": "logo.centerX",
+        "to": "page.right",
+        "axis": "x",
+        "description": "GB 图形中心线至纸右边",
+        "measuredMm": 45.97399999999999,
+        "errorMm": -0.02600000000001046,
+        "status": "pass"
+      },
+      {
+        "id": "logo-width",
+        "mm": 40,
+        "from": "logo.left",
+        "to": "logo.right",
+        "axis": "x",
+        "description": "GB 图形宽度",
+        "measuredMm": 39.96266666666665,
+        "errorMm": -0.03733333333335054,
+        "status": "pass"
+      },
+      {
+        "id": "logo-height",
+        "mm": 20,
+        "from": "logo.top",
+        "to": "logo.bottom",
+        "axis": "y",
+        "description": "GB 图形高度",
+        "measuredMm": 20.108333333333334,
+        "errorMm": 0.10833333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-top",
+        "mm": 75,
+        "from": "page.top",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "上部横线距纸顶",
+        "measuredMm": 74.88766666666666,
+        "errorMm": -0.11233333333333917,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "rule.left",
+        "axis": "x",
+        "description": "上部横线左端距纸左边",
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-width",
+        "mm": 170,
+        "from": "rule.left",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "上部横线长度",
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "banner-height",
+        "mm": 8,
+        "from": "head.top",
+        "to": "head.bottom",
+        "axis": "y",
+        "description": "国家标准横幅可见字高",
+        "measuredMm": 7.8316666666666706,
+        "errorMm": -0.16833333333332945,
+        "status": "pass"
+      },
+      {
+        "id": "banner-rule-gap",
+        "mm": 25,
+        "from": "head.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "横幅下缘至上部横线",
+        "measuredMm": 24.97666666666666,
+        "errorMm": -0.023333333333340533,
+        "status": "pass"
+      },
+      {
+        "id": "logo-rule-gap",
+        "mm": 42,
+        "from": "logo.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "GB 图形下缘至上部横线",
+        "measuredMm": 41.825333333333326,
+        "errorMm": -0.17466666666667408,
+        "status": "pass"
+      },
+      {
+        "id": "banner-number-gap",
+        "mm": 9,
+        "from": "head.bottom",
+        "to": "stdno.top",
+        "axis": "y",
+        "description": "横幅下缘至文件编号上缘",
+        "measuredMm": 9.059333333333328,
+        "errorMm": 0.05933333333332769,
+        "status": "pass"
+      },
+      {
+        "id": "number-replacement-gap",
+        "mm": 3,
+        "from": "stdno.bottom",
+        "to": "sup.top",
+        "axis": "y",
+        "description": "文件编号下缘至被代替编号上缘",
+        "measuredMm": 3.005666666666663,
+        "errorMm": 0.005666666666662934,
+        "status": "pass"
+      },
+      {
+        "id": "replacement-right",
+        "mm": 5,
+        "from": "sup.right",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "被代替编号末端至横线右端定位线",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "rule-title-gap",
+        "mm": 40,
+        "from": "rule.top",
+        "to": "cn.top",
+        "axis": "y",
+        "description": "上部横线至中文名称上缘",
+        "measuredMm": 40.08966666666667,
+        "errorMm": 0.08966666666667322,
+        "status": "pass"
+      },
+      {
+        "id": "title-translation-gap",
+        "mm": 10,
+        "from": "cn.bottom",
+        "to": "en.top",
+        "axis": "y",
+        "description": "中文名称下缘至英文译名上缘",
+        "measuredMm": 9.99066666666667,
+        "errorMm": -0.009333333333330529,
+        "status": "pass"
+      },
+      {
+        "id": "translation-equivalence-gap",
+        "mm": 15,
+        "from": "en.bottom",
+        "to": "iso.top",
+        "axis": "y",
+        "description": "英文译名下缘至一致性标识上缘",
+        "measuredMm": 15.028333333333336,
+        "errorMm": 0.028333333333335986,
+        "status": "pass"
+      },
+      {
+        "id": "date-rule-bottom",
+        "mm": 40,
+        "from": "date-rule.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "日期行下横线至纸底",
+        "measuredMm": 40.08966666666663,
+        "errorMm": 0.08966666666663059,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-bottom",
+        "mm": 20,
+        "from": "org-names.bottom",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "发布机构文字下缘至纸底",
+        "measuredMm": 20.065999999999974,
+        "errorMm": 0.06599999999997408,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-fa-gap",
+        "mm": 5,
+        "from": "org-names.right",
+        "to": "fa.left",
+        "axis": "x",
+        "description": "发布机构右缘至发字左缘",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "fa-bu-gap",
+        "mm": 3,
+        "from": "fa.right",
+        "to": "bu.left",
+        "axis": "x",
+        "description": "发字右缘至布字左缘",
+        "measuredMm": 3.048000000000002,
+        "errorMm": 0.04800000000000182,
+        "status": "pass"
+      },
+      {
+        "id": "number-rows-right-aligned",
+        "mm": 0,
+        "measuredMm": 0,
+        "errorMm": 0,
+        "status": "pass"
+      },
+      {
+        "id": "banner-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "banner-width",
+        "mm": 170,
+        "measuredMm": 169.96833333333333,
+        "errorMm": -0.03166666666666629,
+        "status": "pass"
+      },
+      {
+        "id": "ics-first-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ccs-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "issued-left",
+        "mm": 25,
+        "measuredMm": 25.019,
+        "errorMm": 0.01899999999999835,
+        "status": "pass"
+      },
+      {
+        "id": "implementation-right",
+        "mm": 195,
+        "measuredMm": 194.945,
+        "errorMm": -0.05500000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-left",
+        "mm": 25,
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-width",
+        "mm": 170,
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-group-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "cn-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "en-center",
+        "mm": 110,
+        "measuredMm": 109.96083333333333,
+        "errorMm": -0.03916666666667368,
+        "status": "pass"
+      },
+      {
+        "id": "iso-center",
+        "mm": 110,
+        "measuredMm": 110.00316666666666,
+        "errorMm": 0.0031666666666581023,
+        "status": "pass"
+      }
+    ]
+  },
+  {
+    "case": "example",
+    "runtime": "cli",
+    "rendererFilesSha256": {
+      "src/render.mjs": "07aa2d191f203467aeffc70b1d3d4ba5e0519185de37a051a584fd2970c3bcbf",
+      "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
+      "assets/themes/gb.css": "645d9d8b1bc35dd4a47a51e221220d885296dffdf87e65b19b27a4a311da93d2",
+      "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
+    },
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/155.0.8059.86",
+      "revision": "@804d6b05f089b27af8342622a36558c49401a1d4",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "jsVersion": "15.5.35.25"
+    },
+    "sourceSha256": "3288c077eb6019bf0fb3ec21a0d7198ba526b7082baf5299948a93c4e6c5ba64",
+    "pdfSha256": "f6fa8f7cb8fbe3f1d97143778125f0f14d4e092be4c149e655f87c970b5a5359",
+    "measurement": {
+      "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
+      "graphics": "可见图形外接矩形；横线取上缘",
+      "toleranceMm": 0.2,
+      "toleranceNote": "工程验收阈值，非标准规定的容差；PDF 以 600 dpi、灰度小于128的像素测量",
+      "missing": "不适用，不能计为通过"
+    },
+    "locator": "Independent printable DOM used only for crop locations; production PDF first-page raster compared byte-for-byte against locator raster. Static checks printable HTML through Chrome, not the OS print dialog.",
+    "ink": {
+      "page": {
+        "left": 0,
+        "top": 0,
+        "right": 209.88866666666667,
+        "bottom": 297.0106666666666
+      },
+      "ics": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.090666666666664,
+        "bottom": 17.56833333333333,
+        "centerX": 36.53366666666667
+      },
+      "logo": {
+        "left": 143.93333333333334,
+        "top": 12.953999999999999,
+        "right": 183.896,
+        "bottom": 33.062333333333335,
+        "centerX": 163.91466666666668
+      },
+      "head": {
+        "left": 24.976666666666667,
+        "top": 42.07933333333333,
+        "right": 194.945,
+        "bottom": 49.911,
+        "centerX": 109.96083333333333
+      },
+      "stdno": {
+        "left": 146.85433333333333,
+        "top": 58.97033333333333,
+        "right": 189.992,
+        "bottom": 62.65333333333333,
+        "centerX": 168.42316666666667
+      },
+      "sup": {
+        "left": 149.14033333333333,
+        "top": 65.65899999999999,
+        "right": 189.94966666666667,
+        "bottom": 68.961,
+        "centerX": 169.545
+      },
+      "rule": {
+        "left": 24.849666666666668,
+        "top": 74.88766666666666,
+        "right": 194.98733333333334,
+        "bottom": 75.39566666666667,
+        "centerX": 109.9185
+      },
+      "cn": {
+        "left": 41.656,
+        "top": 114.97733333333333,
+        "right": 178.26566666666668,
+        "bottom": 123.444,
+        "centerX": 109.96083333333333
+      },
+      "en": {
+        "left": 29.76033333333333,
+        "top": 133.43466666666666,
+        "right": 190.20366666666666,
+        "bottom": 138.09133333333332,
+        "centerX": 109.982
+      },
+      "iso": {
+        "left": 33.019999999999996,
+        "top": 153.035,
+        "right": 187.02866666666665,
+        "bottom": 163.99933333333334,
+        "centerX": 110.02433333333333
+      },
+      "date-rule": {
+        "left": 24.849666666666668,
+        "top": 256.921,
+        "right": 194.98733333333334,
+        "bottom": 257.429,
+        "centerX": 109.9185
+      },
+      "org-names": {
+        "left": 71.79733333333333,
+        "top": 264.795,
+        "right": 131.14866666666666,
+        "bottom": 276.90233333333333,
+        "centerX": 101.473
+      },
+      "fa": {
+        "left": 136.18633333333332,
+        "top": 268.77433333333335,
+        "right": 140.67366666666666,
+        "bottom": 273.17699999999996,
+        "centerX": 138.43
+      },
+      "bu": {
+        "left": 143.72166666666666,
+        "top": 268.77433333333335,
+        "right": 148.16666666666666,
+        "bottom": 273.21933333333334,
+        "centerX": 145.94416666666666
+      },
+      "issued": {
+        "left": 24.976666666666667,
+        "top": 252.01033333333334,
+        "right": 63.41533333333333,
+        "bottom": 256.45533333333333,
+        "centerX": 44.196
+      },
+      "implementation": {
+        "left": 156.37933333333334,
+        "top": 252.05266666666665,
+        "right": 194.945,
+        "bottom": 256.49766666666665,
+        "centerX": 175.66216666666665
+      },
+      "ics-first": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.090666666666664,
+        "bottom": 12.784666666666666,
+        "centerX": 36.53366666666667
+      },
+      "ics-second": {
+        "left": 24.976666666666667,
+        "top": 14.816666666666666,
+        "right": 40.470666666666666,
+        "bottom": 17.56833333333333,
+        "centerX": 32.72366666666667
+      }
+    },
+    "rows": [
+      {
+        "id": "paper-width",
+        "mm": 210,
+        "from": "page.left",
+        "to": "page.right",
+        "axis": "x",
+        "description": "纸张宽度",
+        "measuredMm": 209.88866666666667,
+        "errorMm": -0.1113333333333344,
+        "status": "pass"
+      },
+      {
+        "id": "paper-height",
+        "mm": 297,
+        "from": "page.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "纸张高度",
+        "measuredMm": 297.0106666666666,
+        "errorMm": 0.01066666666662286,
+        "status": "pass"
+      },
+      {
+        "id": "ics-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "ics.left",
+        "axis": "x",
+        "description": "ICS 左端距纸左边",
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ics-top",
+        "mm": 10,
+        "from": "page.top",
+        "to": "ics.top",
+        "axis": "y",
+        "description": "ICS 上缘距纸顶",
+        "measuredMm": 10.033,
+        "errorMm": 0.032999999999999474,
+        "status": "pass"
+      },
+      {
+        "id": "logo-right-center",
+        "mm": 46,
+        "from": "logo.centerX",
+        "to": "page.right",
+        "axis": "x",
+        "description": "GB 图形中心线至纸右边",
+        "measuredMm": 45.97399999999999,
+        "errorMm": -0.02600000000001046,
+        "status": "pass"
+      },
+      {
+        "id": "logo-width",
+        "mm": 40,
+        "from": "logo.left",
+        "to": "logo.right",
+        "axis": "x",
+        "description": "GB 图形宽度",
+        "measuredMm": 39.96266666666665,
+        "errorMm": -0.03733333333335054,
+        "status": "pass"
+      },
+      {
+        "id": "logo-height",
+        "mm": 20,
+        "from": "logo.top",
+        "to": "logo.bottom",
+        "axis": "y",
+        "description": "GB 图形高度",
+        "measuredMm": 20.108333333333334,
+        "errorMm": 0.10833333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-top",
+        "mm": 75,
+        "from": "page.top",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "上部横线距纸顶",
+        "measuredMm": 74.88766666666666,
+        "errorMm": -0.11233333333333917,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "rule.left",
+        "axis": "x",
+        "description": "上部横线左端距纸左边",
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-width",
+        "mm": 170,
+        "from": "rule.left",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "上部横线长度",
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "banner-height",
+        "mm": 8,
+        "from": "head.top",
+        "to": "head.bottom",
+        "axis": "y",
+        "description": "国家标准横幅可见字高",
+        "measuredMm": 7.8316666666666706,
+        "errorMm": -0.16833333333332945,
+        "status": "pass"
+      },
+      {
+        "id": "banner-rule-gap",
+        "mm": 25,
+        "from": "head.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "横幅下缘至上部横线",
+        "measuredMm": 24.97666666666666,
+        "errorMm": -0.023333333333340533,
+        "status": "pass"
+      },
+      {
+        "id": "logo-rule-gap",
+        "mm": 42,
+        "from": "logo.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "GB 图形下缘至上部横线",
+        "measuredMm": 41.825333333333326,
+        "errorMm": -0.17466666666667408,
+        "status": "pass"
+      },
+      {
+        "id": "banner-number-gap",
+        "mm": 9,
+        "from": "head.bottom",
+        "to": "stdno.top",
+        "axis": "y",
+        "description": "横幅下缘至文件编号上缘",
+        "measuredMm": 9.059333333333328,
+        "errorMm": 0.05933333333332769,
+        "status": "pass"
+      },
+      {
+        "id": "number-replacement-gap",
+        "mm": 3,
+        "from": "stdno.bottom",
+        "to": "sup.top",
+        "axis": "y",
+        "description": "文件编号下缘至被代替编号上缘",
+        "measuredMm": 3.005666666666663,
+        "errorMm": 0.005666666666662934,
+        "status": "pass"
+      },
+      {
+        "id": "replacement-right",
+        "mm": 5,
+        "from": "sup.right",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "被代替编号末端至横线右端定位线",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "rule-title-gap",
+        "mm": 40,
+        "from": "rule.top",
+        "to": "cn.top",
+        "axis": "y",
+        "description": "上部横线至中文名称上缘",
+        "measuredMm": 40.08966666666667,
+        "errorMm": 0.08966666666667322,
+        "status": "pass"
+      },
+      {
+        "id": "title-translation-gap",
+        "mm": 10,
+        "from": "cn.bottom",
+        "to": "en.top",
+        "axis": "y",
+        "description": "中文名称下缘至英文译名上缘",
+        "measuredMm": 9.990666666666655,
+        "errorMm": -0.00933333333334474,
+        "status": "pass"
+      },
+      {
+        "id": "translation-equivalence-gap",
+        "mm": 15,
+        "from": "en.bottom",
+        "to": "iso.top",
+        "axis": "y",
+        "description": "英文译名下缘至一致性标识上缘",
+        "measuredMm": 14.943666666666672,
+        "errorMm": -0.05633333333332757,
+        "status": "pass"
+      },
+      {
+        "id": "date-rule-bottom",
+        "mm": 40,
+        "from": "date-rule.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "日期行下横线至纸底",
+        "measuredMm": 40.08966666666663,
+        "errorMm": 0.08966666666663059,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-bottom",
+        "mm": 20,
+        "from": "org-names.bottom",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "发布机构文字下缘至纸底",
+        "measuredMm": 20.10833333333329,
+        "errorMm": 0.10833333333329165,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-fa-gap",
+        "mm": 5,
+        "from": "org-names.right",
+        "to": "fa.left",
+        "axis": "x",
+        "description": "发布机构右缘至发字左缘",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "fa-bu-gap",
+        "mm": 3,
+        "from": "fa.right",
+        "to": "bu.left",
+        "axis": "x",
+        "description": "发字右缘至布字左缘",
+        "measuredMm": 3.048000000000002,
+        "errorMm": 0.04800000000000182,
+        "status": "pass"
+      },
+      {
+        "id": "number-rows-right-aligned",
+        "mm": 0,
+        "measuredMm": 0.04233333333331757,
+        "errorMm": 0.04233333333331757,
+        "status": "pass"
+      },
+      {
+        "id": "banner-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "banner-width",
+        "mm": 170,
+        "measuredMm": 169.96833333333333,
+        "errorMm": -0.03166666666666629,
+        "status": "pass"
+      },
+      {
+        "id": "ics-first-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ccs-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "issued-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "implementation-right",
+        "mm": 195,
+        "measuredMm": 194.945,
+        "errorMm": -0.05500000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-left",
+        "mm": 25,
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-width",
+        "mm": 170,
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-group-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "cn-center",
+        "mm": 110,
+        "measuredMm": 109.96083333333333,
+        "errorMm": -0.03916666666667368,
+        "status": "pass"
+      },
+      {
+        "id": "en-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "iso-center",
+        "mm": 110,
+        "measuredMm": 110.02433333333333,
+        "errorMm": 0.024333333333331097,
+        "status": "pass"
+      }
+    ]
+  },
+  {
+    "case": "example",
+    "runtime": "node",
+    "rendererFilesSha256": {
+      "src/render.mjs": "07aa2d191f203467aeffc70b1d3d4ba5e0519185de37a051a584fd2970c3bcbf",
+      "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
+      "assets/themes/gb.css": "645d9d8b1bc35dd4a47a51e221220d885296dffdf87e65b19b27a4a311da93d2",
+      "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
+    },
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/155.0.8059.86",
+      "revision": "@804d6b05f089b27af8342622a36558c49401a1d4",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "jsVersion": "15.5.35.25"
+    },
+    "sourceSha256": "3288c077eb6019bf0fb3ec21a0d7198ba526b7082baf5299948a93c4e6c5ba64",
+    "pdfSha256": "dea0b583cb2e36920bd10a4c379437d8cc49e0465f2736b514e71b437dcc8f2a",
+    "measurement": {
+      "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
+      "graphics": "可见图形外接矩形；横线取上缘",
+      "toleranceMm": 0.2,
+      "toleranceNote": "工程验收阈值，非标准规定的容差；PDF 以 600 dpi、灰度小于128的像素测量",
+      "missing": "不适用，不能计为通过"
+    },
+    "locator": "Independent printable DOM used only for crop locations; production PDF first-page raster compared byte-for-byte against locator raster. Static checks printable HTML through Chrome, not the OS print dialog.",
+    "ink": {
+      "page": {
+        "left": 0,
+        "top": 0,
+        "right": 209.88866666666667,
+        "bottom": 297.0106666666666
+      },
+      "ics": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.090666666666664,
+        "bottom": 17.56833333333333,
+        "centerX": 36.53366666666667
+      },
+      "logo": {
+        "left": 143.93333333333334,
+        "top": 12.953999999999999,
+        "right": 183.896,
+        "bottom": 33.062333333333335,
+        "centerX": 163.91466666666668
+      },
+      "head": {
+        "left": 24.976666666666667,
+        "top": 42.07933333333333,
+        "right": 194.945,
+        "bottom": 49.911,
+        "centerX": 109.96083333333333
+      },
+      "stdno": {
+        "left": 146.85433333333333,
+        "top": 58.97033333333333,
+        "right": 189.992,
+        "bottom": 62.65333333333333,
+        "centerX": 168.42316666666667
+      },
+      "sup": {
+        "left": 149.14033333333333,
+        "top": 65.65899999999999,
+        "right": 189.94966666666667,
+        "bottom": 68.961,
+        "centerX": 169.545
+      },
+      "rule": {
+        "left": 24.849666666666668,
+        "top": 74.88766666666666,
+        "right": 194.98733333333334,
+        "bottom": 75.39566666666667,
+        "centerX": 109.9185
+      },
+      "cn": {
+        "left": 41.656,
+        "top": 114.97733333333333,
+        "right": 178.26566666666668,
+        "bottom": 123.444,
+        "centerX": 109.96083333333333
+      },
+      "en": {
+        "left": 29.76033333333333,
+        "top": 133.43466666666666,
+        "right": 190.20366666666666,
+        "bottom": 138.09133333333332,
+        "centerX": 109.982
+      },
+      "iso": {
+        "left": 33.019999999999996,
+        "top": 153.035,
+        "right": 187.02866666666665,
+        "bottom": 163.99933333333334,
+        "centerX": 110.02433333333333
+      },
+      "date-rule": {
+        "left": 24.849666666666668,
+        "top": 256.921,
+        "right": 194.98733333333334,
+        "bottom": 257.429,
+        "centerX": 109.9185
+      },
+      "org-names": {
+        "left": 71.79733333333333,
+        "top": 264.795,
+        "right": 131.14866666666666,
+        "bottom": 276.90233333333333,
+        "centerX": 101.473
+      },
+      "fa": {
+        "left": 136.18633333333332,
+        "top": 268.77433333333335,
+        "right": 140.67366666666666,
+        "bottom": 273.17699999999996,
+        "centerX": 138.43
+      },
+      "bu": {
+        "left": 143.72166666666666,
+        "top": 268.77433333333335,
+        "right": 148.16666666666666,
+        "bottom": 273.21933333333334,
+        "centerX": 145.94416666666666
+      },
+      "issued": {
+        "left": 24.976666666666667,
+        "top": 252.01033333333334,
+        "right": 63.41533333333333,
+        "bottom": 256.45533333333333,
+        "centerX": 44.196
+      },
+      "implementation": {
+        "left": 156.37933333333334,
+        "top": 252.05266666666665,
+        "right": 194.945,
+        "bottom": 256.49766666666665,
+        "centerX": 175.66216666666665
+      },
+      "ics-first": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.090666666666664,
+        "bottom": 12.784666666666666,
+        "centerX": 36.53366666666667
+      },
+      "ics-second": {
+        "left": 24.976666666666667,
+        "top": 14.816666666666666,
+        "right": 40.470666666666666,
+        "bottom": 17.56833333333333,
+        "centerX": 32.72366666666667
+      }
+    },
+    "rows": [
+      {
+        "id": "paper-width",
+        "mm": 210,
+        "from": "page.left",
+        "to": "page.right",
+        "axis": "x",
+        "description": "纸张宽度",
+        "measuredMm": 209.88866666666667,
+        "errorMm": -0.1113333333333344,
+        "status": "pass"
+      },
+      {
+        "id": "paper-height",
+        "mm": 297,
+        "from": "page.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "纸张高度",
+        "measuredMm": 297.0106666666666,
+        "errorMm": 0.01066666666662286,
+        "status": "pass"
+      },
+      {
+        "id": "ics-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "ics.left",
+        "axis": "x",
+        "description": "ICS 左端距纸左边",
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ics-top",
+        "mm": 10,
+        "from": "page.top",
+        "to": "ics.top",
+        "axis": "y",
+        "description": "ICS 上缘距纸顶",
+        "measuredMm": 10.033,
+        "errorMm": 0.032999999999999474,
+        "status": "pass"
+      },
+      {
+        "id": "logo-right-center",
+        "mm": 46,
+        "from": "logo.centerX",
+        "to": "page.right",
+        "axis": "x",
+        "description": "GB 图形中心线至纸右边",
+        "measuredMm": 45.97399999999999,
+        "errorMm": -0.02600000000001046,
+        "status": "pass"
+      },
+      {
+        "id": "logo-width",
+        "mm": 40,
+        "from": "logo.left",
+        "to": "logo.right",
+        "axis": "x",
+        "description": "GB 图形宽度",
+        "measuredMm": 39.96266666666665,
+        "errorMm": -0.03733333333335054,
+        "status": "pass"
+      },
+      {
+        "id": "logo-height",
+        "mm": 20,
+        "from": "logo.top",
+        "to": "logo.bottom",
+        "axis": "y",
+        "description": "GB 图形高度",
+        "measuredMm": 20.108333333333334,
+        "errorMm": 0.10833333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-top",
+        "mm": 75,
+        "from": "page.top",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "上部横线距纸顶",
+        "measuredMm": 74.88766666666666,
+        "errorMm": -0.11233333333333917,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "rule.left",
+        "axis": "x",
+        "description": "上部横线左端距纸左边",
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-width",
+        "mm": 170,
+        "from": "rule.left",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "上部横线长度",
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "banner-height",
+        "mm": 8,
+        "from": "head.top",
+        "to": "head.bottom",
+        "axis": "y",
+        "description": "国家标准横幅可见字高",
+        "measuredMm": 7.8316666666666706,
+        "errorMm": -0.16833333333332945,
+        "status": "pass"
+      },
+      {
+        "id": "banner-rule-gap",
+        "mm": 25,
+        "from": "head.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "横幅下缘至上部横线",
+        "measuredMm": 24.97666666666666,
+        "errorMm": -0.023333333333340533,
+        "status": "pass"
+      },
+      {
+        "id": "logo-rule-gap",
+        "mm": 42,
+        "from": "logo.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "GB 图形下缘至上部横线",
+        "measuredMm": 41.825333333333326,
+        "errorMm": -0.17466666666667408,
+        "status": "pass"
+      },
+      {
+        "id": "banner-number-gap",
+        "mm": 9,
+        "from": "head.bottom",
+        "to": "stdno.top",
+        "axis": "y",
+        "description": "横幅下缘至文件编号上缘",
+        "measuredMm": 9.059333333333328,
+        "errorMm": 0.05933333333332769,
+        "status": "pass"
+      },
+      {
+        "id": "number-replacement-gap",
+        "mm": 3,
+        "from": "stdno.bottom",
+        "to": "sup.top",
+        "axis": "y",
+        "description": "文件编号下缘至被代替编号上缘",
+        "measuredMm": 3.005666666666663,
+        "errorMm": 0.005666666666662934,
+        "status": "pass"
+      },
+      {
+        "id": "replacement-right",
+        "mm": 5,
+        "from": "sup.right",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "被代替编号末端至横线右端定位线",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "rule-title-gap",
+        "mm": 40,
+        "from": "rule.top",
+        "to": "cn.top",
+        "axis": "y",
+        "description": "上部横线至中文名称上缘",
+        "measuredMm": 40.08966666666667,
+        "errorMm": 0.08966666666667322,
+        "status": "pass"
+      },
+      {
+        "id": "title-translation-gap",
+        "mm": 10,
+        "from": "cn.bottom",
+        "to": "en.top",
+        "axis": "y",
+        "description": "中文名称下缘至英文译名上缘",
+        "measuredMm": 9.990666666666655,
+        "errorMm": -0.00933333333334474,
+        "status": "pass"
+      },
+      {
+        "id": "translation-equivalence-gap",
+        "mm": 15,
+        "from": "en.bottom",
+        "to": "iso.top",
+        "axis": "y",
+        "description": "英文译名下缘至一致性标识上缘",
+        "measuredMm": 14.943666666666672,
+        "errorMm": -0.05633333333332757,
+        "status": "pass"
+      },
+      {
+        "id": "date-rule-bottom",
+        "mm": 40,
+        "from": "date-rule.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "日期行下横线至纸底",
+        "measuredMm": 40.08966666666663,
+        "errorMm": 0.08966666666663059,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-bottom",
+        "mm": 20,
+        "from": "org-names.bottom",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "发布机构文字下缘至纸底",
+        "measuredMm": 20.10833333333329,
+        "errorMm": 0.10833333333329165,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-fa-gap",
+        "mm": 5,
+        "from": "org-names.right",
+        "to": "fa.left",
+        "axis": "x",
+        "description": "发布机构右缘至发字左缘",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "fa-bu-gap",
+        "mm": 3,
+        "from": "fa.right",
+        "to": "bu.left",
+        "axis": "x",
+        "description": "发字右缘至布字左缘",
+        "measuredMm": 3.048000000000002,
+        "errorMm": 0.04800000000000182,
+        "status": "pass"
+      },
+      {
+        "id": "number-rows-right-aligned",
+        "mm": 0,
+        "measuredMm": 0.04233333333331757,
+        "errorMm": 0.04233333333331757,
+        "status": "pass"
+      },
+      {
+        "id": "banner-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "banner-width",
+        "mm": 170,
+        "measuredMm": 169.96833333333333,
+        "errorMm": -0.03166666666666629,
+        "status": "pass"
+      },
+      {
+        "id": "ics-first-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ccs-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "issued-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "implementation-right",
+        "mm": 195,
+        "measuredMm": 194.945,
+        "errorMm": -0.05500000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-left",
+        "mm": 25,
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-width",
+        "mm": 170,
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-group-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "cn-center",
+        "mm": 110,
+        "measuredMm": 109.96083333333333,
+        "errorMm": -0.03916666666667368,
+        "status": "pass"
+      },
+      {
+        "id": "en-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "iso-center",
+        "mm": 110,
+        "measuredMm": 110.02433333333333,
+        "errorMm": 0.024333333333331097,
+        "status": "pass"
+      }
+    ]
+  },
+  {
+    "case": "example",
+    "runtime": "static",
+    "rendererFilesSha256": {
+      "src/render.mjs": "07aa2d191f203467aeffc70b1d3d4ba5e0519185de37a051a584fd2970c3bcbf",
+      "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
+      "assets/themes/gb.css": "645d9d8b1bc35dd4a47a51e221220d885296dffdf87e65b19b27a4a311da93d2",
+      "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
+    },
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/155.0.8059.86",
+      "revision": "@804d6b05f089b27af8342622a36558c49401a1d4",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "jsVersion": "15.5.35.25"
+    },
+    "sourceSha256": "3288c077eb6019bf0fb3ec21a0d7198ba526b7082baf5299948a93c4e6c5ba64",
+    "pdfSha256": "32940f29ffdb991b50857c79526ac4d5976c8f6962995cc8b60e82e41eeffbc5",
+    "measurement": {
+      "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
+      "graphics": "可见图形外接矩形；横线取上缘",
+      "toleranceMm": 0.2,
+      "toleranceNote": "工程验收阈值，非标准规定的容差；PDF 以 600 dpi、灰度小于128的像素测量",
+      "missing": "不适用，不能计为通过"
+    },
+    "locator": "Independent printable DOM used only for crop locations; production PDF first-page raster compared byte-for-byte against locator raster. Static checks printable HTML through Chrome, not the OS print dialog.",
+    "ink": {
+      "page": {
+        "left": 0,
+        "top": 0,
+        "right": 209.88866666666667,
+        "bottom": 297.0106666666666
+      },
+      "ics": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.090666666666664,
+        "bottom": 17.56833333333333,
+        "centerX": 36.53366666666667
+      },
+      "logo": {
+        "left": 143.93333333333334,
+        "top": 12.953999999999999,
+        "right": 183.896,
+        "bottom": 33.062333333333335,
+        "centerX": 163.91466666666668
+      },
+      "head": {
+        "left": 24.976666666666667,
+        "top": 42.07933333333333,
+        "right": 194.945,
+        "bottom": 49.911,
+        "centerX": 109.96083333333333
+      },
+      "stdno": {
+        "left": 146.85433333333333,
+        "top": 58.97033333333333,
+        "right": 189.992,
+        "bottom": 62.65333333333333,
+        "centerX": 168.42316666666667
+      },
+      "sup": {
+        "left": 149.14033333333333,
+        "top": 65.65899999999999,
+        "right": 189.94966666666667,
+        "bottom": 68.961,
+        "centerX": 169.545
+      },
+      "rule": {
+        "left": 24.849666666666668,
+        "top": 74.88766666666666,
+        "right": 194.98733333333334,
+        "bottom": 75.39566666666667,
+        "centerX": 109.9185
+      },
+      "cn": {
+        "left": 41.656,
+        "top": 114.97733333333333,
+        "right": 178.26566666666668,
+        "bottom": 123.444,
+        "centerX": 109.96083333333333
+      },
+      "en": {
+        "left": 29.76033333333333,
+        "top": 133.43466666666666,
+        "right": 190.20366666666666,
+        "bottom": 138.09133333333332,
+        "centerX": 109.982
+      },
+      "iso": {
+        "left": 33.019999999999996,
+        "top": 153.035,
+        "right": 187.02866666666665,
+        "bottom": 163.99933333333334,
+        "centerX": 110.02433333333333
+      },
+      "date-rule": {
+        "left": 24.849666666666668,
+        "top": 256.921,
+        "right": 194.98733333333334,
+        "bottom": 257.429,
+        "centerX": 109.9185
+      },
+      "org-names": {
+        "left": 71.79733333333333,
+        "top": 264.795,
+        "right": 131.14866666666666,
+        "bottom": 276.90233333333333,
+        "centerX": 101.473
+      },
+      "fa": {
+        "left": 136.18633333333332,
+        "top": 268.77433333333335,
+        "right": 140.67366666666666,
+        "bottom": 273.17699999999996,
+        "centerX": 138.43
+      },
+      "bu": {
+        "left": 143.72166666666666,
+        "top": 268.77433333333335,
+        "right": 148.16666666666666,
+        "bottom": 273.21933333333334,
+        "centerX": 145.94416666666666
+      },
+      "issued": {
+        "left": 24.976666666666667,
+        "top": 252.01033333333334,
+        "right": 63.41533333333333,
+        "bottom": 256.45533333333333,
+        "centerX": 44.196
+      },
+      "implementation": {
+        "left": 156.37933333333334,
+        "top": 252.05266666666665,
+        "right": 194.945,
+        "bottom": 256.49766666666665,
+        "centerX": 175.66216666666665
+      },
+      "ics-first": {
+        "left": 24.976666666666667,
+        "top": 10.033,
+        "right": 48.090666666666664,
+        "bottom": 12.784666666666666,
+        "centerX": 36.53366666666667
+      },
+      "ics-second": {
+        "left": 24.976666666666667,
+        "top": 14.816666666666666,
+        "right": 40.470666666666666,
+        "bottom": 17.56833333333333,
+        "centerX": 32.72366666666667
+      }
+    },
+    "rows": [
+      {
+        "id": "paper-width",
+        "mm": 210,
+        "from": "page.left",
+        "to": "page.right",
+        "axis": "x",
+        "description": "纸张宽度",
+        "measuredMm": 209.88866666666667,
+        "errorMm": -0.1113333333333344,
+        "status": "pass"
+      },
+      {
+        "id": "paper-height",
+        "mm": 297,
+        "from": "page.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "纸张高度",
+        "measuredMm": 297.0106666666666,
+        "errorMm": 0.01066666666662286,
+        "status": "pass"
+      },
+      {
+        "id": "ics-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "ics.left",
+        "axis": "x",
+        "description": "ICS 左端距纸左边",
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ics-top",
+        "mm": 10,
+        "from": "page.top",
+        "to": "ics.top",
+        "axis": "y",
+        "description": "ICS 上缘距纸顶",
+        "measuredMm": 10.033,
+        "errorMm": 0.032999999999999474,
+        "status": "pass"
+      },
+      {
+        "id": "logo-right-center",
+        "mm": 46,
+        "from": "logo.centerX",
+        "to": "page.right",
+        "axis": "x",
+        "description": "GB 图形中心线至纸右边",
+        "measuredMm": 45.97399999999999,
+        "errorMm": -0.02600000000001046,
+        "status": "pass"
+      },
+      {
+        "id": "logo-width",
+        "mm": 40,
+        "from": "logo.left",
+        "to": "logo.right",
+        "axis": "x",
+        "description": "GB 图形宽度",
+        "measuredMm": 39.96266666666665,
+        "errorMm": -0.03733333333335054,
+        "status": "pass"
+      },
+      {
+        "id": "logo-height",
+        "mm": 20,
+        "from": "logo.top",
+        "to": "logo.bottom",
+        "axis": "y",
+        "description": "GB 图形高度",
+        "measuredMm": 20.108333333333334,
+        "errorMm": 0.10833333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-top",
+        "mm": 75,
+        "from": "page.top",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "上部横线距纸顶",
+        "measuredMm": 74.88766666666666,
+        "errorMm": -0.11233333333333917,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-left",
+        "mm": 25,
+        "from": "page.left",
+        "to": "rule.left",
+        "axis": "x",
+        "description": "上部横线左端距纸左边",
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "upper-rule-width",
+        "mm": 170,
+        "from": "rule.left",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "上部横线长度",
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "banner-height",
+        "mm": 8,
+        "from": "head.top",
+        "to": "head.bottom",
+        "axis": "y",
+        "description": "国家标准横幅可见字高",
+        "measuredMm": 7.8316666666666706,
+        "errorMm": -0.16833333333332945,
+        "status": "pass"
+      },
+      {
+        "id": "banner-rule-gap",
+        "mm": 25,
+        "from": "head.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "横幅下缘至上部横线",
+        "measuredMm": 24.97666666666666,
+        "errorMm": -0.023333333333340533,
+        "status": "pass"
+      },
+      {
+        "id": "logo-rule-gap",
+        "mm": 42,
+        "from": "logo.bottom",
+        "to": "rule.top",
+        "axis": "y",
+        "description": "GB 图形下缘至上部横线",
+        "measuredMm": 41.825333333333326,
+        "errorMm": -0.17466666666667408,
+        "status": "pass"
+      },
+      {
+        "id": "banner-number-gap",
+        "mm": 9,
+        "from": "head.bottom",
+        "to": "stdno.top",
+        "axis": "y",
+        "description": "横幅下缘至文件编号上缘",
+        "measuredMm": 9.059333333333328,
+        "errorMm": 0.05933333333332769,
+        "status": "pass"
+      },
+      {
+        "id": "number-replacement-gap",
+        "mm": 3,
+        "from": "stdno.bottom",
+        "to": "sup.top",
+        "axis": "y",
+        "description": "文件编号下缘至被代替编号上缘",
+        "measuredMm": 3.005666666666663,
+        "errorMm": 0.005666666666662934,
+        "status": "pass"
+      },
+      {
+        "id": "replacement-right",
+        "mm": 5,
+        "from": "sup.right",
+        "to": "rule.right",
+        "axis": "x",
+        "description": "被代替编号末端至横线右端定位线",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "rule-title-gap",
+        "mm": 40,
+        "from": "rule.top",
+        "to": "cn.top",
+        "axis": "y",
+        "description": "上部横线至中文名称上缘",
+        "measuredMm": 40.08966666666667,
+        "errorMm": 0.08966666666667322,
+        "status": "pass"
+      },
+      {
+        "id": "title-translation-gap",
+        "mm": 10,
+        "from": "cn.bottom",
+        "to": "en.top",
+        "axis": "y",
+        "description": "中文名称下缘至英文译名上缘",
+        "measuredMm": 9.990666666666655,
+        "errorMm": -0.00933333333334474,
+        "status": "pass"
+      },
+      {
+        "id": "translation-equivalence-gap",
+        "mm": 15,
+        "from": "en.bottom",
+        "to": "iso.top",
+        "axis": "y",
+        "description": "英文译名下缘至一致性标识上缘",
+        "measuredMm": 14.943666666666672,
+        "errorMm": -0.05633333333332757,
+        "status": "pass"
+      },
+      {
+        "id": "date-rule-bottom",
+        "mm": 40,
+        "from": "date-rule.top",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "日期行下横线至纸底",
+        "measuredMm": 40.08966666666663,
+        "errorMm": 0.08966666666663059,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-bottom",
+        "mm": 20,
+        "from": "org-names.bottom",
+        "to": "page.bottom",
+        "axis": "y",
+        "description": "发布机构文字下缘至纸底",
+        "measuredMm": 20.10833333333329,
+        "errorMm": 0.10833333333329165,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-fa-gap",
+        "mm": 5,
+        "from": "org-names.right",
+        "to": "fa.left",
+        "axis": "x",
+        "description": "发布机构右缘至发字左缘",
+        "measuredMm": 5.0376666666666665,
+        "errorMm": 0.037666666666666515,
+        "status": "pass"
+      },
+      {
+        "id": "fa-bu-gap",
+        "mm": 3,
+        "from": "fa.right",
+        "to": "bu.left",
+        "axis": "x",
+        "description": "发字右缘至布字左缘",
+        "measuredMm": 3.048000000000002,
+        "errorMm": 0.04800000000000182,
+        "status": "pass"
+      },
+      {
+        "id": "number-rows-right-aligned",
+        "mm": 0,
+        "measuredMm": 0.04233333333331757,
+        "errorMm": 0.04233333333331757,
+        "status": "pass"
+      },
+      {
+        "id": "banner-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "banner-width",
+        "mm": 170,
+        "measuredMm": 169.96833333333333,
+        "errorMm": -0.03166666666666629,
+        "status": "pass"
+      },
+      {
+        "id": "ics-first-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "ccs-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "issued-left",
+        "mm": 25,
+        "measuredMm": 24.976666666666667,
+        "errorMm": -0.023333333333333428,
+        "status": "pass"
+      },
+      {
+        "id": "implementation-right",
+        "mm": 195,
+        "measuredMm": 194.945,
+        "errorMm": -0.05500000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-left",
+        "mm": 25,
+        "measuredMm": 24.849666666666668,
+        "errorMm": -0.15033333333333232,
+        "status": "pass"
+      },
+      {
+        "id": "lower-rule-width",
+        "mm": 170,
+        "measuredMm": 170.13766666666666,
+        "errorMm": 0.13766666666666083,
+        "status": "pass"
+      },
+      {
+        "id": "issuer-group-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "cn-center",
+        "mm": 110,
+        "measuredMm": 109.96083333333333,
+        "errorMm": -0.03916666666667368,
+        "status": "pass"
+      },
+      {
+        "id": "en-center",
+        "mm": 110,
+        "measuredMm": 109.982,
+        "errorMm": -0.018000000000000682,
+        "status": "pass"
+      },
+      {
+        "id": "iso-center",
+        "mm": 110,
+        "measuredMm": 110.02433333333333,
+        "errorMm": 0.024333333333331097,
+        "status": "pass"
+      }
+    ]
+  }
+]

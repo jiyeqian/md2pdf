@@ -480,7 +480,7 @@ function buildCover(fm, title, useDefaults = true) {
   const orgSrc = fm['发布单位'] ?? fm['发布机构'];
   const orgs = Array.isArray(orgSrc) ? orgSrc : (orgSrc ? [fmStr(orgSrc)] : []);
   const orgA = orgs[0] || (useDefaults ? '国家市场监督管理总局' : '');
-  const orgB = orgs[1] || fm['发布机构2'] || (useDefaults ? '国家标准化管理委员会' : '');
+  const orgB = orgs[1] || fm['发布机构2'] || (useDefaults && !orgSrc ? '国家标准化管理委员会' : '');
   // 「中华人民共和国国家标准」按字均分撑满两边距，短语间留一个双倍空位
   const head = (fm['文件类别'] || (useDefaults ? '中华人民共和国国家标准' : ''))
     .split('').map(c => '<span>' + esc(c) + '</span>').join('<i class="cover-head-gap"></i>');
