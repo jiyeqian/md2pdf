@@ -1,0 +1,669 @@
+{
+  "date": "2026-10-28",
+  "normative": {
+    "source": "/Users/jiyeqian/Workspace/md2pdf-research/gb/GB:T 1.1—2020_附录F_文件中使用的字号和字体.pdf",
+    "sha256": "cb1af83065e3898caa64abffe17e82d4e03f33183ef3ca2b362360536eb41206",
+    "printedPage": 58,
+    "rows": {
+      "09": "英文译名：四号黑体",
+      "10": "国际一致性程度标识：四号黑体"
+    },
+    "interpretation": "14pt unchanged; normative text does not specify the E-HZ implementation or a Latin substitute"
+  },
+  "samples": [
+    {
+      "file": "GB:T 1.1—2020.pdf",
+      "sha256": "6bbb84584c5bc3ec1c8eab767f12ca5b8e01d3af8db1251b347a41245b90b755",
+      "page": 1,
+      "interpretation": "scan with OCR; font names do not identify printed glyphs",
+      "fontFamilies": [
+        "TimesNewRomanPSMT",
+        "ArialMT",
+        "STSongti-TC",
+        "TimesNewRomanPS",
+        "TimesNewRomanPS",
+        "STSongti-TC",
+        "STSongti-TC",
+        "STSongti-TC",
+        "ArialMT",
+        "TimesNewRomanPSMT",
+        "STSongti-TC",
+        "STSongti-TC"
+      ],
+      "latinRuns": []
+    },
+    {
+      "file": "GB:T 1001.1—2021.pdf",
+      "sha256": "1048153cc1ab4e434d35f27a0f8f03b1805e374fbc6115dfc92d5ff9e4e33900",
+      "page": 1,
+      "interpretation": "digital text; inspect embedded outlines",
+      "fontFamilies": [
+        "NUCDEE+E-HZ",
+        "KUCDEE+E-FZ",
+        "LUCDEE+E-BZ",
+        "JUCDEE+FZXBSK--GBK1-0",
+        "NUCDEE+E-HZ",
+        "KUCDEE+E-FZ",
+        "LUCDEE+E-BZ",
+        "MUCDEE+FZHTK--GBK1-0",
+        "MUCDEE+FZHTK--GBK1-0",
+        "KUCDEE+E-FZ",
+        "NUCDEE+E-HZ",
+        "LUCDEE+E-BZ",
+        "MUCDEE+FZHTK--GBK1-0",
+        "JUCDEE+FZXBSK--GBK1-0"
+      ],
+      "latinRuns": [
+        {
+          "text": "ICS",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "15"
+        },
+        {
+          "text": "CCS K",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "15"
+        },
+        {
+          "text": "Insulatorsforoverheadl",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "ineswithanominalvoltageabove",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "Part",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "Ceramicorglassinsulatorunitsfora",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "systems",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "Definitions",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "testmethodsandacceptancecriteria",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "IEC",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "MOD",
+          "font": "NUCDEE+E-HZ",
+          "sizeXml": "20"
+        }
+      ]
+    },
+    {
+      "file": "GB:T 13000—2025.pdf",
+      "sha256": "84017a23c6f9aad77fd6af1a63cc21f6c9f351849523096dbbadaf70cd5cd36e",
+      "page": 1,
+      "interpretation": "digital text; inspect embedded outlines",
+      "fontFamilies": [
+        "PBCDEE+E-HZ",
+        "SBCDEE+E-FZ",
+        "TBCDEE+E-BZ",
+        "QBCDEE+FZXBSK--GBK1-0",
+        "PBCDEE+E-HZ",
+        "SBCDEE+E-FZ",
+        "OBCDEE+FZHTK--GBK1-0",
+        "OBCDEE+FZHTK--GBK1-0",
+        "TBCDEE+E-BZ",
+        "PBCDEE+E-HZ",
+        "TBCDEE+E-BZ",
+        "OBCDEE+FZHTK--GBK1-0",
+        "QBCDEE+FZXBSK--GBK1-0"
+      ],
+      "latinRuns": [
+        {
+          "text": "ICS",
+          "font": "PBCDEE+E-HZ",
+          "sizeXml": "15"
+        },
+        {
+          "text": "CCS L",
+          "font": "PBCDEE+E-HZ",
+          "sizeXml": "15"
+        },
+        {
+          "text": "UCS",
+          "font": "PBCDEE+E-HZ",
+          "sizeXml": "39"
+        },
+        {
+          "text": "Informationtechnology",
+          "font": "PBCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "Universalcodedcharacterset",
+          "font": "PBCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "UCS",
+          "font": "PBCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "ISO",
+          "font": "PBCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "IEC",
+          "font": "PBCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "MOD",
+          "font": "PBCDEE+E-HZ",
+          "sizeXml": "20"
+        }
+      ]
+    },
+    {
+      "file": "GB:T 24067—2024.pdf",
+      "sha256": "a64e5a959ae66a7f5f9bd7522197752068990abb297b91fb29236c911f1ff13d",
+      "page": 1,
+      "interpretation": "scan without text fonts",
+      "fontFamilies": [],
+      "latinRuns": []
+    },
+    {
+      "file": "GB:T 42452—2023.pdf",
+      "sha256": "0ccc46fec10feff6d1f6842034128f5c743d18bb81b9866694c303b4330d7b34",
+      "page": 1,
+      "interpretation": "digital text; inspect embedded outlines",
+      "fontFamilies": [
+        "KUCDEE+E-HZ",
+        "IUCDEE+E-FZ",
+        "JUCDEE+E-BZ",
+        "LUCDEE+FZXBSK--GBK1-0",
+        "KUCDEE+E-HZ",
+        "IUCDEE+E-FZ",
+        "JUCDEE+E-BZ",
+        "MUCDEE+FZHTK--GBK1-0",
+        "JUCDEE+E-BZ",
+        "KUCDEE+E-HZ",
+        "MUCDEE+FZHTK--GBK1-0",
+        "LUCDEE+FZXBSK--GBK1-0"
+      ],
+      "latinRuns": [
+        {
+          "text": "ICS",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "15"
+        },
+        {
+          "text": "CCS L",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "15"
+        },
+        {
+          "text": "ISO",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "IEC",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "COSMIC",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "39"
+        },
+        {
+          "text": "Systemsandsoftwareengineering",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "Functionalsizemeasurement",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "COSMICmethod",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "ISO",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "IEC",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "Softwareengineering",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "COSMIC",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "afunctional",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "sizemeasurementmethod",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "IDT",
+          "font": "KUCDEE+E-HZ",
+          "sizeXml": "20"
+        }
+      ]
+    },
+    {
+      "file": "GB:T 48316—2026.pdf",
+      "sha256": "ea30418a73978baa7ad3209204a1c31826c99f49627888d776f08008685e5a2a",
+      "page": 1,
+      "interpretation": "digital text; inspect embedded outlines",
+      "fontFamilies": [
+        "DBCDEE+E-HZ",
+        "EBCDEE+E-FZ",
+        "FBCDEE+E-BZ",
+        "BBCDEE+FZXBSK--GBK1-0",
+        "DBCDEE+E-HZ",
+        "EBCDEE+E-FZ",
+        "HBCDEE+FZHTK--GBK1-0",
+        "FBCDEE+E-BZ",
+        "HBCDEE+FZHTK--GBK1-0",
+        "BBCDEE+FZXBSK--GBK1-0"
+      ],
+      "latinRuns": [
+        {
+          "text": "ICS",
+          "font": "DBCDEE+E-HZ",
+          "sizeXml": "15"
+        },
+        {
+          "text": "CCSJ",
+          "font": "DBCDEE+E-HZ",
+          "sizeXml": "15"
+        },
+        {
+          "text": "Humanoidrobots",
+          "font": "DBCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "Technicalspecificationofsimulationtestingplatform",
+          "font": "DBCDEE+E-HZ",
+          "sizeXml": "20"
+        }
+      ]
+    },
+    {
+      "file": "GB:T 7714—2015.pdf",
+      "sha256": "2c420a951bd13da991dc419145f3248ccd904a0a280885bbae4ec18cafa46fcd",
+      "page": 1,
+      "interpretation": "digital text; inspect embedded outlines",
+      "fontFamilies": [
+        "GGCDEE+E-HZ",
+        "JGCDEE+E-FZ",
+        "HGCDEE+E-BZ",
+        "EGCDEE+FZXBSK--GBK1-0",
+        "GGCDEE+E-HZ",
+        "JGCDEE+E-FZ",
+        "FGCDEE+FZSSK--GBK1-0",
+        "IGCDEE+FZHTK--GBK1-0",
+        "HGCDEE+E-BZ",
+        "HGCDEE+E-BZ",
+        "IGCDEE+FZHTK--GBK1-0",
+        "EGCDEE+FZXBSK--GBK1-0"
+      ],
+      "latinRuns": [
+        {
+          "text": "ICS",
+          "font": "GGCDEE+E-HZ",
+          "sizeXml": "15"
+        },
+        {
+          "text": "Informationanddocumentation",
+          "font": "GGCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "Rulesforbibl",
+          "font": "GGCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "iographicreferences",
+          "font": "GGCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "andcitationstoinformationresources",
+          "font": "GGCDEE+E-HZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "ISO690:",
+          "font": "HGCDEE+E-BZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "Informationanddocumentation—Guidelinesfor",
+          "font": "HGCDEE+E-BZ",
+          "sizeXml": "20"
+        },
+        {
+          "text": "bibliographicreferencesandcitationstoinformationresources,NEQ)",
+          "font": "HGCDEE+E-BZ",
+          "sizeXml": "20"
+        }
+      ]
+    }
+  ],
+  "outlineReference": {
+    "file": "GB:T 48316—2026.pdf",
+    "sha256": "ea30418a73978baa7ad3209204a1c31826c99f49627888d776f08008685e5a2a",
+    "page": 1,
+    "fontResource": "/F0",
+    "pdfFont": "DBCDEE+E-HZ",
+    "fontStreamSha256": "76858d05075047e0a19c3a6d8537c93ce06b4ac3d69e14c814a1cb78d958907b",
+    "subset": "34 nonempty glyphs, 33 ToUnicode mappings; incomplete Latin alphabet, not a reusable complete font"
+  },
+  "method": "CoreText directly loads font file bytes; 8 paths normalized independently to their visible bounding boxes; antialiased grayscale min/max intersection-over-union at 256x256. This tests shape, not advances, font identity, size, spacing or permission. Different path point counts and IoU below 1 preclude claiming identical glyphs.",
+  "candidates": {
+    "FZHeiGBK": {
+      "file": "/Users/jiyeqian/Library/Fonts/方正黑体_GBK-Regular.otf",
+      "sha256": "ef9b18d017689c8d10cfd4668c29dc9f58b2288b0e0d9a512511e24dc93b6720",
+      "glyphs": {
+        "A": {
+          "sourceGlyphId": 2576,
+          "candidateGlyphId": 34,
+          "sourcePathPoints": 29,
+          "candidatePathPoints": 12,
+          "normalizedRasterIoU": 0.4048053994657345
+        },
+        "H": {
+          "sourceGlyphId": 2584,
+          "candidateGlyphId": 41,
+          "sourcePathPoints": 50,
+          "candidatePathPoints": 12,
+          "normalizedRasterIoU": 0.2427999276986516
+        },
+        "T": {
+          "sourceGlyphId": 2597,
+          "candidateGlyphId": 53,
+          "sourcePathPoints": 28,
+          "candidatePathPoints": 8,
+          "normalizedRasterIoU": 0.5893707318886896
+        },
+        "a": {
+          "sourceGlyphId": 2612,
+          "candidateGlyphId": 66,
+          "sourcePathPoints": 65,
+          "candidatePathPoints": 43,
+          "normalizedRasterIoU": 0.5984453495431764
+        },
+        "e": {
+          "sourceGlyphId": 2617,
+          "candidateGlyphId": 70,
+          "sourcePathPoints": 39,
+          "candidatePathPoints": 23,
+          "normalizedRasterIoU": 0.5720205042178216
+        },
+        "n": {
+          "sourceGlyphId": 2628,
+          "candidateGlyphId": 79,
+          "sourcePathPoints": 38,
+          "candidatePathPoints": 17,
+          "normalizedRasterIoU": 0.3990324196232603
+        },
+        "o": {
+          "sourceGlyphId": 2629,
+          "candidateGlyphId": 80,
+          "sourcePathPoints": 37,
+          "candidatePathPoints": 18,
+          "normalizedRasterIoU": 0.6639765398289712
+        },
+        "s": {
+          "sourceGlyphId": 2634,
+          "candidateGlyphId": 84,
+          "sourcePathPoints": 54,
+          "candidatePathPoints": 29,
+          "normalizedRasterIoU": 0.6192709266384657
+        }
+      },
+      "minIoU": 0.2427999276986516,
+      "maxIoU": 0.6639765398289712,
+      "meanIoU": 0.5112152248630963
+    },
+    "FZXiaoBiaoGBK": {
+      "file": "/Users/jiyeqian/Library/Fonts/方正小标宋_GBK-Regular.otf",
+      "sha256": "f1a49929525d3f7b881b44517739e89d32bc3a25719201fd853d07d26297e882",
+      "glyphs": {
+        "A": {
+          "sourceGlyphId": 2576,
+          "candidateGlyphId": 34,
+          "sourcePathPoints": 29,
+          "candidatePathPoints": 30,
+          "normalizedRasterIoU": 0.9247285260970337
+        },
+        "H": {
+          "sourceGlyphId": 2584,
+          "candidateGlyphId": 41,
+          "sourcePathPoints": 50,
+          "candidatePathPoints": 37,
+          "normalizedRasterIoU": 0.9102782537243955
+        },
+        "T": {
+          "sourceGlyphId": 2597,
+          "candidateGlyphId": 53,
+          "sourcePathPoints": 28,
+          "candidatePathPoints": 19,
+          "normalizedRasterIoU": 0.9176214595575621
+        },
+        "a": {
+          "sourceGlyphId": 2612,
+          "candidateGlyphId": 66,
+          "sourcePathPoints": 65,
+          "candidatePathPoints": 44,
+          "normalizedRasterIoU": 0.8782649728469185
+        },
+        "e": {
+          "sourceGlyphId": 2617,
+          "candidateGlyphId": 70,
+          "sourcePathPoints": 39,
+          "candidatePathPoints": 23,
+          "normalizedRasterIoU": 0.8951419454566537
+        },
+        "n": {
+          "sourceGlyphId": 2628,
+          "candidateGlyphId": 79,
+          "sourcePathPoints": 38,
+          "candidatePathPoints": 33,
+          "normalizedRasterIoU": 0.9267295692354615
+        },
+        "o": {
+          "sourceGlyphId": 2629,
+          "candidateGlyphId": 80,
+          "sourcePathPoints": 37,
+          "candidatePathPoints": 18,
+          "normalizedRasterIoU": 0.9438206822467563
+        },
+        "s": {
+          "sourceGlyphId": 2634,
+          "candidateGlyphId": 84,
+          "sourcePathPoints": 54,
+          "candidatePathPoints": 38,
+          "normalizedRasterIoU": 0.8695989300758603
+        }
+      },
+      "minIoU": 0.8695989300758603,
+      "maxIoU": 0.9438206822467563,
+      "meanIoU": 0.9082730424050802
+    },
+    "FZXiaoBiaoProvided": {
+      "file": "/Users/jiyeqian/Workspace/md2pdf-research/gb/Fonts/方正小标宋简体.ttf",
+      "sha256": "c52d577dd3aa719ef5fb9ff2043b7f7ca36fae468ef34a47628a3a555d006a49",
+      "glyphs": {
+        "A": {
+          "sourceGlyphId": 2576,
+          "candidateGlyphId": 34,
+          "sourcePathPoints": 29,
+          "candidatePathPoints": 30,
+          "normalizedRasterIoU": 0.9235971263064464
+        },
+        "H": {
+          "sourceGlyphId": 2584,
+          "candidateGlyphId": 41,
+          "sourcePathPoints": 50,
+          "candidatePathPoints": 37,
+          "normalizedRasterIoU": 0.9110023107718204
+        },
+        "T": {
+          "sourceGlyphId": 2597,
+          "candidateGlyphId": 53,
+          "sourcePathPoints": 28,
+          "candidatePathPoints": 19,
+          "normalizedRasterIoU": 0.9196071183606344
+        },
+        "a": {
+          "sourceGlyphId": 2612,
+          "candidateGlyphId": 66,
+          "sourcePathPoints": 65,
+          "candidatePathPoints": 44,
+          "normalizedRasterIoU": 0.870887874264118
+        },
+        "e": {
+          "sourceGlyphId": 2617,
+          "candidateGlyphId": 70,
+          "sourcePathPoints": 39,
+          "candidatePathPoints": 23,
+          "normalizedRasterIoU": 0.8979810636208686
+        },
+        "n": {
+          "sourceGlyphId": 2628,
+          "candidateGlyphId": 79,
+          "sourcePathPoints": 38,
+          "candidatePathPoints": 33,
+          "normalizedRasterIoU": 0.92724027011526
+        },
+        "o": {
+          "sourceGlyphId": 2629,
+          "candidateGlyphId": 80,
+          "sourcePathPoints": 37,
+          "candidatePathPoints": 18,
+          "normalizedRasterIoU": 0.9511508084393006
+        },
+        "s": {
+          "sourceGlyphId": 2634,
+          "candidateGlyphId": 84,
+          "sourcePathPoints": 54,
+          "candidatePathPoints": 38,
+          "normalizedRasterIoU": 0.8845250604574034
+        }
+      },
+      "minIoU": 0.870887874264118,
+      "maxIoU": 0.9511508084393006,
+      "meanIoU": 0.9107489540419814
+    },
+    "TimesBold": {
+      "file": "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+      "sha256": "50f5b1f27b7d34621090e437e8b1dd4510a22d2823fc876b3286bed327b64bbb",
+      "glyphs": {
+        "A": {
+          "sourceGlyphId": 2576,
+          "candidateGlyphId": 36,
+          "sourcePathPoints": 29,
+          "candidatePathPoints": 38,
+          "normalizedRasterIoU": 0.8679819302873536
+        },
+        "H": {
+          "sourceGlyphId": 2584,
+          "candidateGlyphId": 43,
+          "sourcePathPoints": 50,
+          "candidatePathPoints": 76,
+          "normalizedRasterIoU": 0.9019948610775408
+        },
+        "T": {
+          "sourceGlyphId": 2597,
+          "candidateGlyphId": 55,
+          "sourcePathPoints": 28,
+          "candidatePathPoints": 36,
+          "normalizedRasterIoU": 0.9357285323713197
+        },
+        "a": {
+          "sourceGlyphId": 2612,
+          "candidateGlyphId": 68,
+          "sourcePathPoints": 65,
+          "candidatePathPoints": 76,
+          "normalizedRasterIoU": 0.8302306527272887
+        },
+        "e": {
+          "sourceGlyphId": 2617,
+          "candidateGlyphId": 72,
+          "sourcePathPoints": 39,
+          "candidatePathPoints": 39,
+          "normalizedRasterIoU": 0.8865187860537018
+        },
+        "n": {
+          "sourceGlyphId": 2628,
+          "candidateGlyphId": 81,
+          "sourcePathPoints": 38,
+          "candidatePathPoints": 51,
+          "normalizedRasterIoU": 0.9176431392306317
+        },
+        "o": {
+          "sourceGlyphId": 2629,
+          "candidateGlyphId": 82,
+          "sourcePathPoints": 37,
+          "candidatePathPoints": 44,
+          "normalizedRasterIoU": 0.9069789800269217
+        },
+        "s": {
+          "sourceGlyphId": 2634,
+          "candidateGlyphId": 86,
+          "sourcePathPoints": 54,
+          "candidatePathPoints": 62,
+          "normalizedRasterIoU": 0.8156824588490483
+        }
+      },
+      "minIoU": 0.8156824588490483,
+      "maxIoU": 0.9357285323713197,
+      "meanIoU": 0.8828449175779758
+    }
+  },
+  "decision": {
+    "scope": "cover ASCII letters A-Z/a-z and U+002D only",
+    "localFace": "FZXBSK--GBK1-0",
+    "cssAlias": "GB Cover Latin",
+    "status": "closer visual approximation; original complete E-HZ font unidentified",
+    "preserved": "CJK, digits, other punctuation, body fonts, prescribed point sizes; no font binary shipped"
+  }
+}

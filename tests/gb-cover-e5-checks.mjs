@@ -67,6 +67,21 @@ try {
       assert.equal(state.error,null);
       await writeFile(prefix+'-boxes.json',JSON.stringify(state,null,2));
       run('pdfseparate',['-f','1','-l','1',prefix+'-full.pdf',prefix+'-%d.pdf']);
+      const xml=run('pdftohtml',['-f','1','-l','1','-xml','-i','-stdout',prefix+'-1.pdf']);
+      const families=Object.fromEntries([...xml.matchAll(/<fontspec id="(\d+)"[^>]*family="([^"]+)"/g)].map(m=>[m[1],m[2]]));
+      const textRuns=[...xml.matchAll(/<text\b[^>]*font="(\d+)"[^>]*>([\s\S]*?)<\/text>/g)].map(m=>({font:families[m[1]],text:m[2]}));
+      const expectFont=(text,font)=>assert.ok(textRuns.some(r=>r.text.includes(text)&&r.font.includes(font)),`${name}/${runtime}: ${text} uses ${font} in actual PDF`);
+      expectFont('ICS','FZXBSK--GBK1-0');
+      if(name==='example') {
+        expectFont('Technical','FZXBSK--GBK1-0');
+        expectFont('Robotics','FZXBSK--GBK1-0');
+        expectFont('-','FZXBSK--GBK1-0');
+        expectFont('10218','FZHTK--GBK1-0');
+        expectFont('—','FZHTK--GBK1-0');
+        expectFont('39999','FZHTK--GBK1-0');
+        expectFont('仿生机械手','FZHTK--GBK1-0');
+      } else expectFont('标准名称的英文译名','FZHTK--GBK1-0');
+      await writeFile(prefix+'-font-runs.json',JSON.stringify(textRuns,null,2));
       run('pdftoppm',['-f','1','-singlefile','-r','600','-png',prefix+'-1.pdf',prefix]);
       if(runtime!=='static'){run('pdftoppm',['-f','1','-singlefile','-r','600','-png',prefix+'-locator.pdf',prefix+'-locator']);assert.ok((await readFile(prefix+'.png')).equals(await readFile(prefix+'-locator.png')),runtime+': production and locator first-page raster identical');}
       const ink=JSON.parse(run('python3',[new URL('./gb-cover-e5-ink.py',import.meta.url).pathname,prefix+'.png',prefix+'-boxes.json']));

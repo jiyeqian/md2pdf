@@ -14,6 +14,7 @@
 - `GB Song` → 本机 `方正书宋_GBK`，PostScript 名 `FZSSK--GBK1-0`。
 - `GB Hei` → 本机 `方正黑体_GBK`，PostScript 名 `FZHTK--GBK1-0`。
 - `GB Cover` → 本机 `方正小标宋_GBK`，PostScript 名 `FZXBSK--GBK1-0`，仅专用字候选。
+- 2026-10-28 增加封面专用 `GB Cover Latin` 别名，复用同一本机小标宋，仅覆盖 ASCII 字母和连字符；用于接近 E-HZ 样本的粗衬线拉丁字形，保留其他字体与字号。仍是近似候选，详见[字体核对](gb-cover-fonts.md)。
 - 字体通过 `local()` 使用，没有复制到仓库、包或静态目录；三个字体缺失时停止预览／导出，避免静默回退。
 - PDF 的 `pdffonts` 结果确认以上字体嵌入子集，字体不作为可下载的网页资源分发。
 

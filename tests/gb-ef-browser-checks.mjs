@@ -75,6 +75,11 @@ try {
     for (const font of ['FZSSK--GBK1-0','FZHTK--GBK1-0','FZXBSK--GBK1-0']) assert.ok(fonts.includes(font), `${name}: embedded ${font}`);
     assert.ok(fonts.split('\n').filter(line=>line.includes('--GBK1-0')).every(line=>/yes\s+yes\s+yes/.test(line)), `${name}: required font subsets embedded`);
     await writeFile(path.join(out, `gb-ef-${name}-fonts.txt`), fonts);
+    const xml=run('pdftohtml',['-xml','-i','-stdout',pdfPath]);
+    const xmlFonts=Object.fromEntries([...xml.matchAll(/<fontspec id="(\d+)"[^>]*family="([^"]+)"/g)].map(m=>[m[1],m[2]]));
+    const textRuns=[...xml.matchAll(/<text\b[^>]*font="(\d+)"[^>]*>([\s\S]*?)<\/text>/g)].map(m=>({font:xmlFonts[m[1]],text:m[2]}));
+    assert.ok(textRuns.some(r=>r.text.includes('Comprehensive')&&r.font.includes('FZXBSK--GBK1-0')),`${name}: cover English uses serif candidate`);
+    assert.ok(textRuns.some(r=>r.text.includes('BODY_START')&&r.font.includes('FZSSK--GBK1-0')),`${name}: body Latin keeps Song face`);
     const text = run('pdftotext', ['-layout', pdfPath, '-']);
     await writeFile(path.join(out, `gb-ef-${name}.txt`), text);
     extracted.push(text);
@@ -181,6 +186,9 @@ try {
   const printable = await staticRuntime.renderDocument({md,opts},false);
   const missingFontHtml = printable.html.replace('local("FZHTK--GBK1-0"), local("方正黑体_GBK")', 'local("MD2PDF Nonexistent GB Font")');
   for (const webSafe of [true,false]) await assert.rejects(chrome.printHtml(missingFontHtml,{...core.printOptions,webSafe,waitPaged:true}),/Document rendering failed/,'missing required local font must fail');
+  const missingLatinHtml=printable.html.replace('font-family: "GB Cover Latin"; src: local("FZXBSK--GBK1-0"), local("方正小标宋_GBK")','font-family: "GB Cover Latin"; src: local("MD2PDF Nonexistent Cover Latin")');
+  assert.notEqual(missingLatinHtml,printable.html,'negative case replaces the cover Latin face');
+  await assert.rejects(chrome.printHtml(missingLatinHtml,{...core.printOptions,webSafe:true,waitPaged:true}),/Document rendering failed/,'missing cover Latin face must not silently revert to sans-serif');
   const overlong = await staticRuntime.renderDocument({md:md.replace(/^发布日期:.*$/m,'').replace(/^实施日期:.*$/m,'').replace('国家标准排版综合验收方法','超长标准名称'.repeat(80)),opts},false);
   await assert.rejects(chrome.printHtml(overlong.html,{...core.printOptions,webSafe:true,waitPaged:true}),/Document rendering failed/,'overlong cover must not overlap issuer when dates absent');
   for (const [label, invalidMd] of [

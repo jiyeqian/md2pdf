@@ -860,7 +860,7 @@ export async function render(src, options = {}, context = {}) {
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
-    profile.gbDoc ? '  function start() { Promise.all([document.fonts.load(\'10.5pt \"GB Song\"\'), document.fonts.load(\'10.5pt \"GB Hei\"\'), document.fonts.load(\'17pt \"GB Cover\"\')]).then(function (faces) { if (faces.some(function (list) { return !list.length; })) throw new Error(\'国家标准所需本机字体未加载，请安装方正书宋_GBK、方正黑体_GBK和方正小标宋_GBK\'); return document.fonts.ready; }).then(run).catch(function (error) { window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
+    profile.gbDoc ? '  function start() { Promise.all([document.fonts.load(\'10.5pt \"GB Song\"\'), document.fonts.load(\'10.5pt \"GB Hei\"\'), document.fonts.load(\'17pt \"GB Cover\"\'), document.fonts.load(\'14pt \"GB Cover Latin\"\', \'ABCabc-\')]).then(function (faces) { if (faces.some(function (list) { return !list.length; })) throw new Error(\'国家标准所需本机字体未加载，请安装方正书宋_GBK、方正黑体_GBK和方正小标宋_GBK\'); return document.fonts.ready; }).then(run).catch(function (error) { window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
     '  if (document.readyState === "complete") start(); else window.addEventListener("load", start);',
     '})();',
     '</script>',
@@ -881,7 +881,7 @@ export async function render(src, options = {}, context = {}) {
         .join('\n')
     : '';
   // 预览的页码修正也必须尊重自定义/隐藏的中间页脚。
-  const headMeta = gbMeta + (profile.gbDoc ? '\n<meta name="md2pdf-gb-cover-glyphs" content="local-test-candidate-unverified">' : '') + '\n<meta name="md2pdf-page-count" content="' +
+  const headMeta = gbMeta + (profile.gbDoc ? '\n<meta name="md2pdf-gb-cover-glyphs" content="local-test-candidate-unverified">\n<meta name="md2pdf-gb-cover-latin" content="FZXBSK-GBK-outline-compared-approximation">' : '') + '\n<meta name="md2pdf-page-count" content="' +
     (!profile.gbDoc && eff.footer !== false && eff.footerCenter === undefined ? 'auto' : 'off') + '">';
 
   let shell = await readFile(path.join(ASSETS, 'shell.html'), 'utf8');

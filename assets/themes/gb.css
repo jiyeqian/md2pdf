@@ -5,6 +5,9 @@
 @font-face { font-family: "GB Song"; src: local("FZSSK--GBK1-0"), local("方正书宋_GBK"); font-weight: 400; font-style: normal; }
 @font-face { font-family: "GB Hei"; src: local("FZHTK--GBK1-0"), local("方正黑体_GBK"); font-weight: 400; font-style: normal; }
 @font-face { font-family: "GB Cover"; src: local("FZXBSK--GBK1-0"), local("方正小标宋_GBK"); font-weight: 400; font-style: normal; }
+/* 数字封面的 E-HZ 拉丁字形为粗衬线；本机小标宋在已测候选中较接近，仍为近似候选。
+ * 仅替换 ASCII 字母和连字符，数字、其他标点和汉字继续使用黑体。 */
+@font-face { font-family: "GB Cover Latin"; src: local("FZXBSK--GBK1-0"), local("方正小标宋_GBK"); font-weight: 400; font-style: normal; unicode-range: U+002D, U+0041-005A, U+0061-007A; }
 :root {
   --ink: #000; --ink-soft: #000; --accent: #000; --accent-soft: #999;
   --paper: #fff; --tint: #fff; --rule: #000; --text: #000; --muted: #000;
@@ -87,6 +90,8 @@ body { font-size: 10.5pt; line-height: 1.62; text-align: justify; }
 .cover-org-name { width: fit-content; margin: 0 auto; }
 .cover-org-pub { display: inline-flex; gap: 3mm; flex: none;
   margin: 0; font: 14pt/1 var(--font-head); white-space: nowrap; }
+.cover-ics, .cover-stdno, .cover-sup, .cover-cn, .cover-en, .cover-iso,
+.cover-dates, .cover-org-pub { font-family: "GB Cover Latin", var(--font-head); }
 
 /* 命名页仅随实际章节切换，避免 main/前置节重复产生空页。 */
 .toc { page: gb-front; counter-reset: page 1; break-before: right; }
