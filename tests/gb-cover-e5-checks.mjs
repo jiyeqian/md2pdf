@@ -46,7 +46,7 @@ try {
       const prefix = `${out}/${name}-${runtime}`;
       if(runtime==='cli') execFileSync(process.execPath,['src/md2pdf.mjs',`${out}/${name}.md`,'--html-only','--type','gb','--paged-html=','-o',prefix+'.html'],{stdio:'pipe'});
       else await writeFile(prefix+'.html',html);
-      await writeFile(prefix+'-full.pdf',await (runtime==='cli' ? chrome.print(prefix+'.html',{...core.printOptions,waitPaged:true}) : chrome.printHtml(html,{...core.printOptions,webSafe:true,waitPaged:true}))); 
+      await writeFile(prefix+'-full.pdf',await (runtime==='cli' ? chrome.print(prefix+'.html',{...core.printOptions,waitPaged:true}) : chrome.printHtml(html,{...core.printOptions,webSafe:true,waitPaged:true})));
       await writeFile(prefix+'-locator.pdf',await readFile(prefix+'-full.pdf'));
       if(runtime==='cli')execFileSync(process.execPath,['src/md2pdf.mjs',`${out}/${name}.md`,'--type','gb','-o',prefix+'-full.pdf'],{stdio:'pipe'});
       if(runtime==='node'){const pdfResponse=await nativeFetch(base+'/api/pdf',{method:'POST',headers:{'Content-Type':'application/json'},body});assert.equal(pdfResponse.status,200,await pdfResponse.clone().text());await writeFile(prefix+'-full.pdf',Buffer.from(await pdfResponse.arrayBuffer()));}
