@@ -103,6 +103,8 @@ try {
     const firstText = (root, tag, text) => [...root.querySelectorAll(tag)].find(e => e.textContent.trim().includes(text));
     return {
       error:window.__md2pdfPagedError || null,
+      cover:Object.fromEntries(['head','stdno','sup','rule','date-rule','org-names','org-pub'].map(name=>[name,rect(document.querySelector('.pagedjs_pages .cover-'+name))])),
+      publish:[...document.querySelectorAll('.pagedjs_pages .cover-org-pub > span')].map(rect),
       pages:pages.map((p,i) => ({number:i+1,blank:p.classList.contains('pagedjs_blank_page'),name:p.className,
         box:rect(p.querySelector('.pagedjs_pagebox') || p),area:rect(p.querySelector('.pagedjs_area')),
         text:p.querySelector('.pagedjs_page_content')?.innerText || '',
@@ -125,6 +127,15 @@ try {
   })()`);
   await writeFile(path.join(out, 'gb-ef-browser.json'), JSON.stringify(state, null, 2));
   assert.equal(state.error, null, 'Paged.js completed');
+  const coverOrigin=state.pages[0].box;
+  near(state.cover.stdno.right,state.cover.sup.right,.2,'cover number rows right aligned');
+  for(const role of ['stdno','sup']) near(state.cover.rule.right-state.cover[role].right,px(5),.3,`cover ${role} 5 mm inside rule end`);
+  near(state.cover.rule.y-coverOrigin.y,px(75),.3,'upper cover rule at 75 mm');
+  near(state.cover.sup.y-state.cover.stdno.bottom,px(3),.3,'number rows gap 3 mm');
+  near(state.cover.stdno.y-state.cover.head.bottom,px(9),.3,'number 9 mm below banner');
+  near(coverOrigin.bottom-state.cover['date-rule'].y,px(40),.3,'date rule 40 mm from bottom');
+  near(state.publish[0].x-state.cover['org-names'].right,px(5),.3,'issuer to 发 gap 5 mm');
+  near(state.publish[1].x-state.publish[0].right,px(3),.3,'发 to 布 gap 3 mm');
   assert.ok(state.pages.at(-1).name.includes('gb-back-cover'), 'back cover is the last sheet, without a trailing empty page');
   assert.ok(state.pages.length >= 7, 'covers front matter, multi-page body and back matter');
   assert.equal(state.index.marker,'none','index has no list marker');

@@ -501,17 +501,17 @@ function buildCover(fm, title, useDefaults = true) {
     icsHtml,
     '<img class="cover-logo" src="' + logoUrl + '" alt="GB">',
     '  <div class="cover-head">' + head + '</div>',
-    '  <div class="cover-stdno">' + coverNumber(stdno) + '</div>',
-    supHtml,
+    '  <div class="cover-numbers"><div class="cover-stdno">' + coverNumber(stdno) + '</div>' + supHtml + '</div>',
     '  <div class="cover-rule"></div>',
     '  <div class="cover-main"><div class="cover-cn">' + esc(cn) + '</div>' +
       (en ? '<div class="cover-en">' + esc(en) + '</div>' : '') +
       isoHtml + '</div>',
     '  <div class="cover-foot">',
     datesHtml,
-    '  <div class="cover-org"><div class="cover-org-name">' + esc(orgA) + '</div>' +
-      '<div class="cover-org-pub">' + ((orgA || orgB) ? '发 布' : '') + '</div>' +
-      '<div class="cover-org-name">' + esc(orgB) + '</div></div>',
+    (datesHtml ? '<div class="cover-date-rule"></div>' : ''),
+    '  <div class="cover-org"><div class="cover-org-names"><div class="cover-org-name">' + esc(orgA) + '</div>' +
+      '<div class="cover-org-name">' + esc(orgB) + '</div></div>' +
+      ((orgA || orgB) ? '<div class="cover-org-pub"><span>发</span><span>布</span></div>' : '') + '</div>',
     '  </div>',
     '</section>',
   ].filter(Boolean).join('\n');

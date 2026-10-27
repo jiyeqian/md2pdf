@@ -63,20 +63,26 @@ body { font-size: 10.5pt; line-height: 1.62; text-align: justify; }
 .cover-head { position: absolute; top: 42mm; left: 25mm; width: 170mm; height: 8mm;
   display: flex; justify-content: space-between; font: 22.67717pt/1 var(--font-title); }
 .cover-head i { display: none; }
-.cover-stdno { position: absolute; top: 59mm; right: 15mm; font: 14pt/1 var(--font-head); }
-.cover-sup { position: absolute; top: 67mm; right: 20mm; font: 10.5pt/1 var(--font-head); }
+.cover-numbers { position: absolute; top: 59mm; right: 20mm;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 3mm; }
+.cover-stdno { font: 14pt/1 var(--font-head); }
+.cover-sup { font: 10.5pt/1 var(--font-head); }
 .cover-rule { position: absolute; top: 75mm; left: 25mm; width: 170mm; height: 1pt; background: #000; margin: 0; }
 .cover-main { position: absolute; top: 115mm; left: 25mm; width: 170mm; }
 .cover-cn { font: 26pt/calc(26pt + 3mm) var(--font-head); font-weight: 400; }
 .cover-en { font: 14pt/1.3 var(--font-head); margin-top: 10mm; }
 .cover-iso { font: 14pt/1.3 var(--font-head); margin: 15mm auto 0; max-width: 100%; }
 .cover-foot { position: absolute; inset: 0; margin: 0 !important; }
-.cover-dates { position: absolute; bottom: 40mm; left: 25mm; width: 170mm; display: flex; justify-content: space-between;
+.cover-dates { position: absolute; bottom: 41.5mm; left: 25mm; width: 170mm; display: flex; justify-content: space-between;
   font: 14pt/1 var(--font-head); padding: 0; border: none; }
 .cover-org { position: absolute; bottom: 20mm; left: 25mm; width: 170mm;
   font: 17pt/18pt var(--font-title); text-align: center; padding: 0; margin: 0; }
+.cover-date-rule { position: absolute; top: 257mm; left: 25mm; width: 170mm;
+  height: 1pt; background: #000; }
+.cover-org { display: flex; justify-content: center; align-items: center; gap: 5mm; }
+.cover-org-names { flex: none; }
 .cover-org-name { width: fit-content; margin: 0 auto; }
-.cover-org-pub { position: absolute; left: calc(50% + 53mm); top: 50%; transform: translateY(-50%);
+.cover-org-pub { display: inline-flex; gap: 3mm; flex: none;
   margin: 0; font: 14pt/1 var(--font-head); white-space: nowrap; }
 
 /* 命名页仅随实际章节切换，避免 main/前置节重复产生空页。 */
