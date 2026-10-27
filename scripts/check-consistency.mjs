@@ -69,7 +69,7 @@ try {
     console.log(`✓ ${type}: CLI HTML、共用核心、Node API、静态预览与配置一致`);
   }
   for (const mode of ['continuous', 'page', 'odd-page']) {
-    const md = `---\nchapter-start: ${mode}\n---\n# Pagination\n\n## First\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\n## Second\n\nEnd`;
+    const md = `---\nchapter-start: ${mode}\n---\n# Pagination\n\n## First\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\n<!-- pagebreak -->\n\nAfter manual break\n\n## Second\n\nEnd`;
     const body = {md, opts:{}};
     const online = await (await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
     const offline = await (await browser.appFetch('/api/render',{body:JSON.stringify(body)})).json();

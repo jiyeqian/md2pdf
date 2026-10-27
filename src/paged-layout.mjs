@@ -1,5 +1,36 @@
 // Serialized into both PDF and preview documents; no Node dependencies.
-export function installPagedLayout(contentHeight) {
+export function installPagedLayout(contentHeight, chapterStart, relaxFirstChapter, contentWidth) {
+  const width = document.body.style.getPropertyValue('width');
+  const priority = document.body.style.getPropertyPriority('width');
+  // Measure in the printable width, rather than the editor iframe width.
+  document.body.style.setProperty('width', contentWidth + 'px', 'important');
+  const main = document.querySelector('main');
+  const first = main?.querySelector(':scope > section:has(> h2[data-chapter])');
+  if (first && !first.querySelector(':scope > ol.references') && relaxFirstChapter && chapterStart !== 'continuous') {
+    const heading = first.querySelector('h2[data-chapter]');
+    const line = parseFloat(getComputedStyle(heading).lineHeight) || 24;
+    const next = heading.nextElementSibling;
+    const needed = next?.tagName === 'TABLE'
+      ? (next.tHead?.getBoundingClientRect().height || 0) + (next.tBodies[0]?.rows[0]?.getBoundingClientRect().height || line * 2)
+      : line * 2;
+    const fitsFirstPage = heading.getBoundingClientRect().bottom - document.body.getBoundingClientRect().top + needed <= contentHeight;
+    if (chapterStart === 'page' || fitsFirstPage) first.setAttribute('data-first-chapter', '');
+  }
+  for (const marker of main?.querySelectorAll('.md2pdf-pagebreak') || []) {
+    let current = marker, next = current.nextElementSibling;
+    while (!next && current.parentElement !== main) {
+      current = current.parentElement;
+      next = current?.nextElementSibling;
+      if (!current) break;
+    }
+    while (next?.classList.contains('md2pdf-pagebreak')) next = next.nextElementSibling;
+    if (next && main.contains(next)) {
+      next.classList.add('md2pdf-forced-pagebreak');
+      // Keep odd-page chapter alignment when an explicit break meets a chapter.
+      if (next.matches('section:has(> h2[data-chapter])')) next.removeAttribute('data-first-chapter');
+    }
+    marker.remove();
+  }
   // A split table is reconstructed from ancestors without its earlier thead.
   // Insert the header while laying out each continuation, so it reserves space.
   class TableHeaders extends Paged.Handler {
@@ -7,7 +38,11 @@ export function installPagedLayout(contentHeight) {
       const element = node.nodeType === 1 ? node : node.parentElement;
       if (!element) return;
       const table = element.closest('table');
-      const original = source.nodeType === 1 ? source.closest('table') : source.parentElement?.closest('table');
+      const sourceElement = source.nodeType === 1 ? source : source.parentElement;
+      // A new table/caption is still waiting for its original header. Only
+      // tbody/tfoot continuations need a copy before their first data row.
+      if (!sourceElement?.closest('tbody, tfoot')) return;
+      const original = sourceElement.closest('table');
       if (!table || !original || table.tHead || !original.tHead || element.closest('thead')) return;
       const header = original.tHead.cloneNode(true);
       header.setAttribute('data-repeated-header', '');
@@ -24,4 +59,6 @@ export function installPagedLayout(contentHeight) {
       }
     }
   }
+  if (width) document.body.style.setProperty('width', width, priority);
+  else document.body.style.removeProperty('width');
 }

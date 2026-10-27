@@ -42,3 +42,29 @@ test('tables use the same repeat-header pagination runtime in PDF and preview',a
  assert.match(result.html,/installPagedLayout/);
  assert.match(result.html,/display: table-header-group/);
 });
+
+
+test('generated bibliography participates in chapter pagination',async()=>{
+ const result=await render('# Title\n\n## Summary\n\nReference[^one].\n\n[^one]: Reference item.',{chapterStart:'page'});
+ assert.equal((result.html.match(/<h2 data-chapter/g)||[]).length,2);
+ assert.match(result.html,/<h2 data-chapter[^>]*>[^<]*参考文献/);
+});
+
+test('standalone pagebreak is shared by CLI and web while code and inline examples stay literal',async()=>{
+ const count=html=>(html.match(/<div class="md2pdf-pagebreak" aria-hidden="true"><\/div>/g)||[]).length;
+ for(const webSafe of [false,true]){
+  for(const marker of ['<!-- pagebreak -->','  <!-- pagebreak -->  ']){
+   const result=await render('# Title\n\nBefore\n'+marker+'\nAfter',{}, {webSafe});
+   assert.equal(count(result.html),1);
+   assert.equal(result.printOptions.waitPaged,true);
+  }
+  for(const sample of ['```php-template\n<!-- pagebreak -->\n```','~~~\n<!-- pagebreak -->\n~~~','    <!-- pagebreak -->','`<!-- pagebreak -->`','Before <!-- pagebreak --> after','<!-- pagebreak --> trailing']){
+   const result=await render('# Title\n\n'+sample,{}, {webSafe});
+   assert.equal(count(result.html),0,sample);
+   assert.equal(result.printOptions.waitPaged,false,sample);
+  }
+ }
+ const escaped=await render('# Title\n\n<div onclick="bad()">unsafe</div>\n\n<!-- pagebreak -->\n\nAfter',{}, {webSafe:true});
+ assert.match(escaped.html,/&lt;div onclick=/);
+ assert.equal(count(escaped.html),1);
+});

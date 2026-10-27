@@ -516,8 +516,22 @@ export async function render(src, options = {}, context = {}) {
   const marked = new Marked({ gfm: true });
   const require = createRequire(import.meta.url);
   const hljs = require(path.join(ROOT, 'vendor', 'highlight', 'highlight.cjs'));
+  marked.use({
+    extensions: [{
+      name: 'md2pdfPagebreak', level: 'block',
+      start(src) {
+        const match = /(?:^|\n) {0,3}<!-- pagebreak -->[ \t]*(?=\n|$)/.exec(src);
+        return match ? match.index + (match[0].startsWith('\n') ? 1 : 0) : undefined;
+      },
+      tokenizer(src) {
+        const match = /^ {0,3}<!-- pagebreak -->[ \t]*(?:\n|$)/.exec(src);
+        if (match) return { type: 'md2pdfPagebreak', raw: match[0] };
+      },
+      renderer() { return '<div class="md2pdf-pagebreak" aria-hidden="true"></div>\n'; },
+    }],
+    renderer: { html(token) { return context.webSafe ? esc(token.text) : token.text; } },
+  });
   if (context.webSafe) marked.use({ renderer: {
-    html(token) { return esc(token.text); },
     image(token) {
       const embedded = /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(token.href);
       // Preserve figure labels while making unsupported resources visible to the author.
@@ -590,7 +604,6 @@ export async function render(src, options = {}, context = {}) {
     });
 
   let html = marked.parse(bodyProtected, { gfm: true, breaks: false, async: false });
-  html = html.replace(/<h2(?=[\s>])/g, '<h2 data-chapter');
 
   if (context.webSafe) html = html.replace(/\u0003FOOTNOTE(\d+)\u0003/g, (m, i) => fnMarkup[+i] ?? m);
 
@@ -618,6 +631,7 @@ export async function render(src, options = {}, context = {}) {
   // bibliographyTitle 默认「参考文献」；显式空串时只去掉标题，条目与链接保留；无引用则不生成。
   const bibTitle = eff.bibliographyTitle !== undefined ? eff.bibliographyTitle : '参考文献';
   html += renderFootnotes(orderedFootnotes, bibTitle, marked);
+  html = html.replace(/<h2(?=[\s>])/g, '<h2 data-chapter');
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
   html = numberHeadings(html, effNumbering, effScheme);
@@ -707,7 +721,7 @@ export async function render(src, options = {}, context = {}) {
 
   const chapterStart = eff.chapterStart;
   if (chapterStart !== 'continuous') {
-    finalCss += '\nmain > section:has(> h2[data-chapter]) { break-before: ' + (chapterStart === 'odd-page' ? 'right' : 'page') + '; }';
+    finalCss += '\nmain > section:not([data-first-chapter]):has(> h2[data-chapter]) { break-before: ' + (chapterStart === 'odd-page' ? 'right' : 'page') + '; }';
   }
   // Intentional parity pages stay entirely blank, including custom margin boxes.
   if (chapterStart === 'odd-page') finalCss += '\n@page :blank { @top-left { content: none; } @top-center { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-center { content: none; } @bottom-right { content: none; } }\n.pagedjs_blank_page .pagedjs_margin-content { visibility: hidden !important; }';
@@ -816,7 +830,7 @@ export async function render(src, options = {}, context = {}) {
     '  function run() {',
     '    if (!depsReady()) { setTimeout(run, 50); return; }',
     '    try {',
-    '      installPagedLayout(' + ((eff.landscape ? 210 : 297) - effMarginTop - effMarginBottom) * 96 / 25.4 + ');',
+    '      installPagedLayout(' + ((eff.landscape ? 210 : 297) - effMarginTop - effMarginBottom) * 96 / 25.4 + ', ' + JSON.stringify(chapterStart) + ', ' + (!profile.gbDoc && !useToc) + ', ' + ((eff.landscape ? 297 : 210) - effMarginLeft - effMarginRight) * 96 / 25.4 + ');',
     profile.gbDoc ? '' : '      stampPagedLists();',
     '      window.PagedPolyfill.preview()',
     '        .then(function () { ' + (profile.gbDoc ? '' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
@@ -852,7 +866,7 @@ export async function render(src, options = {}, context = {}) {
     // Paged.js still assigns a page to the hidden masthead before named main.
     shell = shell.replace(/<header class="masthead">[\s\S]*?<\/header>/, '');
   }
-  if (chapterStart !== 'continuous' && !title && !kicker && !lead && !authorsHtml) {
+  if ((chapterStart !== 'continuous' || html.includes('class="md2pdf-pagebreak"')) && !title && !kicker && !lead && !authorsHtml) {
     shell = shell.replace(/<header class="masthead[^"]*">[\s\S]*?<\/header>/, '');
   }
   const out = fill(shell, {
@@ -877,7 +891,7 @@ export async function render(src, options = {}, context = {}) {
   // 分页 HTML（--paged-html）：浏览器打开与 PDF 同款分页/页码。
   // gb 的 out 已含 Paged.js 与分侧页码规则；其他类型在此注入页码/页脚 margin box 与观感样式。
   // 目录、章分页和表格 PDF 同样使用分页产物，确保页码与表头和预览一致。
-  const usePaged = !!profile.gbDoc || !!toc || chapterStart !== 'continuous' || /<table[\s>]/.test(html);
+  const usePaged = !!profile.gbDoc || !!toc || chapterStart !== 'continuous' || html.includes('class="md2pdf-pagebreak"') || /<table[\s>]/.test(html);
   let pagedOut = null;
   if (options.pagedHtml || usePaged) {
     const footFont = 'font: 8pt/1 -apple-system, "PingFang SC", sans-serif; color: #8a8578; letter-spacing: .5px;';

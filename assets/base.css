@@ -291,6 +291,8 @@ a.fnref-back { border-bottom: 1px dotted var(--accent); }
 .colophon:empty { display: none; }
 
 /* ---------- 分页控制 ---------- */
+.md2pdf-pagebreak { display: none; }
+main .md2pdf-forced-pagebreak { break-before: page; }
 h1, h2, h3, h4, thead { break-after: avoid; }
 tr, li, pre, blockquote, img { break-inside: avoid; }
 section { break-inside: auto; }

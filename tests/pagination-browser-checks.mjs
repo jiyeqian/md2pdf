@@ -26,8 +26,9 @@ try{
   await writeFile(path.join(out,mode+'.json'),JSON.stringify(pages,null,2));
   const starts=pages.filter(p=>p.headings.length).map(p=>p.number);
   assert.equal(pages.flatMap(p=>p.headings).length,3,JSON.stringify(pages));
-  if(mode==='page')assert.equal(starts.length,3,'each chapter starts on its own page');
+  if(mode==='page'){assert.equal(starts.length,3,'subsequent chapters start separately');assert.equal(starts[0],1,'title and first chapter share the first page');}
   if(mode==='odd-page'){
+   assert.equal(starts[0],1,'compact title and first chapter share odd page one');
    assert.ok(starts.every(n=>n%2===1),'chapters start on physical odd pages: '+starts);
    assert.ok(pages.some(p=>p.blank),'parity creates blank pages');
    for(const p of pages.filter(p=>p.blank))assert.ok(p.margins.every(([text,css])=>!text&&['none','normal','""'].includes(css)),JSON.stringify(p));
@@ -37,6 +38,26 @@ try{
   assert.ok(tables.every(t=>t.head?.includes('Header A')),JSON.stringify(tables));
   for(let i=0;i<85;i++)assert.equal(tables.flatMap(t=>t.rows).filter(row=>row.includes('ROW_'+String(i).padStart(3,'0'))).length,1,'row '+i+' appears once');
   console.log(mode+': '+pages.length+' pages, chapters '+starts+', repeated headers verified');
+ }
+ for(const mode of ['page','odd-page']){
+  const shortTable='表：Short table\n\n| 指标 | 目标值 | 实测值 |\n| --- | --- | --- |\n| 抓取成功率 | ≥ 98% | 98.6% |\n| 响应延迟 | ≤ 12ms | 10.4ms |';
+  const md=`---\nchapter-start: ${mode}\n---\n# Regression fixture\n\n## Short\n\n${shortTable}\n\n## Long\n\n表：Long table\n\n| 指标 | 目标值 | 实测值 |\n| --- | --- | --- |\n`+Array.from({length:75},(_,i)=>`| ROW_${i} | 98% | 98.6% |`).join('\n')+'\n\n## Summary\n\nSee reference[^one].\n\n[^one]: Reference item.';
+  await writeFile(path.join(out,'regression-'+mode+'.md'),md);
+  const result=await render(md,{pagedHtml:true});
+  const file=path.join(out,'regression-'+mode+'.html');await writeFile(file,result.html);
+  const pdf=await browser.print(file,{...result.printOptions,waitPaged:true});await writeFile(path.join(out,'regression-'+mode+'.pdf'),pdf);
+  const r=await browser.send('Runtime.evaluate',{expression:`JSON.stringify(Array.from(document.querySelectorAll('.pagedjs_page'),(p,i)=>({page:i+1,headings:Array.from(p.querySelectorAll('h2[data-chapter]'),h=>h.textContent),tables:Array.from(p.querySelectorAll('table'),t=>({heads:t.querySelectorAll('thead').length,headerRows:t.tHead?.rows.length,headerText:t.tHead?.textContent}))})))`,returnByValue:true});
+  const pages=JSON.parse(r.result.value),chapters=pages.filter(p=>p.headings.length);
+  assert.equal(chapters.length,4,'summary and generated bibliography each start a separate page');
+  assert.ok(chapters.every(p=>p.headings.length===1),'one chapter start per page');
+  assert.ok(chapters.at(-1).headings[0].includes('参考文献'),'bibliography is a chapter');
+  if(mode==='odd-page')assert.ok(chapters.every(p=>p.page%2===1),'bibliography follows odd-page policy');
+  for(const t of pages.flatMap(p=>p.tables)){
+   assert.equal(t.heads,1,'exactly one thead per table fragment');
+   assert.equal(t.headerRows,1,'original and continuation have one header row');
+   assert.equal(t.headerText.split('指标').length-1,1,'caption must not trigger an early duplicate header');
+  }
+  console.log(mode+': captioned short/long tables have one header, generated bibliography starts separately');
  }
  for(const mode of ['page','odd-page']){
   const result=await render('## First\n\nBody\n\n## Second\n\nBody',{chapterStart:mode,title:'',meta:false,colophonEnabled:false});
@@ -61,6 +82,34 @@ try{
  const gbState=await browser.send('Runtime.evaluate',{expression:`JSON.stringify({starts:Array.from(document.querySelectorAll('.pagedjs_page')).flatMap((p,i)=>p.querySelector('h2[data-chapter]')?[i+1]:[]),blank:Array.from(document.querySelectorAll('.pagedjs_blank_page .pagedjs_margin-content')).every(e=>getComputedStyle(e).visibility==='hidden')})`,returnByValue:true});
  const gbResult=JSON.parse(gbState.result.value);assert.ok(gbResult.starts.length===2&&gbResult.starts.every(n=>n%2===1),JSON.stringify(gbResult));assert.equal(gbResult.blank,true);
  console.log('GB named pages retain physical odd-page starts and blank margin boxes');
+ const manualMarkdown='# Manual pagination\n\n## First\n\nBEFORE_BREAK\n\n<!-- pagebreak -->\n\n<!-- pagebreak -->\n\nAFTER_BREAK\n\n```php-template\n<!-- pagebreak -->\n```\n\nInline `<!-- pagebreak -->` example.\n\nEND_MANUAL\n\n<!-- pagebreak -->';
+ for(const webSafe of [false,true]){
+  const manual=await render(manualMarkdown,{pagedHtml:true},{webSafe});
+  const file=path.join(out,'manual-'+(webSafe?'web':'cli')+'.html');
+  // CLI file loading supplies local assets; web-safe rendering is exercised through the WebApp below.
+  await writeFile(file,manual.html);
+  const pdf=await browser.print(file,{...manual.printOptions,waitPaged:true});await writeFile(path.join(out,'manual-'+(webSafe?'web':'cli')+'.pdf'),pdf);
+  const r=await browser.send('Runtime.evaluate',{expression:`JSON.stringify(Array.from(document.querySelectorAll('.pagedjs_page'),p=>p.querySelector('.pagedjs_page_content').textContent))`,returnByValue:true});
+  const pages=JSON.parse(r.result.value);
+  assert.equal(pages.length,2,'consecutive/trailing breaks and code examples do not create extra pages');
+  assert.ok(pages[0].includes('BEFORE_BREAK')&&!pages[0].includes('AFTER_BREAK'),'break ends first page');
+  assert.ok(pages[1].includes('AFTER_BREAK')&&pages[1].includes('END_MANUAL'),'next content starts on second page');
+  assert.equal(pages.join('').split('<!-- pagebreak -->').length-1,2,'fenced and inline examples remain literal');
+ }
+ await writeFile(path.join(out,'manual.md'),manualMarkdown);
+ const explicit=await render('# Title\n\n<!-- pagebreak -->\n\n## First\n\nBody',{chapterStart:'page'});
+ const explicitFile=path.join(out,'manual-first.html');await writeFile(explicitFile,explicit.html);
+ await browser.print(explicitFile,{...explicit.printOptions,waitPaged:true});
+ const explicitPage=await browser.send('Runtime.evaluate',{expression:`Array.from(document.querySelectorAll('.pagedjs_page')).findIndex(p=>p.querySelector('h2[data-chapter]'))+1`,returnByValue:true});
+ assert.equal(explicitPage.result.value,2,'explicit break overrides title/first-chapter sharing');
+ for(const mode of ['page','odd-page']){
+  const result=await render('# Title\n\n## First\n\nBody\n\n<!-- pagebreak -->\n\n## Second\n\nBody',{chapterStart:mode});
+  const file=path.join(out,'manual-chapter-'+mode+'.html');await writeFile(file,result.html);
+  await browser.print(file,{...result.printOptions,waitPaged:true});
+  const r=await browser.send('Runtime.evaluate',{expression:`Array.from(document.querySelectorAll('.pagedjs_page')).flatMap((p,i)=>p.querySelector('h2[data-chapter]')?[i+1]:[])`,returnByValue:true});
+  assert.deepEqual(r.result.value,mode==='page'?[1,2]:[1,3],'manual breaks preserve chapter parity');
+ }
+ console.log('manual pagebreak, consecutive/trailing markers, code examples and explicit first-chapter override verified');
  if(process.argv[2]){
   await browser.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await browser.send('Page.navigate',{url:process.argv[2]});
@@ -75,7 +124,8 @@ try{
   }
   async function wait(expression,sessionId){for(let n=0;n<300;n++){if(await evaluate('Boolean('+expression+')',sessionId))return;await new Promise(r=>setTimeout(r,100));}throw new Error('timeout: '+expression);}
   await wait('window.mdEditor');
-  await evaluate(`mdEditor.setValue(${JSON.stringify('---\nchapter-start: odd-page\n---\n'+markdown)})`);
+  const uiMarkdown=markdown.replace('Short first chapter.','Short first chapter.\n\n表：Short table\n\n| 指标 | 目标值 |\n| --- | --- |\n| 抓取成功率 | 98% |').replace('Still first chapter.','Still first chapter.\n\n<!-- pagebreak -->\n\nMANUAL_WEB_MARKER')+'\n\nReference[^one].\n\n[^one]: Reference item.';
+  await evaluate(`mdEditor.setValue(${JSON.stringify('---\nchapter-start: odd-page\n---\n'+uiMarkdown)})`);
   await wait(`window.__MD2PDF_PREVIEW_READY__===true&&document.querySelector('#preview').srcdoc.includes('ROW_084')&&document.querySelector('#status').textContent.includes('预览已更新')`);
   let sessionId;
   for(const target of (await browser.send('Target.getTargets')).targetInfos.filter(t=>t.type==='iframe')){
@@ -85,11 +135,14 @@ try{
   }
   assert.ok(sessionId,'preview frame');
   assert.equal(await evaluate(`Array.from(document.querySelectorAll('.pagedjs_page')).every((p,i)=>!p.querySelector('h2[data-chapter]')||(i+1)%2===1)`,sessionId),true);
-  assert.equal(await evaluate(`Array.from(document.querySelectorAll('.pagedjs_page table')).every(t=>!!t.tHead)`,sessionId),true);
+  assert.equal(await evaluate(`Array.from(document.querySelectorAll('.pagedjs_page table')).every(t=>t.querySelectorAll('thead').length===1&&t.tHead.rows.length===1)`,sessionId),true);
   assert.equal(await evaluate(`Array.from(document.querySelectorAll('.pagedjs_blank_page .pagedjs_margin-content')).every(e=>!e.textContent)`,sessionId),true);
+  assert.equal(await evaluate(`document.querySelector('.pagedjs_page').querySelectorAll('h2[data-chapter]').length`,sessionId),1,'title and first chapter share page one in the WebApp');
+  assert.ok(await evaluate(`Array.from(document.querySelectorAll('.pagedjs_page')).findIndex(p=>p.querySelector('.pagedjs_page_content').textContent.includes('MANUAL_WEB_MARKER'))`,sessionId)>0,'manual marker forces the following content to a later page');
   await evaluate(`document.querySelector('[data-preview-mode-toggle]').click()`);
   await wait(`document.documentElement.classList.contains('md2pdf-preview-flow')`,sessionId);
-  assert.deepEqual(await evaluate(`(()=>{const flow=document.querySelector('#md2pdf-preview-flow');return [flow.querySelectorAll('table').length,flow.querySelectorAll('thead').length,flow.querySelectorAll('h2[data-chapter]').length]})()`,sessionId),[1,1,3]);
+  assert.deepEqual(await evaluate(`(()=>{const flow=document.querySelector('#md2pdf-preview-flow');return [flow.querySelectorAll('table').length,flow.querySelectorAll('thead').length,flow.querySelectorAll('h2[data-chapter]').length]})()`,sessionId),[2,2,4]);
+  assert.equal(await evaluate(`document.querySelectorAll('#md2pdf-preview-flow .md2pdf-pagebreak').length`,sessionId),0,'flow has no marker blocks');
   console.log(process.argv[2]+': actual WebApp odd chapters, repeated headers, blank-page footer and flow isolation verified');
  }
 }finally{await browser.stop();await rm(temp,{recursive:true,force:true});}
