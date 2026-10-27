@@ -32,7 +32,7 @@ export const NUMBER_SCHEMES = {
   // 附录标题（「附录 A…」字母写在标题里）不自动编号，其下条用 A.1 / A.1.1。
   // 对象形态：skip(text) 决定「不编号且不占号」，fmt(...) 返回 null 表示「不加号」（保留原样）。
   gb: {
-    skip: (t) => /^(前言|引言|目次|参考文献)\s*$/.test(t.trim()),
+    skip: (t) => /^(前言|引言|目次|参考文献|索引)\s*$/.test(t.trim()),
     fmt: ({ counters, lvl, text, state }) => {
       const t = text.trim();
       if (lvl === 0 && /^附录/.test(t)) {

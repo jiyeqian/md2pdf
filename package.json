@@ -50,6 +50,7 @@
     "test:preview-mode-browser": "node tests/preview-mode-browser-checks.mjs",
     "test:workspace-browser": "node tests/workspace-navigation-browser-checks.mjs",
     "test:editor-fold-browser": "node tests/editor-structured-fold-browser-checks.mjs",
+    "test:gb-ef": "node --test tests/gb-content-checks.mjs tests/gb-footnotes-checks.mjs && node tests/gb-ef-browser-checks.mjs",
     "test:config": "node --test tests/config-checks.mjs tests/options-config-checks.mjs tests/render-config-checks.mjs tests/config-integration-checks.mjs tests/page-bars-checks.mjs"
   },
   "publishConfig": {

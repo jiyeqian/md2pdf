@@ -77,3 +77,10 @@ npm run check:consistency
 ## analytics 分层统计交接
 
 `codex/analytics` 将公网 Node 本机运营汇总与同意后的全环境浏览器统计分开；localhost 可同意上报，不再按域名白名单关闭。policy 2 需重新同意，仅访问事件携带站点内随机标识，撤回在线尝试删除。底栏左隐私、中备份提示、右版本统一字体。详见 [统计设计](analytics.md) 与接收器迁移说明。CLI、Node 和静态渲染规则不变；需运行一致性检查，并人工验收两种 WebApp 的编辑、真实 PDF／系统打印、手机和正式部署缓存。未经合并通知，其他工作树不应直接复制本分支界面文件。
+
+
+## 国家标准 E/F 本机字体排版交接
+
+本轮从 main `a28c3c6` 开始，修改共用 gb 模板、语义块及分页标签／续表，CLI、Node、静态采用同一逻辑；未分发测试字体。新增 `src/gb-content.mjs`、`src/gb-footnotes.mjs`、`src/gb-layout.mjs` 由静态构建自动包含，不在静态适配层复制业务规则。专业助手的大纲仍只识别普通标题，语义块的术语编号不会自动成为目录标题。
+
+同步本轮提交后须从自己的工作树重启服务；静态服务重新构建。执行 `npm run test:gb-ef` 与 `npm run check:consistency`；前者需要本机方正书宋_GBK、方正黑体_GBK、方正小标宋_GBK，以及 Chrome 和 Poppler。没有这些字体的服务器、手机或静态站点不在本轮验收范围，不能将本机结果冒充部署通过。封面专用字候选状态及后续检查见 `docs/gb-ef-acceptance.md`。

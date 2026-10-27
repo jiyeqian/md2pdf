@@ -1,5 +1,5 @@
 // Serialized into both PDF and preview documents; no Node dependencies.
-export function installPagedLayout(contentHeight, chapterStart, relaxFirstChapter, contentWidth) {
+export function installPagedLayout(contentHeight, chapterStart, relaxFirstChapter, contentWidth, gb = false) {
   const width = document.body.style.getPropertyValue('width');
   const priority = document.body.style.getPropertyPriority('width');
   // Measure in the printable width, rather than the editor iframe width.
@@ -48,6 +48,16 @@ export function installPagedLayout(contentHeight, chapterStart, relaxFirstChapte
       header.setAttribute('data-repeated-header', '');
       header.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
       table.insertBefore(header, table.firstChild);
+      if (gb && original.caption && !table.caption) {
+        const caption = original.caption.cloneNode(true);
+        caption.removeAttribute('id');
+        caption.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+        const continued = document.createElement('span');
+        continued.className = 'gb-continuation';
+        continued.textContent = '（续）';
+        caption.appendChild(continued);
+        table.insertBefore(caption, table.firstChild);
+      }
     }
   }
   Paged.registerHandlers(TableHeaders);

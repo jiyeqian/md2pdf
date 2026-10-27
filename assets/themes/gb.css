@@ -1,150 +1,224 @@
-/* 主题：gb —— 仿 GB/T 1.1-2020 国标版式（封面 + 目次 + 章条 + 附录）
- *
- * 版式依据：正式发布版 GB 标准（A4，正文 5 号≈10.5pt；封面坐标实测自
- *   GB 2811—2019 / GB/T 48051—2026 的首页墨迹位置，见 buildCover 注释）
- *   页边距   上 25 / 右 19 / 下 20 / 左 25 mm（装订边左宽）—— 见 src/profiles.mjs 的 gb defaults
- *   页眉     标准号：奇数页（右页）靠右、偶数页（左页）靠左
- *   页码     前置部分（目次/前言/引言）罗马数字，正文阿拉伯数字，封面无页码
- *   标题     章标题黑体左对齐；前言/引言/目次/附录标题居中且各自起新页
- *   分页     由 Paged.js 接管（Chrome 原生 @page 做不到奇偶页眉与 target-counter）
+/* 国家标准版式：GB/T 1.1—2020 附录 E、F。
+ * 使用本机宋体、黑体；封面专用字仍需发布部门确认，候选字体不等于规范指定字体。
+ * 页眉与页码由 Paged.js margin box 实现；所有字号使用表 F.1 的固定 pt 值。
  */
+@font-face { font-family: "GB Song"; src: local("FZSSK--GBK1-0"), local("方正书宋_GBK"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "GB Hei"; src: local("FZHTK--GBK1-0"), local("方正黑体_GBK"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "GB Cover"; src: local("FZXBSK--GBK1-0"), local("方正小标宋_GBK"); font-weight: 400; font-style: normal; }
 :root {
-  --ink: #000000;
-  --ink-soft: #222222;
-  --accent: #000000;
-  --accent-soft: #999999;
-  --paper: #ffffff;
-  --tint: #ffffff;
-  --rule: #000000;
-  --text: #000000;
-  --muted: #444444;
-
-  --code-bg: #f6f6f6;
-  --code-fg: #23272e;
-
-  /* 优先标准字体（方正），缺失时回退系统字体 */
-  --font-body: "方正书宋_GBK", "方正书宋", "Songti SC", "STSong", serif;
-  --font-head: "方正黑体_GBK", "方正黑体", "Heiti SC", "STHeiti", sans-serif;
-  --font-mono: "SF Mono", "Menlo", "Consolas", monospace;
-
-  --masthead-border: none;
-  --task-marker-left: -1.4em;
-
-  /* 封面标准名称：官方封面嵌入字体为方正小标宋（FZXBSK），缺失时回退华文中宋/宋体 */
-  --font-title: "方正小标宋_GBK", "方正小标宋", "STZhongsong", "Songti SC", serif;
+  --ink: #000; --ink-soft: #000; --accent: #000; --accent-soft: #999;
+  --paper: #fff; --tint: #fff; --rule: #000; --text: #000; --muted: #000;
+  --code-bg: #f6f6f6; --code-fg: #000;
+  --font-body: "GB Song", serif;
+  --font-head: "GB Hei", sans-serif;
+  --font-mono: "Times New Roman", Times, serif;
+  --font-title: "GB Cover", serif;
+  --masthead-border: none; --task-marker-left: -1.4em;
 }
-
-/* GB 标题在封面，正文不重复报头 */
+body { font-size: 10.5pt; line-height: 1.62; text-align: justify; }
 .masthead { display: none; }
-
-/* 正文行距比通用主题紧（国标正文排得密） */
-body { line-height: 1.62; text-align: justify; }
-
-/* Paged.js 遇强制分页会给前一页元素打 data-align-last-split-element="justify"，
-   其内置规则 [data-align-last-split-element='justify'] { text-align-last: justify }
-   会把段落末行（含居中标题、表题）也两端对齐拉伸到整行 —— 非真实 GB 版式。
-   这里整体还原为 auto：末行按 text-align 正常对齐（正文左、标题居中）。 */
 [data-align-last-split-element] { text-align-last: auto !important; }
 
-/* ---------- 封面（独立一页，无页眉页脚；版式实测自正式发布版） ---------- */
-/* 封面页边距独立：ICS 顶到 ≈10mm（正文页上边距 25mm 装不下） */
-@page gb-cover { margin: 9mm 19mm 12mm 25mm; }
-.cover { break-after: page; page: gb-cover; position: relative; text-align: center; }
-.cover-ics { text-align: left; font-size: 11pt; line-height: 1.6; }
-/* 「中华人民共和国国家标准」：黑体，按字均分撑满两边距 */
-.cover-head { display: flex; justify-content: space-between; margin-top: 18mm; font-family: var(--font-head); font-weight: 700; font-size: 26pt; line-height: 1.3; }
+/* E.1/E.2：书眉字框上缘 25 mm，书眉下空 5 mm 后起正文。
+ * 五号字框高 10.5 pt = 3.70417 mm；正文上缘据此为 33.70417 mm。
+ */
+@page gb-front { margin: 33.70417mm 20mm 27mm 25mm;
+  @top-left { font: 10.5pt/1 var(--font-head); vertical-align: bottom; padding-bottom: 5mm; }
+  @top-right { font: 10.5pt/1 var(--font-head); vertical-align: bottom; padding-bottom: 5mm; }
+  @bottom-left { font: 9pt/1 var(--font-body); vertical-align: bottom; padding-bottom: 20mm; padding-left: 4mm; }
+  @bottom-right { font: 9pt/1 var(--font-body); vertical-align: bottom; padding-bottom: 20mm; padding-right: 4mm; }
+}
+@page gb-body { margin: 33.70417mm 20mm 27mm 25mm;
+  @top-left { font: 10.5pt/1 var(--font-head); vertical-align: bottom; padding-bottom: 5mm; }
+  @top-right { font: 10.5pt/1 var(--font-head); vertical-align: bottom; padding-bottom: 5mm; }
+  @bottom-left { font: 9pt/1 var(--font-body); vertical-align: bottom; padding-bottom: 20mm; padding-left: 4mm; }
+  @bottom-right { font: 9pt/1 var(--font-body); vertical-align: bottom; padding-bottom: 20mm; padding-right: 4mm; }
+}
+@page gb-front:left { margin-left: 20mm; margin-right: 25mm;
+  @bottom-left { content: counter(page, upper-roman); }
+  @bottom-right { content: none; }
+}
+@page gb-front:right {
+  @bottom-left { content: none; }
+  @bottom-right { content: counter(page, upper-roman); }
+}
+@page gb-body:left { margin-left: 20mm; margin-right: 25mm;
+  @bottom-left { content: counter(page); }
+  @bottom-right { content: none; }
+}
+@page gb-body:right {
+  @bottom-left { content: none; }
+  @bottom-right { content: counter(page); }
+}
+
+/* E.5：封面独立按整张 A4 定位，不受正文镜像边距影响。 */
+@page gb-cover { margin: 0;
+  @top-left { content: none; } @top-right { content: none; }
+  @bottom-center { content: none; } @bottom-left { content: none; } @bottom-right { content: none; }
+}
+.cover { page: gb-cover; break-after: page; position: relative; width: 210mm; height: 297mm; text-align: center; }
+.cover-ics { position: absolute; top: 10mm; left: 25mm; text-align: left; font: 10.5pt/1.3 var(--font-head); }
+.cover-logo { position: absolute; top: 13mm; left: 144mm; width: 40mm; height: 20mm; margin: 0; object-fit: contain; }
+/* 专用字候选；尺寸按图 E.5，具体字样须由发布部门核验。 */
+.cover-head { position: absolute; top: 42mm; left: 25mm; width: 170mm; height: 8mm;
+  display: flex; justify-content: space-between; font: 22.67717pt/1 var(--font-title); }
 .cover-head i { display: none; }
-/* 标准号：右对齐；代替标准紧随其下 */
-.cover-stdno { margin-top: 6mm; text-align: right; font-family: var(--font-head); font-weight: 700; font-size: 17pt; letter-spacing: .5px; }
-.cover-sup { text-align: right; font-size: 11.5pt; line-height: 1.3; margin-top: 0.5mm; }
-/* 右上角 GB 标志（600dpi 位图，提取自官方封面） */
-.cover-logo { position: absolute; top: 1mm; right: 8mm; width: 40mm; }
-/* 全宽横线：标准号块下方一根、日期行与机构块之间一根（官方 1pt） */
-.cover-rule { height: 1pt; background: var(--ink); margin-top: 1.5mm; }
-/* 中英文名称 */
-.cover-main { margin-top: 37.5mm; }
-.cover-cn { font-family: var(--font-title); font-size: 28pt; font-weight: 700; line-height: 1.55; }
-.cover-en { font-family: "Times New Roman", Times, "Tinos", serif; font-size: 15pt; margin-top: 6.5mm; line-height: 1.6; }
-/* 采标信息（(ISO 标准号, 采标中文名称, 程度)），仿官方封面排于英文名称下方 */
-.cover-iso { font-family: "Times New Roman", Times, "Tinos", serif; font-size: 11pt; line-height: 1.6; margin: 5mm auto 0; max-width: 82%; }
-/* 日期 + 机构：定值下推到页底（封面元素均定高，锚点可预算） */
-.cover-foot { margin-top: 93mm; }
-.cover-dates { display: flex; justify-content: space-between; font-size: 14pt; padding-bottom: 2mm; border-bottom: 1pt solid var(--ink); }
+.cover-stdno { position: absolute; top: 59mm; right: 15mm; font: 14pt/1 var(--font-head); }
+.cover-sup { position: absolute; top: 67mm; right: 20mm; font: 10.5pt/1 var(--font-head); }
+.cover-rule { position: absolute; top: 75mm; left: 25mm; width: 170mm; height: 1pt; background: #000; margin: 0; }
+.cover-main { position: absolute; top: 115mm; left: 25mm; width: 170mm; }
+.cover-cn { font: 26pt/calc(26pt + 3mm) var(--font-head); font-weight: 400; }
+.cover-en { font: 14pt/1.3 var(--font-head); margin-top: 10mm; }
+.cover-iso { font: 14pt/1.3 var(--font-head); margin: 15mm auto 0; max-width: 100%; }
+.cover-foot { position: absolute; inset: 0; margin: 0 !important; }
+.cover-dates { position: absolute; bottom: 40mm; left: 25mm; width: 170mm; display: flex; justify-content: space-between;
+  font: 14pt/1 var(--font-head); padding: 0; border: none; }
+.cover-org { position: absolute; bottom: 20mm; left: 25mm; width: 170mm;
+  font: 17pt/18pt var(--font-title); text-align: center; padding: 0; margin: 0; }
+.cover-org-name { width: fit-content; margin: 0 auto; }
+.cover-org-pub { position: absolute; left: calc(50% + 53mm); top: 50%; transform: translateY(-50%);
+  margin: 0; font: 14pt/1 var(--font-head); white-space: nowrap; }
 
-/* 官方实测：名称字号 ≈18pt、两行 top-to-top 行距 18pt；「发布」不占行位，
-   垂直中心恰在两行名称的分界线上，水平距名称右缘 ≈1em（整体居中时把悬挂宽度计入 padding） */
-.cover-org { position: relative; width: fit-content; margin: 6.5mm auto 0; padding-right: 3.4em; text-align: left; font-size: 17pt; line-height: 18pt; }
-.cover-org-pub { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 1em; font-size: 14pt; white-space: nowrap; }
-
-/* 命名页：封面（无页码）/ 前置（罗马页码）/ 正文（阿拉伯页码）。
-   注意：不要在 main 上写 gb-body——否则「目次(gb-front) → main → 前置节(gb-front)」
-   的命名页切换会被 Paged.js 当成两次分页，中间多出一张空白页。 */
-.toc { page: gb-front; counter-reset: page 1; }
+/* 命名页仅随实际章节切换，避免 main/前置节重复产生空页。 */
+.toc { page: gb-front; counter-reset: page 1; break-before: right; }
 main { page: gb-front; }
 main > section { page: gb-body; }
 main > section:has(> h2.front) { page: gb-front; break-before: page; }
-main > section:has(> h2.appendix) { break-before: page; }
-main > section:has(> h2.back) { break-before: page; }
-/* 正文页码从第一个带号的章重新计数（前置部分用罗马数字） */
-main > section:has(> h2.body-start) { counter-reset: page 1; }
+main > section:has(> h2.appendix), main > section:has(> h2.back) { break-before: page; }
+main > section:has(> h2.body-start) { counter-reset: page 1; break-before: right; }
 
-@page gb-cover { @top-left { content: none; } @top-right { content: none; } @bottom-center { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
-/* 页码分侧：奇数页（右页）靠右、偶数页（左页）靠左（官方正式发布版惯例） */
-@page gb-front:right { @bottom-right { content: counter(page, upper-roman); } }
-@page gb-front:left  { @bottom-left  { content: counter(page, upper-roman); } }
-@page gb-body:right  { @bottom-right { content: counter(page); } }
-@page gb-body:left   { @bottom-left  { content: counter(page); } }
-
-/* 页眉/页码在 margin box 里的字号与字体（页眉内容由渲染器按标准号生成） */
-@page gb-front { @top-left { font: 9pt/1 var(--font-head); } @top-right { font: 9pt/1 var(--font-head); } }
-@page gb-body { @top-left { font: 9pt/1 var(--font-head); } @top-right { font: 9pt/1 var(--font-head); } }
-
-/* ---------- 章 / 条（黑体） ---------- */
-h2 { font-family: var(--font-head); font-size: 1.15em; border-bottom: none; padding: 0; margin: 18px 0 10px; text-align: left; }
+/* F.1：章条和正文均五号，字号相同而字体不同。 */
+h2, h3, h4, h5, h6 { font: 10.5pt/1.62 var(--font-head); border: none; padding: 0; text-align: left; letter-spacing: 0; }
+h2 { margin: 1.62em 0; }
+h3, h4, h5, h6 { margin: .81em 0; }
 h2::before { display: none; }
-h3 { font-family: var(--font-head); font-size: 1.02em; margin: 14px 0 8px; }
-h4 { font-family: var(--font-head); font-size: 1em; margin: 12px 0 6px; }
+h2.front { text-align: center; font: 16pt/1 var(--font-head); margin: 0 0 12mm; letter-spacing: .25em; }
+h2.appendix { text-align: center; font: 10.5pt/1.62 var(--font-head); margin: 0 0 5mm; }
+.gb-appendix-number, .gb-appendix-kind, .gb-appendix-title { display: block; }
+h2.back { text-align: center; font: 10.5pt/1.62 var(--font-head); margin: 0 0 5mm; }
+h2.body-start { margin: 0 0 1.62em; }
+.gb-body-title { display: block; text-align: center; font: 16pt/1 var(--font-head); margin-top: 10mm; margin-bottom: 12mm; }
+.gb-first-heading { display: block; }
+.gb-important { font: 10.5pt/1.62 var(--font-head); }
 
-/* 前言 / 引言：标题居中、各自起新页 */
-h2.front { text-align: center; font-size: 1.3em; margin: 0 0 18px; letter-spacing: .25em; }
-/* 附录标题居中起新页 */
-h2.appendix { text-align: center; font-size: 1.3em; margin: 0 0 16px; letter-spacing: .1em; }
-/* 参考文献标题：左对齐（页码仍属正文阿拉伯序列） */
-h2.back { font-size: 1.15em; }
-
-/* ---------- 目次（点线 + 真实页码，页码由 Paged.js target-counter 填入） ---------- */
-.toc { background: transparent; border: none; padding: 0; }
-.toc-title {
-  text-align: center; font-family: var(--font-head);
-  font-size: .95em; font-weight: 700; letter-spacing: .5em;
-  color: var(--ink); margin: 0 0 18px;
-}
+/* E.8/F.1：目次内容五号宋体，标题三号黑体。 */
+.toc { background: transparent; border: none; border-radius: 0; padding: 0; }
+.toc-title { text-align: center; font: 16pt/1 var(--font-head); letter-spacing: .5em; color: #000; margin: 0 0 12mm; }
 .toc ol { padding-left: 0; margin: 0; }
-.toc li { font-size: .95em; margin: 3px 0; }
+.toc li { font: 10.5pt/1.62 var(--font-body); margin: 0; }
 .toc li::before { content: none; }
-.toc li a { display: flex; align-items: baseline; color: var(--ink); text-decoration: none; border: none; }
+.toc li a { display: flex; align-items: baseline; color: #000; text-decoration: none; border: none; }
 .toc li a .toc-text { flex: 0 1 auto; }
-.toc li a .toc-dots {
-  flex: 1 1 auto; margin: 0 .4em; position: relative; top: -.28em;
-  border-bottom: 1px dotted var(--ink); min-width: 1em;
-}
-.toc li a::after {
-  content: target-counter(attr(href), page);
-  margin-left: .3em; font-family: var(--font-mono); font-size: .9em; white-space: nowrap;
-}
-/* 前置部分（前言/引言）的目次页码用大写罗马数字 */
+.toc li a .toc-dots { flex: 1 1 auto; margin: 0 .4em; position: relative; top: -.28em; border-bottom: 1px dotted #000; min-width: 1em; }
+.toc li a::after { content: target-counter(attr(href), page); margin-left: .3em; font: 10.5pt/1.62 var(--font-body); white-space: nowrap; }
 .toc li a.toc-front::after { content: target-counter(attr(href), page, upper-roman); }
 
-/* ---------- 表格：三线表 ---------- */
-thead th { background: transparent; color: var(--ink); border: none; border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--ink); }
-table { border-bottom: 1.5px solid var(--ink); }
-tbody td { border-bottom: none; }
+/* F.1：表中文字小五宋体，图表题五号黑体，不继承通用主题粗体首列。 */
+table { border: 1pt solid #000; font: 9pt/1.62 var(--font-body); }
+thead th { background: transparent; color: #000; border: 1pt solid #000;
+  font: 9pt/1.62 var(--font-body); letter-spacing: 0; }
+tbody td, tbody td:first-child { font: 9pt/1.62 var(--font-body); border: .5pt solid #000; }
+tfoot td { font: 9pt/1.62 var(--font-body); border: 1pt solid #000; }
 tbody tr:nth-child(even) { background: transparent; }
-table caption { font-family: var(--font-head); }
+figcaption, table caption { font: 10.5pt/1.62 var(--font-head); color: #000; }
+.gb-term table, .gb-term th, .gb-term td { font-size: 10.5pt; }
 
-/* ---------- 列表：GB 正文不用圆点/序号标记 ---------- */
 ol li::before, ul li::before { display: none; content: none; }
 ol li, ul li { padding-left: 0; }
+.references li { font: 10.5pt/1.62 var(--font-body); }
+.footnotes li, .gb-note, .gb-example, .gb-table-note { font: 9pt/1.62 var(--font-body); }
+.gb-label { font-family: var(--font-head); font-weight: 400; }
+.gb-term-number, .gb-term-name { font: 10.5pt/1.62 var(--font-head); }
+.gb-term-definition, .gb-source { font: 10.5pt/1.62 var(--font-body); }
+.gb-unit { font: 9pt/1.62 var(--font-body); text-align: right; }
+.gb-subfigure { font: 9pt/1.62 var(--font-head); }
+.gb-continuation { font: 10.5pt/1.62 var(--font-body); }
+.gb-figure-text, figure.fig svg text { font-family: var(--font-body) !important; font-size: 7.5pt !important; }
 
-/* ---------- 图 / 表题注统一（黑体小号、居中） ---------- */
-figcaption, table caption { font-family: var(--font-head); color: var(--ink); }
+/* E.4：封底仅保留右上竖排标准号，不计入正文页码。 */
+@page gb-back-cover { margin: 0;
+  @top-left { content: none; } @top-center { content: none; } @top-right { content: none; }
+  @bottom-left { content: none; } @bottom-center { content: none; } @bottom-right { content: none; }
+}
+.gb-back-cover { margin: 0; page: gb-back-cover; break-before: page; position: relative; width: 210mm; height: 297mm; }
+.gb-back-standard { position: absolute; top: 25mm; right: 5mm; writing-mode: vertical-rl; text-orientation: sideways;
+  transform: rotate(180deg); font: 14pt/1 var(--font-head); white-space: nowrap; }
+/* 终结线与前一内容同页；不可单独排到下一面。 */
+.gb-end-line { width: 25%; margin: 1.62em auto 0; border: none; border-top: 1pt solid #000; break-before: avoid; break-inside: avoid; }
+.gb-source .gb-label { font-family: var(--font-body); }
+.gb-table-note { border: 1pt solid #000; padding: .5em; }
+
+/* 条文脚注采用独立的 [^@id] 语法，文献引用仍走原有 [^id]。 */
+.gb-footnote { float: footnote; footnote-display: block; footnote-policy: line;
+  font: 9pt/1.62 var(--font-body); padding-left: 4em; text-indent: -2em; }
+.gb-footnote::footnote-call { content: none; font: 9pt/1 var(--font-body); vertical-align: super; }
+.gb-footnote::footnote-marker { content: none; font: 9pt/1.62 var(--font-body); margin-right: 1em; }
+.gb-footnote-repeat { font: 9pt/1 var(--font-body); }
+.gb-footnote-repeat a { border: none; }
+@page gb-front { @footnote { border-top: .5pt solid #000; padding-top: 2mm; } }
+@page gb-body { @footnote { border-top: .5pt solid #000; padding-top: 2mm; } }
+.pagedjs_footnote_area { border: none !important; }
+.pagedjs_footnote_area:not(.pagedjs_footnote_empty)::before { content: ''; display: block; width: 25%; border-top: .5pt solid #000; margin-bottom: 2mm; }
+
+@page :blank { @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
+.pagedjs_blank_page .pagedjs_margin-content { visibility: hidden !important; }
+.toc .gb-float-toc { margin-top: 1.62em; }
+.gb-source .gb-label { font-family: var(--font-body); }
+
+/* 10.2：段首空两字；列表文字用悬挂缩进，标记不占正文列。 */
+main p { text-indent: 2em; }
+main section :is(ol, ul):not(.references):not(.footnotes) { list-style: none; padding-left: 4em; counter-reset: gb-item; }
+main section li > :is(ol, ul):not(.references):not(.footnotes) { padding-left: 2em; }
+main section :is(ol, ul):not(.references):not(.footnotes) > li { padding-left: 0; counter-increment: gb-item; }
+main section :is(ol, ul):not(.references):not(.footnotes) > li::before {
+  display: block; position: absolute; left: -2em; top: 0; width: 2em; height: auto;
+  font: 10.5pt/1.62 var(--font-body); border: none; border-radius: 0; text-align: left; counter-increment: none;
+}
+main section ul:not(.references):not(.footnotes) > li::before { content: "—"; }
+main section ol:not(.references):not(.footnotes) > li::before { content: counter(gb-item, lower-alpha) ")"; }
+main section li > ul:not(.references):not(.footnotes) > li::before { content: "•"; }
+main section li > ol:not(.references):not(.footnotes) > li::before { content: counter(gb-item) ")"; }
+main li > p { text-indent: 0; }
+main .references > li { text-indent: 2em; }
+.gb-term-number, .gb-term-name, .gb-term-definition { margin: 0; }
+.gb-term-number { text-indent: 0; }
+.gb-term-name { text-indent: 2em; }
+main table p { font: 9pt/1.62 var(--font-body); text-indent: 1em; }
+main .gb-term table p { font-size: 10.5pt; }
+/* 注标签与内容分列，续行跟随注内容；示例标签另占一行。 */
+main .gb-note p, main .gb-table-note p { text-indent: 0; padding-left: 2em; display: flex; }
+.gb-note .gb-label, .gb-table-note .gb-label { flex: none; }
+.gb-note-text { flex: 1; min-width: 0; }
+.gb-example > p:first-child > .gb-label { display: block; text-indent: 2em; }
+main .gb-example > p:first-child { text-indent: 0; }
+main .gb-unit p, main .gb-subfigure p, main figcaption p { text-indent: 0; }
+main .gb-unit p { text-align: right; }
+main .gb-source p { font: 10.5pt/1.62 var(--font-body); }
+
+.gb-important, .gb-important-paragraph { display: block; font: 10.5pt/1.62 var(--font-head); }
+.gb-important-paragraph { text-indent: 2em; text-align: justify; }
+.gb-important { margin-bottom: 12mm; }
+.gb-figure-note, .gb-figure-footnote, .gb-table-footnote { font: 9pt/1.62 var(--font-body); }
+.gb-figure-note p, .gb-figure-footnote p, .gb-table-footnote p { margin: 0; text-indent: 2em; }
+.gb-figure-footnote .gb-label, .gb-table-footnote .gb-label { font-family: var(--font-body); }
+.gb-table-notes td { border: 1pt solid #000; }
+
+.gb-index-letter { font: 10.5pt/1.62 var(--font-body); text-align: center; margin: .81em 0; }
+main section ul.gb-index-entries { padding: 0; margin: 0; list-style: none; }
+main section ul.gb-index-entries > li { display: flex; gap: .4em; margin: .4em 0; text-indent: 0; }
+main section ul.gb-index-entries > li::before { display: none; }
+.gb-index-dots { flex: 1; border-bottom: .5pt dotted #000; align-self: baseline; min-width: 1em; }
+.gb-index-term { padding-left: 2em; }
+.gb-index-locations { text-align: right; }
+
+.gb-number-gap { display: inline-block; width: .5em; }
+figure.fig pre.mermaid { background: transparent; border: none; border-radius: 0; }
+figure.fig svg .nodeLabel, figure.fig svg .nodeLabel p,
+figure.fig svg .edgeLabel, figure.fig svg .edgeLabel p { font: 7.5pt/1 var(--font-body) !important; text-indent: 0; }
+/* 索引不是列项：不继承正文列表的破折号、缩进及计数器。 */
+main section .gb-index ul.gb-index-entries { padding: 0; margin: 0; }
+main section .gb-index ul.gb-index-entries > li { padding: 0; align-items: baseline; }
+main section .gb-index ul.gb-index-entries > li::before { display: none !important; content: none !important; }
+.gb-index-term { padding-left: 0; }
+.gb-index-dots { height: .9em; align-self: auto; }
+.gb-table-notes .gb-table-note { border: none; padding: 0; }

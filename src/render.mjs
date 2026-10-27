@@ -1,3 +1,6 @@
+import { prepareGbContent, transformGbContent } from './gb-content.mjs';
+import { finalizeGbLayout, prepareGbLayout } from './gb-layout.mjs';
+import { prepareGbFootnotes } from './gb-footnotes.mjs';
 import { installPagedLayout } from './paged-layout.mjs';
 import { existsSync, readdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
@@ -148,13 +151,23 @@ function highlightCode(html, hljs) {
 // 图：<p><img></p> → <figure> + 题注「图 N：…」；表格前的「表：…」段 → <caption>「表 N：…」
 // 题注里可带 {#fig:x} / {#tab:x} 标签，供 \ref{} 引用
 
-function numberFloats(html) {
+function numberFloats(html, gb = false) {
+  const sequence = new Map();
+  const floatNumber = (kind, offset, source, fallback) => {
+    if (!gb) return fallback;
+    const heading = [...source.slice(0, offset).matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/g)].at(-1);
+    const appendix = heading && /^附录\s*([A-Z])/i.exec(stripTags(heading[1]));
+    const prefix = appendix?.[1].toUpperCase() || '';
+    const key = kind + prefix, n = (sequence.get(key) || 0) + 1;
+    sequence.set(key, n);
+    return prefix ? prefix + '.' + n : n;
+  };
   const refs = new Map();
   let figN = 0, tabN = 0;
 
   // 图：(a) 图片/SVG（alt 里带 {#fig:x}）或 (b) 「图：题注」+ mermaid 代码块；统一编号
   const figRe = /(<p>\s*<img\b[^>]*>\s*<\/p>)|(<p>\s*图\s*[：:]\s*[\s\S]*?<\/p>\s*<pre><code class="language-mermaid">[\s\S]*?<\/code><\/pre>)/g;
-  html = html.replace(figRe, (m) => {
+  html = html.replace(figRe, (m, image, diagram, offset, source) => {
     let caption = '', label = '', body = '';
     if (m.indexOf('<img') >= 0) {
       let tag = /<img\b[^>]*>/.exec(m)[0];
@@ -176,18 +189,20 @@ function numberFloats(html) {
       body = '<pre class="mermaid">' + (codeM ? codeM[1] : '') + '</pre>';
     }
     figN++;
-    if (label) refs.set(label, { num: figN, id: 'fig-' + figN });
+    const display = floatNumber('fig', offset, source, figN);
+    if (label) refs.set(label, { num: display, id: 'fig-' + figN });
     return '<figure class="fig" id="fig-' + figN + '">' + body +
-      '<figcaption>图 ' + figN + '：' + caption + '</figcaption></figure>';
+      '<figcaption>图 ' + display + (gb ? '　' : '：') + caption + '</figcaption></figure>';
   });
 
-  html = html.replace(/<p>\s*表\s*[：:]\s*([\s\S]*?)<\/p>\s*<table>/g, (m, cap) => {
+  html = html.replace(/<p>\s*表\s*[：:]\s*([\s\S]*?)<\/p>\s*<table>/g, (m, cap, offset, source) => {
     let label = '';
     const labM = /\s*\{#(tab:[\w.-]+)\}\s*/.exec(cap);
     if (labM) { label = labM[1]; cap = cap.replace(labM[0], ' ').trim(); }
     tabN++;
-    if (label) refs.set(label, { num: tabN, id: 'tab-' + tabN });
-    return '<table class="tbl" id="tab-' + tabN + '">\n<caption>表 ' + tabN + '：' + cap + '</caption>';
+    const display = floatNumber('tab', offset, source, tabN);
+    if (label) refs.set(label, { num: display, id: 'tab-' + tabN });
+    return '<table class="tbl" id="tab-' + tabN + '">\n<caption>表 ' + display + (gb ? '　' : '：') + cap + '</caption>';
   });
 
   return { html, refs };
@@ -236,20 +251,28 @@ function numberHeadings(html, mode, scheme) {
       else if (num != null && !markedBodyStart && lvl === 0) { extra = 'body-start'; markedBodyStart = true; }
     }
     const outAttrs = extra ? addClass(attrs, extra) : attrs;
-    return '<h' + level + outAttrs + '>' + (num == null ? clean : num + clean) + '</h' + level + '>';
+    return '<h' + level + outAttrs + '>' + (num == null ? clean : (isGb ? num.replace(/ $/, '　') : num) + clean) + '</h' + level + '>';
   });
 }
 
 /* ---------------- 脚注与参考文献 ---------------- */
 
 // 解析 markdown 脚注：[^id]: 定义（后续缩进行为内容）与正文 [^id] 引用
-function parseFootnotes(body) {
+function parseFootnotes(body, gb = false) {
   const footnotes = [];
   const lines = body.split('\n');
   const out = [];
+  let fence = null;
   for (let i = 0; i < lines.length; i++) {
+    const boundary = /^ {0,3}(`{3,}|~{3,})/.exec(lines[i]);
+    if (gb && boundary) {
+      if (!fence) fence = boundary[1];
+      else if (boundary[1][0] === fence[0] && boundary[1].length >= fence.length) fence = null;
+      out.push(lines[i]); continue;
+    }
+    if (gb && fence) { out.push(lines[i]); continue; }
     const m = /^\[\^([^\]]+)\]:[ \t]*(.*)$/.exec(lines[i]);
-    if (!m) { out.push(lines[i]); continue; }
+    if (!m || (gb && m[1].startsWith('@'))) { out.push(lines[i]); continue; }
     const id = m[1];
     let content = m[2];
     while (i + 1 < lines.length && /^[ \t]+\S/.test(lines[i + 1])) {
@@ -430,10 +453,7 @@ function gbHeaderCss(stdno) {
 }
 
 // GB 封面（仅 gb profile）：标准号 / 中英文名称 / ICS·CCS / 发布·实施日期 / 发布机构
-// 版式实测自正式发布版（GB 2811—2019 / GB/T 48051—2026，A4 595×842pt，坐标换算 mm）：
-//   ICS/CCS 左上 ≈10mm；「中华人民共和国国家标准」≈41mm 撑满两边距；标准号 ≈60mm 右对齐
-//   （代替标准紧随其下）；中文名 ≈115mm、英文名 ≈134mm 居中；日期行 ≈250mm
-//   （发布靠左、实施靠右）；机构三行块（名称/发布/名称）≈263–276mm。
+// 尺寸与字号见 GB/T 1.1—2020 图 E.5、表 F.1；封面专用字仍须发布部门确认。
 function buildCover(fm, title, useDefaults = true) {
   const stdno = fm['标准号'] || fm.standard || '';
   const cn = fm['中文名称'] || (useDefaults ? (title || fm.title || '') : '');
@@ -450,17 +470,6 @@ function buildCover(fm, title, useDefaults = true) {
       (isoEn ? ', ' + esc(isoEn) : '') +
       (isoDeg ? ', ' + esc(isoDeg) : '') + ')</div>'
     : '';
-  // 自适应脚注间距：中/英文名称与采标行的行数多于基线（中文名称 1 行、英文名称 2 行、采标 2 行）时，
-  // 按多出的行高压缩 foot 的 margin-top，避免封面拆页。估宽：CJK 1em、其他 0.55em。
-  const emW = (s) => [...s].reduce((n, ch) => n + (/[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch) ? 1 : 0.55), 0);
-  const nLines = (text, pt, maxMm) => text ? Math.max(1, Math.ceil(emW(text) * (pt / 72 * 25.4) / maxMm)) : 0;
-  const cnLines = Math.max(1, nLines(cn, 28, 166));
-  const enLines = en ? Math.max(1, nLines(en, 15, 136)) : 0;
-  const isoLines = iso ? Math.max(1, nLines('(' + iso + ', ' + isoCn + ', ' + isoDeg + ')', 11, 136)) : 0;
-  const extraMm = Math.max(0, cnLines - 1) * 15.3
-    + Math.max(0, enLines - 2) * 8.5
-    + Math.max(0, isoLines - 2) * 6.2;
-  const footTop = Math.round(Math.max(40, 93 - extraMm));
   const ics = fmStr(fm['国际标准分类号'] || fm.ICS || fm.ics);
   const ccs = fmStr(fm['中国标准分类号'] || fm.CCS || fm.ccs);
   const issued = fm['发布日期'] || fm.date || '';
@@ -484,20 +493,21 @@ function buildCover(fm, title, useDefaults = true) {
       (impl ? '<span>' + esc(impl) + ' 实施</span>' : '<span></span>') +
       '</div>'
     : '';
-  const supHtml = sup ? '<div class="cover-sup">代替 ' + esc(sup) + '</div>' : '';
+  const coverNumber = value => esc(value).replace(/\b(GB(?:\/[TZ])?)\s+(?=\d)/g, '$1<span class="gb-number-gap"> </span>');
+  const supHtml = sup ? '<div class="cover-sup">代替 ' + coverNumber(sup) + '</div>' : '';
   const logoUrl = pathToFileURL(path.join(ASSETS, 'gb-logo.svg')).href;
   return [
     '<section class="cover">',
     icsHtml,
     '<img class="cover-logo" src="' + logoUrl + '" alt="GB">',
     '  <div class="cover-head">' + head + '</div>',
-    '  <div class="cover-stdno">' + esc(stdno) + '</div>',
+    '  <div class="cover-stdno">' + coverNumber(stdno) + '</div>',
     supHtml,
     '  <div class="cover-rule"></div>',
     '  <div class="cover-main"><div class="cover-cn">' + esc(cn) + '</div>' +
       (en ? '<div class="cover-en">' + esc(en) + '</div>' : '') +
       isoHtml + '</div>',
-    '  <div class="cover-foot" style="margin-top:' + footTop + 'mm;">',
+    '  <div class="cover-foot">',
     datesHtml,
     '  <div class="cover-org"><div class="cover-org-name">' + esc(orgA) + '</div>' +
       '<div class="cover-org-pub">' + ((orgA || orgB) ? '发 布' : '') + '</div>' +
@@ -566,7 +576,8 @@ export async function render(src, options = {}, context = {}) {
   const hasMermaid = /^[ \t]*\`\`\`mermaid\b/m.test(rawBody);
 
   // 脚注：提取 [^id]: 定义，正文 [^id] 引用替换为编号上标
-  const { body, footnotes } = parseFootnotes(rawBody);
+  const gbNotes = profile.gbDoc ? prepareGbFootnotes(rawBody) : null;
+  const { body, footnotes } = parseFootnotes(gbNotes ? gbNotes.body : rawBody, profile.gbDoc);
   // 编号按正文「首次引用顺序」自动排序（类 LaTeX）；md 里的定义顺序保持不变
   const defIds = new Set(footnotes.map(fn => fn.id));
   const fnIndex = new Map();
@@ -603,14 +614,17 @@ export async function render(src, options = {}, context = {}) {
       return '\u0002REF' + i + '\u0002';
     });
 
-  let html = marked.parse(bodyProtected, { gfm: true, breaks: false, async: false });
+  if (gbNotes) marked.use({extensions:[gbNotes.extension]});
+  const gbBlocks = profile.gbDoc ? prepareGbContent(bodyProtected) : null;
+  let html = marked.parse(gbBlocks ? gbBlocks.body : bodyProtected, { gfm: true, breaks: false, async: false });
+  if (gbBlocks) html = gbBlocks.restore(html, marked);
 
   if (context.webSafe) html = html.replace(/\u0003FOOTNOTE(\d+)\u0003/g, (m, i) => fnMarkup[+i] ?? m);
 
   // 图/表自动编号与题注（收集标签）
   const floats = eff.floatNumbering === false
     ? { html, refs: new Map() }
-    : numberFloats(html);
+    : numberFloats(html, profile.gbDoc);
   html = floats.html;
   // The editor accepts ordinary Mermaid fences without requiring a CLI figure caption.
   if (context.webSafe) html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>');
@@ -688,10 +702,19 @@ export async function render(src, options = {}, context = {}) {
     const tocItem = s => profile.gbDoc
       ? `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
       : `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`;
-    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目  录'}</div><ol>` + items.map(tocItem).join('') + '</ol></div>';
+    const floatLists = profile.gbDoc ? ['fig', 'tab'].map(kind => {
+      const entries = [...html.matchAll(kind === 'fig' ? /<figure class="fig" id="([^"]+)">[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/g : /<table class="tbl" id="([^"]+)">\s*<caption>([\s\S]*?)<\/caption>/g)];
+      return entries.length ? '<ol class="gb-float-toc">' + entries.map(m => tocItem({id:m[1],text:stripTags(m[2]),level:2})).join('') + '</ol>' : '';
+    }).join('') : '';
+    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目  录'}</div><ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';
   }
 
+  if (profile.gbDoc) html = transformGbContent(html, title);
+  if (gbNotes) html = gbNotes.finalize(html);
   html = sectionize(html);
+  if (profile.gbDoc && !(fm.gb_source_cover === true || fm.gb_source_cover === 'true') && /class="[^"]*body-start/.test(html)) {
+    html = html.replace(/<\/section>\s*$/, '<div class="gb-end-line" aria-label="文件终结线"></div></section>');
+  }
 
   // CSS
   const themeFile = path.join(THEMES, `${effTheme}.css`);
@@ -717,7 +740,7 @@ export async function render(src, options = {}, context = {}) {
   // 做不到奇偶差异，改由 Paged.js 的命名页 margin box 绘制（故标准号在这里动态成 CSS）。
   const stdno = fm['标准号'] || fm.standard || '';
   const pageCss = profile.gbDoc ? gbHeaderCss(stdno) : '';
-  let finalCss = pageCss ? css + '\n' + pageCss : css;
+  let finalCss = (pageCss ? css + '\n' + pageCss : css) + (gbNotes ? '\n' + gbNotes.css : '');
 
   const chapterStart = eff.chapterStart;
   if (chapterStart !== 'continuous') {
@@ -735,7 +758,7 @@ export async function render(src, options = {}, context = {}) {
   const coverHtml = profile.gbDoc && eff.gbCover !== false && !sourceCover ? buildCover(fm, title, eff.gbDefaults !== false) : '';
   if (profile.gbDoc && !coverHtml) {
     // Unsectioned source evidence uses the body page without a generated cover.
-    const header = stdno ? '@top-right { content: ' + cssString(stdno) + '; font: 9pt/1 var(--font-head); }' : '';
+    const header = stdno ? '@top-right { content: ' + cssString(stdno) + '; font: 10.5pt/1 var(--font-head); }' : '';
     finalCss += '\nbody, main { page: gb-body; }\nmain > section:first-child { break-before: auto; }\nmain img { max-height: 230mm; object-fit: contain; }\n@page { ' + header + ' @bottom-right { content: counter(page); } }';
   }
 
@@ -822,7 +845,7 @@ export async function render(src, options = {}, context = {}) {
     'window.__md2pdfPagedReady = false;',
     installPagedLayout.toString(),
     profile.gbDoc ? '' : stampPagedLists.toString(),
-    profile.gbDoc ? '' : finalizePagedCounters.toString(),
+    profile.gbDoc ? prepareGbLayout.toString() + '\n' + finalizeGbLayout.toString() : finalizePagedCounters.toString(),
     '(function () {',
     '  function depsReady() {',
     '    return window.__md2pdfMathReady !== false && window.__md2pdfMermaidReady !== false;',
@@ -830,14 +853,15 @@ export async function render(src, options = {}, context = {}) {
     '  function run() {',
     '    if (!depsReady()) { setTimeout(run, 50); return; }',
     '    try {',
-    '      installPagedLayout(' + ((eff.landscape ? 210 : 297) - effMarginTop - effMarginBottom) * 96 / 25.4 + ', ' + JSON.stringify(chapterStart) + ', ' + (!profile.gbDoc && !useToc) + ', ' + ((eff.landscape ? 297 : 210) - effMarginLeft - effMarginRight) * 96 / 25.4 + ');',
+    (profile.gbDoc ? '      prepareGbLayout();\n' : '') + '      installPagedLayout(' + ((eff.landscape ? 210 : 297) - effMarginTop - effMarginBottom) * 96 / 25.4 + ', ' + JSON.stringify(chapterStart) + ', ' + (!profile.gbDoc && !useToc) + ', ' + ((eff.landscape ? 297 : 210) - effMarginLeft - effMarginRight) * 96 / 25.4 + ', ' + profile.gbDoc + ');',
     profile.gbDoc ? '' : '      stampPagedLists();',
     '      window.PagedPolyfill.preview()',
-    '        .then(function () { ' + (profile.gbDoc ? '' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
+    '        .then(function () { ' + (profile.gbDoc ? 'finalizeGbLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); ' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
-    '  if (document.readyState === "complete") run(); else window.addEventListener("load", run);',
+    profile.gbDoc ? '  function start() { Promise.all([document.fonts.load(\'10.5pt \"GB Song\"\'), document.fonts.load(\'10.5pt \"GB Hei\"\'), document.fonts.load(\'17pt \"GB Cover\"\')]).then(function (faces) { if (faces.some(function (list) { return !list.length; })) throw new Error(\'国家标准所需本机字体未加载，请安装方正书宋_GBK、方正黑体_GBK和方正小标宋_GBK\'); return document.fonts.ready; }).then(run).catch(function (error) { window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
+    '  if (document.readyState === "complete") start(); else window.addEventListener("load", start);',
     '})();',
     '</script>',
   ].join('\n');
@@ -857,7 +881,7 @@ export async function render(src, options = {}, context = {}) {
         .join('\n')
     : '';
   // 预览的页码修正也必须尊重自定义/隐藏的中间页脚。
-  const headMeta = gbMeta + '\n<meta name="md2pdf-page-count" content="' +
+  const headMeta = gbMeta + (profile.gbDoc ? '\n<meta name="md2pdf-gb-cover-glyphs" content="local-test-candidate-unverified">' : '') + '\n<meta name="md2pdf-page-count" content="' +
     (!profile.gbDoc && eff.footer !== false && eff.footerCenter === undefined ? 'auto' : 'off') + '">';
 
   let shell = await readFile(path.join(ASSETS, 'shell.html'), 'utf8');
@@ -869,6 +893,7 @@ export async function render(src, options = {}, context = {}) {
   if ((chapterStart !== 'continuous' || html.includes('class="md2pdf-pagebreak"')) && !title && !kicker && !lead && !authorsHtml) {
     shell = shell.replace(/<header class="masthead[^"]*">[\s\S]*?<\/header>/, '');
   }
+  if (profile.gbDoc && coverHtml && stdno) shell = shell.replace('</main>', '</main><section class="gb-back-cover"><div class="gb-back-standard">' + esc(stdno) + '</div></section>');
   const out = fill(shell, {
     '{{TITLE}}': esc(title),
     '{{MASTHEAD_CLASS}}': h1 && !title ? ' title-omitted' : '',
@@ -942,6 +967,6 @@ export async function render(src, options = {}, context = {}) {
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
   return { title, warnings, html: assetHtml(usePaged && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
-    printOptions: { footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
+    printOptions: { ...(profile.gbDoc ? {requireGbFonts:true} : {}), footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
       landscape: eff.landscape, outline: eff.outline !== false, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
 }

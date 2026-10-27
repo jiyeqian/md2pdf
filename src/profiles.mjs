@@ -59,8 +59,8 @@ export const PROFILES = {
       numbering: 'force',
       lead: false,     // GB 正文不用导语
       toc: true,       // GB 通常有目次
-      // 页边距（mm）：实测正式发布版为左宽（装订边）右窄
-      marginTop: 25, marginBottom: 20, marginLeft: 25, marginRight: 19,
+      // E.1/E.2：五号书眉顶 25 mm、书眉下空 5 mm；正文镜像边距由 gb.css 命名页设置。
+      fontSize: 10.5, marginTop: 33.70417, marginBottom: 27, marginLeft: 25, marginRight: 20,
     },
   },
 };

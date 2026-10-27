@@ -176,9 +176,9 @@ export class Chrome {
       }
       if (!ready) throw new Error('Chrome asynchronous rendering timeout');
     }
-    if (opts.webSafe) {
+    if (opts.webSafe || opts.requireGbFonts) {
       const failure = await this.send('Runtime.evaluate', { expression: 'window.__md2pdfMermaidError || window.__md2pdfPagedError || null', returnByValue: true });
-      if (failure.result?.value) throw new Error('Document rendering failed');
+      if (failure.result?.value) throw new Error('Document rendering failed' + (opts.requireGbFonts ? ': ' + failure.result.value : ''));
     }
     await this.send('Runtime.evaluate', { expression: 'document.fonts.ready.then(() => true)', awaitPromise: true, returnByValue: true });
     const base = {
