@@ -1,3 +1,4 @@
+import { CHAPTER_START_VALUES } from './frontmatter-fields.mjs';
 import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,6 +40,7 @@ export const GLOBAL_OPTION_DEFAULTS = {
   lineHeight: 1.9,
   numbering: 'auto',
   numberScheme: 'arabic',
+  chapterStart: 'continuous',
   tocDepth: 1,
   marginTop: 20,
   marginBottom: 18,
@@ -243,6 +245,12 @@ export function parseArgs(argv) {
         const v = takeValue('--numbering');
         if (!NUMBERING_MODES.includes(v)) throw enumError('编号模式', v, NUMBERING_MODES);
         put('numbering', v, '--numbering');
+        break;
+      }
+      case '--chapter-start': {
+        const v = takeValue('--chapter-start');
+        if (!CHAPTER_START_VALUES.includes(v)) throw enumError('章分页策略', v, CHAPTER_START_VALUES);
+        put('chapterStart', v, '--chapter-start');
         break;
       }
       case '--number-scheme': {

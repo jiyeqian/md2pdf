@@ -20,6 +20,7 @@ md2pdf 文件.md --theme minimal --toc   # 选择主题并添加目录页
 | `--theme <name>` | 主题：`elegant`（默认）、`minimal`、`gb` |
 | `-t, --toc` | 在文首添加可点击目录页 |
 | `--numbering <mode>` | 章节编号：`auto`、`force`、`none` |
+| `--chapter-start <mode>` | `continuous`（默认）、`page`、`odd-page`；以 `##` 为章 |
 | `--number-scheme <name>` | 编号格式：`arabic`、`gb`、`cjk`、`chapter` |
 | `--font-size <pt>` | 正文字号，默认 10.5 pt |
 | `--margin <mm>` | 页边距，默认 20 mm；可用 `20,18` 分别设置上下、左右 |

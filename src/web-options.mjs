@@ -1,3 +1,4 @@
+import { CHAPTER_START_VALUES } from './frontmatter-fields.mjs';
 import { PROFILES, PROFILE_NAMES, detectProfile } from './profiles.mjs';
 import { SCHEME_NAMES } from './numbering.mjs';
 import { parseFrontmatter, resolveDocumentOptions } from './config.mjs';
@@ -30,7 +31,7 @@ export const THEME_LABELS = { elegant: '雅致 · 墨蓝', minimal: '简洁 · �
 export const SCHEME_LABELS = { arabic: '1 / 1.1', gb: 'GB 章条', cjk: '一、/（一）', chapter: '第 1 章' };
 export const NUMBERING_LABELS = { auto: '自动识别', force: '强制编号', none: '不编号' };
 export const MARGIN_OPTIONS = [{ value: '15', label: '15 · 紧凑' }, { value: '20', label: '20 · 标准' }, { value: '25', label: '25 · 宽松' }];
-export const OPTION_LABELS = { type: '文档类型', theme: '主题', toc: '目录', fontSize: '字号', lineHeight: '行距', margin: '页边距', numbering: '章节编号', numberScheme: '编号方案', landscape: '页面方向' };
+export const OPTION_LABELS = { type: '文档类型', theme: '主题', toc: '目录', fontSize: '字号', lineHeight: '行距', margin: '页边距', numbering: '章节编号', numberScheme: '编号方案', chapterStart: '章分页策略', landscape: '页面方向' };
 export const FONT_SIZE_RANGE = { min: 8, max: 24, step: 0.5 };
 // 正文行距：有限数字 1.0–2.5（step 0.05），省略时保持正文默认 1.9。
 export const LINE_HEIGHT_RANGE = { min: 1, max: 2.5, step: 0.05 };
@@ -40,7 +41,7 @@ export const MARGIN_RANGE = { min: 10, max: 40 };
 
 // HTTP 层接受的选项白名单（键名即前端控件名；margin 由前端展开成四个数值）
 export const WEB_OPTION_SPEC = {
-  enums: { type: PROFILE_NAMES.slice(), theme: Object.keys(THEME_LABELS), numbering: Object.keys(NUMBERING_LABELS), numberScheme: SCHEME_NAMES.slice() },
+  enums: { chapterStart: CHAPTER_START_VALUES.slice(), type: PROFILE_NAMES.slice(), theme: Object.keys(THEME_LABELS), numbering: Object.keys(NUMBERING_LABELS), numberScheme: SCHEME_NAMES.slice() },
   booleans: ['toc', 'landscape'],
   numbers: { tocDepth: [1, 2], fontSize: [8, 24], lineHeight: [1, 2.5], marginTop: [10, 40], marginBottom: [10, 40], marginSide: [10, 40], marginLeft: [10, 40], marginRight: [10, 40] },
 };
@@ -151,13 +152,14 @@ export function webPolicyDocument() {
   };
 }
 
-const ENUM_OPTION_KEYS = ['theme', 'numberScheme', 'numbering'];
+const ENUM_OPTION_KEYS = ['theme', 'numberScheme', 'numbering', 'chapterStart'];
 const MARGIN_KEYS = ['margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginSide'];
 
 // frontmatter 里与「在线可调选项」同名的字段（kebab/camel 皆可），映射到运行时键名。
 // 用于把 frontmatter 的配置一并纳入类型策略校验，防止绕过 Web 控件锁定（尤其是 GB 强制版式）。
 const FM_OPTION_KEYS = {
   theme: 'theme',
+  'chapter-start': 'chapterStart', chapterStart: 'chapterStart',
   'number-scheme': 'numberScheme', numberScheme: 'numberScheme',
   numbering: 'numbering',
   'font-size': 'fontSize', fontSize: 'fontSize',
@@ -232,7 +234,7 @@ export function assertOptionsAllowed(opts, type, frontmatter = {}) {
   }
   for (const key of ENUM_OPTION_KEYS) {
     if (!present(key)) continue;
-    const allowed = caps[key];
+    const allowed = key === 'chapterStart' ? CHAPTER_START_VALUES : caps[key];
     if (!allowed || !allowed.includes(opts[key])) {
       throw error400(type === 'gb'
         ? `国家标准文档的${OPTION_LABELS[key]}应用内置国家标准模板，不能在线修改`
@@ -290,7 +292,7 @@ export function normalizeSelections(selections = {}, type = '') {
  */
 export function effectiveOptions(opts = {}, type = 'general', fm = {}, positions = {}) {
   const effective = resolveDocumentOptions(opts, fm, PROFILES[type] || PROFILES.general, { positions });
-  const keys = ['theme', 'numberScheme', 'numbering', 'toc', 'fontSize', 'lineHeight', 'landscape', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
+  const keys = ['chapterStart', 'theme', 'numberScheme', 'numbering', 'toc', 'fontSize', 'lineHeight', 'landscape', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
   const result = Object.fromEntries(keys.map(key => [key, effective[key]]));
   if (type === 'gb') result.lineHeight = GB_LINE_HEIGHT;
   return result;

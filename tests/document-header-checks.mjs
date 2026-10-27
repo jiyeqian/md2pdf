@@ -91,7 +91,7 @@ test('paged lists preserve start, explicit values and reversed numbering, exclud
 test('paged footers receive actual nonzero page counts after pagination', () => {
   const footers = Array.from({length:4},()=>({classList:{add(){}},textContent:''}));
   const styles = [];
-  const root = {createElement:()=>({}),head:{appendChild:s=>styles.push(s)},querySelectorAll:()=>footers.map(f=>({querySelector:()=>f}))};
+  const root = {createElement:()=>({}),head:{appendChild:s=>styles.push(s)},querySelectorAll:()=>footers.map(f=>({classList:{contains:()=>false},querySelector:()=>f}))};
   finalizePagedCounters(true,root);
   assert.deepEqual(footers.map(f=>f.textContent), ['1 / 4','2 / 4','3 / 4','4 / 4']);
   assert.ok(styles[0].textContent.includes('content: attr(data-md2pdf-n)'));

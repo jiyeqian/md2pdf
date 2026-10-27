@@ -62,6 +62,7 @@ md2pdf ${VERSION} — Markdown 转 PDF
       --line-height <倍数>   正文行距，默认 1.9
       --margin <mm>          页边距，支持“上下,左右”
       --numbering <模式>     章节编号：auto、force、none；默认 auto
+      --chapter-start <策略> continuous（连续，默认）| page（新页）| odd-page（奇数页）；作用于 ##
       --number-scheme <名称> 编号方案：${SCHEME_NAMES.join('、')}；通用文档默认 cjk，其他模板沿用各自默认
   -t, --toc                  显示目录
       --toc-depth <层级>     目录深度：1、2；默认 1

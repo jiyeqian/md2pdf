@@ -17,7 +17,7 @@
  * 安全：解析结果经 sanitize 深拷贝，剔除 __proto__ / prototype / constructor，
  * 防止 YAML 反序列化污染原型；解析设置 maxAliasCount 上限，避免别名炸弹。
  */
-import { TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from './frontmatter-fields.mjs';
+import { CHAPTER_START_VALUES, TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from './frontmatter-fields.mjs';
 import { paperAuthorErrors, paperAuthorWarnings } from './paper-authors.mjs';
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { GLOBAL_OPTION_DEFAULTS, FEATURES, RUNTIME_FEATURES, listThemes } from './options.mjs';
@@ -72,6 +72,7 @@ const typeName = v => {
 /* ---------------- 字段表 ---------------- */
 
 const ENUM_FIELDS = {
+  chapterStart: { label: '章分页策略', values: () => CHAPTER_START_VALUES.slice() },
   theme: { label: '主题', values: () => listThemes() },
   type: { label: '文档类型', values: () => PROFILE_NAMES.slice() },
   numbering: { label: '编号模式', values: () => NUMBERING_VALUES.slice() },

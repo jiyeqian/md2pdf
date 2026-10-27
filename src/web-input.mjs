@@ -1,3 +1,4 @@
+import { CHAPTER_START_VALUES } from './frontmatter-fields.mjs';
 import { parseFrontmatter } from './config.mjs';
 import { detectProfile, PROFILE_NAMES } from './profiles.mjs';
 import { effectiveOptions, assertOptionsAllowed, frontmatterOverrides, policyForType } from './web-options.mjs';
@@ -118,7 +119,7 @@ export function validateInput(body) {
   if (/\\(?:href|url|includegraphics|require|def|gdef|edef|xdef|newcommand|renewcommand|let|csname)\b/i.test(body.md)) throw error(400, '在线版本不支持公式中的链接、外部资源或自定义宏');
   const opts = body.opts ?? {};
   if (typeof opts !== 'object' || !opts || Array.isArray(opts)) throw error(400, 'opts 必须是对象');
-  const enums = { type: ['general', 'skill', 'paper', 'gb'], theme: ['elegant', 'minimal', 'gb'], numbering: ['auto', 'force', 'none'], numberScheme: ['arabic', 'gb', 'cjk', 'chapter'] };
+  const enums = { chapterStart: CHAPTER_START_VALUES, type: ['general', 'skill', 'paper', 'gb'], theme: ['elegant', 'minimal', 'gb'], numbering: ['auto', 'force', 'none'], numberScheme: ['arabic', 'gb', 'cjk', 'chapter'] };
   if (opts.tocDepth !== undefined && ![1, 2].includes(opts.tocDepth)) throw error(400, '无效选项：tocDepth');
   const booleans = ['toc', 'landscape'];
   const numbers = { tocDepth: [1, 2], fontSize: [8, 24], lineHeight: [1, 2.5], marginTop: [10, 40], marginBottom: [10, 40], marginSide: [10, 40], marginLeft: [10, 40], marginRight: [10, 40] };

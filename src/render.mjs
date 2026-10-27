@@ -1,3 +1,4 @@
+import { installPagedLayout } from './paged-layout.mjs';
 import { existsSync, readdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -589,6 +590,7 @@ export async function render(src, options = {}, context = {}) {
     });
 
   let html = marked.parse(bodyProtected, { gfm: true, breaks: false, async: false });
+  html = html.replace(/<h2(?=[\s>])/g, '<h2 data-chapter');
 
   if (context.webSafe) html = html.replace(/\u0003FOOTNOTE(\d+)\u0003/g, (m, i) => fnMarkup[+i] ?? m);
 
@@ -703,6 +705,13 @@ export async function render(src, options = {}, context = {}) {
   const pageCss = profile.gbDoc ? gbHeaderCss(stdno) : '';
   let finalCss = pageCss ? css + '\n' + pageCss : css;
 
+  const chapterStart = eff.chapterStart;
+  if (chapterStart !== 'continuous') {
+    finalCss += '\nmain > section:has(> h2[data-chapter]) { break-before: ' + (chapterStart === 'odd-page' ? 'right' : 'page') + '; }';
+  }
+  // Intentional parity pages stay entirely blank, including custom margin boxes.
+  if (chapterStart === 'odd-page') finalCss += '\n@page :blank { @top-left { content: none; } @top-center { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-center { content: none; } @bottom-right { content: none; } }\n.pagedjs_blank_page .pagedjs_margin-content { visibility: hidden !important; }';
+
   const kicker = eff.kicker !== undefined ? eff.kicker
     : (fmStr(fm.kicker) || fmStr(fm.category) || (profile.kicker ?? ''));
 
@@ -787,7 +796,7 @@ export async function render(src, options = {}, context = {}) {
     '<script src="' + mathUrl + '" id="MathJax-script"></script>',
   ].join('\n') : '';
 
-  // Paged.js：PDF 渲染路径在 GB 或有目录时启用（@page / target-counter，
+  // Paged.js：GB、目录、章分页及表格 PDF 共用分页引擎（@page / target-counter，
   // 见 docs/gb-template.md）。--paged-html 时脚本改注入 paged-html 产物（见下方 pagedOut），
   // 两份 HTML 必须分离 —— 否则非 gb 的 PDF 会被 Paged.js 二次分页。
   // 时序：必须等 MathJax / Mermaid 渲染完成再分页，否则按错误尺寸切页。
@@ -797,6 +806,7 @@ export async function render(src, options = {}, context = {}) {
     '<script src="' + pagedUrl + '"></script>',
     '<script>',
     'window.__md2pdfPagedReady = false;',
+    installPagedLayout.toString(),
     profile.gbDoc ? '' : stampPagedLists.toString(),
     profile.gbDoc ? '' : finalizePagedCounters.toString(),
     '(function () {',
@@ -806,11 +816,12 @@ export async function render(src, options = {}, context = {}) {
     '  function run() {',
     '    if (!depsReady()) { setTimeout(run, 50); return; }',
     '    try {',
+    '      installPagedLayout(' + ((eff.landscape ? 210 : 297) - effMarginTop - effMarginBottom) * 96 / 25.4 + ');',
     profile.gbDoc ? '' : '      stampPagedLists();',
     '      window.PagedPolyfill.preview()',
     '        .then(function () { ' + (profile.gbDoc ? '' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
-    '        .catch(function () { window.__md2pdfPagedReady = true; });',
-    '    } catch (e) { window.__md2pdfPagedReady = true; }',
+    '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
+    '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
     '  if (document.readyState === "complete") run(); else window.addEventListener("load", run);',
     '})();',
@@ -841,6 +852,9 @@ export async function render(src, options = {}, context = {}) {
     // Paged.js still assigns a page to the hidden masthead before named main.
     shell = shell.replace(/<header class="masthead">[\s\S]*?<\/header>/, '');
   }
+  if (chapterStart !== 'continuous' && !title && !kicker && !lead && !authorsHtml) {
+    shell = shell.replace(/<header class="masthead[^"]*">[\s\S]*?<\/header>/, '');
+  }
   const out = fill(shell, {
     '{{TITLE}}': esc(title),
     '{{MASTHEAD_CLASS}}': h1 && !title ? ' title-omitted' : '',
@@ -862,9 +876,10 @@ export async function render(src, options = {}, context = {}) {
 
   // 分页 HTML（--paged-html）：浏览器打开与 PDF 同款分页/页码。
   // gb 的 out 已含 Paged.js 与分侧页码规则；其他类型在此注入页码/页脚 margin box 与观感样式。
-  // 有目录时 PDF 同样使用分页产物，确保目录页码基于实际分页计算。
+  // 目录、章分页和表格 PDF 同样使用分页产物，确保页码与表头和预览一致。
+  const usePaged = !!profile.gbDoc || !!toc || chapterStart !== 'continuous' || /<table[\s>]/.test(html);
   let pagedOut = null;
-  if (options.pagedHtml || toc) {
+  if (options.pagedHtml || usePaged) {
     const footFont = 'font: 8pt/1 -apple-system, "PingFang SC", sans-serif; color: #8a8578; letter-spacing: .5px;';
     // 页脚三栏：footer=false 关整栏；center 未指定=当前页/总页数，显式字符串替换，空串清空；左右独立。
     const showFooter = eff.footer !== false;
@@ -907,14 +922,12 @@ export async function render(src, options = {}, context = {}) {
       <span style="flex:1;text-align:right;">${esc(eff.footerRight || '')}</span>
     </div>`;
 
-  // GB：页眉/页码改由 Paged.js 的 @page margin box 绘制（奇偶页位置不同、前置罗马/正文阿拉伯），
-  // 必须关掉 Chrome 原生的 headerTemplate/footerTemplate，否则同页会出现两套页码。
-  const usePaged = !!profile.gbDoc || !!toc;
+  // Paged 路径使用 margin box，关闭 Chrome 原生页眉页脚以免出现两套页码。
   const showHeader = !profile.gbDoc && eff.header !== false && ['Left', 'Center', 'Right'].some(side => eff['header' + side]);
   const headerTemplate = showHeader ? `<div style="width:100%;font-size:8px;color:#8a8578;display:flex;padding:0 12mm;">${['Left', 'Center', 'Right'].map(side => `<span style="flex:1;min-width:0;overflow-wrap:anywhere;text-align:${side.toLowerCase()};">${esc(eff['header' + side] || '')}</span>`).join('')}</div>` : '<span></span>';
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
-  return { title, warnings, html: assetHtml(toc && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
+  return { title, warnings, html: assetHtml(usePaged && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
     printOptions: { footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
       landscape: eff.landscape, outline: eff.outline !== false, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
 }

@@ -68,6 +68,22 @@ try {
     sameHtml(online.html,await webDocument(attachSourcePositions(core.pagedHtml,md),true,type),type+': prepared HTML');
     console.log(`✓ ${type}: CLI HTML、共用核心、Node API、静态预览与配置一致`);
   }
+  for (const mode of ['continuous', 'page', 'odd-page']) {
+    const md = `---\nchapter-start: ${mode}\n---\n# Pagination\n\n## First\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\n## Second\n\nEnd`;
+    const body = {md, opts:{}};
+    const online = await (await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+    const offline = await (await browser.appFetch('/api/render',{body:JSON.stringify(body)})).json();
+    sameHtml(offline.html, online.html, mode+': chapter/table preview');
+    assert.equal(online.effective.chapterStart, mode);
+    assert.deepEqual(offline.effective, online.effective);
+    const core = await render(md, {pagedHtml:true}, {webSafe:true});
+    const input=path.join(tmp,'pagination.md'), output=path.join(tmp,'pagination.html');
+    await writeFile(input,md);
+    execFileSync(process.execPath,['src/md2pdf.mjs',input,'--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});
+    sameHtml(await readFile(output,'utf8'), core.pagedHtml, mode+': chapter/table CLI');
+    sameHtml(online.html,await webDocument(attachSourcePositions(core.pagedHtml,md),true,core.type),mode+': chapter/table prepared HTML');
+  }
+  console.log('✓ 章分页三种策略与表头运行时：CLI、Node、静态配置及 HTML 一致');
   const invalid={md:'---\nfont-size: bad\n---\n# Invalid',opts:{}};
   const online=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(invalid)});
   const offline=await browser.appFetch('/api/render',{body:JSON.stringify(invalid)});

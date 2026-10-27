@@ -148,6 +148,7 @@ table {
   width: 100%; border-collapse: collapse;
   margin: 4px 0 16px; font-size: .92em;
 }
+thead { display: table-header-group; }
 thead th {
   text-align: left; padding: 8px 10px;
   font-weight: 600; letter-spacing: .05em; font-size: .95em;

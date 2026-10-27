@@ -629,6 +629,7 @@ test('frontmatter value recommendations are scoped, canonical and use parser def
   assert.deepEqual(complete('bibliography: ').options.map(o => o.label), ['footnote', 'bib']);
   assert.deepEqual(complete('toc-depth: 2').options.map(o => o.label), ['2']);
   assert.deepEqual(complete('numbering: ').options.map(o => o.label), catalog.numbering);
+  assert.deepEqual(complete('chapter-start:').options.map(o => o.label), ['continuous', 'page', 'odd-page']);
   for (const field of ['theme', 'type', 'number-scheme']) {
     const key = field === 'number-scheme' ? 'numberScheme' : field;
     assert.deepEqual(complete(field + ': ').options.map(o => o.label), catalog[key]);

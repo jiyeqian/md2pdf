@@ -1,3 +1,4 @@
+export const CHAPTER_START_VALUES = ['continuous', 'page', 'odd-page'];
 export const TEXT_FIELDS = ['title', 'kicker', 'colophonLeft', 'colophonCenter', 'colophonRight', 'headerLeft', 'headerCenter', 'headerRight', 'footerLeft', 'footerCenter', 'footerRight', 'bibliographyTitle'];
 export const NUMBER_FIELDS = {
   fontSize: { min: 0.1 },
@@ -14,7 +15,7 @@ export const CONTROL_FIELDS = ['enable', 'disable'];
 export const SPECIAL_FIELDS = ['margin', 'bibliography'];
 export const CONFIG_FIELDS = new Set([
   ...TEXT_FIELDS, ...Object.keys(NUMBER_FIELDS), ...BOOL_FIELDS,
-  ...'theme type numbering numberScheme'.split(' '), ...CONTROL_FIELDS, ...SPECIAL_FIELDS,
+  ...'theme type numbering numberScheme chapterStart'.split(' '), ...CONTROL_FIELDS, ...SPECIAL_FIELDS,
 ]);
 
 // kebab-case（及少量别名）→ 规范 camelCase
@@ -24,6 +25,7 @@ export const FM_ALIASES = {
   lineHeight: ['line-height'],
   tocDepth: ['toc-depth'],
   numberScheme: ['number-scheme'],
+  chapterStart: ['chapter-start'],
   floatNumbering: ['float-numbering'],
   gbCover: ['gb-cover'],
   gbDefaults: ['gb-defaults'],

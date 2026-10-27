@@ -384,6 +384,7 @@ function runtimeScript(type) {
     "        if (!IS_GB && (!pageCountMode || pageCountMode.content !== 'off')) {",
     '          var pages = document.querySelectorAll(".pagedjs_page");',
     '          pages.forEach(function (page, index) {',
+    '            if (page.classList.contains("pagedjs_blank_page")) return;',
     '            var footer = page.querySelector(".pagedjs_margin-bottom-center .pagedjs_margin-content");',
     '            if (footer) { footer.classList.add("web-page-number"); footer.textContent = (index + 1) + " / " + pages.length; footer.style.fontSize = "8pt"; footer.style.color = "#8a8578"; }',
     '          });',

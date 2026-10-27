@@ -1,5 +1,11 @@
 # CLI 与 WebApp 一致性及本次交接
 
+## 2026-10-27 章分页与表格
+
+`chapter-start` / `--chapter-start` 共用 `continuous`、`page`、`odd-page`；正文 `##` 为章。非连续章分页、带表格的 CLI PDF 与 WebApp 共用 Paged.js；`src/paged-layout.mjs` 在续表布局时补入表头，超高数据行允许拆分。补白页仍计入物理页数，但页眉、页脚留空；预览页码修正也须跳过补白页。
+
+`npm run test:pagination-browser` 生成 `/tmp/md2pdf-pagination-acceptance/` 的 Markdown、HTML 和 PDF，检查奇偶页、首章、85 行跨页表格及超高单行完整性。人工验收：打开 `odd-page.md`，确认章位于奇数页、补白为空；续表每页有表头、表题不重复；切到流式阅读后没有分页补白或重复表头，导出仍分页。手机打印与部署站点缓存仍需目标环境验收。
+
 ## 2026-10-22 main 整合
 
 7b10、f96a、analytics 已完整合入 main；来源提交、四处冲突解决、验证与 main 专用验收入口见 [合并记录](integration-2026-10-22.md)。其他会话继续任务前先保存本地修改，再自行同步 main；不要复制旧工作树文件覆盖整合结果。

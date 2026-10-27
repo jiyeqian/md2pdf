@@ -23,6 +23,7 @@ export function finalizePagedCounters(showFooter, root = document) {
   if (!showFooter) return;
   const pages = root.querySelectorAll('.pagedjs_page');
   pages.forEach((page, i) => {
+    if (page.classList.contains('pagedjs_blank_page')) return;
     const footer = page.querySelector('.pagedjs_margin-bottom-center .pagedjs_margin-content');
     if (footer) {
       footer.classList.add('md2pdf-page-count');
