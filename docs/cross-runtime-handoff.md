@@ -1,5 +1,17 @@
 # CLI 与 WebApp 一致性及本次交接
 
+## 2026-10-28 GB 标志参数方程候选
+
+新增点阵测量、两套仿射网格、统一细线、共享交点与透明孔洞的独立候选；上一版及生产资源均保留。完整函数与逐段系数见 [方程](gb-logo-functions.md)。本版 SVG／样本交并比约 92.52%，低于上一版 97.26%，不满足旧版 ≥97% 贴合目标；这是待审阅的规范化候选，不是生产替换验收通过。
+
+工作树 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`、分支 `codex/template`。无需服务或重启，直接打开：
+
+- `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf/output/pdf/gb-logo-parametric-comparison.pdf`：第一页比较原件、旧版、新版及透明背景，第二页核对七个共享接点。
+- `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf/output/pdf/gb-logo-parametric-40x20.pdf`：以 100% 查看原尺寸，放大检查曲线、同径点阵与接点。
+- `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf/assets/candidates/gb-logo-parametric.svg`：浏览器查看矢量；B 孔洞及点阵底色均透明。
+
+已运行点阵四源测量、同宽与共享点检查、确定性重建、彩色背景透明性、原尺寸纯矢量 PDF、SVG/PDF 四倍分辨率比对及 `npm run check:consistency`。沙箱内浏览器启动与回环监听受限，获准在沙箱外重跑成功。两页对照和原尺寸 PDF 均渲染检查；没有新标志三入口集成、手机或实物打印验收。验收顺序：对照整体 → 第二页七处接点 → 原尺寸 → 阅读误差与方程记录。
+
 ## 2026-10-28 GB 标志独立候选
 
 按 2026 年正式蒙版重建独立 SVG：线段、三次贝塞尔与 1067 个同径圆；生产 `assets/gb-logo.svg` 未替换。可编辑模型、来源哈希、四样本掩膜指标、原尺寸矢量 PDF 与跨渲染器差异见 [候选验收](gb-logo-reconstruction.md)。一致性检查通过；本轮不构成三入口新标志接入验收，无需启动服务，先打开对照 PDF 审阅。

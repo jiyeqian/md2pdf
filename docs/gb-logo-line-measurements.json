@@ -1,0 +1,29 @@
+{
+  "method": "Nearest-pixel normal profiles in original 948x474 stencil; retain isolated runs width1..5px; not original design stroke specification.",
+  "profiles": {
+    "B left stem straight": {
+      "acceptedSections": 101,
+      "medianPixels": 4.0,
+      "p10Pixels": 4.0,
+      "p90Pixels": 4.0
+    },
+    "G upper inner straight": {
+      "acceptedSections": 45,
+      "medianPixels": 3.0,
+      "p10Pixels": 3.0,
+      "p90Pixels": 4.0
+    },
+    "G diagonal seam": {
+      "acceptedSections": 28,
+      "medianPixels": 4.3,
+      "p10Pixels": 4.3,
+      "p90Pixels": 4.3
+    },
+    "G outer curve": {
+      "acceptedSections": 62,
+      "medianPixels": 4.15,
+      "p10Pixels": 3.4100000000000006,
+      "p90Pixels": 4.6000000000000005
+    }
+  }
+}

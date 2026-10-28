@@ -1,0 +1,563 @@
+{
+  "coordinateSystem": "948 x 474; top-left origin; pixel centers at n+0.5",
+  "method": "4-connected isolated ink components, area14..40, bbox4..8; integer grid assignment then least squares",
+  "limitations": "Source masks are nearly identical, not independent design originals; component selection excludes clipped/merged dots.",
+  "sources": [
+    {
+      "file": "GB:T 48316—2026.pdf",
+      "sha256": "ea30418a73978baa7ad3209204a1c31826c99f49627888d776f08008685e5a2a",
+      "decodedMaskSha256": "649ab5c3a741040cd03bbc7fd98a26ae65dc605baf5b94c27b59513069162537",
+      "global": {
+        "origin": [
+          -2.8541370507238337,
+          18.121696888702747
+        ],
+        "u": [
+          12.135852353817155,
+          -0.026342595420395173
+        ],
+        "v": [
+          6.4407665808121415,
+          12.320345617393615
+        ],
+        "affineResidual": {
+          "count": 842,
+          "rmsPixels": 0.9817882586242269,
+          "p95Pixels": 1.7400677841547025,
+          "maxPixels": 2.6011337861548975
+        },
+        "halfShiftHorizontalResidual": {
+          "count": 842,
+          "rmsPixels": 4.180776879227049,
+          "p95Pixels": 6.693719274049045,
+          "maxPixels": 8.220004909476293
+        },
+        "halfShiftHorizontalParameters": {
+          "origin": [
+            3.1097678179581965,
+            17.11963223186675
+          ],
+          "pitch": 12.136264623665184,
+          "rowHeight": 12.33340267037679
+        }
+      },
+      "regions": {
+        "G": {
+          "origin": [
+            -3.3799862120277484,
+            17.795963491750122
+          ],
+          "u": [
+            12.188498245890548,
+            -0.0009536364867464073
+          ],
+          "v": [
+            6.457400942407258,
+            12.335677907467556
+          ],
+          "affineResidual": {
+            "count": 386,
+            "rmsPixels": 0.7351397014417769,
+            "p95Pixels": 1.279794719840805,
+            "maxPixels": 1.697426600204388
+          },
+          "halfShiftHorizontalResidual": {
+            "count": 386,
+            "rmsPixels": 3.918905147475365,
+            "p95Pixels": 5.881464176262307,
+            "maxPixels": 7.045766700565588
+          },
+          "halfShiftHorizontalParameters": {
+            "origin": [
+              2.641538324168211,
+              17.778122044326896
+            ],
+            "pitch": 12.169090035256614,
+            "rowHeight": 12.336203762376027
+          },
+          "heldOutResidual": {
+            "count": 129,
+            "rmsPixels": 0.714538542340894,
+            "p95Pixels": 1.2267799755191362,
+            "maxPixels": 1.713187821622306
+          },
+          "rowAngleDegrees": -0.004482861191466406,
+          "adjacentRowShiftOverPitch": 0.5297946319666103,
+          "adjacentRowForwardAngleDegrees": 62.36913265206679,
+          "adjacentRowBackwardAngleDegrees": 114.91766447712811,
+          "secondaryDiagonalAnglesDegrees": [
+            44.50169267903357,
+            133.7866540904236
+          ],
+          "rowHeightOverPitch": 1.01207529086913
+        },
+        "B": {
+          "origin": [
+            -5.037361842228208,
+            16.470264243233725
+          ],
+          "u": [
+            12.167397763394174,
+            0.0005211118404522601
+          ],
+          "v": [
+            6.469772932954473,
+            12.335258512943392
+          ],
+          "affineResidual": {
+            "count": 456,
+            "rmsPixels": 0.7931958850893256,
+            "p95Pixels": 1.422293745022911,
+            "maxPixels": 1.8563192807329378
+          },
+          "halfShiftHorizontalResidual": {
+            "count": 456,
+            "rmsPixels": 4.28674711260505,
+            "p95Pixels": 6.949115871413639,
+            "maxPixels": 8.000471164347204
+          },
+          "halfShiftHorizontalParameters": {
+            "origin": [
+              2.639635950142772,
+              16.499551966404706
+            ],
+            "pitch": 12.14294720004047,
+            "rowHeight": 12.334966453006743
+          },
+          "heldOutResidual": {
+            "count": 152,
+            "rmsPixels": 0.7793135020505644,
+            "p95Pixels": 1.3795425486738266,
+            "maxPixels": 1.8026898724614377
+          },
+          "rowAngleDegrees": 0.0024538943884764206,
+          "adjacentRowShiftOverPitch": 0.5317302071293253,
+          "adjacentRowForwardAngleDegrees": 62.32324530324271,
+          "adjacentRowBackwardAngleDegrees": 114.79301765860602,
+          "secondaryDiagonalAnglesDegrees": [
+            44.49827402275902,
+            133.68601569220354
+          ],
+          "rowHeightOverPitch": 1.0137959449352623
+        }
+      }
+    },
+    {
+      "file": "GB 48319—2026.pdf",
+      "sha256": "420f68ee9b89bd203101b6d682ecc7ed57c3dc55cd79d348f5aafe4af5c708be",
+      "decodedMaskSha256": "401a622275f2814b76fbd0df844a256af38a821557ae106c56a9de4014656670",
+      "global": {
+        "origin": [
+          -2.8541370507238337,
+          18.121696888702747
+        ],
+        "u": [
+          12.135852353817155,
+          -0.026342595420395173
+        ],
+        "v": [
+          6.4407665808121415,
+          12.320345617393615
+        ],
+        "affineResidual": {
+          "count": 842,
+          "rmsPixels": 0.9817882586242269,
+          "p95Pixels": 1.7400677841547025,
+          "maxPixels": 2.6011337861548975
+        },
+        "halfShiftHorizontalResidual": {
+          "count": 842,
+          "rmsPixels": 4.180776879227049,
+          "p95Pixels": 6.693719274049045,
+          "maxPixels": 8.220004909476293
+        },
+        "halfShiftHorizontalParameters": {
+          "origin": [
+            3.1097678179581965,
+            17.11963223186675
+          ],
+          "pitch": 12.136264623665184,
+          "rowHeight": 12.33340267037679
+        }
+      },
+      "regions": {
+        "G": {
+          "origin": [
+            -3.3799862120277484,
+            17.795963491750122
+          ],
+          "u": [
+            12.188498245890548,
+            -0.0009536364867464073
+          ],
+          "v": [
+            6.457400942407258,
+            12.335677907467556
+          ],
+          "affineResidual": {
+            "count": 386,
+            "rmsPixels": 0.7351397014417769,
+            "p95Pixels": 1.279794719840805,
+            "maxPixels": 1.697426600204388
+          },
+          "halfShiftHorizontalResidual": {
+            "count": 386,
+            "rmsPixels": 3.918905147475365,
+            "p95Pixels": 5.881464176262307,
+            "maxPixels": 7.045766700565588
+          },
+          "halfShiftHorizontalParameters": {
+            "origin": [
+              2.641538324168211,
+              17.778122044326896
+            ],
+            "pitch": 12.169090035256614,
+            "rowHeight": 12.336203762376027
+          },
+          "heldOutResidual": {
+            "count": 129,
+            "rmsPixels": 0.714538542340894,
+            "p95Pixels": 1.2267799755191362,
+            "maxPixels": 1.713187821622306
+          },
+          "rowAngleDegrees": -0.004482861191466406,
+          "adjacentRowShiftOverPitch": 0.5297946319666103,
+          "adjacentRowForwardAngleDegrees": 62.36913265206679,
+          "adjacentRowBackwardAngleDegrees": 114.91766447712811,
+          "secondaryDiagonalAnglesDegrees": [
+            44.50169267903357,
+            133.7866540904236
+          ],
+          "rowHeightOverPitch": 1.01207529086913
+        },
+        "B": {
+          "origin": [
+            -5.037361842228208,
+            16.470264243233725
+          ],
+          "u": [
+            12.167397763394174,
+            0.0005211118404522601
+          ],
+          "v": [
+            6.469772932954473,
+            12.335258512943392
+          ],
+          "affineResidual": {
+            "count": 456,
+            "rmsPixels": 0.7931958850893256,
+            "p95Pixels": 1.422293745022911,
+            "maxPixels": 1.8563192807329378
+          },
+          "halfShiftHorizontalResidual": {
+            "count": 456,
+            "rmsPixels": 4.28674711260505,
+            "p95Pixels": 6.949115871413639,
+            "maxPixels": 8.000471164347204
+          },
+          "halfShiftHorizontalParameters": {
+            "origin": [
+              2.639635950142772,
+              16.499551966404706
+            ],
+            "pitch": 12.14294720004047,
+            "rowHeight": 12.334966453006743
+          },
+          "heldOutResidual": {
+            "count": 152,
+            "rmsPixels": 0.7793135020505644,
+            "p95Pixels": 1.3795425486738266,
+            "maxPixels": 1.8026898724614377
+          },
+          "rowAngleDegrees": 0.0024538943884764206,
+          "adjacentRowShiftOverPitch": 0.5317302071293253,
+          "adjacentRowForwardAngleDegrees": 62.32324530324271,
+          "adjacentRowBackwardAngleDegrees": 114.79301765860602,
+          "secondaryDiagonalAnglesDegrees": [
+            44.49827402275902,
+            133.68601569220354
+          ],
+          "rowHeightOverPitch": 1.0137959449352623
+        }
+      }
+    },
+    {
+      "file": "GB:T 48300—2026.pdf",
+      "sha256": "0107877ad4b405c7dfee4403e9139df0887d21753bbc1ee7f6a635a72e369c85",
+      "decodedMaskSha256": "ce931d54695789ac5e2c46063686204c766b7247d27190a94e7cb71c346ab405",
+      "global": {
+        "origin": [
+          -2.8541370507238337,
+          18.121696888702747
+        ],
+        "u": [
+          12.135852353817155,
+          -0.026342595420395173
+        ],
+        "v": [
+          6.4407665808121415,
+          12.320345617393615
+        ],
+        "affineResidual": {
+          "count": 842,
+          "rmsPixels": 0.9817882586242269,
+          "p95Pixels": 1.7400677841547025,
+          "maxPixels": 2.6011337861548975
+        },
+        "halfShiftHorizontalResidual": {
+          "count": 842,
+          "rmsPixels": 4.180776879227049,
+          "p95Pixels": 6.693719274049045,
+          "maxPixels": 8.220004909476293
+        },
+        "halfShiftHorizontalParameters": {
+          "origin": [
+            3.1097678179581965,
+            17.11963223186675
+          ],
+          "pitch": 12.136264623665184,
+          "rowHeight": 12.33340267037679
+        }
+      },
+      "regions": {
+        "G": {
+          "origin": [
+            -3.3799862120277484,
+            17.795963491750122
+          ],
+          "u": [
+            12.188498245890548,
+            -0.0009536364867464073
+          ],
+          "v": [
+            6.457400942407258,
+            12.335677907467556
+          ],
+          "affineResidual": {
+            "count": 386,
+            "rmsPixels": 0.7351397014417769,
+            "p95Pixels": 1.279794719840805,
+            "maxPixels": 1.697426600204388
+          },
+          "halfShiftHorizontalResidual": {
+            "count": 386,
+            "rmsPixels": 3.918905147475365,
+            "p95Pixels": 5.881464176262307,
+            "maxPixels": 7.045766700565588
+          },
+          "halfShiftHorizontalParameters": {
+            "origin": [
+              2.641538324168211,
+              17.778122044326896
+            ],
+            "pitch": 12.169090035256614,
+            "rowHeight": 12.336203762376027
+          },
+          "heldOutResidual": {
+            "count": 129,
+            "rmsPixels": 0.714538542340894,
+            "p95Pixels": 1.2267799755191362,
+            "maxPixels": 1.713187821622306
+          },
+          "rowAngleDegrees": -0.004482861191466406,
+          "adjacentRowShiftOverPitch": 0.5297946319666103,
+          "adjacentRowForwardAngleDegrees": 62.36913265206679,
+          "adjacentRowBackwardAngleDegrees": 114.91766447712811,
+          "secondaryDiagonalAnglesDegrees": [
+            44.50169267903357,
+            133.7866540904236
+          ],
+          "rowHeightOverPitch": 1.01207529086913
+        },
+        "B": {
+          "origin": [
+            -5.037361842228208,
+            16.470264243233725
+          ],
+          "u": [
+            12.167397763394174,
+            0.0005211118404522601
+          ],
+          "v": [
+            6.469772932954473,
+            12.335258512943392
+          ],
+          "affineResidual": {
+            "count": 456,
+            "rmsPixels": 0.7931958850893256,
+            "p95Pixels": 1.422293745022911,
+            "maxPixels": 1.8563192807329378
+          },
+          "halfShiftHorizontalResidual": {
+            "count": 456,
+            "rmsPixels": 4.28674711260505,
+            "p95Pixels": 6.949115871413639,
+            "maxPixels": 8.000471164347204
+          },
+          "halfShiftHorizontalParameters": {
+            "origin": [
+              2.639635950142772,
+              16.499551966404706
+            ],
+            "pitch": 12.14294720004047,
+            "rowHeight": 12.334966453006743
+          },
+          "heldOutResidual": {
+            "count": 152,
+            "rmsPixels": 0.7793135020505644,
+            "p95Pixels": 1.3795425486738266,
+            "maxPixels": 1.8026898724614377
+          },
+          "rowAngleDegrees": 0.0024538943884764206,
+          "adjacentRowShiftOverPitch": 0.5317302071293253,
+          "adjacentRowForwardAngleDegrees": 62.32324530324271,
+          "adjacentRowBackwardAngleDegrees": 114.79301765860602,
+          "secondaryDiagonalAnglesDegrees": [
+            44.49827402275902,
+            133.68601569220354
+          ],
+          "rowHeightOverPitch": 1.0137959449352623
+        }
+      }
+    },
+    {
+      "file": "GB:Z 295.2—2026.pdf",
+      "sha256": "d9fa84f86245ad1ec9546f4dbd985f56859e0a79b04360560bc8225fb794b303",
+      "decodedMaskSha256": "649ab5c3a741040cd03bbc7fd98a26ae65dc605baf5b94c27b59513069162537",
+      "global": {
+        "origin": [
+          -2.8541370507238337,
+          18.121696888702747
+        ],
+        "u": [
+          12.135852353817155,
+          -0.026342595420395173
+        ],
+        "v": [
+          6.4407665808121415,
+          12.320345617393615
+        ],
+        "affineResidual": {
+          "count": 842,
+          "rmsPixels": 0.9817882586242269,
+          "p95Pixels": 1.7400677841547025,
+          "maxPixels": 2.6011337861548975
+        },
+        "halfShiftHorizontalResidual": {
+          "count": 842,
+          "rmsPixels": 4.180776879227049,
+          "p95Pixels": 6.693719274049045,
+          "maxPixels": 8.220004909476293
+        },
+        "halfShiftHorizontalParameters": {
+          "origin": [
+            3.1097678179581965,
+            17.11963223186675
+          ],
+          "pitch": 12.136264623665184,
+          "rowHeight": 12.33340267037679
+        }
+      },
+      "regions": {
+        "G": {
+          "origin": [
+            -3.3799862120277484,
+            17.795963491750122
+          ],
+          "u": [
+            12.188498245890548,
+            -0.0009536364867464073
+          ],
+          "v": [
+            6.457400942407258,
+            12.335677907467556
+          ],
+          "affineResidual": {
+            "count": 386,
+            "rmsPixels": 0.7351397014417769,
+            "p95Pixels": 1.279794719840805,
+            "maxPixels": 1.697426600204388
+          },
+          "halfShiftHorizontalResidual": {
+            "count": 386,
+            "rmsPixels": 3.918905147475365,
+            "p95Pixels": 5.881464176262307,
+            "maxPixels": 7.045766700565588
+          },
+          "halfShiftHorizontalParameters": {
+            "origin": [
+              2.641538324168211,
+              17.778122044326896
+            ],
+            "pitch": 12.169090035256614,
+            "rowHeight": 12.336203762376027
+          },
+          "heldOutResidual": {
+            "count": 129,
+            "rmsPixels": 0.714538542340894,
+            "p95Pixels": 1.2267799755191362,
+            "maxPixels": 1.713187821622306
+          },
+          "rowAngleDegrees": -0.004482861191466406,
+          "adjacentRowShiftOverPitch": 0.5297946319666103,
+          "adjacentRowForwardAngleDegrees": 62.36913265206679,
+          "adjacentRowBackwardAngleDegrees": 114.91766447712811,
+          "secondaryDiagonalAnglesDegrees": [
+            44.50169267903357,
+            133.7866540904236
+          ],
+          "rowHeightOverPitch": 1.01207529086913
+        },
+        "B": {
+          "origin": [
+            -5.037361842228208,
+            16.470264243233725
+          ],
+          "u": [
+            12.167397763394174,
+            0.0005211118404522601
+          ],
+          "v": [
+            6.469772932954473,
+            12.335258512943392
+          ],
+          "affineResidual": {
+            "count": 456,
+            "rmsPixels": 0.7931958850893256,
+            "p95Pixels": 1.422293745022911,
+            "maxPixels": 1.8563192807329378
+          },
+          "halfShiftHorizontalResidual": {
+            "count": 456,
+            "rmsPixels": 4.28674711260505,
+            "p95Pixels": 6.949115871413639,
+            "maxPixels": 8.000471164347204
+          },
+          "halfShiftHorizontalParameters": {
+            "origin": [
+              2.639635950142772,
+              16.499551966404706
+            ],
+            "pitch": 12.14294720004047,
+            "rowHeight": 12.334966453006743
+          },
+          "heldOutResidual": {
+            "count": 152,
+            "rmsPixels": 0.7793135020505644,
+            "p95Pixels": 1.3795425486738266,
+            "maxPixels": 1.8026898724614377
+          },
+          "rowAngleDegrees": 0.0024538943884764206,
+          "adjacentRowShiftOverPitch": 0.5317302071293253,
+          "adjacentRowForwardAngleDegrees": 62.32324530324271,
+          "adjacentRowBackwardAngleDegrees": 114.79301765860602,
+          "secondaryDiagonalAnglesDegrees": [
+            44.49827402275902,
+            133.68601569220354
+          ],
+          "rowHeightOverPitch": 1.0137959449352623
+        }
+      }
+    }
+  ]
+}
