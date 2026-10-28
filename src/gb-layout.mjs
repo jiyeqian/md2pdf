@@ -140,6 +140,38 @@ export function prepareGbLayout() {
     throw new Error('国家标准封面发布日期与实施日期重叠，已停止导出；请检查日期内容');
   }
   const names = cover.querySelector('.cover-org-names');
+  const issuerRows = [...(names?.querySelectorAll('.cover-org-name') || [])].filter(row => row.textContent.trim());
+  // Profiles record first-to-last glyph origins in independently measured covers.
+  // Keep these inside the function: it is serialized into all three runtimes.
+  const issuerProfiles = [
+    { names:['国家市场监督管理总局','国家标准化管理委员会'], span:61.001275 },
+    { names:['中华人民共和国国家质量监督检验检疫总局','中国国家标准化管理委员会'], span:99.82023611111111 },
+    { names:['中华人民共和国国家卫生健康委员会','国家市场监督管理总局'], span:83.18323611111109 },
+  ];
+  const rows = issuerRows.map(row => {
+    row.textContent = row.textContent.trim().replace(/(?<=\p{Script=Han})\s+(?=\p{Script=Han})/gu, '');
+    row.style.letterSpacing = '0px';
+    const node = row.firstChild;
+    const segments = [...segmenter.segment(node.data)];
+    const origins = segments.map(({index,segment}) => {
+      const range = document.createRange();
+      range.setStart(node,index); range.setEnd(node,index+segment.length);
+      return range.getBoundingClientRect().left;
+    });
+    const scale = cover.getBoundingClientRect().width / mm(210);
+    return {row, count:segments.length, span:(origins.at(-1)-origins[0])/scale,
+      width:row.getBoundingClientRect().width/scale};
+  });
+  const profile = issuerProfiles.find(profile => profile.names.length === rows.length &&
+    profile.names.every((name,index) => name === rows[index].row.textContent));
+  const target = profile ? mm(profile.span) : Math.max(0,...rows.map(row => row.span+mm(.78)*Math.max(0,row.count-1)));
+  for (const {row,count,span,width} of rows) {
+    if (count < 2) continue;
+    const extra = target-span;
+    row.style.letterSpacing = `${extra/(count-1)}px`;
+    // CSS includes trailing tracking; exclude it from the shared row box.
+    row.style.width = `${width+extra}px`;
+  }
   let namesInk = place(names, {bottom:mm(277)});
   const publisher = cover.querySelector('.cover-org-pub');
   if (namesInk && ink(publisher)) {

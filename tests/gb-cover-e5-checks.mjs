@@ -16,6 +16,7 @@ const chrome = new Chrome(findChrome(), temp), app = createApp();
 const nativeFetch = globalThis.fetch;
 const ledger = JSON.parse(await readFile(new URL('./fixtures/gb-cover-e5.json', import.meta.url)));
 const issuerSpacing = JSON.parse(await readFile(new URL('./fixtures/gb-issuer-spacing.json', import.meta.url)));
+const issuerGroups = JSON.parse(await readFile(new URL('./fixtures/gb-issuer-groups.json', import.meta.url)));
 assert.equal(ledger.constraints.length,23,'all 23 source dimension arrows recorded');
 assert.equal(new Set(ledger.constraints.map(c=>c.id)).size,23,'unique identities for repeated numeric labels');
 const reports = [];
@@ -32,8 +33,10 @@ try {
   await new Promise((resolve, reject) => {app.server.once('error',reject);app.server.listen(0,'127.0.0.1',resolve);});
   const base = `http://127.0.0.1:${app.server.address().port}`;
   await chrome.start();
-  for (const [name, source] of [['diagram', './fixtures/gb-cover-e5.md'], ['example', '../web/examples/gb.md']]) {
-    const md = await readFile(new URL(source, import.meta.url),'utf8');
+  const example = await readFile(new URL('../web/examples/gb.md',import.meta.url),'utf8');
+  const cases = [['diagram',await readFile(new URL('./fixtures/gb-cover-e5.md',import.meta.url),'utf8')],['example',example],
+    ...issuerGroups.groups.slice(1).map((group,index) => ['issuer-'+index,example.replace(/发布单位:\n(?:  - .*\n)+/, '发布单位:\n'+group.names.map((name,index)=>'  - '+(index===1?[...name].join(' '):name)).join('\n')+'\n')])];
+  for (const [name, md] of cases) {
     await writeFile(`${out}/${name}.md`, md);
     const opts = {type:'gb'}, body = JSON.stringify({md,opts});
     const core = await render(md,{...opts,pagedHtml:true},{webSafe:true});
@@ -76,6 +79,17 @@ try {
         assert.ok(row,`${runtime}: publisher ${expected}`);
         for(let i=1;i<row.originXsMm.length;i++)assert.ok(Math.abs(row.originXsMm[i]-row.originXsMm[i-1]-issuerSpacing.targetOriginPitchMm)<=issuerSpacing.engineeringToleranceMm,`${runtime}: publisher origin pitch matches independent sample measurements`);
       }
+      const group=issuerGroups.groups.find(group=>group.names.every((name,index)=>state.issuerRows[index]?.name===name));
+      if(name!=='diagram')assert.ok(group, name+': recognized independent publisher fixture');
+      if(group){
+        const first=state.issuerRows[0].originXsMm[0];
+        for(const row of state.issuerRows){
+          assert.ok(Math.abs(row.originXsMm[0]-first)<=issuerGroups.toleranceMm,JSON.stringify({case:name,runtime,row,first}));
+          assert.ok(Math.abs(row.originXsMm.at(-1)-first-group.spanMm)<=issuerGroups.toleranceMm,JSON.stringify({case:name,runtime,row,expectedSpan:group.spanMm,first}));
+          const pitch=group.spanMm/(row.originXsMm.length-1);
+          row.originXsMm.slice(1).forEach((x,index)=>assert.ok(Math.abs(x-row.originXsMm[index]-pitch)<=issuerGroups.toleranceMm,'uniform publisher origin pitch'));
+        }
+      }
       await writeFile(prefix+'-boxes.json',JSON.stringify(state,null,2));
       run('pdfseparate',['-f','1','-l','1',prefix+'-full.pdf',prefix+'-%d.pdf']);
       const xml=run('pdftohtml',['-f','1','-l','1','-xml','-i','-stdout',prefix+'-1.pdf']);
@@ -83,7 +97,7 @@ try {
       const textRuns=[...xml.matchAll(/<text\b[^>]*font="(\d+)"[^>]*>([\s\S]*?)<\/text>/g)].map(m=>({font:families[m[1]],text:m[2]}));
       const expectFont=(text,font)=>assert.ok(textRuns.some(r=>r.text.includes(text)&&r.font.includes(font)),`${name}/${runtime}: ${text} uses ${font} in actual PDF`);
       expectFont('ICS','FZXBSK--GBK1-0');
-      if(name==='example') {
+      if(name!=='diagram') {
         expectFont('Technical','FZXBSK--GBK1-0');
         expectFont('Robotics','FZXBSK--GBK1-0');
         expectFont('-','FZXBSK--GBK1-0');
@@ -106,7 +120,7 @@ try {
       rows.push({id:'number-rows-right-aligned',mm:0,measuredMm:alignError,errorMm:alignError,status:alignError==null?'not-applicable':Math.abs(alignError)<=ledger.measurement.toleranceMm?'pass':'fail'});
       for(const [id,measured,expected] of [['banner-left',ink.head.left,25],['banner-width',ink.head.right-ink.head.left,170],['ics-first-left',ink['ics-first'].left,25],['ccs-left',ink['ics-second'].left,25],['issued-left',ink.issued.left,25],['implementation-right',ink.implementation.right,195],['lower-rule-left',ink['date-rule'].left,25],['lower-rule-width',ink['date-rule'].right-ink['date-rule'].left,170],['issuer-group-center',(ink['org-names'].left+ink.bu.right)/2,110],...['cn','en','iso'].filter(k=>ink[k]).map(k=>[k+'-center',ink[k].centerX,110])]){const error=measured-expected;rows.push({id,mm:expected,measuredMm:measured,errorMm:error,status:Math.abs(error)<=ledger.measurement.toleranceMm?'pass':'fail'});}
       const pdf=await readFile(prefix+'-1.pdf');
-      const report={case:name,runtime,rendererFilesSha256,browser:await chrome.send('Browser.getVersion'),sourceSha256:createHash('sha256').update(md).digest('hex'),pdfSha256:createHash('sha256').update(pdf).digest('hex'),measurement:ledger.measurement,locator:'Independent printable DOM used only for crop locations; production PDF first-page raster compared byte-for-byte against locator raster. Static checks printable HTML through Chrome, not the OS print dialog.',ink,rows};
+      const report={case:name,runtime,issuerRows:state.issuerRows,rendererFilesSha256,browser:await chrome.send('Browser.getVersion'),sourceSha256:createHash('sha256').update(md).digest('hex'),pdfSha256:createHash('sha256').update(pdf).digest('hex'),measurement:ledger.measurement,locator:'Independent printable DOM used only for crop locations; production PDF first-page raster compared byte-for-byte against locator raster. Static checks printable HTML through Chrome, not the OS print dialog.',ink,rows};
       await writeFile(prefix+'-measurements.json',JSON.stringify(report,null,2));
       reports.push(report);
       console.log(`${name}/${runtime}: ${rows.filter(r=>r.status==='pass').length}/${rows.length} ink constraints pass`);
@@ -118,7 +132,7 @@ try {
   await writeFile(out+'/report.md',table.join('\n')+'\n');
   const failures=reports.flatMap(r=>r.rows.filter(v=>v.status!=='pass').map(v=>`${r.case}/${r.runtime}: ${v.id} ${v.errorMm}`));
   assert.deepEqual(failures,[],`PDF ink calibration failures; see ${out}/report.md`);
-  console.log(`PASS: two cases × CLI/Node/static; ${out}/report.md`);
+  console.log(`PASS: four cases × CLI/Node/static; ${out}/report.md`);
 } finally {
   globalThis.fetch=nativeFetch;
   await chrome.stop();await app.close();await rm(temp,{recursive:true,force:true});

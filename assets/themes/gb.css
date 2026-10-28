@@ -88,7 +88,7 @@ body { font-size: 10.5pt; line-height: 1.62; text-align: justify; }
 .cover-org { display: flex; justify-content: center; align-items: center; gap: 5mm; }
 .cover-org-names { flex: none; }
 /* 四份较新 GB/T 封面的机构字首步进约 6.778 mm；字距不是 E.5 明示尺寸。 */
-.cover-org-name { width: fit-content; margin: 0 auto; letter-spacing: .78mm; }
+.cover-org-name { width: fit-content; margin: 0; white-space: nowrap; text-align: left; }
 .cover-org-pub { display: inline-flex; gap: 3mm; flex: none;
   margin: 0; font: 14pt/1 var(--font-head); white-space: nowrap; }
 .cover-ics, .cover-stdno, .cover-sup, .cover-cn, .cover-en, .cover-iso,
