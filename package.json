@@ -51,7 +51,7 @@
     "test:workspace-browser": "node tests/workspace-navigation-browser-checks.mjs",
     "test:editor-fold-browser": "node tests/editor-structured-fold-browser-checks.mjs",
     "test:gb-cover": "node tests/gb-cover-e5-checks.mjs",
-    "test:gb-body": "node --test tests/gb-equations-checks.mjs && node tests/gb-body-layout-checks.mjs && node tests/gb-toc-pagination-checks.mjs && node tests/gb-body-edge-checks.mjs && node tests/gb-body-acceptance.mjs",
+    "test:gb-body": "node --test tests/gb-equations-checks.mjs tests/gb-tables-checks.mjs && node tests/gb-body-layout-checks.mjs && node tests/gb-toc-pagination-checks.mjs && node tests/gb-body-edge-checks.mjs && node tests/gb-body-acceptance.mjs",
     "test:gb-ef": "node --test tests/gb-content-checks.mjs tests/gb-footnotes-checks.mjs && node tests/gb-ef-browser-checks.mjs",
     "test:config": "node --test tests/config-checks.mjs tests/options-config-checks.mjs tests/render-config-checks.mjs tests/config-integration-checks.mjs tests/page-bars-checks.mjs"
   },

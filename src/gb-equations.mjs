@@ -26,7 +26,7 @@ export function applyGbEquations(html) {
 }
 
 export const GB_EQUATION_CSS = `
-.gb-equation { break-inside: avoid; }
+.gb-equation { display: inline-block; width: 100%; vertical-align: top; break-inside: avoid; }
 .gb-equation-formula { text-align: center; }
 .gb-equation-legend-title { margin-left: 2em; }
 .gb-equation table.gb-equation-legend { width: calc(100% - 2em); margin: 0 0 0 2em; border: 0; border-collapse: collapse; table-layout: auto; font: 10.5pt/1.62 var(--font-body); }
@@ -52,7 +52,7 @@ export function finalizeGbEquations() {
     for (let i = 0; i < rows.length; i++) {
       const formula = rows[i].getBoundingClientRect();
       const label = labels[i].getBoundingClientRect();
-      const left = Math.max(0, formula.right - bounds.left + 4);
+      const left = Math.max(0, formula.right - bounds.left + 8);
       const right = Math.min(bounds.width, label.left - bounds.left - 4);
       if (!formula.width || !label.width || right <= left) continue;
       const leader = document.createElement('span');
@@ -63,7 +63,7 @@ export function finalizeGbEquations() {
         display: 'block', position: 'absolute', left: left + 'px', width: (right - left) + 'px',
         top: (label.top - bounds.top + label.height / 2) + 'px',
         transform: 'translateY(-50%)', overflow: 'hidden', whiteSpace: 'nowrap',
-        lineHeight: '1', textAlign: 'left', pointerEvents: 'none',
+        fontFamily: 'var(--font-body)', fontSize: '10.5pt', lineHeight: '1', textAlign: 'left', pointerEvents: 'none',
       });
       container.appendChild(leader);
     }

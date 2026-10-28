@@ -1,0 +1,112 @@
+{
+  "sources": [
+    {
+      "file": "GB:T 47032—2026 风光储联合发电站运行评价规程.pdf",
+      "path": "/Users/jiyeqian/Workspace/md2pdf-research/gb/Examples/GB:T 47032—2026 风光储联合发电站运行评价规程.pdf",
+      "sha256": "399fff1861e4cfff3c2342dc2560d7ff00e1f27082cc58df80ac441c40dbca52"
+    },
+    {
+      "file": "GB:T 21922—2026 食品营养健康管理通用术语.pdf",
+      "path": "/Users/jiyeqian/Workspace/md2pdf-research/gb/Examples/GB:T 21922—2026 食品营养健康管理通用术语.pdf",
+      "sha256": "ca6d861cd503d3f2c45163b4c524c05915e5b429532b7cba6eabc694239f659e"
+    },
+    {
+      "file": "GB:T 48316—2026 人形机器人 仿真测试平台技术规范.pdf",
+      "path": "/Users/jiyeqian/Workspace/md2pdf-research/gb/Examples/GB:T 48316—2026 人形机器人 仿真测试平台技术规范.pdf",
+      "sha256": "94b6d58ed94429ad1fb680ad6eff66b0baf342947af95a4fd5118448914c0d96"
+    },
+    {
+      "file": "GB:T 1.1—2020 标准化工作导则 第1部分：标准化文件的结构和起草规则[书签已加].pdf",
+      "path": "/Users/jiyeqian/Workspace/md2pdf-research/gb/GB:T 1.1—2020 标准化工作导则 第1部分：标准化文件的结构和起草规则[书签已加].pdf",
+      "sha256": "8676a5cf7328d1a773c8463e7347dfc168ac5e950a955be9f690b1cbe8f5d711"
+    }
+  ],
+  "evidence": [
+    {
+      "topic": "书眉与术语字体",
+      "rule": "GB/T 1.1—2020 附录F 表F.1 23、47项",
+      "rule_pdf_pages": [
+        65,
+        66
+      ],
+      "rule_printed_pages": [
+        "58",
+        "59"
+      ],
+      "sample": "21922 物理8/印刷2；47032 物理11/印刷5",
+      "status": "规范要求与样本字形差异，不能判定冲突"
+    },
+    {
+      "topic": "标题间距",
+      "rule": "10.3.3、10.3.6及图E.9、E.10",
+      "rule_pdf_pages": [
+        41,
+        61,
+        62
+      ],
+      "rule_printed_pages": [
+        "34",
+        "54",
+        "55"
+      ],
+      "status": "图示疏排，无具体字距数值"
+    },
+    {
+      "topic": "续表和表线",
+      "rule": "9.8.3、10.4.2",
+      "rule_pdf_pages": [
+        35,
+        42
+      ],
+      "rule_printed_pages": [
+        "28",
+        "35"
+      ],
+      "sample": "47032 物理11、18、19/印刷5、12、13；48316 物理13、14/印刷7、8",
+      "status": "续表规则明确，47032分区表头是否重复未判定"
+    },
+    {
+      "topic": "公式点线及破折号",
+      "rule": "9.9.2–9.9.3、10.4.3",
+      "rule_pdf_pages": [
+        36,
+        37,
+        42
+      ],
+      "rule_printed_pages": [
+        "29",
+        "30",
+        "35"
+      ],
+      "sample": "47032 物理25/印刷19",
+      "status": "点线连接明确，三点分组和间距无明确数值"
+    },
+    {
+      "topic": "字母列项",
+      "rule": "7.5、10.2.2",
+      "rule_pdf_pages": [
+        18,
+        19,
+        40
+      ],
+      "rule_printed_pages": [
+        "11",
+        "12",
+        "33"
+      ],
+      "sample": "48316 物理13/印刷7；21922 物理5/印刷III",
+      "status": "规范及实例已核对"
+    }
+  ],
+  "engineering_choices": {
+    "front_title_spacing_em": 2,
+    "references_title_spacing_em": 1,
+    "formula_leader_clearance_px": 8,
+    "table_outer_pt": 1,
+    "table_inner_pt": 0.5,
+    "line_height": 1.62,
+    "latin_hei_candidate": "TimesNewRomanPS-BoldMT, ASCII letters only",
+    "symbols_fallback": "TimesNewRomanPSMT, U+2022/U+2212",
+    "note": "样本导向工程选择，不是GB/T1.1点名的数值或原字形身份"
+  }
+}

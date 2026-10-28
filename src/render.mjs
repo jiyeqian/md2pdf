@@ -415,7 +415,7 @@ function formatGB7714(entry) {
 }
 
 // 渲染脚注列表，统一作为「参考文献」章节；title 为空串时只去标题、保留条目与链接。
-function renderFootnotes(footnotes, title, marked) {
+function renderFootnotes(footnotes, title, marked, gb = false) {
   if (!footnotes.length) return '';
   const items = footnotes.map((fn, i) => {
     const num = i + 1;
@@ -426,7 +426,7 @@ function renderFootnotes(footnotes, title, marked) {
     } else {
       content = marked.parseInline(fn.content, { gfm: true });
     }
-    return '<li id="fn-' + num + '"><a href="#fnref-' + num + '" class="fnref-back">[' + num + ']</a> ' + content + '</li>';
+    return '<li id="fn-' + num + '"><a href="#fnref-' + num + '" class="fnref-back">[' + num + ']</a>' + (gb ? '　' : ' ') + content + '</li>';
   }).join('\n');
   const list = '<ol class="references">\n' + items + '\n</ol>';
   return (title ? '<h2>' + title + '</h2>\n' : '') + list;
@@ -656,7 +656,10 @@ export async function render(src, options = {}, context = {}) {
   // 脚注/参考文献：先追加到正文末尾，再编号，使参考文献章节纳入编号体系。
   // bibliographyTitle 默认「参考文献」；显式空串时只去掉标题，条目与链接保留；无引用则不生成。
   const bibTitle = eff.bibliographyTitle !== undefined ? eff.bibliographyTitle : '参考文献';
-  html += renderFootnotes(orderedFootnotes, bibTitle, marked);
+  const referencesHtml = renderFootnotes(orderedFootnotes, bibTitle, marked, profile.gbDoc);
+  const indexHeading = /<h2[^>]*>\s*索引\s*<\/h2>/;
+  if (profile.gbDoc && indexHeading.test(html)) html = html.replace(indexHeading, heading => referencesHtml + heading);
+  else html += referencesHtml;
   html = html.replace(/<h2(?=[\s>])/g, '<h2 data-chapter');
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
@@ -872,7 +875,7 @@ export async function render(src, options = {}, context = {}) {
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
-    profile.gbDoc ? '  function start() { Promise.all([document.fonts.load(\'10.5pt \"GB Song\"\'), document.fonts.load(\'10.5pt \"GB Hei\"\'), document.fonts.load(\'17pt \"GB Cover\"\'), document.fonts.load(\'14pt \"GB Cover Latin\"\', \'ABCabc-\')]).then(function (faces) { if (faces.some(function (list) { return !list.length; })) throw new Error(\'国家标准所需本机字体未加载，请安装方正书宋_GBK、方正黑体_GBK和方正小标宋_GBK\'); return document.fonts.ready; }).then(run).catch(function (error) { window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
+    profile.gbDoc ? '  function start() { Promise.all([document.fonts.load(\'10.5pt \"GB Song\"\'), document.fonts.load(\'10.5pt \"GB Hei\"\'), document.fonts.load(\'17pt \"GB Cover\"\'), document.fonts.load(\'14pt \"GB Cover Latin\"\', \'ABCabc-\'), document.fonts.load(\'10.5pt \"GB Hei Latin\"\', \'ABCabc\'), document.fonts.load(\'10.5pt \"GB Symbols\"\', \'−•\')]).then(function (faces) { if (faces.some(function (list) { return !list.length; })) throw new Error(\'国家标准所需本机字体未加载，请安装方正书宋_GBK、方正黑体_GBK、方正小标宋_GBK及 Times New Roman 普通／粗体\'); return document.fonts.ready; }).then(run).catch(function (error) { window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
     '  if (document.readyState === "complete") start(); else window.addEventListener("load", start);',
     '})();',
     '</script>',

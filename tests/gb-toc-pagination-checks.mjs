@@ -9,7 +9,7 @@ import {render} from '../src/render.mjs';
 const temp=await mkdtemp(path.join(os.tmpdir(),'gb-toc-pages-'));
 const chrome=new Chrome(findChrome(),temp);
 try {
-  const fixture=await readFile(new URL('./fixtures/gb-body-calibration.md',import.meta.url),'utf8');
+  const fixture=await readFile(new URL('../web/examples/gb.md',import.meta.url),'utf8');
   const cases=[
     {name:'standard',md:fixture,opts:{}},
     {name:'no-cover',md:fixture,opts:{gbCover:false}},
@@ -17,7 +17,7 @@ try {
     {name:'no-cover-no-toc',md:fixture,opts:{gbCover:false,toc:false}},
     {name:'no-front',md:fixture.replace(/## 前言[\s\S]*?(?=## 范围)/,''),opts:{}},
     {name:'no-cover-no-front',md:fixture.replace(/## 前言[\s\S]*?(?=## 范围)/,''),opts:{gbCover:false}},
-    {name:'long-toc',md:fixture.replace('## 参考文献',Array.from({length:90},(_,i)=>`## 附加章节 ${i+1}\n\n内容 ${i+1}。\n\n`).join('')+'## 参考文献'),opts:{}},
+    {name:'long-toc',md:fixture.replace('## 标志和使用说明',Array.from({length:90},(_,i)=>`## 附加章节 ${i+1}\n\n内容 ${i+1}。\n\n`).join('')+'## 标志和使用说明'),opts:{}},
   ];
   await chrome.start();
   for(const item of cases){
@@ -40,7 +40,7 @@ try {
     assert.ok(text[body.number-1].includes('范围'),`${item.name}: PDF body content`);
     if(front.length&&toc.length){
       assert.equal(front[0].number,toc.at(-1).number+1,`${item.name}: front follows last contents page`);
-      assert.ok(text[front[0].number-1].includes('前言'),`${item.name}: PDF preface content`);
+      assert.ok(text[front[0].number-1].replace(/\s+/g,'').includes('前言'),`${item.name}: PDF preface content`);
     }
     if(item.name==='standard') {
       assert.deepEqual(pages.slice(2,7).map(p=>[p.label,p.blank]),[['I',false],['II',false],['III',false],[null,true],['1',false]]);

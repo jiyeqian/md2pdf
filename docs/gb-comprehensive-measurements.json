@@ -1,0 +1,4990 @@
+{
+  "parameters": {
+    "dpi": 600,
+    "threshold": 128,
+    "crop_margin": 0.7,
+    "position_tolerance": 0.5,
+    "notes": "测量容差、阈值及按文字实际墨迹定位均为工程验收约定，非标准规定。Range 框作为定位参考，不能单独证明 PDF 墨迹或版心边界。"
+  },
+  "runtimes": {
+    "cli": [
+      {
+        "page": 1,
+        "label": null,
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      },
+      {
+        "page": 2,
+        "label": null,
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      },
+      {
+        "page": 3,
+        "label": "I",
+        "kind": "toc",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.876,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.944,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 12.023,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 185.12366666666665,
+            "top": 274.87033333333335,
+            "right": 186.01266666666666,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 97.19733333333333,
+            "top": 42.75666666666667,
+            "right": 118.491,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 59.901666666666664,
+            "right": 32.257999999999996,
+            "bottom": 63.373
+          }
+        }
+      },
+      {
+        "page": 4,
+        "label": "II",
+        "kind": "front",
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.944,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 11.98,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.87033333333335,
+            "right": 25.907999999999998,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 91.44,
+            "top": 42.75666666666667,
+            "right": 113.36866666666667,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 20.023666666666667,
+            "top": 59.85933333333333,
+            "right": 184.785,
+            "bottom": 69.42666666666666
+          }
+        }
+      },
+      {
+        "page": 5,
+        "label": "III",
+        "kind": "front",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.876,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.986,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 11.98,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 183.007,
+            "top": 274.87033333333335,
+            "right": 186.01266666666666,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 96.68933333333334,
+            "top": 42.799,
+            "right": 118.36399999999999,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 59.85933333333333,
+            "right": 189.738,
+            "bottom": 69.51133333333333
+          }
+        }
+      },
+      {
+        "page": 6,
+        "label": null,
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      },
+      {
+        "page": 7,
+        "label": "1",
+        "kind": "body",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.901,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 12.065,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 185.08133333333333,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 65.32033333333334,
+            "top": 42.71433333333333,
+            "right": 149.43666666666667,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 25.357666666666667,
+            "top": 59.943999999999996,
+            "right": 37.76133333333333,
+            "bottom": 63.288333333333334
+          }
+        }
+      },
+      {
+        "page": 8,
+        "label": "2",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 25.357666666666667,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 9,
+        "label": "3",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.74266666666665,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 10,
+        "label": "4",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 24.003,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 24.003,
+            "top": 274.828,
+            "right": 25.442333333333334,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 11,
+        "label": "5",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.658,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 12,
+        "label": "6",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 25.357666666666667,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 13,
+        "label": "7",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.61566666666667,
+            "top": 274.87033333333335,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 14,
+        "label": "8",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 24.003,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 24.003,
+            "top": 274.828,
+            "right": 25.230666666666664,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 15,
+        "label": "9",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 277.029,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.61566666666667,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 277.02933333333334
+          }
+        }
+      },
+      {
+        "page": 16,
+        "label": "10",
+        "kind": "appendix",
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 15.028,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 5.122,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 26.712333333333333,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 94.91133333333333,
+            "top": 42.84133333333333,
+            "right": 110.02433333333333,
+            "bottom": 57.99666666666666
+          },
+          "first": {
+            "left": 20.023666666666667,
+            "top": 63.119,
+            "right": 44.068999999999996,
+            "bottom": 66.46333333333334
+          }
+        }
+      },
+      {
+        "page": 17,
+        "label": "11",
+        "kind": "appendix",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 15.028,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 5.122,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 183.515,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 96.47766666666666,
+            "top": 42.84133333333333,
+            "right": 118.32166666666666,
+            "bottom": 57.99666666666666
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 63.119,
+            "right": 59.943999999999996,
+            "bottom": 66.46333333333334
+          }
+        }
+      },
+      {
+        "page": 18,
+        "label": "12",
+        "kind": "back",
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.901,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 4.995,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 26.669999999999998,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 89.66199999999999,
+            "top": 42.71433333333333,
+            "right": 115.23133333333332,
+            "bottom": 46.14333333333333
+          },
+          "first": {
+            "left": 27.558999999999997,
+            "top": 51.138666666666666,
+            "right": 157.099,
+            "bottom": 79.29033333333334
+          }
+        }
+      },
+      {
+        "page": 19,
+        "label": "13",
+        "kind": "back",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.944,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 4.995,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 183.388,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 100.37233333333333,
+            "top": 42.75666666666667,
+            "right": 114.25766666666667,
+            "bottom": 46.14333333333333
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 51.138666666666666,
+            "right": 189.56866666666667,
+            "bottom": 63.16133333333333
+          }
+        }
+      },
+      {
+        "page": 20,
+        "label": null,
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      }
+    ],
+    "node": [
+      {
+        "page": 1,
+        "label": null,
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      },
+      {
+        "page": 2,
+        "label": null,
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      },
+      {
+        "page": 3,
+        "label": "I",
+        "kind": "toc",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 25,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.889,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.876,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.944,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 12.023,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 185.12366666666665,
+            "top": 274.87033333333335,
+            "right": 186.01266666666666,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 97.19733333333333,
+            "top": 42.75666666666667,
+            "right": 118.491,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 59.901666666666664,
+            "right": 32.257999999999996,
+            "bottom": 63.373
+          }
+        }
+      },
+      {
+        "page": 4,
+        "label": "II",
+        "kind": "front",
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 20,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.889,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.944,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 11.98,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.87033333333335,
+            "right": 25.907999999999998,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 91.44,
+            "top": 42.75666666666667,
+            "right": 113.36866666666667,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 20.023666666666667,
+            "top": 59.85933333333333,
+            "right": 184.785,
+            "bottom": 69.42666666666666
+          }
+        }
+      },
+      {
+        "page": 5,
+        "label": "III",
+        "kind": "front",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 25,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.889,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.876,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.986,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 11.98,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 183.007,
+            "top": 274.87033333333335,
+            "right": 186.01266666666666,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 96.68933333333334,
+            "top": 42.799,
+            "right": 118.36399999999999,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 59.85933333333333,
+            "right": 189.738,
+            "bottom": 69.51133333333333
+          }
+        }
+      },
+      {
+        "page": 6,
+        "label": null,
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      },
+      {
+        "page": 7,
+        "label": "1",
+        "kind": "body",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 25,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.889,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.901,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 12.065,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 185.08133333333333,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 65.32033333333334,
+            "top": 42.71433333333333,
+            "right": 149.43666666666667,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 25.357666666666667,
+            "top": 59.943999999999996,
+            "right": 37.76133333333333,
+            "bottom": 63.288333333333334
+          }
+        }
+      },
+      {
+        "page": 8,
+        "label": "2",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 20,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.889,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 25.357666666666667,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 9,
+        "label": "3",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 25,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.889,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.74266666666665,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 10,
+        "label": "4",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 20,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.889,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 24.003,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 24.003,
+            "top": 274.828,
+            "right": 25.442333333333334,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 11,
+        "label": "5",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 25,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.889,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.658,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 12,
+        "label": "6",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 20,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.889,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 25.357666666666667,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 13,
+        "label": "7",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 25,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.889,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.61566666666667,
+            "top": 274.87033333333335,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 14,
+        "label": "8",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 20,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.889,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 24.003,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 24.003,
+            "top": 274.828,
+            "right": 25.230666666666664,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 15,
+        "label": "9",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 25,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.889,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 277.029,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.61566666666667,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 277.02933333333334
+          }
+        }
+      },
+      {
+        "page": 16,
+        "label": "10",
+        "kind": "appendix",
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 20,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.889,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 15.028,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 5.122,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 26.712333333333333,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 94.91133333333333,
+            "top": 42.84133333333333,
+            "right": 110.02433333333333,
+            "bottom": 57.99666666666666
+          },
+          "first": {
+            "left": 20.023666666666667,
+            "top": 63.119,
+            "right": 44.068999999999996,
+            "bottom": 66.46333333333334
+          }
+        }
+      },
+      {
+        "page": 17,
+        "label": "11",
+        "kind": "appendix",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 25,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.889,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 15.028,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 5.122,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 183.515,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 96.47766666666666,
+            "top": 42.84133333333333,
+            "right": 118.32166666666666,
+            "bottom": 57.99666666666666
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 63.119,
+            "right": 59.943999999999996,
+            "bottom": 66.46333333333334
+          }
+        }
+      },
+      {
+        "page": 18,
+        "label": "12",
+        "kind": "back",
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 20,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.889,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.901,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 4.995,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 26.669999999999998,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 89.66199999999999,
+            "top": 42.71433333333333,
+            "right": 115.23133333333332,
+            "bottom": 46.14333333333333
+          },
+          "first": {
+            "left": 27.558999999999997,
+            "top": 51.138666666666666,
+            "right": 157.099,
+            "bottom": 79.29033333333334
+          }
+        }
+      },
+      {
+        "page": 19,
+        "label": "13",
+        "kind": "back",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 25,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.889,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.944,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 4.995,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 183.388,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 100.37233333333333,
+            "top": 42.75666666666667,
+            "right": 114.25766666666667,
+            "bottom": 46.14333333333333
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 51.138666666666666,
+            "right": 189.56866666666667,
+            "bottom": 63.16133333333333
+          }
+        }
+      },
+      {
+        "page": 20,
+        "label": null,
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      }
+    ],
+    "static": [
+      {
+        "page": 1,
+        "label": null,
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      },
+      {
+        "page": 2,
+        "label": null,
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      },
+      {
+        "page": 3,
+        "label": "I",
+        "kind": "toc",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.876,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.944,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 12.023,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 185.12366666666665,
+            "top": 274.87033333333335,
+            "right": 186.01266666666666,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 97.19733333333333,
+            "top": 42.75666666666667,
+            "right": 118.491,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 59.901666666666664,
+            "right": 32.257999999999996,
+            "bottom": 63.373
+          }
+        }
+      },
+      {
+        "page": 4,
+        "label": "II",
+        "kind": "front",
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.944,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 11.98,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.87033333333335,
+            "right": 25.907999999999998,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 91.44,
+            "top": 42.75666666666667,
+            "right": 113.36866666666667,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 20.023666666666667,
+            "top": 59.85933333333333,
+            "right": 184.785,
+            "bottom": 69.42666666666666
+          }
+        }
+      },
+      {
+        "page": 5,
+        "label": "III",
+        "kind": "front",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.876,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.986,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 11.98,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 183.007,
+            "top": 274.87033333333335,
+            "right": 186.01266666666666,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 96.68933333333334,
+            "top": 42.799,
+            "right": 118.36399999999999,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 59.85933333333333,
+            "right": 189.738,
+            "bottom": 69.51133333333333
+          }
+        }
+      },
+      {
+        "page": 6,
+        "label": null,
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      },
+      {
+        "page": 7,
+        "label": "1",
+        "kind": "body",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.901,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 12.065,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 185.08133333333333,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 65.32033333333334,
+            "top": 42.71433333333333,
+            "right": 149.43666666666667,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 25.357666666666667,
+            "top": 59.943999999999996,
+            "right": 37.76133333333333,
+            "bottom": 63.288333333333334
+          }
+        }
+      },
+      {
+        "page": 8,
+        "label": "2",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 25.357666666666667,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 9,
+        "label": "3",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.74266666666665,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 10,
+        "label": "4",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 24.003,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 24.003,
+            "top": 274.828,
+            "right": 25.442333333333334,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 11,
+        "label": "5",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.658,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 12,
+        "label": "6",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 25.357666666666667,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 13,
+        "label": "7",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.61566666666667,
+            "top": 274.87033333333335,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 14,
+        "label": "8",
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 24.003,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 24.003,
+            "top": 274.828,
+            "right": 25.230666666666664,
+            "bottom": 276.98699999999997
+          }
+        }
+      },
+      {
+        "page": 15,
+        "label": "9",
+        "kind": null,
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 277.029,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 184.61566666666667,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 277.02933333333334
+          }
+        }
+      },
+      {
+        "page": 16,
+        "label": "10",
+        "kind": "appendix",
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 15.028,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 5.122,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 26.712333333333333,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 94.91133333333333,
+            "top": 42.84133333333333,
+            "right": 110.02433333333333,
+            "bottom": 57.99666666666666
+          },
+          "first": {
+            "left": 20.023666666666667,
+            "top": 63.119,
+            "right": 44.068999999999996,
+            "bottom": 66.46333333333334
+          }
+        }
+      },
+      {
+        "page": 17,
+        "label": "11",
+        "kind": "appendix",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 15.028,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 5.122,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 183.515,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 96.47766666666666,
+            "top": 42.84133333333333,
+            "right": 118.32166666666666,
+            "bottom": 57.99666666666666
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 63.119,
+            "right": 59.943999999999996,
+            "bottom": 66.46333333333334
+          }
+        }
+      },
+      {
+        "page": 18,
+        "label": "12",
+        "kind": "back",
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.901,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 4.995,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.828,
+            "right": 26.669999999999998,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 89.66199999999999,
+            "top": 42.71433333333333,
+            "right": 115.23133333333332,
+            "bottom": 46.14333333333333
+          },
+          "first": {
+            "left": 27.558999999999997,
+            "top": 51.138666666666666,
+            "right": 157.099,
+            "bottom": 79.29033333333334
+          }
+        }
+      },
+      {
+        "page": 19,
+        "label": "13",
+        "kind": "back",
+        "right": true,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 24.999,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 19.89,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 189.95,
+            "target": 190,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 276.987,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.918,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.944,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 4.995,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
+          }
+        ],
+        "ink": {
+          "header": {
+            "left": 158.19966666666667,
+            "top": 25.061333333333334,
+            "right": 189.94966666666667,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 183.388,
+            "top": 274.828,
+            "right": 185.97033333333331,
+            "bottom": 276.98699999999997
+          },
+          "title": {
+            "left": 100.37233333333333,
+            "top": 42.75666666666667,
+            "right": 114.25766666666667,
+            "bottom": 46.14333333333333
+          },
+          "first": {
+            "left": 25.061333333333334,
+            "top": 51.138666666666666,
+            "right": 189.56866666666667,
+            "bottom": 63.16133333333333
+          }
+        }
+      },
+      {
+        "page": 20,
+        "label": null,
+        "kind": null,
+        "right": false,
+        "checks": [
+          {
+            "name": "paper_width",
+            "actual": 209.889,
+            "target": 210,
+            "tolerance": 1,
+            "pass": true
+          },
+          {
+            "name": "paper_height",
+            "actual": 297.011,
+            "target": 297,
+            "tolerance": 1,
+            "pass": true
+          }
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "Range boxes locate crops; visual inspection and source/PDF identity remain necessary.",
+    "Page area bounds come from the browser layout; header, footer and title coordinates come from PDF raster ink."
+  ],
+  "failures": []
+}

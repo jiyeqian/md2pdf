@@ -223,7 +223,7 @@ export function finalizeGbLayout(standard) {
       const header = document.createElement('div');
       header.className = 'gb-fixed-header';
       header.textContent = standard;
-      Object.assign(header.style, {position:'absolute',top:'25mm',left:right?'25mm':'20mm',width:'165mm',fontFamily:'"GB Hei"',fontSize:'10.5pt',lineHeight:'1',textAlign:right?'right':'left',color:'#000'});
+      Object.assign(header.style, {position:'absolute',top:'25mm',left:right?'25mm':'20mm',width:'165mm',fontFamily:'"GB Hei Latin", "GB Hei"',fontSize:'10.5pt',lineHeight:'1',textAlign:right?'right':'left',color:'#000'});
       box.appendChild(header);
     }
     const footer = document.createElement('div');

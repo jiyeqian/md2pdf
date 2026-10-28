@@ -1,0 +1,52 @@
+{
+  "baseline": "/private/tmp/gb-comprehensive-baseline",
+  "results": [
+    {
+      "template": "general",
+      "pages": 3,
+      "input_sha256": "345221aad1bddd79d5fab5b28b514610cec1cc3521f7d0ddd352a537fffa7091",
+      "dpi": 90,
+      "pixel_identical": true,
+      "before_png_sha256": [
+        "5eb038d1e399e14f3ef8baab53f43af1888dbc7610cee45d7cf8dc8fbca2663e",
+        "12ab7f6d0e31b50196428e3366b543f3e35cf493926c0a19462de4c6c26e4929",
+        "e08eb24a613ea12ecf4655f80e9ac38fb3e630276846dca0e0c8325e74ce0875"
+      ],
+      "after_png_sha256": [
+        "5eb038d1e399e14f3ef8baab53f43af1888dbc7610cee45d7cf8dc8fbca2663e",
+        "12ab7f6d0e31b50196428e3366b543f3e35cf493926c0a19462de4c6c26e4929",
+        "e08eb24a613ea12ecf4655f80e9ac38fb3e630276846dca0e0c8325e74ce0875"
+      ]
+    },
+    {
+      "template": "paper",
+      "pages": 2,
+      "input_sha256": "09b529ef7f570360a5253b6a7bd983bc0218b361c97ed083e2817c9a4716e9b6",
+      "dpi": 90,
+      "pixel_identical": true,
+      "before_png_sha256": [
+        "69a691bc9726bba51e73a5646e34ddb7a425efe2ef3759d5fa22d9593c2e7a4b",
+        "da9e8479babe4768156eb9a10f8e2badba7716c313d2b79a01adfabb24b8d51d"
+      ],
+      "after_png_sha256": [
+        "69a691bc9726bba51e73a5646e34ddb7a425efe2ef3759d5fa22d9593c2e7a4b",
+        "da9e8479babe4768156eb9a10f8e2badba7716c313d2b79a01adfabb24b8d51d"
+      ]
+    },
+    {
+      "template": "skill",
+      "pages": 1,
+      "input_sha256": "cd9dcb360e2b12b5f643c63a1ef2edfe69df17860f4e689bddab5c0e69080397",
+      "dpi": 90,
+      "pixel_identical": true,
+      "before_png_sha256": [
+        "9141d5d74887422118455b266db47e8ce2c30c40a8a7b98048c994b866b2fb01"
+      ],
+      "after_png_sha256": [
+        "9141d5d74887422118455b266db47e8ce2c30c40a8a7b98048c994b866b2fb01"
+      ]
+    }
+  ],
+  "baseline_commit": "491dffd75322ee9ec3a94de47534c4ff58e790f7",
+  "worktree": "/Users/jiyeqian/.codex/worktrees/f96a/md2pdf"
+}

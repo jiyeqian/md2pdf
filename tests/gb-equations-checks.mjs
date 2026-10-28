@@ -47,8 +47,8 @@ test('positions a leader between the typeset formula and its original tag', () =
   try {
     finalizeGbEquations();
     assert.equal(children.length, 1);
-    assert.equal(children[0].style.left, '184px');
-    assert.equal(children[0].style.width, '132px');
+    assert.equal(children[0].style.left, '188px');
+    assert.equal(children[0].style.width, '128px');
     assert.equal(children[0].style.display, 'block');
     assert.equal(children[0].style.overflow, 'hidden');
     assert.equal(children[0]['aria-hidden'], 'true');

@@ -8,6 +8,7 @@ try{
  await chrome.start();
  const cases=[
   ['wide formula','$$'+Array(500).fill('x').join('+')+'$$','正文元素超出版心'],
+  ['huge merged group',':::gb-table\nhead:\n| 对象 | 内容 |\nbody:\n| {rowspan=2} 系统 | '+('合并行组。'.repeat(1500))+' |\n| 次行 |\n:::','合并行组超过'],
   ['huge row','| 项目 | 内容 |\n| --- | --- |\n| 一 | '+('长单元格。'.repeat(1600))+' |','表格单行超过'],
   ['huge table note','| 项目 | 内容 |\n| --- | --- |\n| 一 | 二 |\n\n:::gb-table-note\n'+('长表注。'.repeat(1800))+'\n:::','表格单行超过'],
   ['huge footnote','内容[^@a]\n\n[^@a]: '+('长脚注。'.repeat(2000)),'条文脚注超过'],
@@ -39,5 +40,5 @@ try{
  const sourceState=await chrome.send('Runtime.evaluate',{returnByValue:true,expression:`({pages:document.querySelectorAll('.pagedjs_page').length,text:document.querySelector('.pagedjs_page_content').textContent})`});
  assert.equal(sourceState.result.value.pages,1,'unsectioned source evidence has no phantom page');
  assert.ok(sourceState.result.value.text.includes('SOURCE_COVER'));
- console.log('PASS: five oversize rejections; two footnotes and multipage note; final formula/figure/heading; source-cover evidence');
+ console.log('PASS: six oversize rejections; two footnotes and multipage note; final formula/figure/heading; source-cover evidence');
 }finally{await chrome.stop();await rm(temp,{recursive:true,force:true});}

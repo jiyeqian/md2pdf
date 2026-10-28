@@ -1,5 +1,20 @@
 // Both functions are serialized into the standalone paged document.
 export function prepareGbBodyLayout(standard) {
+  // Paged.js counters can be decremented while splitting nested lists. Freeze source labels first.
+  const alpha=n=>{let value='';do{n--;value=String.fromCharCode(97+n%26)+value;n=Math.floor(n/26);}while(n>0);return value;};
+  for(const list of document.querySelectorAll('main ol, main ul')){
+    if(list.matches('.references,.footnotes,.gb-index-entries')||list.closest('.gb-index'))continue;
+    let level=1,parent=list.parentElement?.closest('ol,ul');
+    while(parent){level++;parent=parent.parentElement?.closest('ol,ul');}
+    let number=Number(list.getAttribute('start'))||1;
+    for(const item of list.children){
+      if(item.tagName!=='LI')continue;
+      const explicit=Number(item.getAttribute('value'));if(item.hasAttribute('value')&&Number.isInteger(explicit)&&explicit>0)number=explicit;
+      item.dataset.gbMarker=list.tagName==='OL'?(level===1?alpha(Math.max(1,number)):number)+')':level===1?'——':'•';
+      number++;
+    }
+  }
+
   if (!document.querySelector('.cover')) {
     const sections = [...document.querySelectorAll('main > section')];
     for (const [index, section] of sections.entries()) {
@@ -50,7 +65,7 @@ export function prepareGbBodyLayout(standard) {
   };
   const sample = document.createElement('div');
   sample.textContent = standard || '国';
-  sample.style.cssText = 'position:absolute;left:-10000px;top:0;width:165mm;font:10.5pt/1 "GB Hei";text-align:right;';
+  sample.style.cssText = 'position:absolute;left:-10000px;top:0;width:165mm;font:10.5pt/1 "GB Hei Latin", "GB Hei";text-align:right;';
   document.body.appendChild(sample);
   const header = ink(sample);
   sample.remove();

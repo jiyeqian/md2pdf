@@ -44,6 +44,10 @@ export function installPagedLayout(contentHeight, chapterStart, relaxFirstChapte
       if (!sourceElement?.closest('tbody, tfoot')) return;
       const original = sourceElement.closest('table');
       if (!table || !original || table.tHead || !original.tHead || element.closest('thead')) return;
+      if(gb&&!table.querySelector(':scope > colgroup')){
+        const columns=original.querySelector(':scope > colgroup');
+        if(columns)table.insertBefore(columns.cloneNode(true),table.firstChild);
+      }
       const header = original.tHead.cloneNode(true);
       header.setAttribute('data-repeated-header', '');
       header.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
@@ -55,7 +59,7 @@ export function installPagedLayout(contentHeight, chapterStart, relaxFirstChapte
         const continued = document.createElement('span');
         continued.className = 'gb-continuation';
         continued.textContent = '（续）';
-        caption.appendChild(continued);
+        caption.insertBefore(continued, caption.querySelector('.gb-table-unit'));
         table.insertBefore(caption, table.firstChild);
       }
     }

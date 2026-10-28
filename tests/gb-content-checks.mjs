@@ -185,3 +185,11 @@ test('附录图表范围在文后要素开始时结束', async () => {
   assert.match(html,/<caption>表 A\.1　附录表/);
   assert.match(html,/<caption>表 1　文后表/);
 });
+
+test('表格单位只附到紧邻的表题，不跨过前表或正文', () => {
+  const input='<table><caption>表1</caption><tbody><tr><td>甲</td></tr></tbody></table><p>正文</p><table><caption>表2</caption><tbody><tr><td>乙</td></tr></tbody></table><div class="gb-unit"><p>单位为毫米</p></div>';
+  const out=transformGbContent(input,'');
+  assert.match(out,/<caption>表1<\/caption>/);
+  assert.match(out,/<caption>表2<span class="gb-table-unit">单位为毫米<\/span><\/caption>/);
+  assert.doesNotMatch(out,/class="gb-unit"/);
+});

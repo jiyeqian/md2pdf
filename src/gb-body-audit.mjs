@@ -10,7 +10,7 @@ export function prepareGbBodyAudit() {
     for(const table of document.querySelectorAll('main table:not(.gb-equation-legend)')){
       const rows=[...table.tBodies].flatMap(body=>[...body.rows]);
       const columns=Math.max(0,...rows.map(row=>row.cells.length));
-      for(let i=0;i<columns;i++){
+      if(!table.querySelector('thead [rowspan], thead [colspan], tbody [rowspan], tbody [colspan]')) for(let i=0;i<columns;i++){
         const cells=rows.map(row=>row.cells[i]).filter(Boolean);
         if(cells.some(c=>c.colSpan!==1||c.rowSpan!==1||c.children.length))continue;
         const values=cells.map(c=>/^([+−-]?\d+)(\.\d+)?(%|‰)?$/.exec(c.textContent.trim()));
@@ -27,8 +27,20 @@ export function prepareGbBodyAudit() {
           cell.replaceChildren(span);
         });
       }
+      if(!table.querySelector(':scope > colgroup')&&table.tHead?.rows[0]){
+        const cells=[...table.tHead.rows[0].cells],width=table.getBoundingClientRect().width;
+        if(width&&cells.every(c=>c.colSpan===1)){
+          const group=document.createElement('colgroup');
+          for(const cell of cells){const col=document.createElement('col');col.style.width=cell.getBoundingClientRect().width/width*100+'%';group.appendChild(col);}
+          table.insertBefore(group,table.tHead);table.style.tableLayout='fixed';
+        }
+      }
       const header=(table.tHead?.getBoundingClientRect().height||0)+(table.caption?.getBoundingClientRect().height||0);
       if(header>areaHeight-4)throw new Error('国家标准表题或表头过高，无法在一页中容纳表格内容，请拆分表头');
+      for(const group of table.tBodies){
+        if(group.querySelector('td[rowspan]')&&group.getBoundingClientRect().height>areaHeight-header-4)
+          throw new Error('国家标准表格合并行组超过可用页高，请拆分合并单元格后导出');
+      }
       for(const row of [...table.rows].filter(row=>!row.closest('thead'))){
         if(row.getBoundingClientRect().height>areaHeight-header-4)
           throw new Error('国家标准表格单行超过可用页高，请拆分长单元格后导出');
@@ -47,7 +59,7 @@ export function prepareGbBodyAudit() {
       document.body.appendChild(measure);const height=measure.getBoundingClientRect().height;measure.remove();
       if(height>areaHeight-50)throw new Error('国家标准条文脚注超过单页可用空间，请拆分或移入资料性附录后导出');
     }
-    for(const node of document.querySelectorAll('main .gb-footnote, main .gb-note, main .gb-example, main .gb-figure-note, main .gb-figure-footnote, main .gb-table-note, main .gb-table-footnote, main table tr')){
+    for(const node of document.querySelectorAll('main .gb-footnote, main .gb-note, main .gb-example, main .gb-figure-note, main .gb-figure-footnote, main .gb-table-note, main .gb-table-footnote, main table tr, main li[data-gb-marker]')){
       const id=String(expected.length+1);node.dataset.gbAudit=id;
       expected.push({id,text:text(node),role:node.className||node.tagName});
     }
@@ -69,7 +81,7 @@ export function finalizeGbBodyAudit() {
     if(page.matches('.pagedjs_blank_page,.pagedjs_gb-cover_page,.pagedjs_gb-back-cover_page'))continue;
     const area=page.querySelector('.pagedjs_area').getBoundingClientRect();
     const scale=area.width/(165*96/25.4),tolerance=1.5*scale;
-    for(const e of page.querySelectorAll('.pagedjs_page_content p, .pagedjs_page_content tr, .pagedjs_page_content figure.fig, .pagedjs_page_content mjx-container[display="true"], .pagedjs_page_content mjx-container[display="true"] > svg')){
+    for(const e of page.querySelectorAll('.pagedjs_page_content p, .pagedjs_page_content li, .pagedjs_page_content tr, .pagedjs_page_content figure.fig, .pagedjs_page_content mjx-container[display="true"], .pagedjs_page_content mjx-container[display="true"] > svg')){
       const r=e.getBoundingClientRect();
       if(r.width&&r.height&&(r.top<area.top-tolerance||r.left<area.left-tolerance||r.right>area.right+tolerance||r.bottom>area.bottom+tolerance))
         problems.push('正文元素超出版心：'+e.tagName+' '+e.textContent.trim().slice(0,40));
@@ -90,7 +102,7 @@ export function finalizeGbBodyAudit() {
   const end=document.querySelector('.pagedjs_pages .gb-end-line');
   if(end){
     const page=end.closest('.pagedjs_page'),r=end.getBoundingClientRect();
-    const preceding=[...page.querySelectorAll('.pagedjs_page_content p, .pagedjs_page_content tr, .pagedjs_page_content li, .pagedjs_page_content h1, .pagedjs_page_content h2, .pagedjs_page_content h3, .pagedjs_page_content h4, .pagedjs_page_content h5, .pagedjs_page_content h6, .pagedjs_page_content figure, .pagedjs_page_content img, .pagedjs_page_content mjx-container[display="true"]')]
+    const preceding=[...page.querySelectorAll('.pagedjs_page_content p, .pagedjs_page_content li, .pagedjs_page_content tr, .pagedjs_page_content li, .pagedjs_page_content h1, .pagedjs_page_content h2, .pagedjs_page_content h3, .pagedjs_page_content h4, .pagedjs_page_content h5, .pagedjs_page_content h6, .pagedjs_page_content figure, .pagedjs_page_content img, .pagedjs_page_content mjx-container[display="true"]')]
       .some(e=>(e.textContent.trim()||e.matches('img')||e.matches('figure')&&e.querySelector('img,svg'))&&e.getBoundingClientRect().height&&e.getBoundingClientRect().bottom<=r.top+1.5);
     if(!preceding)problems.push('终结线被单独排入新页，请调整末尾内容');
   }

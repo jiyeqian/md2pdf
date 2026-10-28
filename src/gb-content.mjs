@@ -1,5 +1,6 @@
+import { renderGbTable } from './gb-tables.mjs';
 const escape = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-const OPEN = /^ {0,3}:::gb-(note|example|term|source|unit|subfigure|table-note|important|figure-note|figure-footnote|table-footnote|index|equation)(?:[ \t]+(.*))?[ \t]*$/;
+const OPEN = /^ {0,3}:::gb-(note|example|term|source|unit|subfigure|table-note|important|figure-note|figure-footnote|table-footnote|index|equation|table)(?:[ \t]+(.*))?[ \t]*$/;
 const CLOSE = /^ {0,3}:::[ \t]*$/;
 
 // Structured GB blocks are opt-in: ordinary prose beginning with 注/示例 is unchanged.
@@ -19,6 +20,7 @@ export function prepareGbContent(source, depth = 0) {
       out.push(lines[i]);
       continue;
     }
+    if (!fence && /^\s*<!--\s*gb-check:.*?-->\s*$/.test(lines[i])) continue;
     const open = !fence && OPEN.exec(lines[i]);
     if (!open) { out.push(lines[i]); continue; }
     let depth = 1, end = i + 1, innerFence = null;
@@ -33,7 +35,10 @@ export function prepareGbContent(source, depth = 0) {
       if (OPEN.test(lines[end])) depth++;
       else if (CLOSE.test(lines[end]) && --depth === 0) break;
     }
-    if (depth) { out.push(lines[i]); continue; }
+    if (depth) {
+      if (open[1] === 'table') { const error = new Error('gb-table：块未闭合'); error.status = 400; throw error; }
+      out.push(lines[i]); continue;
+    }
     if (open[1] === 'term' && !/^\d+(?:\.\d+)+$/.test((open[2] || '').trim())) {
       out.push(...lines.slice(i, end + 1)); i = end; continue;
     }
@@ -69,6 +74,7 @@ function markdown(text, marked, depth = 0) {
 }
 
 function renderBlock({ role, label, text }, marked, depth) {
+  if (role === 'table') return renderGbTable(text, label, marked);
   if (role === 'index') {
     const rows = text.split('\n').map(line => line.trim()).filter(Boolean);
     const entries = rows.map(line => {
@@ -116,6 +122,12 @@ function renderBlock({ role, label, text }, marked, depth) {
 }
 
 export function transformGbContent(html, title) {
+  html = html.replace(/<h2([^>]*class="[^"]*\bback\b[^"]*"[^>]*)>(参考文献)<\/h2>/g,
+    (_, attrs, text) => '<h2' + attrs.replace('class="', 'class="gb-references-title ') + '>' + text + '</h2>');
+  html = html.replace(/<h2([^>]*class="[^"]*\bback\b[^"]*"[^>]*)>(索引)<\/h2>/g,
+    (_, attrs, text) => '<h2' + attrs.replace('class="', 'class="gb-index-title ') + '>' + text + '</h2>');
+  html = attachTableUnits(html);
+
   html = html.replace(/<h2([^>]*\bclass="[^"]*\bbody-start\b[^"]*"[^>]*)>([\s\S]*?)<\/h2>/, (_, attrs, inner) =>
     '<h2' + attrs + '>' + (title ? '<span class="gb-body-title">' + escape(title) + '</span>' : '') + '<span class="gb-first-heading">' + inner + '</span></h2>');
   html = html.replace(/<h2([^>]*\bclass="[^"]*\bappendix\b[^"]*"[^>]*)>([\s\S]*?)<\/h2>/g, (whole, attrs, inner) => {
@@ -163,6 +175,21 @@ function classes(node) {
 function noteRole(node, allowed) {
   return node.tag === 'div' && classes(node).some(name => allowed.has(name));
 }
+function attachTableUnits(html) {
+  const edits=[];
+  for(const table of elements(html).filter(n=>n.tag==='table')){
+    const caption=table.children.find(n=>n.tag==='caption');
+    const siblings=table.parent.children,unit=siblings[siblings.indexOf(table)+1];
+    if(!caption||!unit||!classes(unit).includes('gb-unit')||unit.end===undefined)continue;
+    const content=/^\s*<p>([\s\S]*?)<\/p>\s*$/.exec(html.slice(unit.openEnd,unit.closeStart));
+    if(!content)continue;
+    edits.push({start:caption.closeStart,end:caption.closeStart,text:'<span class="gb-table-unit">'+content[1]+'</span>'});
+    edits.push({start:unit.start,end:unit.end,text:''});
+  }
+  for(const e of edits.sort((a,b)=>b.start-a.start))html=html.slice(0,e.start)+e.text+html.slice(e.end);
+  return html;
+}
+
 function fillEmptyTableCells(html) {
   const edits = [];
   for (const cell of elements(html)) {
