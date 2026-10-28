@@ -1,0 +1,525 @@
+{
+  "label": "中华人民共和国国家标准",
+  "method": "Poppler pdftocairo glyph outlines, no raster tracing; source paths uniformly scaled to 8mm ink height, equal added inter-glyph spacing to 170mm total ink width",
+  "asset": "assets/gb-cover-banner.svg",
+  "assetSha256": "f7b48f0b7b79cfc901c2b812193a4efeaaf34a1869c878d2bf89311152a8b25e",
+  "sourceInkBoundsPt": {
+    "x": 71.80107879638672,
+    "y": 116.25849914550781,
+    "width": 480.75445556640625,
+    "height": 24.995803833007812
+  },
+  "glyphScale": 0.9072388912088012,
+  "addedOriginSpacingPt": 4.573062456777029,
+  "targetMm": {
+    "left": 25,
+    "top": 42,
+    "width": 170,
+    "height": 8
+  },
+  "reuseConditions": "Source sample supplied for project research; public redistribution permission has not been independently established. No external publication authorized in this task.",
+  "sources": [
+    {
+      "file": "GB:T 48316—2026.pdf",
+      "sha256": "ea30418a73978baa7ad3209204a1c31826c99f49627888d776f08008685e5a2a",
+      "page": 1,
+      "classification": "embedded font outlines",
+      "glyphs": [
+        {
+          "char": "中",
+          "outlineSha256": "2c4dc3ac621226a5155fcbf67d5c430804ee5d3ecc1673a4f1f5b61a333c0b61",
+          "originPt": [
+            70.20733,
+            138.035555
+          ]
+        },
+        {
+          "char": "华",
+          "outlineSha256": "d16c4e786b17e4e9994a9c5f72c03acf0ff7be57963be9ede1ee880c3428b1a6",
+          "originPt": [
+            115.081195,
+            138.035555
+          ]
+        },
+        {
+          "char": "人",
+          "outlineSha256": "859279172a6e515788346b42b709a30a98815ebb2a04b5849a5b12f76013af07",
+          "originPt": [
+            159.955061,
+            138.035555
+          ]
+        },
+        {
+          "char": "民",
+          "outlineSha256": "faa7bf7b6b2ff899619f67db78ff980c277b09c32fe5c6bf8190e61e4db77e41",
+          "originPt": [
+            204.828927,
+            138.035555
+          ]
+        },
+        {
+          "char": "共",
+          "outlineSha256": "4c173e0e1f4aa6d8dcd3b9964a236a1f6c0ad7d91363297fd04da6d9da0f489f",
+          "originPt": [
+            249.703791,
+            138.035555
+          ]
+        },
+        {
+          "char": "和",
+          "outlineSha256": "d069fdac6374a80af4400d49273029447d645244c8dc15f778e29d8183f59aea",
+          "originPt": [
+            294.577657,
+            138.035555
+          ]
+        },
+        {
+          "char": "国",
+          "outlineSha256": "d4e2e11900d993376cf4f70cfdc03fcd408febf6a3cc29149ec04db5ccca6280",
+          "originPt": [
+            339.451523,
+            138.035555
+          ]
+        },
+        {
+          "char": "国",
+          "outlineSha256": "d4e2e11900d993376cf4f70cfdc03fcd408febf6a3cc29149ec04db5ccca6280",
+          "originPt": [
+            384.325388,
+            138.035555
+          ]
+        },
+        {
+          "char": "家",
+          "outlineSha256": "8351d2287ebe4ecc5182b54177c5afee6b914d83aa2b72424421e521816f14f1",
+          "originPt": [
+            429.200253,
+            138.035555
+          ]
+        },
+        {
+          "char": "标",
+          "outlineSha256": "5c6e33539184b9b4223f3c18dbfabb74c6f49efb5cfb383f2e6388a5c33374fc",
+          "originPt": [
+            474.074118,
+            138.035555
+          ]
+        },
+        {
+          "char": "准",
+          "outlineSha256": "f90f76cd17515159a88c68b304a11e33061d811c5cf75fcedacf239c9a23ea7a",
+          "originPt": [
+            518.947984,
+            138.035555
+          ]
+        }
+      ],
+      "actualPdfText": "中华人民共和国国家标准",
+      "embeddedFontNames": [
+        "BBCDEE+FZXBSK--GBK1-0"
+      ]
+    },
+    {
+      "file": "GB:T 13000—2025.pdf",
+      "sha256": "84017a23c6f9aad77fd6af1a63cc21f6c9f351849523096dbbadaf70cd5cd36e",
+      "page": 1,
+      "classification": "embedded font outlines",
+      "glyphs": [
+        {
+          "char": "中",
+          "outlineSha256": "2c4dc3ac621226a5155fcbf67d5c430804ee5d3ecc1673a4f1f5b61a333c0b61",
+          "originPt": [
+            70.20733,
+            137.713936
+          ]
+        },
+        {
+          "char": "华",
+          "outlineSha256": "d16c4e786b17e4e9994a9c5f72c03acf0ff7be57963be9ede1ee880c3428b1a6",
+          "originPt": [
+            115.081195,
+            137.713936
+          ]
+        },
+        {
+          "char": "人",
+          "outlineSha256": "859279172a6e515788346b42b709a30a98815ebb2a04b5849a5b12f76013af07",
+          "originPt": [
+            159.955061,
+            137.713936
+          ]
+        },
+        {
+          "char": "民",
+          "outlineSha256": "faa7bf7b6b2ff899619f67db78ff980c277b09c32fe5c6bf8190e61e4db77e41",
+          "originPt": [
+            204.828927,
+            137.713936
+          ]
+        },
+        {
+          "char": "共",
+          "outlineSha256": "4c173e0e1f4aa6d8dcd3b9964a236a1f6c0ad7d91363297fd04da6d9da0f489f",
+          "originPt": [
+            249.703791,
+            137.713936
+          ]
+        },
+        {
+          "char": "和",
+          "outlineSha256": "d069fdac6374a80af4400d49273029447d645244c8dc15f778e29d8183f59aea",
+          "originPt": [
+            294.577657,
+            137.713936
+          ]
+        },
+        {
+          "char": "国",
+          "outlineSha256": "d4e2e11900d993376cf4f70cfdc03fcd408febf6a3cc29149ec04db5ccca6280",
+          "originPt": [
+            339.451523,
+            137.713936
+          ]
+        },
+        {
+          "char": "国",
+          "outlineSha256": "d4e2e11900d993376cf4f70cfdc03fcd408febf6a3cc29149ec04db5ccca6280",
+          "originPt": [
+            384.325388,
+            137.713936
+          ]
+        },
+        {
+          "char": "家",
+          "outlineSha256": "8351d2287ebe4ecc5182b54177c5afee6b914d83aa2b72424421e521816f14f1",
+          "originPt": [
+            429.200253,
+            137.713936
+          ]
+        },
+        {
+          "char": "标",
+          "outlineSha256": "5c6e33539184b9b4223f3c18dbfabb74c6f49efb5cfb383f2e6388a5c33374fc",
+          "originPt": [
+            474.074118,
+            137.713936
+          ]
+        },
+        {
+          "char": "准",
+          "outlineSha256": "f90f76cd17515159a88c68b304a11e33061d811c5cf75fcedacf239c9a23ea7a",
+          "originPt": [
+            518.947984,
+            137.713936
+          ]
+        }
+      ],
+      "actualPdfText": "中华人民共和国国家标准",
+      "embeddedFontNames": [
+        "QBCDEE+FZXBSK--GBK1-0"
+      ]
+    },
+    {
+      "file": "GB:T 42452—2023.pdf",
+      "sha256": "0ccc46fec10feff6d1f6842034128f5c743d18bb81b9866694c303b4330d7b34",
+      "page": 1,
+      "classification": "embedded font outlines",
+      "glyphs": [
+        {
+          "char": "中",
+          "outlineSha256": "2c4dc3ac621226a5155fcbf67d5c430804ee5d3ecc1673a4f1f5b61a333c0b61",
+          "originPt": [
+            70.20733,
+            138.294248
+          ]
+        },
+        {
+          "char": "华",
+          "outlineSha256": "d16c4e786b17e4e9994a9c5f72c03acf0ff7be57963be9ede1ee880c3428b1a6",
+          "originPt": [
+            115.081195,
+            138.294248
+          ]
+        },
+        {
+          "char": "人",
+          "outlineSha256": "859279172a6e515788346b42b709a30a98815ebb2a04b5849a5b12f76013af07",
+          "originPt": [
+            159.955061,
+            138.294248
+          ]
+        },
+        {
+          "char": "民",
+          "outlineSha256": "faa7bf7b6b2ff899619f67db78ff980c277b09c32fe5c6bf8190e61e4db77e41",
+          "originPt": [
+            204.828927,
+            138.294248
+          ]
+        },
+        {
+          "char": "共",
+          "outlineSha256": "4c173e0e1f4aa6d8dcd3b9964a236a1f6c0ad7d91363297fd04da6d9da0f489f",
+          "originPt": [
+            249.703791,
+            138.294248
+          ]
+        },
+        {
+          "char": "和",
+          "outlineSha256": "d069fdac6374a80af4400d49273029447d645244c8dc15f778e29d8183f59aea",
+          "originPt": [
+            294.577657,
+            138.294248
+          ]
+        },
+        {
+          "char": "国",
+          "outlineSha256": "d4e2e11900d993376cf4f70cfdc03fcd408febf6a3cc29149ec04db5ccca6280",
+          "originPt": [
+            339.451523,
+            138.294248
+          ]
+        },
+        {
+          "char": "国",
+          "outlineSha256": "d4e2e11900d993376cf4f70cfdc03fcd408febf6a3cc29149ec04db5ccca6280",
+          "originPt": [
+            384.325388,
+            138.294248
+          ]
+        },
+        {
+          "char": "家",
+          "outlineSha256": "8351d2287ebe4ecc5182b54177c5afee6b914d83aa2b72424421e521816f14f1",
+          "originPt": [
+            429.200253,
+            138.294248
+          ]
+        },
+        {
+          "char": "标",
+          "outlineSha256": "5c6e33539184b9b4223f3c18dbfabb74c6f49efb5cfb383f2e6388a5c33374fc",
+          "originPt": [
+            474.074118,
+            138.294248
+          ]
+        },
+        {
+          "char": "准",
+          "outlineSha256": "f90f76cd17515159a88c68b304a11e33061d811c5cf75fcedacf239c9a23ea7a",
+          "originPt": [
+            518.947984,
+            138.294248
+          ]
+        }
+      ],
+      "actualPdfText": "中华人民共和国国家标准",
+      "embeddedFontNames": [
+        "LUCDEE+FZXBSK--GBK1-0"
+      ]
+    },
+    {
+      "file": "GB:T 1001.1—2021.pdf",
+      "sha256": "1048153cc1ab4e434d35f27a0f8f03b1805e374fbc6115dfc92d5ff9e4e33900",
+      "page": 1,
+      "classification": "embedded font outlines",
+      "glyphs": [
+        {
+          "char": "中",
+          "outlineSha256": "2c4dc3ac621226a5155fcbf67d5c430804ee5d3ecc1673a4f1f5b61a333c0b61",
+          "originPt": [
+            55.854973,
+            148.706066
+          ]
+        },
+        {
+          "char": "华",
+          "outlineSha256": "d16c4e786b17e4e9994a9c5f72c03acf0ff7be57963be9ede1ee880c3428b1a6",
+          "originPt": [
+            100.727322,
+            148.706066
+          ]
+        },
+        {
+          "char": "人",
+          "outlineSha256": "859279172a6e515788346b42b709a30a98815ebb2a04b5849a5b12f76013af07",
+          "originPt": [
+            145.599671,
+            148.706066
+          ]
+        },
+        {
+          "char": "民",
+          "outlineSha256": "faa7bf7b6b2ff899619f67db78ff980c277b09c32fe5c6bf8190e61e4db77e41",
+          "originPt": [
+            190.472019,
+            148.706066
+          ]
+        },
+        {
+          "char": "共",
+          "outlineSha256": "4c173e0e1f4aa6d8dcd3b9964a236a1f6c0ad7d91363297fd04da6d9da0f489f",
+          "originPt": [
+            235.345367,
+            148.706066
+          ]
+        },
+        {
+          "char": "和",
+          "outlineSha256": "d069fdac6374a80af4400d49273029447d645244c8dc15f778e29d8183f59aea",
+          "originPt": [
+            280.217716,
+            148.706066
+          ]
+        },
+        {
+          "char": "国",
+          "outlineSha256": "d4e2e11900d993376cf4f70cfdc03fcd408febf6a3cc29149ec04db5ccca6280",
+          "originPt": [
+            325.090065,
+            148.706066
+          ]
+        },
+        {
+          "char": "国",
+          "outlineSha256": "d4e2e11900d993376cf4f70cfdc03fcd408febf6a3cc29149ec04db5ccca6280",
+          "originPt": [
+            369.962414,
+            148.706066
+          ]
+        },
+        {
+          "char": "家",
+          "outlineSha256": "8351d2287ebe4ecc5182b54177c5afee6b914d83aa2b72424421e521816f14f1",
+          "originPt": [
+            414.835761,
+            148.706066
+          ]
+        },
+        {
+          "char": "标",
+          "outlineSha256": "5c6e33539184b9b4223f3c18dbfabb74c6f49efb5cfb383f2e6388a5c33374fc",
+          "originPt": [
+            459.70811,
+            148.706066
+          ]
+        },
+        {
+          "char": "准",
+          "outlineSha256": "f90f76cd17515159a88c68b304a11e33061d811c5cf75fcedacf239c9a23ea7a",
+          "originPt": [
+            504.580459,
+            148.706066
+          ]
+        }
+      ],
+      "actualPdfText": "中华人民共和国国家标准",
+      "embeddedFontNames": [
+        "JUCDEE+FZXBSK--GBK1-0"
+      ]
+    },
+    {
+      "file": "GB 7718—2025.pdf",
+      "sha256": "007c9bf4cd115d36d964545edf4f9c592915626c7f78cd8157f04dd45e66b6e0",
+      "page": 1,
+      "classification": "embedded font outlines",
+      "glyphs": [
+        {
+          "char": "中",
+          "outlineSha256": "2c4dc3ac621226a5155fcbf67d5c430804ee5d3ecc1673a4f1f5b61a333c0b61",
+          "originPt": [
+            70.20733,
+            138.035555
+          ]
+        },
+        {
+          "char": "华",
+          "outlineSha256": "d16c4e786b17e4e9994a9c5f72c03acf0ff7be57963be9ede1ee880c3428b1a6",
+          "originPt": [
+            115.081195,
+            138.035555
+          ]
+        },
+        {
+          "char": "人",
+          "outlineSha256": "859279172a6e515788346b42b709a30a98815ebb2a04b5849a5b12f76013af07",
+          "originPt": [
+            159.955061,
+            138.035555
+          ]
+        },
+        {
+          "char": "民",
+          "outlineSha256": "faa7bf7b6b2ff899619f67db78ff980c277b09c32fe5c6bf8190e61e4db77e41",
+          "originPt": [
+            204.828927,
+            138.035555
+          ]
+        },
+        {
+          "char": "共",
+          "outlineSha256": "4c173e0e1f4aa6d8dcd3b9964a236a1f6c0ad7d91363297fd04da6d9da0f489f",
+          "originPt": [
+            249.703791,
+            138.035555
+          ]
+        },
+        {
+          "char": "和",
+          "outlineSha256": "d069fdac6374a80af4400d49273029447d645244c8dc15f778e29d8183f59aea",
+          "originPt": [
+            294.577657,
+            138.035555
+          ]
+        },
+        {
+          "char": "国",
+          "outlineSha256": "d4e2e11900d993376cf4f70cfdc03fcd408febf6a3cc29149ec04db5ccca6280",
+          "originPt": [
+            339.451523,
+            138.035555
+          ]
+        },
+        {
+          "char": "国",
+          "outlineSha256": "d4e2e11900d993376cf4f70cfdc03fcd408febf6a3cc29149ec04db5ccca6280",
+          "originPt": [
+            384.325388,
+            138.035555
+          ]
+        },
+        {
+          "char": "家",
+          "outlineSha256": "8351d2287ebe4ecc5182b54177c5afee6b914d83aa2b72424421e521816f14f1",
+          "originPt": [
+            429.200253,
+            138.035555
+          ]
+        },
+        {
+          "char": "标",
+          "outlineSha256": "5c6e33539184b9b4223f3c18dbfabb74c6f49efb5cfb383f2e6388a5c33374fc",
+          "originPt": [
+            474.074118,
+            138.035555
+          ]
+        },
+        {
+          "char": "准",
+          "outlineSha256": "f90f76cd17515159a88c68b304a11e33061d811c5cf75fcedacf239c9a23ea7a",
+          "originPt": [
+            518.947984,
+            138.035555
+          ]
+        }
+      ],
+      "actualPdfText": "中华人民共和国国家标准",
+      "embeddedFontNames": [
+        "FDCDEE+FZXBSK--GBK1-0"
+      ]
+    }
+  ],
+  "extractor": "pdftocairo 26.10.0",
+  "boundsMeasurement": "Chrome SVG getBBox(), original composite outlines; bbox retained in points for deterministic reproduction"
+}

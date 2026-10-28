@@ -16,14 +16,22 @@ const chrome = new Chrome(findChrome(), temp), app = createApp();
 const nativeFetch = globalThis.fetch;
 const ledger = JSON.parse(await readFile(new URL('./fixtures/gb-cover-e5.json', import.meta.url)));
 const issuerSpacing = JSON.parse(await readFile(new URL('./fixtures/gb-issuer-spacing.json', import.meta.url)));
+const bannerSvg = await readFile(new URL('../assets/gb-cover-banner.svg', import.meta.url),'utf8');
+const bannerManifest = JSON.parse(await readFile(new URL('../docs/gb-cover-banner-manifest.json',import.meta.url)));
+assert.equal(createHash('sha256').update(bannerSvg).digest('hex'),bannerManifest.assetSha256);
+assert.equal((bannerSvg.match(/<path /g)||[]).length,11);
+assert.ok(!/<(?:text|image|use|script)\b/.test(bannerSvg),'banner is self-contained paths, no fonts or bitmaps');
+for(const source of bannerManifest.sources)assert.deepEqual(source.glyphs.map(g=>g.outlineSha256),bannerManifest.sources[0].glyphs.map(g=>g.outlineSha256),'cross-sample outline identity');
 const issuerGroups = JSON.parse(await readFile(new URL('./fixtures/gb-issuer-groups.json', import.meta.url)));
 assert.equal(ledger.constraints.length,23,'all 23 source dimension arrows recorded');
 assert.equal(new Set(ledger.constraints.map(c=>c.id)).size,23,'unique identities for repeated numeric labels');
 const reports = [];
-const rendererFilesSha256=Object.fromEntries(await Promise.all(['src/render.mjs','src/gb-layout.mjs','assets/themes/gb.css','assets/gb-logo.svg'].map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])));
+const rendererFilesSha256=Object.fromEntries(await Promise.all(['src/render.mjs','src/gb-layout.mjs','assets/themes/gb.css','assets/gb-logo.svg','assets/gb-cover-banner.svg'].map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])));
 const run = (cmd, args) => execFileSync(cmd, args, {encoding:'utf8', maxBuffer:16*1024*1024});
 try {
   await mkdir(out, {recursive:true});
+  const customBanner = await render('---\n标准号: GB/T 12345—2026\n文件类别: 自定义文件\n---\n\n## 范围\n\n测试。',{type:'gb'},{webSafe:true});
+  assert.ok(!customBanner.html.includes('class="cover-head cover-head-vector"'),'custom banner preserves text rendering');
   const build = await buildStatic();
   globalThis.fetch = async (input, init) => {
     const url = new URL(input);
@@ -40,6 +48,7 @@ try {
     await writeFile(`${out}/${name}.md`, md);
     const opts = {type:'gb'}, body = JSON.stringify({md,opts});
     const core = await render(md,{...opts,pagedHtml:true},{webSafe:true});
+    assert.ok(core.html.includes(bannerSvg),'fixed banner uses audited path resource');
     if(name==='diagram')assert.ok(!core.html.split('class="cover-org-names"')[1].split('class="cover-org-pub"')[0].includes('国家标准化管理委员会'),'explicit single issuer must not acquire a default second issuer');
     const response = await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body});
     assert.equal(response.status,200,await response.clone().text());
@@ -92,6 +101,8 @@ try {
       }
       await writeFile(prefix+'-boxes.json',JSON.stringify(state,null,2));
       run('pdfseparate',['-f','1','-l','1',prefix+'-full.pdf',prefix+'-%d.pdf']);
+      const pdfText=run('pdftotext',['-layout',prefix+'-1.pdf','-']);
+      assert.equal((pdfText.replace(/\s/g,'').match(/中华人民共和国国家标准/g)||[]).length,1,`${name}/${runtime}: searchable banner text appears exactly once`);
       const xml=run('pdftohtml',['-f','1','-l','1','-xml','-i','-stdout',prefix+'-1.pdf']);
       const families=Object.fromEntries([...xml.matchAll(/<fontspec id="(\d+)"[^>]*family="([^"]+)"/g)].map(m=>[m[1],m[2]]));
       const textRuns=[...xml.matchAll(/<text\b[^>]*font="(\d+)"[^>]*>([\s\S]*?)<\/text>/g)].map(m=>({font:families[m[1]],text:m[2]}));

@@ -1,0 +1,42 @@
+{
+  "measurement": "Actual PDF vector subpath bounds, excluding searchable near-transparent text; independent of DOM boxes",
+  "engineeringToleranceMm": 0.2,
+  "reports": [
+    {
+      "runtime": "cli",
+      "pdfSha256": "8a30fc5b253ccef04d0366affbebb951cde7fe04a47879fc34d23a12735dfc0a",
+      "vectorSubpathCount": 27,
+      "boundsMm": {
+        "left": 24.875483503315223,
+        "right": 194.8556859621575,
+        "top": 42.07740915782453,
+        "bottom": 50.06826234164108
+      },
+      "bannerRasterImageCount": 0
+    },
+    {
+      "runtime": "node",
+      "pdfSha256": "970d606b589078245ca6dd429e83529383a25c0005bfbab7ac486744abc98596",
+      "vectorSubpathCount": 27,
+      "boundsMm": {
+        "left": 24.875483503315223,
+        "right": 194.8556859621575,
+        "top": 42.07740915782453,
+        "bottom": 50.06826234164108
+      },
+      "bannerRasterImageCount": 0
+    },
+    {
+      "runtime": "static",
+      "pdfSha256": "3a6950e563d253a206b04cf85bbd2d109410f4796646493925d8a6d900e5ccf7",
+      "vectorSubpathCount": 27,
+      "boundsMm": {
+        "left": 24.875483503315223,
+        "right": 194.8556859621575,
+        "top": 42.07740915782453,
+        "bottom": 50.06826234164108
+      },
+      "bannerRasterImageCount": 0
+    }
+  ]
+}

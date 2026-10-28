@@ -66,6 +66,11 @@ body { font-size: 10.5pt; line-height: 1.62; text-align: justify; }
 .cover-head { position: absolute; top: 42mm; left: 25mm; width: 170mm; height: 8mm;
   display: flex; justify-content: space-between; font: 22.67717pt/1 var(--font-title); }
 .cover-head i { display: none; }
+.cover-head-vector { display: block; }
+.gb-cover-banner { display: block; width: 100%; height: 100%; fill: #000; }
+/* Keep a searchable PDF text layer without adding visible ink. */
+.gb-cover-banner-text { position: absolute; inset: 0; font: 20pt/8mm var(--font-title);
+  color: rgba(0,0,0,.001); white-space: nowrap; }
 .cover-numbers { position: absolute; top: 59mm; right: 20mm;
   display: flex; flex-direction: column; align-items: flex-end; gap: 3mm; }
 .cover-stdno { font: 14pt/1 var(--font-head); }

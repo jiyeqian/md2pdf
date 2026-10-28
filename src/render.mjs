@@ -454,7 +454,7 @@ function gbHeaderCss(stdno) {
 
 // GB 封面（仅 gb profile）：标准号 / 中英文名称 / ICS·CCS / 发布·实施日期 / 发布机构
 // 尺寸与字号见 GB/T 1.1—2020 图 E.5、表 F.1；封面专用字仍须发布部门确认。
-function buildCover(fm, title, useDefaults = true) {
+function buildCover(fm, title, useDefaults = true, bannerSvg = '') {
   const stdno = fm['标准号'] || fm.standard || '';
   const cn = fm['中文名称'] || (useDefaults ? (title || fm.title || '') : '');
   const en = fm['英文名称'] || fm.title_en || '';
@@ -482,8 +482,10 @@ function buildCover(fm, title, useDefaults = true) {
   const orgA = orgs[0] || (useDefaults ? '国家市场监督管理总局' : '');
   const orgB = orgs[1] || fm['发布机构2'] || (useDefaults && !orgSrc ? '国家标准化管理委员会' : '');
   // 「中华人民共和国国家标准」按字均分撑满两边距，短语间留一个双倍空位
-  const head = (fm['文件类别'] || (useDefaults ? '中华人民共和国国家标准' : ''))
-    .split('').map(c => '<span>' + esc(c) + '</span>').join('<i class="cover-head-gap"></i>');
+  const bannerText = fm['文件类别'] || (useDefaults ? '中华人民共和国国家标准' : '');
+  const fixedBanner = bannerText === '中华人民共和国国家标准';
+  const head = fixedBanner ? bannerSvg + '<span class="gb-cover-banner-text" aria-hidden="true">' + bannerText + '</span>'
+    : bannerText.split('').map(c => '<span>' + esc(c) + '</span>').join('<i class="cover-head-gap"></i>');
   const icsHtml = (ics || ccs)
     ? '<div class="cover-ics">' + (ics ? 'ICS ' + esc(ics) : '') + (ccs ? '<br>CCS ' + esc(ccs) : '') + '</div>'
     : '';
@@ -500,7 +502,7 @@ function buildCover(fm, title, useDefaults = true) {
     '<section class="cover">',
     icsHtml,
     '<img class="cover-logo" src="' + logoUrl + '" alt="GB">',
-    '  <div class="cover-head">' + head + '</div>',
+    '  <div class="cover-head' + (fixedBanner ? ' cover-head-vector' : '') + '"' + (fixedBanner ? ' role="img" aria-label="中华人民共和国国家标准"' : '') + '>' + head + '</div>',
     '  <div class="cover-numbers"><div class="cover-stdno">' + coverNumber(stdno) + '</div>' + supHtml + '</div>',
     '  <div class="cover-rule"></div>',
     '  <div class="cover-main"><div class="cover-cn">' + esc(cn) + '</div>' +
@@ -755,7 +757,7 @@ export async function render(src, options = {}, context = {}) {
   // 学术论文：报头三件套（作者行 + 「摘要」块 + 「关键词」行）
   const authorsHtml = profile.paperHeader ? paperAuthorsHtml(fm, esc) : '';
   const sourceCover = fm.gb_source_cover === true || fm.gb_source_cover === 'true';
-  const coverHtml = profile.gbDoc && eff.gbCover !== false && !sourceCover ? buildCover(fm, title, eff.gbDefaults !== false) : '';
+  const coverHtml = profile.gbDoc && eff.gbCover !== false && !sourceCover ? buildCover(fm, title, eff.gbDefaults !== false, await readFile(path.join(ASSETS, 'gb-cover-banner.svg'), 'utf8')) : '';
   if (profile.gbDoc && !coverHtml) {
     // Unsectioned source evidence uses the body page without a generated cover.
     const header = stdno ? '@top-right { content: ' + cssString(stdno) + '; font: 10.5pt/1 var(--font-head); }' : '';

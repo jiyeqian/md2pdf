@@ -92,7 +92,7 @@ export function prepareGbLayout() {
   }
 
   const banner = cover.querySelector('.cover-head');
-  let bannerInk = ink(banner);
+  let bannerInk = banner?.classList.contains('cover-head-vector') ? null : ink(banner);
   if (bannerInk) {
     banner.style.height = 'auto';
     for (let attempt=0; attempt<3; attempt++) {
