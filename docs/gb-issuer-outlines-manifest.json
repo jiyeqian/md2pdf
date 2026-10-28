@@ -1,0 +1,1447 @@
+{
+  "method": "Embedded font outlines via pdftocairo; original glyph size/proportions retained; source glyph origins redistributed to independently measured calibrated spans; 18pt row baseline pitch",
+  "extractor": "pdftocairo version 26.10.0",
+  "assetSha256": "6030e08b5121cd66a51c265646480a3fa8904494a81fadd35b709ad7b0626ef4",
+  "sources": [
+    {
+      "file": "GB:T 48316—2026.pdf",
+      "sha256": "ea30418a73978baa7ad3209204a1c31826c99f49627888d776f08008685e5a2a",
+      "page": 1,
+      "rows": [
+        {
+          "name": "国家市场监督管理总局",
+          "glyphs": [
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                193.392468,
+                760.693277
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                212.582745,
+                760.693277
+              ]
+            },
+            {
+              "char": "市",
+              "outlineSha256": "813bd205ac2d4ee7b402a2c4d6ea5247b03dd433f4e772e2d3f86c10340225e4",
+              "sourceOriginSvgPt": [
+                231.773023,
+                760.693277
+              ]
+            },
+            {
+              "char": "场",
+              "outlineSha256": "1863a31fdad1e478d5e70df566b72fe0d6f0e60a059f8712beaf68c004ca4dd3",
+              "sourceOriginSvgPt": [
+                250.9633,
+                760.693277
+              ]
+            },
+            {
+              "char": "监",
+              "outlineSha256": "c5fba9d8cd1715147c08dab466f68e2b081603855c8c8693d1f9c6b55dc1f6b9",
+              "sourceOriginSvgPt": [
+                270.153577,
+                760.693277
+              ]
+            },
+            {
+              "char": "督",
+              "outlineSha256": "cfb45f222d32a61be42d1060ae704a06f823f00111b15c6565a334c473c07278",
+              "sourceOriginSvgPt": [
+                289.343854,
+                760.693277
+              ]
+            },
+            {
+              "char": "管",
+              "outlineSha256": "8b912ae90138b384428998ea5d90b986d8cab4aa4bf22b8ee48d753d8b5efb56",
+              "sourceOriginSvgPt": [
+                308.534131,
+                760.693277
+              ]
+            },
+            {
+              "char": "理",
+              "outlineSha256": "35cff969347ea80c723b7b1b7ab25803818fc08bb4ba208955f1a82f981d9869",
+              "sourceOriginSvgPt": [
+                327.724408,
+                760.693277
+              ]
+            },
+            {
+              "char": "总",
+              "outlineSha256": "bb593947ce93d71b331a621ab02037f11c1696a67b949b9f5b749f7b0168afae",
+              "sourceOriginSvgPt": [
+                346.914686,
+                760.693277
+              ]
+            },
+            {
+              "char": "局",
+              "outlineSha256": "6d4aa08e73e17e2eedb51bf732bc0d0ce73e75302f801346b78f717f08861bd5",
+              "sourceOriginSvgPt": [
+                366.104963,
+                760.693277
+              ]
+            }
+          ],
+          "originXsMm": [
+            68.29883611111111,
+            75.07675555555555,
+            81.85467499999999,
+            88.63259444444444,
+            95.41051388888887,
+            102.18843333333332,
+            108.96635277777777,
+            115.74427222222218,
+            122.52219166666666,
+            129.30011111111108
+          ],
+          "font": [
+            "BBCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.98100000000001
+          ]
+        },
+        {
+          "name": "国家标准化管理委员会",
+          "glyphs": [
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                193.392468,
+                778.720931
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                212.582745,
+                778.720931
+              ]
+            },
+            {
+              "char": "标",
+              "outlineSha256": "d7b06bf48cf99b2027dda1387a8a3f39636ef743e1bfe86187699f8158b9fb77",
+              "sourceOriginSvgPt": [
+                231.773023,
+                778.720931
+              ]
+            },
+            {
+              "char": "准",
+              "outlineSha256": "5638adb0351e4568aabe23123f6e8d226ca429df1de04f31a54dd4c18b561a6a",
+              "sourceOriginSvgPt": [
+                250.9633,
+                778.720931
+              ]
+            },
+            {
+              "char": "化",
+              "outlineSha256": "7f984a73755a4d54f2354cda9fcd6585e85baced37a3874c1394a858f1359c8a",
+              "sourceOriginSvgPt": [
+                270.153577,
+                778.720931
+              ]
+            },
+            {
+              "char": "管",
+              "outlineSha256": "8b912ae90138b384428998ea5d90b986d8cab4aa4bf22b8ee48d753d8b5efb56",
+              "sourceOriginSvgPt": [
+                289.343854,
+                778.720931
+              ]
+            },
+            {
+              "char": "理",
+              "outlineSha256": "35cff969347ea80c723b7b1b7ab25803818fc08bb4ba208955f1a82f981d9869",
+              "sourceOriginSvgPt": [
+                308.534131,
+                778.720931
+              ]
+            },
+            {
+              "char": "委",
+              "outlineSha256": "31fb5e3d98bddeddacfa36c3b00db6c14bc3fe9bfd9130e31bec30186ac12dc6",
+              "sourceOriginSvgPt": [
+                327.724408,
+                778.720931
+              ]
+            },
+            {
+              "char": "员",
+              "outlineSha256": "e4d2d73b03fd11c97bb2fd94a5ecf85022455068dd4a09c1c07465e04f5ab467",
+              "sourceOriginSvgPt": [
+                346.914686,
+                778.720931
+              ]
+            },
+            {
+              "char": "会",
+              "outlineSha256": "5662c39688288cd8bdb955f38f629c9ee2e7b2d0734acee20df569486b280839",
+              "sourceOriginSvgPt": [
+                366.104963,
+                778.720931
+              ]
+            }
+          ],
+          "originXsMm": [
+            68.29883611111111,
+            75.07675555555555,
+            81.85467499999999,
+            88.63259444444444,
+            95.41051388888887,
+            102.18843333333332,
+            108.96635277777777,
+            115.74427222222218,
+            122.52219166666666,
+            129.30011111111108
+          ],
+          "font": [
+            "BBCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.980999999999995
+          ]
+        }
+      ]
+    },
+    {
+      "file": "GB:T 7714—2015.pdf",
+      "sha256": "2c420a951bd13da991dc419145f3248ccd904a0a280885bbae4ec18cafa46fcd",
+      "page": 1,
+      "rows": [
+        {
+          "name": "中华人民共和国国家质量监督检验检疫总局",
+          "glyphs": [
+            {
+              "char": "中",
+              "outlineSha256": "cbcc266ce97973889977543cd3c3696adc34824862cf5674a43a8e6eb3f1cd13",
+              "sourceOriginSvgPt": [
+                124.139017,
+                778.497629
+              ]
+            },
+            {
+              "char": "华",
+              "outlineSha256": "1b4d845d9e01d26d21276d574c35359c55ebd330df8467ee2f49814918369a22",
+              "sourceOriginSvgPt": [
+                139.839921,
+                778.497629
+              ]
+            },
+            {
+              "char": "人",
+              "outlineSha256": "8ad33613dc62506f773737d952b9d8273f7f1d6422c2aba09f99b614f728a189",
+              "sourceOriginSvgPt": [
+                155.540825,
+                778.497629
+              ]
+            },
+            {
+              "char": "民",
+              "outlineSha256": "504eb1e98e0dd8265aec908f68ba16f48e449f335e74e130e243fcdefb7e2e73",
+              "sourceOriginSvgPt": [
+                171.24073,
+                778.497629
+              ]
+            },
+            {
+              "char": "共",
+              "outlineSha256": "b730f22d39b2a8230d288db521390a0b9037a05eeb2495446b8caf3487176288",
+              "sourceOriginSvgPt": [
+                186.941634,
+                778.497629
+              ]
+            },
+            {
+              "char": "和",
+              "outlineSha256": "3a0b198c2e37bde060017ea1ddc998455b5e155cea355f7fbf01e55bfb48e7be",
+              "sourceOriginSvgPt": [
+                202.642538,
+                778.497629
+              ]
+            },
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                218.342443,
+                778.497629
+              ]
+            },
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                234.043347,
+                778.497629
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                249.74425,
+                778.497629
+              ]
+            },
+            {
+              "char": "质",
+              "outlineSha256": "3ce5e7525a61526441fd42db53ce6467c2ffc8183021cb96066c923c29b1eca4",
+              "sourceOriginSvgPt": [
+                265.445154,
+                778.497629
+              ]
+            },
+            {
+              "char": "量",
+              "outlineSha256": "84e06ee4a0514c0c9bc81a74c15516570dea8fcba67270a475fa66b84ef880e9",
+              "sourceOriginSvgPt": [
+                281.145059,
+                778.497629
+              ]
+            },
+            {
+              "char": "监",
+              "outlineSha256": "c5fba9d8cd1715147c08dab466f68e2b081603855c8c8693d1f9c6b55dc1f6b9",
+              "sourceOriginSvgPt": [
+                296.845963,
+                778.497629
+              ]
+            },
+            {
+              "char": "督",
+              "outlineSha256": "cfb45f222d32a61be42d1060ae704a06f823f00111b15c6565a334c473c07278",
+              "sourceOriginSvgPt": [
+                312.546867,
+                778.497629
+              ]
+            },
+            {
+              "char": "检",
+              "outlineSha256": "d297ce66964c7e7acfe8d6c9037999f376ecfb823214e6380c738fd1f2850d87",
+              "sourceOriginSvgPt": [
+                328.246772,
+                778.497629
+              ]
+            },
+            {
+              "char": "验",
+              "outlineSha256": "0a093ab22561b642effd3bcc0d25fbbf75f2eff6f93efbd68c39fe226f9792d3",
+              "sourceOriginSvgPt": [
+                343.947676,
+                778.497629
+              ]
+            },
+            {
+              "char": "检",
+              "outlineSha256": "d297ce66964c7e7acfe8d6c9037999f376ecfb823214e6380c738fd1f2850d87",
+              "sourceOriginSvgPt": [
+                359.64858,
+                778.497629
+              ]
+            },
+            {
+              "char": "疫",
+              "outlineSha256": "7836c01f2b3ad07b343506c757b78bd06eb7f00206f35a5c3bd0644ead269d40",
+              "sourceOriginSvgPt": [
+                375.348485,
+                778.497629
+              ]
+            },
+            {
+              "char": "总",
+              "outlineSha256": "bb593947ce93d71b331a621ab02037f11c1696a67b949b9f5b749f7b0168afae",
+              "sourceOriginSvgPt": [
+                391.049389,
+                778.497629
+              ]
+            },
+            {
+              "char": "局",
+              "outlineSha256": "6d4aa08e73e17e2eedb51bf732bc0d0ce73e75302f801346b78f717f08861bd5",
+              "sourceOriginSvgPt": [
+                406.750293,
+                778.497629
+              ]
+            }
+          ],
+          "originXsMm": [
+            38.359291666666664,
+            43.904958333333326,
+            49.45062499999999,
+            54.99593888888889,
+            60.54160555555555,
+            66.08727222222223,
+            71.63258611111111,
+            77.17825277777776,
+            82.72391944444445,
+            88.2695861111111,
+            93.81490000000001,
+            99.36056666666666,
+            104.90623333333332,
+            110.4515472222222,
+            115.9972138888889,
+            121.54288055555554,
+            127.08819444444445,
+            132.6338611111111,
+            138.17952777777776
+          ],
+          "font": [
+            "EGCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.981
+          ]
+        },
+        {
+          "name": "中国国家标准化管理委员会",
+          "glyphs": [
+            {
+              "char": "中",
+              "outlineSha256": "cbcc266ce97973889977543cd3c3696adc34824862cf5674a43a8e6eb3f1cd13",
+              "sourceOriginSvgPt": [
+                124.139017,
+                796.523705
+              ]
+            },
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                149.046723,
+                796.523705
+              ]
+            },
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                174.730485,
+                796.523705
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                200.510131,
+                796.523705
+              ]
+            },
+            {
+              "char": "标",
+              "outlineSha256": "d7b06bf48cf99b2027dda1387a8a3f39636ef743e1bfe86187699f8158b9fb77",
+              "sourceOriginSvgPt": [
+                226.289777,
+                796.523705
+              ]
+            },
+            {
+              "char": "准",
+              "outlineSha256": "5638adb0351e4568aabe23123f6e8d226ca429df1de04f31a54dd4c18b561a6a",
+              "sourceOriginSvgPt": [
+                252.070421,
+                796.523705
+              ]
+            },
+            {
+              "char": "化",
+              "outlineSha256": "7f984a73755a4d54f2354cda9fcd6585e85baced37a3874c1394a858f1359c8a",
+              "sourceOriginSvgPt": [
+                277.850067,
+                796.523705
+              ]
+            },
+            {
+              "char": "管",
+              "outlineSha256": "8b912ae90138b384428998ea5d90b986d8cab4aa4bf22b8ee48d753d8b5efb56",
+              "sourceOriginSvgPt": [
+                303.629713,
+                796.523705
+              ]
+            },
+            {
+              "char": "理",
+              "outlineSha256": "35cff969347ea80c723b7b1b7ab25803818fc08bb4ba208955f1a82f981d9869",
+              "sourceOriginSvgPt": [
+                329.410357,
+                796.523705
+              ]
+            },
+            {
+              "char": "委",
+              "outlineSha256": "31fb5e3d98bddeddacfa36c3b00db6c14bc3fe9bfd9130e31bec30186ac12dc6",
+              "sourceOriginSvgPt": [
+                355.190003,
+                796.523705
+              ]
+            },
+            {
+              "char": "员",
+              "outlineSha256": "e4d2d73b03fd11c97bb2fd94a5ecf85022455068dd4a09c1c07465e04f5ab467",
+              "sourceOriginSvgPt": [
+                380.969649,
+                796.523705
+              ]
+            },
+            {
+              "char": "会",
+              "outlineSha256": "5662c39688288cd8bdb955f38f629c9ee2e7b2d0734acee20df569486b280839",
+              "sourceOriginSvgPt": [
+                406.750293,
+                796.523705
+              ]
+            }
+          ],
+          "originXsMm": [
+            38.359291666666664,
+            47.156863888888886,
+            56.22854444444443,
+            65.33409166666667,
+            74.43963888888888,
+            83.54553888888888,
+            92.6510861111111,
+            101.75663333333334,
+            110.86253333333332,
+            119.96808055555555,
+            129.07362777777777,
+            138.17952777777776
+          ],
+          "font": [
+            "EGCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.980999999999995
+          ]
+        }
+      ]
+    },
+    {
+      "file": "GB 7718—2025.pdf",
+      "sha256": "007c9bf4cd115d36d964545edf4f9c592915626c7f78cd8157f04dd45e66b6e0",
+      "page": 1,
+      "rows": [
+        {
+          "name": "中华人民共和国国家卫生健康委员会",
+          "glyphs": [
+            {
+              "char": "中",
+              "outlineSha256": "cbcc266ce97973889977543cd3c3696adc34824862cf5674a43a8e6eb3f1cd13",
+              "sourceOriginSvgPt": [
+                161.990651,
+                760.693277
+              ]
+            },
+            {
+              "char": "华",
+              "outlineSha256": "1b4d845d9e01d26d21276d574c35359c55ebd330df8467ee2f49814918369a22",
+              "sourceOriginSvgPt": [
+                177.692059,
+                760.693277
+              ]
+            },
+            {
+              "char": "人",
+              "outlineSha256": "8ad33613dc62506f773737d952b9d8273f7f1d6422c2aba09f99b614f728a189",
+              "sourceOriginSvgPt": [
+                193.392468,
+                760.693277
+              ]
+            },
+            {
+              "char": "民",
+              "outlineSha256": "504eb1e98e0dd8265aec908f68ba16f48e449f335e74e130e243fcdefb7e2e73",
+              "sourceOriginSvgPt": [
+                209.093877,
+                760.693277
+              ]
+            },
+            {
+              "char": "共",
+              "outlineSha256": "b730f22d39b2a8230d288db521390a0b9037a05eeb2495446b8caf3487176288",
+              "sourceOriginSvgPt": [
+                224.795285,
+                760.693277
+              ]
+            },
+            {
+              "char": "和",
+              "outlineSha256": "3a0b198c2e37bde060017ea1ddc998455b5e155cea355f7fbf01e55bfb48e7be",
+              "sourceOriginSvgPt": [
+                240.495694,
+                760.693277
+              ]
+            },
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                256.197103,
+                760.693277
+              ]
+            },
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                271.898511,
+                760.693277
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                287.59892,
+                760.693277
+              ]
+            },
+            {
+              "char": "卫",
+              "outlineSha256": "f3454e51333dfab5052c3487f5122ba3e3040579caa67de8fd1458e46c4f2e8b",
+              "sourceOriginSvgPt": [
+                303.300328,
+                760.693277
+              ]
+            },
+            {
+              "char": "生",
+              "outlineSha256": "a602c6e213db7a7c4c375db378e329500e9e5bd30d55ebd800ac5a2fe8a761d2",
+              "sourceOriginSvgPt": [
+                319.001737,
+                760.693277
+              ]
+            },
+            {
+              "char": "健",
+              "outlineSha256": "fcc833d404b4c0937e03067e3d9888ac50f7cea0cc40a072e8e7f88ba1bf0746",
+              "sourceOriginSvgPt": [
+                334.702146,
+                760.693277
+              ]
+            },
+            {
+              "char": "康",
+              "outlineSha256": "2d4510d6d9bbd361ad342465befe14cfaf7b5f80e58bfca76286aac16087d2b5",
+              "sourceOriginSvgPt": [
+                350.403554,
+                760.693277
+              ]
+            },
+            {
+              "char": "委",
+              "outlineSha256": "31fb5e3d98bddeddacfa36c3b00db6c14bc3fe9bfd9130e31bec30186ac12dc6",
+              "sourceOriginSvgPt": [
+                366.104963,
+                760.693277
+              ]
+            },
+            {
+              "char": "员",
+              "outlineSha256": "e4d2d73b03fd11c97bb2fd94a5ecf85022455068dd4a09c1c07465e04f5ab467",
+              "sourceOriginSvgPt": [
+                381.805372,
+                760.693277
+              ]
+            },
+            {
+              "char": "会",
+              "outlineSha256": "5662c39688288cd8bdb955f38f629c9ee2e7b2d0734acee20df569486b280839",
+              "sourceOriginSvgPt": [
+                397.50678,
+                760.693277
+              ]
+            }
+          ],
+          "originXsMm": [
+            57.20785555555555,
+            62.75352222222222,
+            68.29883611111111,
+            73.84450277777778,
+            79.39016944444444,
+            84.93548333333334,
+            90.48114999999999,
+            96.02681666666666,
+            101.57213055555555,
+            107.11779722222221,
+            112.66346388888888,
+            118.2087777777778,
+            123.75444444444442,
+            129.30011111111108,
+            134.845425,
+            140.39109166666665
+          ],
+          "font": [
+            "FDCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.98100000000001
+          ]
+        },
+        {
+          "name": "国家市场监督管理总局",
+          "glyphs": [
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                161.990651,
+                778.720931
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                188.158666,
+                778.720931
+              ]
+            },
+            {
+              "char": "市",
+              "outlineSha256": "813bd205ac2d4ee7b402a2c4d6ea5247b03dd433f4e772e2d3f86c10340225e4",
+              "sourceOriginSvgPt": [
+                214.327679,
+                778.720931
+              ]
+            },
+            {
+              "char": "场",
+              "outlineSha256": "1863a31fdad1e478d5e70df566b72fe0d6f0e60a059f8712beaf68c004ca4dd3",
+              "sourceOriginSvgPt": [
+                240.495694,
+                778.720931
+              ]
+            },
+            {
+              "char": "监",
+              "outlineSha256": "c5fba9d8cd1715147c08dab466f68e2b081603855c8c8693d1f9c6b55dc1f6b9",
+              "sourceOriginSvgPt": [
+                266.664708,
+                778.720931
+              ]
+            },
+            {
+              "char": "督",
+              "outlineSha256": "cfb45f222d32a61be42d1060ae704a06f823f00111b15c6565a334c473c07278",
+              "sourceOriginSvgPt": [
+                292.832723,
+                778.720931
+              ]
+            },
+            {
+              "char": "管",
+              "outlineSha256": "8b912ae90138b384428998ea5d90b986d8cab4aa4bf22b8ee48d753d8b5efb56",
+              "sourceOriginSvgPt": [
+                319.001737,
+                778.720931
+              ]
+            },
+            {
+              "char": "理",
+              "outlineSha256": "35cff969347ea80c723b7b1b7ab25803818fc08bb4ba208955f1a82f981d9869",
+              "sourceOriginSvgPt": [
+                345.169752,
+                778.720931
+              ]
+            },
+            {
+              "char": "总",
+              "outlineSha256": "bb593947ce93d71b331a621ab02037f11c1696a67b949b9f5b749f7b0168afae",
+              "sourceOriginSvgPt": [
+                371.338765,
+                778.720931
+              ]
+            },
+            {
+              "char": "局",
+              "outlineSha256": "6d4aa08e73e17e2eedb51bf732bc0d0ce73e75302f801346b78f717f08861bd5",
+              "sourceOriginSvgPt": [
+                397.50678,
+                778.720931
+              ]
+            }
+          ],
+          "originXsMm": [
+            57.20785555555555,
+            66.45028055555555,
+            75.69305833333333,
+            84.93548333333334,
+            94.17826111111111,
+            103.42068611111111,
+            112.66346388888888,
+            121.90588888888887,
+            131.14866666666666,
+            140.39109166666665
+          ],
+          "font": [
+            "FDCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.980999999999995
+          ]
+        }
+      ]
+    }
+  ],
+  "crossChecks": [
+    {
+      "file": "GB:T 1001.1—2021.pdf",
+      "sha256": "1048153cc1ab4e434d35f27a0f8f03b1805e374fbc6115dfc92d5ff9e4e33900",
+      "page": 1,
+      "rows": [
+        {
+          "name": "国家市场监督管理总局",
+          "glyphs": [
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                179.035948,
+                771.452608
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                198.225576,
+                771.452608
+              ]
+            },
+            {
+              "char": "市",
+              "outlineSha256": "813bd205ac2d4ee7b402a2c4d6ea5247b03dd433f4e772e2d3f86c10340225e4",
+              "sourceOriginSvgPt": [
+                217.415205,
+                771.452608
+              ]
+            },
+            {
+              "char": "场",
+              "outlineSha256": "1863a31fdad1e478d5e70df566b72fe0d6f0e60a059f8712beaf68c004ca4dd3",
+              "sourceOriginSvgPt": [
+                236.604833,
+                771.452608
+              ]
+            },
+            {
+              "char": "监",
+              "outlineSha256": "c5fba9d8cd1715147c08dab466f68e2b081603855c8c8693d1f9c6b55dc1f6b9",
+              "sourceOriginSvgPt": [
+                255.794462,
+                771.452608
+              ]
+            },
+            {
+              "char": "督",
+              "outlineSha256": "cfb45f222d32a61be42d1060ae704a06f823f00111b15c6565a334c473c07278",
+              "sourceOriginSvgPt": [
+                274.98409,
+                771.452608
+              ]
+            },
+            {
+              "char": "管",
+              "outlineSha256": "8b912ae90138b384428998ea5d90b986d8cab4aa4bf22b8ee48d753d8b5efb56",
+              "sourceOriginSvgPt": [
+                294.173719,
+                771.452608
+              ]
+            },
+            {
+              "char": "理",
+              "outlineSha256": "35cff969347ea80c723b7b1b7ab25803818fc08bb4ba208955f1a82f981d9869",
+              "sourceOriginSvgPt": [
+                313.363347,
+                771.452608
+              ]
+            },
+            {
+              "char": "总",
+              "outlineSha256": "bb593947ce93d71b331a621ab02037f11c1696a67b949b9f5b749f7b0168afae",
+              "sourceOriginSvgPt": [
+                332.552976,
+                771.452608
+              ]
+            },
+            {
+              "char": "局",
+              "outlineSha256": "6d4aa08e73e17e2eedb51bf732bc0d0ce73e75302f801346b78f717f08861bd5",
+              "sourceOriginSvgPt": [
+                351.742604,
+                771.452608
+              ]
+            }
+          ],
+          "originXsMm": [
+            46.74199722222222,
+            53.51991666666667,
+            60.29783611111111,
+            67.07575555555555,
+            73.853675,
+            80.63159444444445,
+            87.40951388888887,
+            94.18743333333332,
+            100.96535277777777,
+            107.7432722222222
+          ],
+          "font": [
+            "JUCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.98100000000001
+          ]
+        },
+        {
+          "name": "国家标准化管理委员会",
+          "glyphs": [
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                179.035948,
+                789.478653
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                198.225576,
+                789.478653
+              ]
+            },
+            {
+              "char": "标",
+              "outlineSha256": "d7b06bf48cf99b2027dda1387a8a3f39636ef743e1bfe86187699f8158b9fb77",
+              "sourceOriginSvgPt": [
+                217.415205,
+                789.478653
+              ]
+            },
+            {
+              "char": "准",
+              "outlineSha256": "5638adb0351e4568aabe23123f6e8d226ca429df1de04f31a54dd4c18b561a6a",
+              "sourceOriginSvgPt": [
+                236.604833,
+                789.478653
+              ]
+            },
+            {
+              "char": "化",
+              "outlineSha256": "7f984a73755a4d54f2354cda9fcd6585e85baced37a3874c1394a858f1359c8a",
+              "sourceOriginSvgPt": [
+                255.794462,
+                789.478653
+              ]
+            },
+            {
+              "char": "管",
+              "outlineSha256": "8b912ae90138b384428998ea5d90b986d8cab4aa4bf22b8ee48d753d8b5efb56",
+              "sourceOriginSvgPt": [
+                274.98409,
+                789.478653
+              ]
+            },
+            {
+              "char": "理",
+              "outlineSha256": "35cff969347ea80c723b7b1b7ab25803818fc08bb4ba208955f1a82f981d9869",
+              "sourceOriginSvgPt": [
+                294.173719,
+                789.478653
+              ]
+            },
+            {
+              "char": "委",
+              "outlineSha256": "31fb5e3d98bddeddacfa36c3b00db6c14bc3fe9bfd9130e31bec30186ac12dc6",
+              "sourceOriginSvgPt": [
+                313.363347,
+                789.478653
+              ]
+            },
+            {
+              "char": "员",
+              "outlineSha256": "e4d2d73b03fd11c97bb2fd94a5ecf85022455068dd4a09c1c07465e04f5ab467",
+              "sourceOriginSvgPt": [
+                332.552976,
+                789.478653
+              ]
+            },
+            {
+              "char": "会",
+              "outlineSha256": "5662c39688288cd8bdb955f38f629c9ee2e7b2d0734acee20df569486b280839",
+              "sourceOriginSvgPt": [
+                351.742604,
+                789.478653
+              ]
+            }
+          ],
+          "originXsMm": [
+            46.74199722222222,
+            53.51991666666667,
+            60.29783611111111,
+            67.07575555555555,
+            73.853675,
+            80.63159444444445,
+            87.40951388888887,
+            94.18743333333332,
+            100.96535277777777,
+            107.7432722222222
+          ],
+          "font": [
+            "JUCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.980999999999995
+          ]
+        }
+      ]
+    },
+    {
+      "file": "GB:T 13000—2025.pdf",
+      "sha256": "84017a23c6f9aad77fd6af1a63cc21f6c9f351849523096dbbadaf70cd5cd36e",
+      "page": 1,
+      "rows": [
+        {
+          "name": "国家市场监督管理总局",
+          "glyphs": [
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                193.392468,
+                760.481528
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                212.582745,
+                760.481528
+              ]
+            },
+            {
+              "char": "市",
+              "outlineSha256": "813bd205ac2d4ee7b402a2c4d6ea5247b03dd433f4e772e2d3f86c10340225e4",
+              "sourceOriginSvgPt": [
+                231.773023,
+                760.481528
+              ]
+            },
+            {
+              "char": "场",
+              "outlineSha256": "1863a31fdad1e478d5e70df566b72fe0d6f0e60a059f8712beaf68c004ca4dd3",
+              "sourceOriginSvgPt": [
+                250.9633,
+                760.481528
+              ]
+            },
+            {
+              "char": "监",
+              "outlineSha256": "c5fba9d8cd1715147c08dab466f68e2b081603855c8c8693d1f9c6b55dc1f6b9",
+              "sourceOriginSvgPt": [
+                270.153577,
+                760.481528
+              ]
+            },
+            {
+              "char": "督",
+              "outlineSha256": "cfb45f222d32a61be42d1060ae704a06f823f00111b15c6565a334c473c07278",
+              "sourceOriginSvgPt": [
+                289.343854,
+                760.481528
+              ]
+            },
+            {
+              "char": "管",
+              "outlineSha256": "8b912ae90138b384428998ea5d90b986d8cab4aa4bf22b8ee48d753d8b5efb56",
+              "sourceOriginSvgPt": [
+                308.534131,
+                760.481528
+              ]
+            },
+            {
+              "char": "理",
+              "outlineSha256": "35cff969347ea80c723b7b1b7ab25803818fc08bb4ba208955f1a82f981d9869",
+              "sourceOriginSvgPt": [
+                327.724408,
+                760.481528
+              ]
+            },
+            {
+              "char": "总",
+              "outlineSha256": "bb593947ce93d71b331a621ab02037f11c1696a67b949b9f5b749f7b0168afae",
+              "sourceOriginSvgPt": [
+                346.914686,
+                760.481528
+              ]
+            },
+            {
+              "char": "局",
+              "outlineSha256": "6d4aa08e73e17e2eedb51bf732bc0d0ce73e75302f801346b78f717f08861bd5",
+              "sourceOriginSvgPt": [
+                366.104963,
+                760.481528
+              ]
+            }
+          ],
+          "originXsMm": [
+            68.29883611111111,
+            75.07675555555555,
+            81.85467499999999,
+            88.63259444444444,
+            95.41051388888887,
+            102.18843333333332,
+            108.96635277777777,
+            115.74427222222218,
+            122.52219166666666,
+            129.30011111111108
+          ],
+          "font": [
+            "QBCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.98100000000001
+          ]
+        },
+        {
+          "name": "国家标准化管理委员会",
+          "glyphs": [
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                193.392468,
+                778.509182
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                212.582745,
+                778.509182
+              ]
+            },
+            {
+              "char": "标",
+              "outlineSha256": "d7b06bf48cf99b2027dda1387a8a3f39636ef743e1bfe86187699f8158b9fb77",
+              "sourceOriginSvgPt": [
+                231.773023,
+                778.509182
+              ]
+            },
+            {
+              "char": "准",
+              "outlineSha256": "5638adb0351e4568aabe23123f6e8d226ca429df1de04f31a54dd4c18b561a6a",
+              "sourceOriginSvgPt": [
+                250.9633,
+                778.509182
+              ]
+            },
+            {
+              "char": "化",
+              "outlineSha256": "7f984a73755a4d54f2354cda9fcd6585e85baced37a3874c1394a858f1359c8a",
+              "sourceOriginSvgPt": [
+                270.153577,
+                778.509182
+              ]
+            },
+            {
+              "char": "管",
+              "outlineSha256": "8b912ae90138b384428998ea5d90b986d8cab4aa4bf22b8ee48d753d8b5efb56",
+              "sourceOriginSvgPt": [
+                289.343854,
+                778.509182
+              ]
+            },
+            {
+              "char": "理",
+              "outlineSha256": "35cff969347ea80c723b7b1b7ab25803818fc08bb4ba208955f1a82f981d9869",
+              "sourceOriginSvgPt": [
+                308.534131,
+                778.509182
+              ]
+            },
+            {
+              "char": "委",
+              "outlineSha256": "31fb5e3d98bddeddacfa36c3b00db6c14bc3fe9bfd9130e31bec30186ac12dc6",
+              "sourceOriginSvgPt": [
+                327.724408,
+                778.509182
+              ]
+            },
+            {
+              "char": "员",
+              "outlineSha256": "e4d2d73b03fd11c97bb2fd94a5ecf85022455068dd4a09c1c07465e04f5ab467",
+              "sourceOriginSvgPt": [
+                346.914686,
+                778.509182
+              ]
+            },
+            {
+              "char": "会",
+              "outlineSha256": "5662c39688288cd8bdb955f38f629c9ee2e7b2d0734acee20df569486b280839",
+              "sourceOriginSvgPt": [
+                366.104963,
+                778.509182
+              ]
+            }
+          ],
+          "originXsMm": [
+            68.29883611111111,
+            75.07675555555555,
+            81.85467499999999,
+            88.63259444444444,
+            95.41051388888887,
+            102.18843333333332,
+            108.96635277777777,
+            115.74427222222218,
+            122.52219166666666,
+            129.30011111111108
+          ],
+          "font": [
+            "QBCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.980999999999995
+          ]
+        }
+      ]
+    },
+    {
+      "file": "GB:T 42452—2023.pdf",
+      "sha256": "0ccc46fec10feff6d1f6842034128f5c743d18bb81b9866694c303b4330d7b34",
+      "page": 1,
+      "rows": [
+        {
+          "name": "国家市场监督管理总局",
+          "glyphs": [
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                193.392468,
+                761.061841
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                212.582745,
+                761.061841
+              ]
+            },
+            {
+              "char": "市",
+              "outlineSha256": "813bd205ac2d4ee7b402a2c4d6ea5247b03dd433f4e772e2d3f86c10340225e4",
+              "sourceOriginSvgPt": [
+                231.773023,
+                761.061841
+              ]
+            },
+            {
+              "char": "场",
+              "outlineSha256": "1863a31fdad1e478d5e70df566b72fe0d6f0e60a059f8712beaf68c004ca4dd3",
+              "sourceOriginSvgPt": [
+                250.9633,
+                761.061841
+              ]
+            },
+            {
+              "char": "监",
+              "outlineSha256": "c5fba9d8cd1715147c08dab466f68e2b081603855c8c8693d1f9c6b55dc1f6b9",
+              "sourceOriginSvgPt": [
+                270.153577,
+                761.061841
+              ]
+            },
+            {
+              "char": "督",
+              "outlineSha256": "cfb45f222d32a61be42d1060ae704a06f823f00111b15c6565a334c473c07278",
+              "sourceOriginSvgPt": [
+                289.343854,
+                761.061841
+              ]
+            },
+            {
+              "char": "管",
+              "outlineSha256": "8b912ae90138b384428998ea5d90b986d8cab4aa4bf22b8ee48d753d8b5efb56",
+              "sourceOriginSvgPt": [
+                308.534131,
+                761.061841
+              ]
+            },
+            {
+              "char": "理",
+              "outlineSha256": "35cff969347ea80c723b7b1b7ab25803818fc08bb4ba208955f1a82f981d9869",
+              "sourceOriginSvgPt": [
+                327.724408,
+                761.061841
+              ]
+            },
+            {
+              "char": "总",
+              "outlineSha256": "bb593947ce93d71b331a621ab02037f11c1696a67b949b9f5b749f7b0168afae",
+              "sourceOriginSvgPt": [
+                346.914686,
+                761.061841
+              ]
+            },
+            {
+              "char": "局",
+              "outlineSha256": "6d4aa08e73e17e2eedb51bf732bc0d0ce73e75302f801346b78f717f08861bd5",
+              "sourceOriginSvgPt": [
+                366.104963,
+                761.061841
+              ]
+            }
+          ],
+          "originXsMm": [
+            68.29883611111111,
+            75.07675555555555,
+            81.85467499999999,
+            88.63259444444444,
+            95.41051388888887,
+            102.18843333333332,
+            108.96635277777777,
+            115.74427222222218,
+            122.52219166666666,
+            129.30011111111108
+          ],
+          "font": [
+            "LUCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.98100000000001
+          ]
+        },
+        {
+          "name": "国家标准化管理委员会",
+          "glyphs": [
+            {
+              "char": "国",
+              "outlineSha256": "3c210120db7094247cb44002dde7dcbc3a05bf3beb7c89dac91ad01b398bc6e7",
+              "sourceOriginSvgPt": [
+                193.392468,
+                779.088496
+              ]
+            },
+            {
+              "char": "家",
+              "outlineSha256": "c3ef766bcc5e244c6520df25b76c8041a432842d44f4122ab3c0c918cd612a96",
+              "sourceOriginSvgPt": [
+                212.582745,
+                779.088496
+              ]
+            },
+            {
+              "char": "标",
+              "outlineSha256": "d7b06bf48cf99b2027dda1387a8a3f39636ef743e1bfe86187699f8158b9fb77",
+              "sourceOriginSvgPt": [
+                231.773023,
+                779.088496
+              ]
+            },
+            {
+              "char": "准",
+              "outlineSha256": "5638adb0351e4568aabe23123f6e8d226ca429df1de04f31a54dd4c18b561a6a",
+              "sourceOriginSvgPt": [
+                250.9633,
+                779.088496
+              ]
+            },
+            {
+              "char": "化",
+              "outlineSha256": "7f984a73755a4d54f2354cda9fcd6585e85baced37a3874c1394a858f1359c8a",
+              "sourceOriginSvgPt": [
+                270.153577,
+                779.088496
+              ]
+            },
+            {
+              "char": "管",
+              "outlineSha256": "8b912ae90138b384428998ea5d90b986d8cab4aa4bf22b8ee48d753d8b5efb56",
+              "sourceOriginSvgPt": [
+                289.343854,
+                779.088496
+              ]
+            },
+            {
+              "char": "理",
+              "outlineSha256": "35cff969347ea80c723b7b1b7ab25803818fc08bb4ba208955f1a82f981d9869",
+              "sourceOriginSvgPt": [
+                308.534131,
+                779.088496
+              ]
+            },
+            {
+              "char": "委",
+              "outlineSha256": "31fb5e3d98bddeddacfa36c3b00db6c14bc3fe9bfd9130e31bec30186ac12dc6",
+              "sourceOriginSvgPt": [
+                327.724408,
+                779.088496
+              ]
+            },
+            {
+              "char": "员",
+              "outlineSha256": "e4d2d73b03fd11c97bb2fd94a5ecf85022455068dd4a09c1c07465e04f5ab467",
+              "sourceOriginSvgPt": [
+                346.914686,
+                779.088496
+              ]
+            },
+            {
+              "char": "会",
+              "outlineSha256": "5662c39688288cd8bdb955f38f629c9ee2e7b2d0734acee20df569486b280839",
+              "sourceOriginSvgPt": [
+                366.104963,
+                779.088496
+              ]
+            }
+          ],
+          "originXsMm": [
+            68.29883611111111,
+            75.07675555555555,
+            81.85467499999999,
+            88.63259444444444,
+            95.41051388888887,
+            102.18843333333332,
+            108.96635277777777,
+            115.74427222222218,
+            122.52219166666666,
+            129.30011111111108
+          ],
+          "font": [
+            "LUCDEE+FZXBSK--GBK1-0"
+          ],
+          "fontSizesPt": [
+            16.980999999999995
+          ]
+        }
+      ]
+    }
+  ],
+  "reuseConditions": "Local project research and acceptance; public redistribution permission not independently established.",
+  "layout": {
+    "baselineOffsetMm": 5.5,
+    "baselinePitchMm": 6.35,
+    "viewportLeftMm": 0,
+    "viewportTopMm": 0
+  }
+}

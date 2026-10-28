@@ -16,8 +16,13 @@ export function prepareGbLayout() {
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) if (walker.currentNode.data.trim()) nodes.push(walker.currentNode);
-    const bounds = [];
+    const bounds = [...element.querySelectorAll('.gb-issuer-ink')].map(group => {
+      const rect = group.getBoundingClientRect();
+      return {left:(rect.left-origin.left)/scaleX,right:(rect.right-origin.left)/scaleX,
+        top:(rect.top-origin.top)/scaleY,bottom:(rect.bottom-origin.top)/scaleY};
+    });
     for (const node of nodes) {
+      if (node.parentElement.classList.contains('gb-issuer-text')) continue;
       const style = getComputedStyle(node.parentElement);
       if (style.display === 'none' || style.visibility === 'hidden') continue;
       const font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
@@ -148,7 +153,7 @@ export function prepareGbLayout() {
     { names:['中华人民共和国国家质量监督检验检疫总局','中国国家标准化管理委员会'], span:99.82023611111111 },
     { names:['中华人民共和国国家卫生健康委员会','国家市场监督管理总局'], span:83.18323611111109 },
   ];
-  const rows = issuerRows.map(row => {
+  const rows = issuerRows.filter(row => !row.classList.contains('cover-org-vector')).map(row => {
     row.textContent = row.textContent.trim().replace(/(?<=\p{Script=Han})\s+(?=\p{Script=Han})/gu, '');
     row.style.letterSpacing = '0px';
     const node = row.firstChild;

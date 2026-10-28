@@ -22,15 +22,29 @@ assert.equal(createHash('sha256').update(bannerSvg).digest('hex'),bannerManifest
 assert.equal((bannerSvg.match(/<path /g)||[]).length,11);
 assert.ok(!/<(?:text|image|use|script)\b/.test(bannerSvg),'banner is self-contained paths, no fonts or bitmaps');
 for(const source of bannerManifest.sources)assert.deepEqual(source.glyphs.map(g=>g.outlineSha256),bannerManifest.sources[0].glyphs.map(g=>g.outlineSha256),'cross-sample outline identity');
+const issuerOutlines = JSON.parse(await readFile(new URL('../assets/gb-issuer-outlines.json',import.meta.url)));
+const issuerManifest = JSON.parse(await readFile(new URL('../docs/gb-issuer-outlines-manifest.json',import.meta.url)));
+assert.equal(createHash('sha256').update(await readFile(new URL('../assets/gb-issuer-outlines.json',import.meta.url))).digest('hex'),issuerManifest.assetSha256);
+for(const group of issuerOutlines.groups)for(const row of group.rows){
+  assert.equal((row.svg.match(/<path /g)||[]).length,row.name.length);
+  assert.ok(!/<(?:text|image|use|script)\b/.test(row.svg),'publisher SVG uses only self-contained outlines');
+}
+const sharedGlyphs=new Map();
+for(const source of [...issuerManifest.sources,...issuerManifest.crossChecks])for(const row of source.rows)for(const glyph of row.glyphs){
+  if(sharedGlyphs.has(glyph.char))assert.equal(glyph.outlineSha256,sharedGlyphs.get(glyph.char),'shared publisher glyph outlines match across sources');
+  sharedGlyphs.set(glyph.char,glyph.outlineSha256);
+}
 const issuerGroups = JSON.parse(await readFile(new URL('./fixtures/gb-issuer-groups.json', import.meta.url)));
 assert.equal(ledger.constraints.length,23,'all 23 source dimension arrows recorded');
 assert.equal(new Set(ledger.constraints.map(c=>c.id)).size,23,'unique identities for repeated numeric labels');
 const reports = [];
-const rendererFilesSha256=Object.fromEntries(await Promise.all(['src/render.mjs','src/gb-layout.mjs','assets/themes/gb.css','assets/gb-logo.svg','assets/gb-cover-banner.svg'].map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])));
+const rendererFilesSha256=Object.fromEntries(await Promise.all(['src/render.mjs','src/gb-layout.mjs','assets/themes/gb.css','assets/gb-logo.svg','assets/gb-cover-banner.svg','assets/gb-issuer-outlines.json'].map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])));
 const run = (cmd, args) => execFileSync(cmd, args, {encoding:'utf8', maxBuffer:16*1024*1024});
 try {
   await mkdir(out, {recursive:true});
   const customBanner = await render('---\n标准号: GB/T 12345—2026\n文件类别: 自定义文件\n---\n\n## 范围\n\n测试。',{type:'gb'},{webSafe:true});
+  const unknownIssuers=await render('---\n标准号: GB/T 12345—2026\n发布单位:\n  - 未知机构甲\n  - 国家市场监督管理总局\n---\n\n## 范围\n\n测试。',{type:'gb'},{webSafe:true});
+  assert.ok(!unknownIssuers.html.includes('class="cover-org-name cover-org-vector"'),'unknown combinations preserve text fallback');
   assert.ok(!customBanner.html.includes('class="cover-head cover-head-vector"'),'custom banner preserves text rendering');
   const build = await buildStatic();
   globalThis.fetch = async (input, init) => {
@@ -72,6 +86,10 @@ try {
         const dates=root.querySelectorAll('.cover-dates > span');boxes.issued=rect(dates[0]);boxes.implementation=rect(dates[1]);
         const walker=document.createTreeWalker(root.querySelector('.cover-ics'),NodeFilter.SHOW_TEXT);let text;while(text=walker.nextNode()){if(!/^(ICS|CCS)/.test(text.textContent.trim()))continue;const range=document.createRange();range.selectNodeContents(text);const r=range.getBoundingClientRect();boxes[text.textContent.trim().startsWith('ICS')?'ics-first':'ics-second']={left:(r.left-origin.left)/zoom*25.4/96,top:(r.top-origin.top)/zoom*25.4/96,right:(r.right-origin.left)/zoom*25.4/96,bottom:(r.bottom-origin.top)/zoom*25.4/96};}
         const issuerRows=[...root.querySelectorAll('.cover-org-name')].filter(e=>e.textContent.trim()).map(e=>{
+          const glyphs=[...e.querySelectorAll('.gb-issuer-glyph')];
+          if(glyphs.length)return {name:e.querySelector('.gb-issuer-text').textContent,vector:true,originXsMm:glyphs.map(g=>{
+            const p=new DOMPoint(0,0).matrixTransform(g.getScreenCTM());return (p.x-origin.left)/zoom*25.4/96;
+          })};
           const node=e.firstChild, xs=[];
           for(let i=0;i<node.textContent.length;i++){const r=document.createRange();r.setStart(node,i);r.setEnd(node,i+1);xs.push((r.getBoundingClientRect().left-origin.left)/zoom*25.4/96);}
           return {name:e.textContent,originXsMm:xs};
@@ -93,6 +111,7 @@ try {
       if(group){
         const first=state.issuerRows[0].originXsMm[0];
         for(const row of state.issuerRows){
+          assert.equal(row.vector,true,'known publisher groups use original outlines');
           assert.ok(Math.abs(row.originXsMm[0]-first)<=issuerGroups.toleranceMm,JSON.stringify({case:name,runtime,row,first}));
           assert.ok(Math.abs(row.originXsMm.at(-1)-first-group.spanMm)<=issuerGroups.toleranceMm,JSON.stringify({case:name,runtime,row,expectedSpan:group.spanMm,first}));
           const pitch=group.spanMm/(row.originXsMm.length-1);
@@ -103,6 +122,7 @@ try {
       run('pdfseparate',['-f','1','-l','1',prefix+'-full.pdf',prefix+'-%d.pdf']);
       const pdfText=run('pdftotext',['-layout',prefix+'-1.pdf','-']);
       assert.equal((pdfText.replace(/\s/g,'').match(/中华人民共和国国家标准/g)||[]).length,1,`${name}/${runtime}: searchable banner text appears exactly once`);
+      for(const row of state.issuerRows)assert.equal((pdfText.replace(/\s/g,'').match(new RegExp(row.name,'g'))||[]).length,1,'publisher remains searchable exactly once');
       const xml=run('pdftohtml',['-f','1','-l','1','-xml','-i','-stdout',prefix+'-1.pdf']);
       const families=Object.fromEntries([...xml.matchAll(/<fontspec id="(\d+)"[^>]*family="([^"]+)"/g)].map(m=>[m[1],m[2]]));
       const textRuns=[...xml.matchAll(/<text\b[^>]*font="(\d+)"[^>]*>([\s\S]*?)<\/text>/g)].map(m=>({font:families[m[1]],text:m[2]}));

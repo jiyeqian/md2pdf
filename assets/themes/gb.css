@@ -94,6 +94,10 @@ body { font-size: 10.5pt; line-height: 1.62; text-align: justify; }
 .cover-org-names { flex: none; }
 /* 四份较新 GB/T 封面的机构字首步进约 6.778 mm；字距不是 E.5 明示尺寸。 */
 .cover-org-name { width: fit-content; margin: 0; white-space: nowrap; text-align: left; }
+.cover-org-vector { position: relative; height: 18pt; }
+.gb-issuer-svg { display: block; position: absolute; fill: #000; overflow: visible; }
+/* Searchable PDF text; visible publisher ink comes exclusively from the SVG. */
+.gb-issuer-text { position: absolute; inset: 0; color: rgba(0,0,0,.001); font: 10pt/18pt var(--font-title); }
 .cover-org-pub { display: inline-flex; gap: 3mm; flex: none;
   margin: 0; font: 14pt/1 var(--font-head); white-space: nowrap; }
 .cover-ics, .cover-stdno, .cover-sup, .cover-cn, .cover-en, .cover-iso,

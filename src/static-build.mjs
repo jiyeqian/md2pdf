@@ -53,7 +53,7 @@ yaml = yaml.replace(/^import \{ createRequire \} from "node:module"; const requi
 if (/from ["']node:/.test(yaml)) throw new Error('YAML 浏览器适配失败');
 await writeFile(yamlFile, yaml);
 const textAssets = {};
-for (const file of ['assets/base.css','assets/shell.html','assets/gb-cover-banner.svg', ...(await readdir(path.join(root, 'assets/themes'))).filter(f => f.endsWith('.css')).map(f => 'assets/themes/' + f)]) {
+for (const file of ['assets/base.css','assets/shell.html','assets/gb-cover-banner.svg','assets/gb-issuer-outlines.json', ...(await readdir(path.join(root, 'assets/themes'))).filter(f => f.endsWith('.css')).map(f => 'assets/themes/' + f)]) {
   textAssets['/md2pdf/' + file] = await readFile(path.join(root, file), 'utf8');
 }
 await writeFile(path.join(out, 'assets-text.mjs'), 'export default ' + JSON.stringify(textAssets) + ';\n');

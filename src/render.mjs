@@ -454,7 +454,7 @@ function gbHeaderCss(stdno) {
 
 // GB 封面（仅 gb profile）：标准号 / 中英文名称 / ICS·CCS / 发布·实施日期 / 发布机构
 // 尺寸与字号见 GB/T 1.1—2020 图 E.5、表 F.1；封面专用字仍须发布部门确认。
-function buildCover(fm, title, useDefaults = true, bannerSvg = '') {
+function buildCover(fm, title, useDefaults = true, bannerSvg = '', issuerAssets = {groups:[]}) {
   const stdno = fm['标准号'] || fm.standard || '';
   const cn = fm['中文名称'] || (useDefaults ? (title || fm.title || '') : '');
   const en = fm['英文名称'] || fm.title_en || '';
@@ -481,6 +481,14 @@ function buildCover(fm, title, useDefaults = true, bannerSvg = '') {
   const orgs = Array.isArray(orgSrc) ? orgSrc : (orgSrc ? [fmStr(orgSrc)] : []);
   const orgA = orgs[0] || (useDefaults ? '国家市场监督管理总局' : '');
   const orgB = orgs[1] || fm['发布机构2'] || (useDefaults && !orgSrc ? '国家标准化管理委员会' : '');
+  const normalizedIssuers = [orgA,orgB].map(name => String(name).trim().replace(/(?<=\p{Script=Han})\s+(?=\p{Script=Han})/gu,''));
+  const issuerProfile = issuerAssets.groups.find(group => group.names.every((name,index) => name === normalizedIssuers[index]));
+  const issuerRow = (name,index) => {
+    if (!issuerProfile) return '<div class="cover-org-name">'+esc(name)+'</div>';
+    const row = issuerProfile.rows[index];
+    return '<div class="cover-org-name cover-org-vector" role="img" aria-label="'+esc(row.name)+'" style="width:'+(row.inkBoundsMm.x+row.inkBoundsMm.width)+'mm">'+row.svg+
+      '<span class="gb-issuer-text" aria-hidden="true">'+esc(row.name)+'</span></div>';
+  };
   // 「中华人民共和国国家标准」按字均分撑满两边距，短语间留一个双倍空位
   const bannerText = fm['文件类别'] || (useDefaults ? '中华人民共和国国家标准' : '');
   const fixedBanner = bannerText === '中华人民共和国国家标准';
@@ -511,8 +519,7 @@ function buildCover(fm, title, useDefaults = true, bannerSvg = '') {
     '  <div class="cover-foot">',
     datesHtml,
     (datesHtml ? '<div class="cover-date-rule"></div>' : ''),
-    '  <div class="cover-org"><div class="cover-org-names"><div class="cover-org-name">' + esc(orgA) + '</div>' +
-      '<div class="cover-org-name">' + esc(orgB) + '</div></div>' +
+    '  <div class="cover-org"><div class="cover-org-names">' + issuerRow(orgA,0) + issuerRow(orgB,1) + '</div>' +
       ((orgA || orgB) ? '<div class="cover-org-pub"><span>发</span><span>布</span></div>' : '') + '</div>',
     '  </div>',
     '</section>',
@@ -757,7 +764,7 @@ export async function render(src, options = {}, context = {}) {
   // 学术论文：报头三件套（作者行 + 「摘要」块 + 「关键词」行）
   const authorsHtml = profile.paperHeader ? paperAuthorsHtml(fm, esc) : '';
   const sourceCover = fm.gb_source_cover === true || fm.gb_source_cover === 'true';
-  const coverHtml = profile.gbDoc && eff.gbCover !== false && !sourceCover ? buildCover(fm, title, eff.gbDefaults !== false, await readFile(path.join(ASSETS, 'gb-cover-banner.svg'), 'utf8')) : '';
+  const coverHtml = profile.gbDoc && eff.gbCover !== false && !sourceCover ? buildCover(fm, title, eff.gbDefaults !== false, await readFile(path.join(ASSETS, 'gb-cover-banner.svg'), 'utf8'), JSON.parse(await readFile(path.join(ASSETS, 'gb-issuer-outlines.json'), 'utf8'))) : '';
   if (profile.gbDoc && !coverHtml) {
     // Unsectioned source evidence uses the body page without a generated cover.
     const header = stdno ? '@top-right { content: ' + cssString(stdno) + '; font: 10.5pt/1 var(--font-head); }' : '';
