@@ -1,0 +1,96 @@
+{
+  "kind": "independent reconstructed candidate, not extracted native vector and not production replacement",
+  "svgSha256": "873f16dc5fcb0d1169954251a192927592eb62ca7d83a8882c068e0e4c38f8b4",
+  "modelSha256": "abec8d1c0db2b4b670e5dd1af6b776da5543194017a4f732ce2afce8c91d32ce",
+  "productionLogoSha256": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65",
+  "rasterMaskSha256": "f91c16b069ea58626eae0ee4566f78990a385459a0ae7b29081f42052f5b33fc",
+  "circleCount": 1067,
+  "circleDiameterMm": 0.2320675105485232,
+  "pixelSizeMm": 0.04219409282700422,
+  "threshold": 128,
+  "alignment": "fixed 948x474 canvas; no image registration or post-hoc scale/translation fit",
+  "targetScope": "SVG rendered by recorded Chrome at 948x474, threshold 128; PDF has a separate physical geometry and high-resolution cross-renderer check",
+  "targets": {
+    "pixelIoUMin": 0.97,
+    "outerEdgeP95MaxPixels": 2,
+    "blackCoverageDifferenceMaxPercentagePoints": 1
+  },
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/155.0.8059.86",
+    "revision": "@804d6b05f089b27af8342622a36558c49401a1d4",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+    "jsVersion": "15.5.35.25"
+  },
+  "sources": [
+    {
+      "file": "GB:T 48316—2026.pdf",
+      "page": 1,
+      "pdfSha256": "ea30418a73978baa7ad3209204a1c31826c99f49627888d776f08008685e5a2a",
+      "object": "/img0",
+      "decodedStreamSha256": "649ab5c3a741040cd03bbc7fd98a26ae65dc605baf5b94c27b59513069162537",
+      "visibleBlackMaskSha256": "84a946b1a2f100640b845ea146fccd7e8b4e3dcccec0a978d79f8a2a262603d4",
+      "pixelIoU": 0.9725573870430725,
+      "xorPixels": 5852,
+      "blackCoverageDifferencePercentagePoints": -0.41526464775943905,
+      "outerSilhouetteEdgeP95Pixels": 1.0,
+      "outerSilhouetteEdgeMaxPixels": 1.4142135623730951,
+      "pass": true
+    },
+    {
+      "file": "GB 48319—2026.pdf",
+      "page": 1,
+      "pdfSha256": "420f68ee9b89bd203101b6d682ecc7ed57c3dc55cd79d348f5aafe4af5c708be",
+      "object": "/Im1",
+      "decodedStreamSha256": "401a622275f2814b76fbd0df844a256af38a821557ae106c56a9de4014656670",
+      "visibleBlackMaskSha256": "f996c7f8897aec30479653693b2e8b2195b5060ddfc1975e1afddb14b27db8d1",
+      "pixelIoU": 0.9725480081596286,
+      "xorPixels": 5854,
+      "blackCoverageDifferencePercentagePoints": -0.41481956239206585,
+      "outerSilhouetteEdgeP95Pixels": 1.0,
+      "outerSilhouetteEdgeMaxPixels": 1.4142135623730951,
+      "pass": true
+    },
+    {
+      "file": "GB:T 48300—2026.pdf",
+      "page": 1,
+      "pdfSha256": "0107877ad4b405c7dfee4403e9139df0887d21753bbc1ee7f6a635a72e369c85",
+      "object": "/Im1",
+      "decodedStreamSha256": "ce931d54695789ac5e2c46063686204c766b7247d27190a94e7cb71c346ab405",
+      "visibleBlackMaskSha256": "fb657ea299699950f6c427b80028f1a4d89cd07bf06e3136b901203db97da94a",
+      "pixelIoU": 0.9725480081596286,
+      "xorPixels": 5854,
+      "blackCoverageDifferencePercentagePoints": -0.41481956239206585,
+      "outerSilhouetteEdgeP95Pixels": 1.0,
+      "outerSilhouetteEdgeMaxPixels": 1.4142135623730951,
+      "pass": true
+    },
+    {
+      "file": "GB:Z 295.2—2026.pdf",
+      "page": 1,
+      "pdfSha256": "d9fa84f86245ad1ec9546f4dbd985f56859e0a79b04360560bc8225fb794b303",
+      "object": "/img0",
+      "decodedStreamSha256": "649ab5c3a741040cd03bbc7fd98a26ae65dc605baf5b94c27b59513069162537",
+      "visibleBlackMaskSha256": "84a946b1a2f100640b845ea146fccd7e8b4e3dcccec0a978d79f8a2a262603d4",
+      "pixelIoU": 0.9725573870430725,
+      "xorPixels": 5852,
+      "blackCoverageDifferencePercentagePoints": -0.41526464775943905,
+      "outerSilhouetteEdgeP95Pixels": 1.0,
+      "outerSilhouetteEdgeMaxPixels": 1.4142135623730951,
+      "pass": true
+    }
+  ],
+  "nativePdf": {
+    "paperMm": [
+      39.999990555555556,
+      19.999998805555553
+    ],
+    "images": 0,
+    "textCharacters": 0,
+    "vectorObjects": 1090,
+    "sha256": "8c67b7730286126015516fe64a0febc41508e8283e0362325a9c8ac27c1e52ef",
+    "rasterVsSvgIoU_1x": 0.988886084749556,
+    "rasterVsPrimarySampleIoU": 0.967971780643285,
+    "rasterVsSvgIoU_4x": 0.9966081104166158
+  }
+}

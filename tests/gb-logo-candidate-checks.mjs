@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {readFile,writeFile,mkdir,mkdtemp} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {Chrome,findChrome} from '../src/chrome.mjs';
+const svg=await readFile(new URL('../assets/candidates/gb-logo-reconstruction.svg',import.meta.url),'utf8');
+const model=JSON.parse(await readFile(new URL('../docs/gb-logo-reconstruction-model.json',import.meta.url)));
+const circles=[...svg.matchAll(/<circle\b[^>]*\br="([^"]+)"/g)];
+assert.equal(circles.length,model.dots.length);
+assert.equal(new Set(circles.map(m=>m[1])).size,1);
+assert.equal(+circles[0][1],model.circleRadius);
+assert.ok(/viewBox="0 0 948 474"/.test(svg)&&/width="40mm"/.test(svg)&&/height="20mm"/.test(svg));
+assert.ok(!/<(?:image|text|script|foreignObject|use)\b/.test(svg),'no raster, fonts, executable or external assets');
+assert.ok(svg.includes(' C')&&svg.includes('<clipPath'),'Bezier geometry and vector clipping');
+assert.equal(new Set(model.dots.map(p=>p.join(','))).size,model.dots.length);
+execFileSync('python3',['scripts/build-gb-logo-candidate.py','--output','/private/tmp/gb-logo-reproduced.svg']);
+assert.equal(await readFile('/private/tmp/gb-logo-reproduced.svg','utf8'),svg,'deterministic reconstruction');
+const original=execFileSync('git',['show','HEAD:assets/gb-logo.svg']);
+assert.deepEqual(await readFile(new URL('../assets/gb-logo.svg',import.meta.url)),original,'production logo preserved');
+const chrome=new Chrome(findChrome(),await mkdtemp('/private/tmp/gb-candidate-'));
+try{
+ await chrome.start();
+ await chrome.send('Emulation.setDeviceMetricsOverride',{width:948,height:474,deviceScaleFactor:1,mobile:false});
+ const tree=await chrome.send('Page.getFrameTree');
+ await chrome.send('Page.setDocumentContent',{frameId:tree.frameTree.frame.id,html:'<html lang="zh"><style>html,body{margin:0;background:white}svg{display:block;width:948px;height:474px}</style><body>'+svg+'</body></html>'});
+ const shot=await chrome.send('Page.captureScreenshot',{format:'png',clip:{x:0,y:0,width:948,height:474,scale:1}});
+ await writeFile('/private/tmp/gb-logo-candidate.png',Buffer.from(shot.data,'base64'));
+ await chrome.send('Emulation.setDeviceMetricsOverride',{width:948,height:474,deviceScaleFactor:4,mobile:false});
+ const hi=await chrome.send('Page.captureScreenshot',{format:'png',clip:{x:0,y:0,width:948,height:474,scale:1}});
+ await writeFile('/private/tmp/gb-logo-candidate-4x.png',Buffer.from(hi.data,'base64'));
+ const pdf=await chrome.printHtml('<html lang="zh"><style>@page{size:40mm 20mm;margin:0}html,body{margin:0;font-size:0;line-height:0}svg{display:block;width:40mm;height:20mm}</style><body>'+svg+'</body></html>',{});
+ await mkdir('output/pdf',{recursive:true});await writeFile('/private/tmp/gb-logo-chrome-candidate.pdf',pdf);
+ await writeFile('/private/tmp/gb-logo-browser.json',JSON.stringify({browser:await chrome.send('Browser.getVersion'),svgSha256:createHash('sha256').update(svg).digest('hex')},null,2));
+ console.log(`PASS: ${circles.length} equal-radius circles; Bezier-only geometry; deterministic SVG; Chrome preview PDF; production logo unchanged`);
+}finally{await chrome.stop()}
