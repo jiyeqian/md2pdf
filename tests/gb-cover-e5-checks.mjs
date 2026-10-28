@@ -15,6 +15,7 @@ const temp = await mkdtemp('/private/tmp/md2pdf-e5-');
 const chrome = new Chrome(findChrome(), temp), app = createApp();
 const nativeFetch = globalThis.fetch;
 const ledger = JSON.parse(await readFile(new URL('./fixtures/gb-cover-e5.json', import.meta.url)));
+const issuerSpacing = JSON.parse(await readFile(new URL('./fixtures/gb-issuer-spacing.json', import.meta.url)));
 assert.equal(ledger.constraints.length,23,'all 23 source dimension arrows recorded');
 assert.equal(new Set(ledger.constraints.map(c=>c.id)).size,23,'unique identities for repeated numeric labels');
 const reports = [];
@@ -58,13 +59,23 @@ try {
         const pub=root.querySelectorAll('.cover-org-pub > span');boxes.fa=rect(pub[0]);boxes.bu=rect(pub[1]);
         const dates=root.querySelectorAll('.cover-dates > span');boxes.issued=rect(dates[0]);boxes.implementation=rect(dates[1]);
         const walker=document.createTreeWalker(root.querySelector('.cover-ics'),NodeFilter.SHOW_TEXT);let text;while(text=walker.nextNode()){if(!/^(ICS|CCS)/.test(text.textContent.trim()))continue;const range=document.createRange();range.selectNodeContents(text);const r=range.getBoundingClientRect();boxes[text.textContent.trim().startsWith('ICS')?'ics-first':'ics-second']={left:(r.left-origin.left)/zoom*25.4/96,top:(r.top-origin.top)/zoom*25.4/96,right:(r.right-origin.left)/zoom*25.4/96,bottom:(r.bottom-origin.top)/zoom*25.4/96};}
-        return {boxes,error:window.__md2pdfPagedError||null,fonts:[...document.fonts].filter(f=>f.status==='loaded').map(f=>f.family)};
+        const issuerRows=[...root.querySelectorAll('.cover-org-name')].filter(e=>e.textContent.trim()).map(e=>{
+          const node=e.firstChild, xs=[];
+          for(let i=0;i<node.textContent.length;i++){const r=document.createRange();r.setStart(node,i);r.setEnd(node,i+1);xs.push((r.getBoundingClientRect().left-origin.left)/zoom*25.4/96);}
+          return {name:e.textContent,originXsMm:xs};
+        });
+        return {boxes,issuerRows,error:window.__md2pdfPagedError||null,fonts:[...document.fonts].filter(f=>f.status==='loaded').map(f=>f.family)};
       })()`});
       assert.equal(result.exceptionDetails,undefined,JSON.stringify(result.exceptionDetails));
       const state=result.result.value;
       const size=/Page size:\s+([\d.]+) x ([\d.]+) pts/.exec(run('pdfinfo',[prefix+'-full.pdf']));
       assert.ok(size,'PDF MediaBox available');state.paperMm=[+size[1]/72*25.4,+size[2]/72*25.4];
       assert.equal(state.error,null);
+      if(name==='example')for(const expected of issuerSpacing.names){
+        const row=state.issuerRows.find(r=>r.name===expected);
+        assert.ok(row,`${runtime}: publisher ${expected}`);
+        for(let i=1;i<row.originXsMm.length;i++)assert.ok(Math.abs(row.originXsMm[i]-row.originXsMm[i-1]-issuerSpacing.targetOriginPitchMm)<=issuerSpacing.engineeringToleranceMm,`${runtime}: publisher origin pitch matches independent sample measurements`);
+      }
       await writeFile(prefix+'-boxes.json',JSON.stringify(state,null,2));
       run('pdfseparate',['-f','1','-l','1',prefix+'-full.pdf',prefix+'-%d.pdf']);
       const xml=run('pdftohtml',['-f','1','-l','1','-xml','-i','-stdout',prefix+'-1.pdf']);

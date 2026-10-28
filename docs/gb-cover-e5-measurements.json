@@ -5,7 +5,7 @@
     "rendererFilesSha256": {
       "src/render.mjs": "029061fc58686948a0e6f3076de888d335b798ab558dc404b2a1014b8253ce3c",
       "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
-      "assets/themes/gb.css": "c311a0dd1ec25c6e5dd65207cc49583941b9232589bcc6e5f804a32a69f784c8",
+      "assets/themes/gb.css": "a8fcca43f83a4799eb96f704de26b0b880c4d546eedc0ac63131d390530a04df",
       "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
     },
     "browser": {
@@ -16,7 +16,7 @@
       "jsVersion": "15.5.35.25"
     },
     "sourceSha256": "470c74139307b56c03fe1422213f59ecce9d83f1543e561aeaf7b50e208369f1",
-    "pdfSha256": "43c2507eaebfab1eb72408ca954245c628e48cefa1289c1efe777094f3db9aed",
+    "pdfSha256": "7e5ae9cbe8f30c8d4efa97403bf6cab34ddac0ac5864b0bcf14dcb2df96175fe",
     "measurement": {
       "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
       "graphics": "可见图形外接矩形；横线取上缘",
@@ -103,25 +103,25 @@
         "centerX": 109.9185
       },
       "org-names": {
-        "left": 77.93566666666666,
+        "left": 75.184,
         "top": 271.1873333333333,
-        "right": 125.01033333333334,
+        "right": 127.762,
         "bottom": 276.94466666666665,
         "centerX": 101.473
       },
       "fa": {
-        "left": 130.048,
+        "left": 132.79966666666667,
         "top": 271.9493333333333,
-        "right": 134.53533333333334,
+        "right": 137.287,
         "bottom": 276.352,
-        "centerX": 132.29166666666666
+        "centerX": 135.04333333333332
       },
       "bu": {
-        "left": 137.58333333333334,
+        "left": 140.335,
         "top": 271.9493333333333,
-        "right": 142.02833333333334,
+        "right": 144.78,
         "bottom": 276.39433333333335,
-        "centerX": 139.80583333333334
+        "centerX": 142.5575
       },
       "issued": {
         "left": 24.976666666666667,
@@ -505,7 +505,7 @@
     "rendererFilesSha256": {
       "src/render.mjs": "029061fc58686948a0e6f3076de888d335b798ab558dc404b2a1014b8253ce3c",
       "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
-      "assets/themes/gb.css": "c311a0dd1ec25c6e5dd65207cc49583941b9232589bcc6e5f804a32a69f784c8",
+      "assets/themes/gb.css": "a8fcca43f83a4799eb96f704de26b0b880c4d546eedc0ac63131d390530a04df",
       "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
     },
     "browser": {
@@ -516,7 +516,7 @@
       "jsVersion": "15.5.35.25"
     },
     "sourceSha256": "470c74139307b56c03fe1422213f59ecce9d83f1543e561aeaf7b50e208369f1",
-    "pdfSha256": "cf2b16ad21ce82808c49e134c1f81e0f6794a433380c1002d5f98000f7c09bfe",
+    "pdfSha256": "df424c18ef639630dbd7f32b0c7ac122a734ee4c051b3d1dc71ca46c8673e31e",
     "measurement": {
       "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
       "graphics": "可见图形外接矩形；横线取上缘",
@@ -603,25 +603,25 @@
         "centerX": 109.9185
       },
       "org-names": {
-        "left": 77.93566666666666,
+        "left": 75.184,
         "top": 271.1873333333333,
-        "right": 125.01033333333334,
+        "right": 127.762,
         "bottom": 276.94466666666665,
         "centerX": 101.473
       },
       "fa": {
-        "left": 130.048,
+        "left": 132.79966666666667,
         "top": 271.9493333333333,
-        "right": 134.53533333333334,
+        "right": 137.287,
         "bottom": 276.352,
-        "centerX": 132.29166666666666
+        "centerX": 135.04333333333332
       },
       "bu": {
-        "left": 137.58333333333334,
+        "left": 140.335,
         "top": 271.9493333333333,
-        "right": 142.02833333333334,
+        "right": 144.78,
         "bottom": 276.39433333333335,
-        "centerX": 139.80583333333334
+        "centerX": 142.5575
       },
       "issued": {
         "left": 24.976666666666667,
@@ -1005,7 +1005,7 @@
     "rendererFilesSha256": {
       "src/render.mjs": "029061fc58686948a0e6f3076de888d335b798ab558dc404b2a1014b8253ce3c",
       "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
-      "assets/themes/gb.css": "c311a0dd1ec25c6e5dd65207cc49583941b9232589bcc6e5f804a32a69f784c8",
+      "assets/themes/gb.css": "a8fcca43f83a4799eb96f704de26b0b880c4d546eedc0ac63131d390530a04df",
       "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
     },
     "browser": {
@@ -1016,7 +1016,7 @@
       "jsVersion": "15.5.35.25"
     },
     "sourceSha256": "470c74139307b56c03fe1422213f59ecce9d83f1543e561aeaf7b50e208369f1",
-    "pdfSha256": "807a3008749d3c40d622aab35f944c7f37615d4213be0c4184fcf52b10625b0f",
+    "pdfSha256": "b07cd9bf379046ee0c3c12557dc7545b56e408fd3a709ffc5d2459cbdb59ff21",
     "measurement": {
       "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
       "graphics": "可见图形外接矩形；横线取上缘",
@@ -1103,25 +1103,25 @@
         "centerX": 109.9185
       },
       "org-names": {
-        "left": 77.93566666666666,
+        "left": 75.184,
         "top": 271.1873333333333,
-        "right": 125.01033333333334,
+        "right": 127.762,
         "bottom": 276.94466666666665,
         "centerX": 101.473
       },
       "fa": {
-        "left": 130.048,
+        "left": 132.79966666666667,
         "top": 271.9493333333333,
-        "right": 134.53533333333334,
+        "right": 137.287,
         "bottom": 276.352,
-        "centerX": 132.29166666666666
+        "centerX": 135.04333333333332
       },
       "bu": {
-        "left": 137.58333333333334,
+        "left": 140.335,
         "top": 271.9493333333333,
-        "right": 142.02833333333334,
+        "right": 144.78,
         "bottom": 276.39433333333335,
-        "centerX": 139.80583333333334
+        "centerX": 142.5575
       },
       "issued": {
         "left": 24.976666666666667,
@@ -1505,7 +1505,7 @@
     "rendererFilesSha256": {
       "src/render.mjs": "029061fc58686948a0e6f3076de888d335b798ab558dc404b2a1014b8253ce3c",
       "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
-      "assets/themes/gb.css": "c311a0dd1ec25c6e5dd65207cc49583941b9232589bcc6e5f804a32a69f784c8",
+      "assets/themes/gb.css": "a8fcca43f83a4799eb96f704de26b0b880c4d546eedc0ac63131d390530a04df",
       "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
     },
     "browser": {
@@ -1516,7 +1516,7 @@
       "jsVersion": "15.5.35.25"
     },
     "sourceSha256": "3288c077eb6019bf0fb3ec21a0d7198ba526b7082baf5299948a93c4e6c5ba64",
-    "pdfSha256": "c361b35daaccb484cc34f6b99abe6af65095f396412755a6e9c43c70d792b2e0",
+    "pdfSha256": "8f45d2d958dd307da28dea56b35bb6bf96ecf3888ec49d835ee2eb236f76f9ac",
     "measurement": {
       "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
       "graphics": "可见图形外接矩形；横线取上缘",
@@ -1603,25 +1603,25 @@
         "centerX": 109.9185
       },
       "org-names": {
-        "left": 71.79733333333333,
+        "left": 68.28366666666666,
         "top": 264.795,
-        "right": 131.14866666666666,
+        "right": 134.66233333333332,
         "bottom": 276.90233333333333,
         "centerX": 101.473
       },
       "fa": {
-        "left": 136.18633333333332,
+        "left": 139.7,
         "top": 268.77433333333335,
-        "right": 140.67366666666666,
+        "right": 144.18733333333333,
         "bottom": 273.17699999999996,
-        "centerX": 138.43
+        "centerX": 141.94366666666667
       },
       "bu": {
-        "left": 143.72166666666666,
+        "left": 147.23533333333333,
         "top": 268.77433333333335,
-        "right": 148.16666666666666,
+        "right": 151.68033333333332,
         "bottom": 273.21933333333334,
-        "centerX": 145.94416666666666
+        "centerX": 149.45783333333333
       },
       "issued": {
         "left": 24.976666666666667,
@@ -2005,7 +2005,7 @@
     "rendererFilesSha256": {
       "src/render.mjs": "029061fc58686948a0e6f3076de888d335b798ab558dc404b2a1014b8253ce3c",
       "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
-      "assets/themes/gb.css": "c311a0dd1ec25c6e5dd65207cc49583941b9232589bcc6e5f804a32a69f784c8",
+      "assets/themes/gb.css": "a8fcca43f83a4799eb96f704de26b0b880c4d546eedc0ac63131d390530a04df",
       "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
     },
     "browser": {
@@ -2016,7 +2016,7 @@
       "jsVersion": "15.5.35.25"
     },
     "sourceSha256": "3288c077eb6019bf0fb3ec21a0d7198ba526b7082baf5299948a93c4e6c5ba64",
-    "pdfSha256": "d030cda3a7c75cc4a60d3889557486411267c44ae1fef3f1fb325b670123582b",
+    "pdfSha256": "fe319c04ac39bc9289c169e924d4bfcb725c3992409623972095684e0a6b0a22",
     "measurement": {
       "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
       "graphics": "可见图形外接矩形；横线取上缘",
@@ -2103,25 +2103,25 @@
         "centerX": 109.9185
       },
       "org-names": {
-        "left": 71.79733333333333,
+        "left": 68.28366666666666,
         "top": 264.795,
-        "right": 131.14866666666666,
+        "right": 134.66233333333332,
         "bottom": 276.90233333333333,
         "centerX": 101.473
       },
       "fa": {
-        "left": 136.18633333333332,
+        "left": 139.7,
         "top": 268.77433333333335,
-        "right": 140.67366666666666,
+        "right": 144.18733333333333,
         "bottom": 273.17699999999996,
-        "centerX": 138.43
+        "centerX": 141.94366666666667
       },
       "bu": {
-        "left": 143.72166666666666,
+        "left": 147.23533333333333,
         "top": 268.77433333333335,
-        "right": 148.16666666666666,
+        "right": 151.68033333333332,
         "bottom": 273.21933333333334,
-        "centerX": 145.94416666666666
+        "centerX": 149.45783333333333
       },
       "issued": {
         "left": 24.976666666666667,
@@ -2505,7 +2505,7 @@
     "rendererFilesSha256": {
       "src/render.mjs": "029061fc58686948a0e6f3076de888d335b798ab558dc404b2a1014b8253ce3c",
       "src/gb-layout.mjs": "dfcb35affbbf0f9ad1fac3b291653503732b97a5a34d128a1697b61fe3e7a377",
-      "assets/themes/gb.css": "c311a0dd1ec25c6e5dd65207cc49583941b9232589bcc6e5f804a32a69f784c8",
+      "assets/themes/gb.css": "a8fcca43f83a4799eb96f704de26b0b880c4d546eedc0ac63131d390530a04df",
       "assets/gb-logo.svg": "09b26bedbc114685447175b418dd0da598131ff829e318c8f927e8942b10ce65"
     },
     "browser": {
@@ -2516,7 +2516,7 @@
       "jsVersion": "15.5.35.25"
     },
     "sourceSha256": "3288c077eb6019bf0fb3ec21a0d7198ba526b7082baf5299948a93c4e6c5ba64",
-    "pdfSha256": "1ddee497e2bf65933b202320797fac32bd25b19d6f58b17f9e0ee199144bf627",
+    "pdfSha256": "07dde7537b0cab99749851bbf34798df960ddb30af22bf9b1224a9ee443b327e",
     "measurement": {
       "text": "可见字形墨迹外接矩形，不以 CSS 行框或字体度量框代替",
       "graphics": "可见图形外接矩形；横线取上缘",
@@ -2603,25 +2603,25 @@
         "centerX": 109.9185
       },
       "org-names": {
-        "left": 71.79733333333333,
+        "left": 68.28366666666666,
         "top": 264.795,
-        "right": 131.14866666666666,
+        "right": 134.66233333333332,
         "bottom": 276.90233333333333,
         "centerX": 101.473
       },
       "fa": {
-        "left": 136.18633333333332,
+        "left": 139.7,
         "top": 268.77433333333335,
-        "right": 140.67366666666666,
+        "right": 144.18733333333333,
         "bottom": 273.17699999999996,
-        "centerX": 138.43
+        "centerX": 141.94366666666667
       },
       "bu": {
-        "left": 143.72166666666666,
+        "left": 147.23533333333333,
         "top": 268.77433333333335,
-        "right": 148.16666666666666,
+        "right": 151.68033333333332,
         "bottom": 273.21933333333334,
-        "centerX": 145.94416666666666
+        "centerX": 149.45783333333333
       },
       "issued": {
         "left": 24.976666666666667,
