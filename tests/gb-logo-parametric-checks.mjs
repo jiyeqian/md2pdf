@@ -6,7 +6,9 @@ const root=new URL('../',import.meta.url);
 const model=JSON.parse(await readFile(new URL('docs/gb-logo-parametric-model.json',root)));
 const svg=await readFile(new URL('assets/candidates/gb-logo-parametric.svg',root),'utf8');
 assert.ok(!svg.includes('#fff')&&!/<(?:image|text|mask)\b/.test(svg),'only black ink and real transparent cutouts');
-assert.equal(new Set([...svg.matchAll(/stroke-width="([^"]+)"/g)].map(m=>m[1])).size,1);
+assert.deepEqual([...new Set([...svg.matchAll(/stroke-width="([^"]+)"/g)].map(m=>+m[1]))].sort((a,b)=>a-b),[model.lineWidth,2*model.lineWidth]);
+assert.ok(!svg.includes('miter'),'no miter extrusion');
+assert.ok(svg.includes('stroke-linecap="butt"')&&svg.includes('data-junction'),'explicit flat-capped edges and junction polygons');
 assert.equal(new Set([...svg.matchAll(/\br="([^"]+)"/g)].map(m=>m[1])).size,1);
 assert.ok(!model.dots,'dots must come from equations, not recorded individual coordinates');
 for(const j of model.junctions){
@@ -52,6 +54,10 @@ try{
  }
  await capture(svg,'/private/tmp/gb-logo-parametric.png');
  await capture(svg,'/private/tmp/gb-logo-parametric-4x.png',4);
+ await capture(await readFile(new URL('assets/candidates/gb-logo-parametric-v2.svg',root),'utf8'),'/private/tmp/gb-logo-parametric-v2-4x.png',4);
  await capture(svg,'/private/tmp/gb-logo-parametric-background.png',1,'#24b8c8');
+ await capture(`<svg viewBox="0 0 948 474">${model.silhouettes.map(d=>`<path d="${d}"/>`).join('')}</svg>`,'/private/tmp/gb-logo-silhouette-4x.png',4);
+ await capture(`<svg viewBox="0 0 948 474">${model.facets.map(d=>`<path d="${d}"/>`).join('')}</svg>`,'/private/tmp/gb-logo-faces-4x.png',4);
+ await capture(`<svg viewBox="0 0 948 474">${model.counters.map(d=>`<path d="${d}"/>`).join('')}</svg>`,'/private/tmp/gb-logo-holes-4x.png',4);
  console.log('PASS: deterministic equations, uniform stroke/radius, shared junctions, black-only transparent SVG; rendered at 1x/4x and colored background');
 }finally{await chrome.stop()}

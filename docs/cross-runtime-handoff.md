@@ -1,5 +1,20 @@
 # CLI 与 WebApp 一致性及本次交接
 
+## 2026-10-28 GB 标志全图边界修复（v3）
+
+独立候选改为 49 条唯一边、41 个节点的共享边图；平端点、半宽／全宽单侧带、显式有界交点补片，同宽子路径一次绘制。实体轮廓为唯一裁切边界，G 外弧、内弧、B 顶弧复用其精确子曲线，孔洞轮廓直接供斜面复用。移除 B 外凹口短边和 G 下部 2 单位偏移；修复 G 尖刺、B 交会和分段抗锯齿亮缝。v1 保留；v2 的 SVG、模型和指标另存 `*-v2*`，旧研究快照不改。
+
+工作树 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`，分支 `codex/template`，无需启动／重启服务：
+
+- `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf/output/pdf/gb-logo-parametric-comparison.pdf`：5 页；首页比较原件、v2、v3，后四页逐一检查全部 41 个节点。
+- `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf/output/pdf/gb-logo-parametric-40x20.pdf`：40×20 mm 原尺寸纯矢量 PDF。
+- `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf/assets/candidates/gb-logo-parametric.svg`：直接用浏览器放大查看；源码中包含统一可见宽度推导的 w 与 2w 两类中心带，不是所有 stroke 属性相等。
+- [更新后的完整函数方程](gb-logo-functions.md)、[全图拓扑检查](gb-logo-topology-measurements.json)。
+
+验收：对照第 2 页 G 左上、第 3 页 G 左下和第 4 页 B 中下节点，再检查其余节点及原尺寸稿。边界半圆点来自合法的点阵裁切，保留；不靠移动单个圆点或圆角化整个标志掩盖问题。
+
+自动验证：确定性重建、49 边去重、41 节点补片有界、轮廓／孔洞复用、G 两处旧尖刺回归、B 中下节点非空采样及四连通、透明背景、实际 PDF 尺寸和纯矢量、SVG/PDF 四倍分辨率 IoU 99.72%、`npm run check:consistency` 均通过。30 个节点有可采样的内部小核心且无白像素；11 个边界节点不声称内部像素采样通过，全部 41 节点均生成并检查放大对照。独立轮廓填充与裁切的二值阈值有 206 个抗锯齿边界差异像素，全部在 1 个设备像素范围内，范围之外无外伸。原件贴合 IoU 92.99%，高于 v2 92.52%，仍低于 v1 97.26%；不作为生产替换验收。未做实体打印或新标志三入口集成。
+
 ## 2026-10-28 GB 标志参数方程候选
 
 新增点阵测量、两套仿射网格、统一细线、共享交点与透明孔洞的独立候选；上一版及生产资源均保留。完整函数与逐段系数见 [方程](gb-logo-functions.md)。本版 SVG／样本交并比约 92.52%，低于上一版 97.26%，不满足旧版 ≥97% 贴合目标；这是待审阅的规范化候选，不是生产替换验收通过。

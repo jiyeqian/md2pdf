@@ -5,37 +5,37 @@
       "file": "GB:T 48316—2026.pdf",
       "pdfSha256": "ea30418a73978baa7ad3209204a1c31826c99f49627888d776f08008685e5a2a",
       "decodedMaskSha256": "649ab5c3a741040cd03bbc7fd98a26ae65dc605baf5b94c27b59513069162537",
-      "svgIoU": 0.925209193121994,
-      "missingBlackPixels": 7916,
-      "extraBlackPixels": 8521,
-      "coverageDifferencePercentagePoints": 0.13463832363047046
+      "svgIoU": 0.9299161848660049,
+      "missingBlackPixels": 6663,
+      "extraBlackPixels": 8756,
+      "coverageDifferencePercentagePoints": 0.4657818369563249
     },
     {
       "file": "GB 48319—2026.pdf",
       "pdfSha256": "420f68ee9b89bd203101b6d682ecc7ed57c3dc55cd79d348f5aafe4af5c708be",
       "decodedMaskSha256": "401a622275f2814b76fbd0df844a256af38a821557ae106c56a9de4014656670",
-      "svgIoU": 0.9252176128788603,
-      "missingBlackPixels": 7914,
-      "extraBlackPixels": 8521,
-      "coverageDifferencePercentagePoints": 0.13508340899784366
+      "svgIoU": 0.9299070942874804,
+      "missingBlackPixels": 6663,
+      "extraBlackPixels": 8758,
+      "coverageDifferencePercentagePoints": 0.4662269223236981
     },
     {
       "file": "GB:T 48300—2026.pdf",
       "pdfSha256": "0107877ad4b405c7dfee4403e9139df0887d21753bbc1ee7f6a635a72e369c85",
       "decodedMaskSha256": "ce931d54695789ac5e2c46063686204c766b7247d27190a94e7cb71c346ab405",
-      "svgIoU": 0.9252000928230493,
-      "missingBlackPixels": 7916,
-      "extraBlackPixels": 8523,
-      "coverageDifferencePercentagePoints": 0.13508340899784366
+      "svgIoU": 0.9299070942874804,
+      "missingBlackPixels": 6663,
+      "extraBlackPixels": 8758,
+      "coverageDifferencePercentagePoints": 0.4662269223236981
     },
     {
       "file": "GB:Z 295.2—2026.pdf",
       "pdfSha256": "d9fa84f86245ad1ec9546f4dbd985f56859e0a79b04360560bc8225fb794b303",
       "decodedMaskSha256": "649ab5c3a741040cd03bbc7fd98a26ae65dc605baf5b94c27b59513069162537",
-      "svgIoU": 0.925209193121994,
-      "missingBlackPixels": 7916,
-      "extraBlackPixels": 8521,
-      "coverageDifferencePercentagePoints": 0.13463832363047046
+      "svgIoU": 0.9299161848660049,
+      "missingBlackPixels": 6663,
+      "extraBlackPixels": 8756,
+      "coverageDifferencePercentagePoints": 0.4657818369563249
     }
   ],
   "baselineSvgIoU": 0.9725573870430725,
@@ -44,15 +44,15 @@
       39.999990555555556,
       19.999998805555553
     ],
-    "vectorObjects": 3011,
+    "vectorObjects": 3047,
     "images": 0,
     "textCharacters": 0,
-    "svgPdfIoU4x": 0.9972666007436237,
-    "pdfSourceIoU1x": 0.9190486600717787
+    "svgPdfIoU4x": 0.9971879988815371,
+    "pdfSourceIoU1x": 0.9251471863447583
   },
   "sha256": {
-    "assets/candidates/gb-logo-parametric.svg": "e9f44787d3f3a959a0fcd159986adf5fdffa93f7cea1c31e7de99cf7ae773d40",
-    "docs/gb-logo-parametric-model.json": "729efc5311774c2a12ac87428f06dc1cec1196d8f61919b6b265438c0fade493",
-    "output/pdf/gb-logo-parametric-40x20.pdf": "d7733e3d865ee031e566aa8a8874cbeaa2b8f598cab97d5f5af75622ee44075e"
+    "assets/candidates/gb-logo-parametric.svg": "475cc1cbc62592c4f5d236c65c01c5bfefed072a13581b3397c151ca87701e22",
+    "docs/gb-logo-parametric-model.json": "a8960aef3a82aa5f94722a7770daee86cb310b4a2a547996c704c682d8bdd204",
+    "output/pdf/gb-logo-parametric-40x20.pdf": "29810438880baf37033206b5183f7acd4325d18957c388a778af9764bec62e7f"
   }
 }

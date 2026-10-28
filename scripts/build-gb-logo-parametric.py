@@ -1,10 +1,14 @@
 """Generate the normalized GB candidate from piecewise Bezier geometry and affine dot grids."""
 import argparse
+import sys
+sys.dont_write_bytecode = True
 import json
 import math
 import re
 from pathlib import Path
 import xml.etree.ElementTree as ET
+
+from gb_logo_topology import boundary_graph, path as edge_path
 
 ROOT = Path(__file__).resolve().parent.parent
 RECT = 'M0 0 H948 V474 H0 Z'
@@ -46,7 +50,14 @@ def commands(d):
         else:
             raise ValueError(cmd)
 
+def validate_model(m):
+    if m.get('schemaVersion') != 3 or m['canvas'] != [948,474] or m['targetMm'] != [40,20]:
+        raise ValueError('Expected normalized GB schema 3 on the canonical 948x474 / 40x20 mm canvas')
+    if m['lineWidth'] <= 0 or m['circleRadius'] <= 0:
+        raise ValueError('Widths and radii must be positive')
+
 def build_svg(m, output):
+    validate_model(m)
     ns = 'http://www.w3.org/2000/svg'; ET.register_namespace('', ns)
     def node(parent, tag, **attrs):
         return ET.SubElement(parent, '{'+ns+'}'+tag, {k.replace('_', '-'): str(v) for k, v in attrs.items()})
@@ -60,8 +71,8 @@ def build_svg(m, output):
     for index, d in enumerate(m['facets']):
         node(node(defs, 'clipPath', id=f'outside-face-{index}'), 'path', d=RECT+' '+d, clip_rule='evenodd')
     node(node(defs, 'clipPath', id='outside-counters'), 'path', d=RECT+' '+' '.join(m['counters']), clip_rule='evenodd')
-    ink = node(svg, 'g', fill='#000', clip_path='url(#outside-counters)')
-    letter = node(ink, 'g', clip_path='url(#letters)')
+    ink = node(node(svg, 'g', fill='#000', clip_path='url(#outside-counters)'), 'g', clip_path='url(#letters)')
+    letter = node(ink, 'g')
     base = node(letter, 'g')
     for index in range(len(m['facets'])):
         base = node(base, 'g', clip_path=f'url(#outside-face-{index})')
@@ -71,13 +82,22 @@ def build_svg(m, output):
         group = node(dots, 'g', **{'data-grid':grid['name']})
         for x, y in grid_points(grid, m['circleRadius']):
             node(group, 'circle', cx=f'{x:.6f}', cy=f'{y:.6f}', r=m['circleRadius'])
-    outlines = node(ink, 'g', fill='none', stroke='#000', stroke_width=m['lineWidth'],
-                    stroke_linejoin='miter', stroke_miterlimit=4)
-    paths(outlines, m['facets']+m['silhouettes'])
+    edges, joints = boundary_graph(m)
+    bands = node(ink, 'g', **{'data-layer':'boundary-bands'})
+    strokes = node(bands, 'g', fill='none', stroke='#000', stroke_linecap='butt', stroke_linejoin='bevel')
+    for width in sorted({e['strokeWidth'] for e in edges}):
+        data=' '.join(edge_path([e['points']]) for e in edges if e['strokeWidth']==width)
+        node(strokes, 'path', d=data, stroke_width=width)
+    for joint in joints:
+        ps = joint['polygon']
+        if len(ps)>2:
+            node(bands, 'path', d='M'+' L'.join(' '.join(f'{v:.8f}' for v in p) for p in ps)+' Z',
+                 **{'data-junction':','.join(str(v) for v in joint['point'])})
     ET.indent(svg, space='  '); output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(ET.tostring(svg, encoding='unicode')+'\n')
 
 def build_pdf(m, output):
+    validate_model(m)
     from reportlab.pdfgen import canvas
     from reportlab.lib.units import mm
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -94,15 +114,24 @@ def build_pdf(m, output):
                 elif cmd == 'Z': p.close()
         return p
     c.clipPath(path([RECT]+m['counters']), fill=0, stroke=0, fillMode=0)
-    c.saveState(); c.clipPath(path(m['silhouettes']), fill=0, stroke=0, fillMode=1)
+    c.clipPath(path(m['silhouettes']), fill=0, stroke=0, fillMode=1)
     c.setFillColorRGB(0, 0, 0); c.saveState()
     for d in m['facets']: c.clipPath(path([RECT, d]), fill=0, stroke=0, fillMode=0)
     c.drawPath(path(m['silhouettes']), fill=1, stroke=0, fillMode=1); c.restoreState()
     c.saveState(); c.clipPath(path(m['facets']), fill=0, stroke=0, fillMode=1)
     for grid in m['grids']:
         for x, y in grid_points(grid, m['circleRadius']): c.circle(x, y, m['circleRadius'], fill=1, stroke=0)
-    c.restoreState(); c.restoreState(); c.setStrokeColorRGB(0, 0, 0); c.setLineWidth(m['lineWidth']); c.setLineJoin(0); c.setMiterLimit(4)
-    for d in m['facets']+m['silhouettes']: c.drawPath(path([d]), fill=0, stroke=1)
+    c.restoreState()
+    edges, joints = boundary_graph(m)
+    c.setStrokeColorRGB(0, 0, 0); c.setLineCap(0); c.setLineJoin(2)
+    for width in sorted({e['strokeWidth'] for e in edges}):
+        c.setLineWidth(width)
+        c.drawPath(path([edge_path([e['points']]) for e in edges if e['strokeWidth']==width]), fill=0, stroke=1)
+    for joint in joints:
+        ps = joint['polygon']
+        if len(ps)>2:
+            d='M'+' L'.join(' '.join(f'{v:.8f}' for v in p) for p in ps)+' Z'
+            c.drawPath(path([d]),fill=1,stroke=0)
     c.showPage(); c.save()
 
 if __name__ == '__main__':
@@ -113,4 +142,4 @@ if __name__ == '__main__':
     args = parser.parse_args(); model = json.loads(args.model.read_text())
     build_svg(model, args.svg)
     if args.pdf: build_pdf(model, args.pdf)
-    print(f'Built {args.svg}; uniform line width {model["lineWidth"]}; {len(model["grids"])} affine grids')
+    print(f'Built {args.svg}; uniform visible band width {model["lineWidth"]} (centered strokes w / 2w); {len(model["grids"])} affine grids')
