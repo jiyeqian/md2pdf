@@ -85,6 +85,24 @@ test('嵌套div不截断表注，合并单元格列数用于tfoot colspan',()=>{
   assert.match(out,/<tfoot><tr class="gb-table-notes"><td colspan="2"><div class="gb-table-note">[\s\S]*?尾段<\/p><\/div><\/td><\/tr><\/tfoot><\/table>/);
   assert.equal((out.match(/内层/g)||[]).length,1);
 });
+test('仅为空白的表格单元格添加一字线，保留显式内容及合并属性',()=>{
+  const input='<table><thead><tr><th> </th><th>标题</th></tr></thead><tbody><tr><td colspan="2" rowspan="2">\n </td><td>&nbsp;</td><td><br></td><td>0</td></tr></tbody></table><pre>&lt;td&gt;&lt;/td&gt;</pre>';
+  const out=transformGbContent(input,'');
+  assert.match(out,/<th>—<\/th><th>标题<\/th>/);
+  assert.match(out,/<td colspan="2" rowspan="2">—<\/td><td>&nbsp;<\/td><td><br><\/td><td>0<\/td>/);
+  assert.ok(out.endsWith('<pre>&lt;td&gt;&lt;/td&gt;</pre>'));
+});
+test('纵向合并单元格参与表注跨列计算，保留既有表体',()=>{
+  const table='<table><tbody><tr><td rowspan="2">甲</td><td>乙</td><td>丙</td></tr><tr><td colspan="2">丁</td></tr></tbody></table>';
+  const out=transformGbContent(table+parse(':::gb-table-note\n表注\n:::'),'');
+  assert.match(out,/<td rowspan="2">甲<\/td>/);
+  assert.match(out,/<tfoot><tr class="gb-table-notes"><td colspan="3">/);
+});
+test('公式显式块具有独立语义，代码围栏保持原样',()=>{
+  assert.match(parse(':::gb-equation\n内容\n:::'),/<div class="gb-equation">/);
+  const source='```text\n:::gb-equation\n内容\n:::\n```';
+  assert.equal(parse(source),marked.parse(source));
+});
 test('图注及图脚注依原顺序移入图题之前，多图不互串',()=>{
   const figure=name=>`<figure class="fig"><img src="x"><figcaption>${name}</figcaption></figure>`;
   const html=figure('图1')+parse(':::gb-figure-note\n第一图注\n:::\n\n:::gb-figure-footnote a）\n第一图脚注\n:::')+figure('图2')+parse(':::gb-figure-note\n第二图注\n:::');
@@ -129,8 +147,8 @@ test('图注移动后再定脚注号，按图注在前、图题在后的最终�
   const block=prepareGbContent(':::gb-figure-note\n图注[^@note]\n:::');
   const html='<figure class="fig"><img src="x"><figcaption>'+caption+'</figcaption></figure>'+block.restore(parser.parse(block.body),parser);
   const out=notes.finalize(transformGbContent(html,''));
-  assert.match(out,/id="gb-footnote-1"[^>]*>图注脚注/);
-  assert.match(out,/id="gb-footnote-2"[^>]*>图题脚注/);
+  assert.match(out,/id="gb-footnote-1"[^>]*><span class="gb-footnote-label">1\)<\/span><span class="gb-footnote-content">图注脚注/);
+  assert.match(out,/id="gb-footnote-2"[^>]*><span class="gb-footnote-label">2\)<\/span><span class="gb-footnote-content">图题脚注/);
   assert.ok(out.indexOf('id="gb-footnote-1"')<out.indexOf('id="gb-footnote-2"'));
 });
 

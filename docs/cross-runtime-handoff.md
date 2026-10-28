@@ -1,5 +1,12 @@
 # CLI 与 WebApp 一致性及本次交接
 
+## 2026-10-28 国家标准正文校准
+
+六项正文改进已接入共用渲染流程：墨迹定位、镜像版心和页码、缩进、公式与释义、图表、脚注及分页完整性保护。实际国家标准范例和长内容压力样例均由 CLI、Node、静态版生成真实 PDF；规范尺寸与工程容差分开记录。实现、检查命令、验收文件及边界见[正文验收](gb-body-calibration.md)与[尺寸台账](gb-body-ink-ledger.md)。
+
+工作树 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`，分支 `codex/template`。无需服务先打开 `output/pdf/gb-template-final-node.pdf`；再核对 `output/pdf/gb-body-calibration-node.pdf` 的长脚注、公式、100 行续表和终结线。若通过 WebApp 验收，需从本工作树重启服务；静态版需重建、部署并刷新缓存。没有启动常驻服务，也未做手机、Pages 线上或实体打印验收。
+
+
 ## 2026-10-28 当前 GB Logo 接入国家标准模板
 
 按用户指令暂停新图形探索，将 v3 共享边图生成的 Logo 用于 `assets/gb-logo.svg`。与 `assets/candidates/gb-logo-parametric.svg` 仅 aria-label 不同，不改图形、尺寸、字距或正文。CLI 文件资源、Node 内嵌 SVG、静态版内嵌 SVG 已逐字节核对一致；四组 × 三入口的 36 项墨迹约束全部通过。GB 模板库静态卡片截图已同步，`npm run check:consistency` 通过。[资源哈希和三入口结果](gb-logo-deployment.json)。

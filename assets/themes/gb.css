@@ -104,12 +104,17 @@ body { font-size: 10.5pt; line-height: 1.62; text-align: justify; }
 .cover-dates, .cover-org-pub { font-family: "GB Cover Latin", var(--font-head); }
 
 /* 命名页仅随实际章节切换，避免 main/前置节重复产生空页。 */
-.toc { page: gb-front; counter-reset: page 1; break-before: right; }
+.toc { page: gb-front; counter-reset: page 1; break-before: right; break-after: page; }
 main { page: gb-front; }
 main > section { page: gb-body; }
 main > section:has(> h2.front) { page: gb-front; break-before: page; }
+main > section:first-child:has(> h2.front) { break-before: auto; }
 main > section:has(> h2.appendix), main > section:has(> h2.back) { break-before: page; }
 main > section:has(> h2.body-start) { counter-reset: page 1; break-before: right; }
+/* 目录之后直接进入正文时，在 main 之前完成奇数页对齐。 */
+.toc:has(+ main > section:first-child > h2.body-start) { break-after: right; }
+.toc + main:has(> section:first-child > h2.body-start) { page: gb-body; }
+.toc + main > section:first-child:has(> h2.body-start) { break-before: auto; }
 
 /* F.1：章条和正文均五号，字号相同而字体不同。 */
 h2, h3, h4, h5, h6 { font: 10.5pt/1.62 var(--font-head); border: none; padding: 0; text-align: left; letter-spacing: 0; }
@@ -174,15 +179,15 @@ ol li, ul li { padding-left: 0; }
 
 /* 条文脚注采用独立的 [^@id] 语法，文献引用仍走原有 [^id]。 */
 .gb-footnote { float: footnote; footnote-display: block; footnote-policy: line;
-  font: 9pt/1.62 var(--font-body); padding-left: 4em; text-indent: -2em; }
+  font: 9pt/1.62 var(--font-body); padding-left: 4em; text-indent: 0; position: relative; padding-top: calc(2mm + .5pt); }
 .gb-footnote::footnote-call { content: none; font: 9pt/1 var(--font-body); vertical-align: super; }
 .gb-footnote::footnote-marker { content: none; font: 9pt/1.62 var(--font-body); margin-right: 1em; }
 .gb-footnote-repeat { font: 9pt/1 var(--font-body); }
 .gb-footnote-repeat a { border: none; }
 @page gb-front { @footnote { border-top: .5pt solid #000; padding-top: 2mm; } }
 @page gb-body { @footnote { border-top: .5pt solid #000; padding-top: 2mm; } }
-.pagedjs_footnote_area { border: none !important; }
-.pagedjs_footnote_area:not(.pagedjs_footnote_empty)::before { content: ''; display: block; width: 25%; border-top: .5pt solid #000; margin-bottom: 2mm; }
+.pagedjs_footnote_area { border: none !important; position: relative; }
+.pagedjs_footnote_area:not(.pagedjs_footnote_empty)::before { content: ''; display: block; position: absolute; top: 0; left: 0; width: 25%; border-top: .5pt solid #000; margin: 0; }
 
 @page :blank { @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
 .pagedjs_blank_page .pagedjs_margin-content { visibility: hidden !important; }
@@ -248,3 +253,25 @@ main section .gb-index ul.gb-index-entries > li::before { display: none !importa
 .gb-table-notes .gb-table-note { border: none; padding: 0; }
 
 .gb-cover-ics-line { display: inline-block; }
+
+/* 10.2/10.3: semantic indentation, not generic list/paragraph decoration. */
+.toc li.toc-level-1 > a { margin-left: 1em; }
+.toc li.toc-level-0 { margin-top: .405em; margin-bottom: .405em; }
+main .references > li { padding-left: 0; }
+main .gb-figure-note p, main .gb-figure-footnote p, main .gb-table-footnote p {
+  display: flex; text-indent: 0; padding-left: 2em;
+}
+.gb-figure-note .gb-label, .gb-figure-footnote .gb-label, .gb-table-footnote .gb-label { flex: none; }
+.gb-figure-footnote .gb-label, .gb-table-footnote .gb-label { min-width: 1em; }
+.gb-figure-note .gb-note-text, .gb-figure-footnote .gb-note-text,
+.gb-table-footnote .gb-note-text { flex: 1; min-width: 0; }
+figure.fig { break-inside: avoid; }
+.gb-table-notes { break-inside: avoid; }
+/* 数字列按原数值的小数点/个位对齐，不补零或改写数值。 */
+.gb-number-cell { text-align: center; }
+.gb-decimal { display: inline-grid; grid-template-columns: var(--gb-int-width) var(--gb-frac-width) var(--gb-suffix-width); text-indent: 0; }
+.gb-decimal > :first-child { text-align: right; }
+.gb-decimal > :not(:first-child) { text-align: left; }
+
+/* Count separator clearance in the floated box so Paged.js reserves every text line. */
+.gb-footnote-label { position: absolute; left: 2em; top: calc(2mm + .5pt); }

@@ -1,0 +1,53 @@
+{
+  "unit": "mm",
+  "normative": {
+    "paper": {
+      "width": 210,
+      "height": 297,
+      "tolerance": 1,
+      "source": "10.1.1"
+    },
+    "page_area": {
+      "odd_left": 25,
+      "odd_right": 20,
+      "even_left": 20,
+      "even_right": 25,
+      "width": 165,
+      "source": "E.1, E.2"
+    },
+    "header": {
+      "top": 25,
+      "odd_right_coordinate": 190,
+      "even_left_coordinate": 20,
+      "source": "E.1, E.2"
+    },
+    "footer": {
+      "bottom_coordinate": 277,
+      "outer_distance": 24,
+      "source": "E.1, E.2"
+    },
+    "independent_title": {
+      "header_gap": 15,
+      "source": "E.3, E.8-E.12"
+    },
+    "first_content_gap": {
+      "toc": 12,
+      "front": 12,
+      "body": 12,
+      "back": 5,
+      "appendix": 5,
+      "source": "E.3, E.8-E.12"
+    }
+  },
+  "engineering": {
+    "dpi": 600,
+    "threshold": 128,
+    "crop_margin": 0.7,
+    "position_tolerance": 0.5,
+    "notes": "测量容差、阈值及按文字实际墨迹定位均为工程验收约定，非标准规定。Range 框作为定位参考，不能单独证明 PDF 墨迹或版心边界。"
+  },
+  "source": {
+    "file": "GB:T 1.1—2020 标准化工作导则 第1部分：标准化文件的结构和起草规则[书签已加].pdf",
+    "sha256": "8676a5cf7328d1a773c8463e7347dfc168ac5e950a955be9f690b1cbe8f5d711"
+  }
+}

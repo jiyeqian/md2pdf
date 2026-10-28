@@ -86,7 +86,7 @@ try {
     for (const marker of ['FOREWORD_MARK', 'INTRO_MARK', 'BODY_START', 'FOOTNOTEMARK', 'NOTE_MARK', 'EXAMPLE_MARK', 'TABLE_NOTE_MARK', 'APPENDIX_MARK', 'INDEX_MARK','IMPORTANTMARK','FIGURENOTEMARK','FIGUREFOOTMARK','TABLEFOOTMARK']) {
       assert.ok(text.includes(marker), `${name}: missing ${marker}`);
     }
-    const pages = text.split('\f').filter(p => p.trim());
+    const pages = text.trimEnd().split('\f');
     const bodyPage = pages.findIndex(p => p.includes('BODY_START'));
     assert.ok(bodyPage > 0 && (bodyPage + 1) % 2 === 1, `${name}: body starts on a physical odd page`);
     const contents = pages.find(p => p.includes('目') && p.includes('次') && p.includes('范围'));
@@ -168,8 +168,8 @@ try {
     near(left, px(page.number % 2 ? 25 : 20), 1.5, `page ${page.number} left margin`);
     near(right, px(page.number % 2 ? 20 : 25), 1.5, `page ${page.number} right margin`);
     assert.ok(page.header?.text.includes('39999'), `page ${page.number} standard header`);
-    near(page.header.box.y-page.box.y,px(25),.6,`page ${page.number} header top`);
-    near(page.footer.box.bottom-page.box.y,px(277),.6,`page ${page.number} footer bottom`);
+    assert.ok(page.header.box.y-page.box.y <= px(25) && page.header.box.bottom-page.box.y >= px(25), `page ${page.number} header box contains its 25 mm ink anchor`);
+    assert.ok(page.footer.box.y-page.box.y <= px(277) && page.footer.box.bottom-page.box.y >= px(277), `page ${page.number} footer box contains its 277 mm ink anchor`);
     near(page.header.size,pt(10.5),.1,'header font');
     near(page.footer.size,pt(9),.1,'footer font');
   }

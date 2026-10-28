@@ -1,5 +1,8 @@
 import { prepareGbContent, transformGbContent } from './gb-content.mjs';
 import { finalizeGbLayout, prepareGbLayout } from './gb-layout.mjs';
+import { prepareGbBodyLayout, finalizeGbBodyLayout } from './gb-body-layout.mjs';
+import { prepareGbBodyAudit, finalizeGbBodyAudit } from './gb-body-audit.mjs';
+import { applyGbEquations, finalizeGbEquations, GB_EQUATION_CSS } from './gb-equations.mjs';
 import { prepareGbFootnotes } from './gb-footnotes.mjs';
 import { installPagedLayout } from './paged-layout.mjs';
 import { existsSync, readdirSync } from 'node:fs';
@@ -718,7 +721,7 @@ export async function render(src, options = {}, context = {}) {
     toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目  录'}</div><ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';
   }
 
-  if (profile.gbDoc) html = transformGbContent(html, title);
+  if (profile.gbDoc) html = applyGbEquations(transformGbContent(html, title));
   if (gbNotes) html = gbNotes.finalize(html);
   html = sectionize(html);
   if (profile.gbDoc && !(fm.gb_source_cover === true || fm.gb_source_cover === 'true') && /class="[^"]*body-start/.test(html)) {
@@ -736,7 +739,7 @@ export async function render(src, options = {}, context = {}) {
   // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 themes/gb.css 的
   // body{line-height:1.62} 直接覆盖，且 server 拒绝为 gb 传入 lineHeight。
   const effLineHeight = Number.isFinite(eff.lineHeight) ? eff.lineHeight : 1.9;
-  const css = (base + '\n' + theme)
+  const css = (base + '\n' + theme + (profile.gbDoc ? '\n' + GB_EQUATION_CSS : ''))
     .replace(/\{\{PAGE_SIZE\}\}/g, eff.landscape ? 'A4 landscape' : 'A4')
     .replace(/\{\{MARGIN_TOP\}\}/g, `${effMarginTop}mm`)
     .replace(/\{\{MARGIN_BOTTOM\}\}/g, `${effMarginBottom}mm`)
@@ -765,7 +768,7 @@ export async function render(src, options = {}, context = {}) {
   const authorsHtml = profile.paperHeader ? paperAuthorsHtml(fm, esc) : '';
   const sourceCover = fm.gb_source_cover === true || fm.gb_source_cover === 'true';
   const coverHtml = profile.gbDoc && eff.gbCover !== false && !sourceCover ? buildCover(fm, title, eff.gbDefaults !== false, await readFile(path.join(ASSETS, 'gb-cover-banner.svg'), 'utf8'), JSON.parse(await readFile(path.join(ASSETS, 'gb-issuer-outlines.json'), 'utf8'))) : '';
-  if (profile.gbDoc && !coverHtml) {
+  if (profile.gbDoc && sourceCover) {
     // Unsectioned source evidence uses the body page without a generated cover.
     const header = stdno ? '@top-right { content: ' + cssString(stdno) + '; font: 10.5pt/1 var(--font-head); }' : '';
     finalCss += '\nbody, main { page: gb-body; }\nmain > section:first-child { break-before: auto; }\nmain img { max-height: 230mm; object-fit: contain; }\n@page { ' + header + ' @bottom-right { content: counter(page); } }';
@@ -854,7 +857,7 @@ export async function render(src, options = {}, context = {}) {
     'window.__md2pdfPagedReady = false;',
     installPagedLayout.toString(),
     profile.gbDoc ? '' : stampPagedLists.toString(),
-    profile.gbDoc ? prepareGbLayout.toString() + '\n' + finalizeGbLayout.toString() : finalizePagedCounters.toString(),
+    profile.gbDoc ? [prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
     '(function () {',
     '  function depsReady() {',
     '    return window.__md2pdfMathReady !== false && window.__md2pdfMermaidReady !== false;',
@@ -862,10 +865,10 @@ export async function render(src, options = {}, context = {}) {
     '  function run() {',
     '    if (!depsReady()) { setTimeout(run, 50); return; }',
     '    try {',
-    (profile.gbDoc ? '      prepareGbLayout();\n' : '') + '      installPagedLayout(' + ((eff.landscape ? 210 : 297) - effMarginTop - effMarginBottom) * 96 / 25.4 + ', ' + JSON.stringify(chapterStart) + ', ' + (!profile.gbDoc && !useToc) + ', ' + ((eff.landscape ? 297 : 210) - effMarginLeft - effMarginRight) * 96 / 25.4 + ', ' + profile.gbDoc + ');',
+    (profile.gbDoc ? '      prepareGbLayout(); prepareGbBodyLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); prepareGbBodyAudit();\n' : '') + '      installPagedLayout(' + (profile.gbDoc ? '(' + (297-effMarginBottom)*96/25.4 + ' - window.__gbContentTop)' : ((eff.landscape ? 210 : 297) - effMarginTop - effMarginBottom) * 96 / 25.4) + ', ' + JSON.stringify(chapterStart) + ', ' + (!profile.gbDoc && !useToc) + ', ' + ((eff.landscape ? 297 : 210) - effMarginLeft - effMarginRight) * 96 / 25.4 + ', ' + profile.gbDoc + ');',
     profile.gbDoc ? '' : '      stampPagedLists();',
     '      window.PagedPolyfill.preview()',
-    '        .then(function () { ' + (profile.gbDoc ? 'finalizeGbLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); ' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
+    '        .then(function () { ' + (profile.gbDoc ? 'finalizeGbLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); finalizeGbBodyLayout(); finalizeGbEquations(); finalizeGbBodyAudit(); ' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
@@ -897,7 +900,7 @@ export async function render(src, options = {}, context = {}) {
   throwIfAborted();
   if (profile.gbDoc && !coverHtml) {
     // Paged.js still assigns a page to the hidden masthead before named main.
-    shell = shell.replace(/<header class="masthead">[\s\S]*?<\/header>/, '');
+    shell = shell.replace(/<header class="masthead[^"]*">[\s\S]*?<\/header>/, '');
   }
   if ((chapterStart !== 'continuous' || html.includes('class="md2pdf-pagebreak"')) && !title && !kicker && !lead && !authorsHtml) {
     shell = shell.replace(/<header class="masthead[^"]*">[\s\S]*?<\/header>/, '');

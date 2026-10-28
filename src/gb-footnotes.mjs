@@ -47,7 +47,7 @@ export function prepareGbFootnotes(source) {
   return {
     body:output.join('\n'),
     get css() {
-      return [...numbers.values()].map(number => `.gb-footnote-${number}::footnote-call { content: "${number})"; } .gb-footnote-${number}::footnote-marker { content: "${number})"; }`).join('\n');
+      return [...numbers.values()].map(number => `.gb-footnote-${number}::footnote-call { content: "${number})"; } .gb-footnote-${number}::footnote-marker { content: none; }`).join('\n');
     },
     finalize(html) {
       if (!html.includes('data-md2pdf-gb-note-slot="' + marker)) return html;
@@ -60,7 +60,7 @@ export function prepareGbFootnotes(source) {
         const number = numbers.get(id);
         return repeated
           ? '<sup class="gb-footnote-repeat"><a href="#gb-footnote-' + number + '">' + number + ')</a></sup>'
-          : '<span class="gb-footnote gb-footnote-' + number + '" id="gb-footnote-' + number + '" data-note="' + number + ')">' + contentParser.parseInline(definitions.get(id)) + '</span>';
+          : '<span class="gb-footnote gb-footnote-' + number + '" id="gb-footnote-' + number + '" data-note="' + number + ')">' + '<span class="gb-footnote-label">' + number + ')</span><span class="gb-footnote-content">' + contentParser.parseInline(definitions.get(id)) + '</span></span>';
       });
     },
     extension: {

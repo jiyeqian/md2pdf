@@ -1,5 +1,5 @@
 const escape = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-const OPEN = /^ {0,3}:::gb-(note|example|term|source|unit|subfigure|table-note|important|figure-note|figure-footnote|table-footnote|index)(?:[ \t]+(.*))?[ \t]*$/;
+const OPEN = /^ {0,3}:::gb-(note|example|term|source|unit|subfigure|table-note|important|figure-note|figure-footnote|table-footnote|index|equation)(?:[ \t]+(.*))?[ \t]*$/;
 const CLOSE = /^ {0,3}:::[ \t]*$/;
 
 // Structured GB blocks are opt-in: ordinary prose beginning with 注/示例 is unchanged.
@@ -125,7 +125,7 @@ export function transformGbContent(html, title) {
     if (!match) return whole;
     return '<h2' + attrs + '><span class="gb-appendix-number">附录 ' + match[1].toUpperCase() + '</span><span class="gb-appendix-kind">（' + match[2] + '）</span><span class="gb-appendix-title">' + match[3] + '</span></h2>';
   });
-  return attachFloatNotes(placeImportant(html));
+  return attachFloatNotes(fillEmptyTableCells(placeImportant(html)));
 }
 
 
@@ -163,6 +163,41 @@ function classes(node) {
 function noteRole(node, allowed) {
   return node.tag === 'div' && classes(node).some(name => allowed.has(name));
 }
+function fillEmptyTableCells(html) {
+  const edits = [];
+  for (const cell of elements(html)) {
+    if (!['td', 'th'].includes(cell.tag) || cell.closeStart === undefined) continue;
+    let parent = cell.parent;
+    while (parent?.tag && parent.tag !== 'table') parent = parent.parent;
+    if (!parent || !/^\s*$/.test(html.slice(cell.openEnd, cell.closeStart))) continue;
+    edits.push({ start: cell.openEnd, end: cell.closeStart });
+  }
+  for (const edit of edits.sort((a, b) => b.start - a.start)) {
+    html = html.slice(0, edit.start) + '—' + html.slice(edit.end);
+  }
+  return html;
+}
+
+function tableColumns(rows) {
+  let max = 1, occupied = [], group = null;
+  for (const row of rows) {
+    // Row spans do not cross row-group boundaries; rowspan=0 extends to its end.
+    if (row.parent !== group) { group = row.parent; occupied = []; }
+    let column = 0;
+    for (const cell of row.children.filter(child => ['td', 'th'].includes(child.tag))) {
+      while (occupied[column] > 0) column++;
+      const attr = name => new RegExp('\\b' + name + '\\s*=\\s*["\']?(\\d+)', 'i').exec(cell.token)?.[1];
+      const width = Math.max(1, Math.min(1000, Number(attr('colspan')) || 1));
+      const rawHeight = attr('rowspan');
+      const height = rawHeight === '0' ? Infinity : Math.max(1, Math.min(65534, Number(rawHeight) || 1));
+      for (let i = column; i < column + width; i++) occupied[i] = Math.max(occupied[i] || 0, height);
+      column += width;
+    }
+    max = Math.max(max, occupied.length);
+    occupied = occupied.map(value => value === Infinity ? value : Math.max(0, value - 1));
+  }
+  return max;
+}
 function attachFloatNotes(html) {
   const all = elements(html), edits = [];
   for (const node of all) {
@@ -192,10 +227,7 @@ function attachFloatNotes(html) {
         let table = row.parent; while (table && table.tag !== 'table') table = table.parent;
         return table === node;
       })());
-      const columns = Math.max(1,...rows.map(row => row.children.filter(cell => ['td','th'].includes(cell.tag)).reduce((count,cell) => {
-        const span = /\bcolspan=["']?(\d+)/i.exec(cell.token)?.[1];
-        return count + Math.max(1,Math.min(1000,Number(span) || 1));
-      },0)));
+      const columns = tableColumns(rows);
       const foot = node.children.find(child => child.tag === 'tfoot' && child.closeStart !== undefined);
       insert = foot?.closeStart ?? node.closeStart;
       const row = '<tr class="gb-table-notes"><td colspan="' + columns + '">' + content + '</td></tr>';

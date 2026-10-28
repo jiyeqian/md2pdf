@@ -15,8 +15,8 @@ const parse = source => {
 
 test('条文脚注按首次引用次序编号，复引链接到同一实体',()=>{
   const {html,css}=parse('乙[^@b]，甲[^@a]，再次乙[^@b]。\n\n[^@a]: 甲的内容\n[^@b]: 乙的内容');
-  assert.match(html,/id="gb-footnote-1"[^>]*>乙的内容/);
-  assert.match(html,/id="gb-footnote-2"[^>]*>甲的内容/);
+  assert.match(html,/id="gb-footnote-1"[^>]*><span class="gb-footnote-label">1\)<\/span><span class="gb-footnote-content">乙的内容/);
+  assert.match(html,/id="gb-footnote-2"[^>]*><span class="gb-footnote-label">2\)<\/span><span class="gb-footnote-content">甲的内容/);
   assert.match(html,/<sup class="gb-footnote-repeat"><a href="#gb-footnote-1">1\)<\/a><\/sup>/);
   assert.equal((html.match(/id="gb-footnote-1"/g)||[]).length,1);
   assert.match(css,/gb-footnote-1::footnote-call/);
@@ -85,8 +85,8 @@ test('语义块中的脚注与后续普通正文仍按显示顺序编号',async(
   const source='# 标准名称\n\n## 范围\n\n:::gb-note\n先见[^@a]。\n:::\n\n后见[^@b]。\n\n[^@a]: 第一条脚注\n[^@b]: 第二条脚注';
   const result=await render(source,{type:'gb'},{webSafe:true});
   const html=/<main>([\s\S]*?)<\/main>/.exec(result.html)[1];
-  assert.match(html,/id="gb-footnote-1"[^>]*>第一条脚注/);
-  assert.match(html,/id="gb-footnote-2"[^>]*>第二条脚注/);
+  assert.match(html,/id="gb-footnote-1"[^>]*><span class="gb-footnote-label">1\)<\/span><span class="gb-footnote-content">第一条脚注/);
+  assert.match(html,/id="gb-footnote-2"[^>]*><span class="gb-footnote-label">2\)<\/span><span class="gb-footnote-content">第二条脚注/);
 });
 
 test('延迟定号使语义块内的首次引用成为唯一浮动实体，块外复引沿用编号',()=>{
@@ -95,8 +95,8 @@ test('延迟定号使语义块内的首次引用成为唯一浮动实体，块�
   const parser=new Marked({gfm:true});
   parser.use({extensions:[notes.extension]});
   const html=notes.finalize(blocks.restore(parser.parse(blocks.body),parser));
-  assert.match(html,/id="gb-footnote-1"[^>]*>第一条脚注/);
-  assert.match(html,/id="gb-footnote-2"[^>]*>第二条脚注/);
+  assert.match(html,/id="gb-footnote-1"[^>]*><span class="gb-footnote-label">1\)<\/span><span class="gb-footnote-content">第一条脚注/);
+  assert.match(html,/id="gb-footnote-2"[^>]*><span class="gb-footnote-label">2\)<\/span><span class="gb-footnote-content">第二条脚注/);
   assert.match(html,/<sup class="gb-footnote-repeat"><a href="#gb-footnote-1">1\)<\/a><\/sup>/);
   assert.equal((html.match(/id="gb-footnote-1"/g)||[]).length,1);
   assert.ok(html.indexOf('id="gb-footnote-1"')<html.indexOf('id="gb-footnote-2"'));
