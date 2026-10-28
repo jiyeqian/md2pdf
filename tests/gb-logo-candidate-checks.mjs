@@ -15,8 +15,9 @@ assert.ok(svg.includes(' C')&&svg.includes('<clipPath'),'Bezier geometry and vec
 assert.equal(new Set(model.dots.map(p=>p.join(','))).size,model.dots.length);
 execFileSync('python3',['scripts/build-gb-logo-candidate.py','--output','/private/tmp/gb-logo-reproduced.svg']);
 assert.equal(await readFile('/private/tmp/gb-logo-reproduced.svg','utf8'),svg,'deterministic reconstruction');
-const original=execFileSync('git',['show','HEAD:assets/gb-logo.svg']);
-assert.deepEqual(await readFile(new URL('../assets/gb-logo.svg',import.meta.url)),original,'production logo preserved');
+const deployed=await readFile(new URL('../assets/gb-logo.svg',import.meta.url),'utf8');
+const accepted=(await readFile(new URL('../assets/candidates/gb-logo-parametric.svg',import.meta.url),'utf8')).replace('GB 参数化几何候选','GB 标志');
+assert.equal(deployed,accepted,'production logo uses accepted v3; v1 remains a research baseline');
 const chrome=new Chrome(findChrome(),await mkdtemp('/private/tmp/gb-candidate-'));
 try{
  await chrome.start();
@@ -31,5 +32,5 @@ try{
  const pdf=await chrome.printHtml('<html lang="zh"><style>@page{size:40mm 20mm;margin:0}html,body{margin:0;font-size:0;line-height:0}svg{display:block;width:40mm;height:20mm}</style><body>'+svg+'</body></html>',{});
  await mkdir('output/pdf',{recursive:true});await writeFile('/private/tmp/gb-logo-chrome-candidate.pdf',pdf);
  await writeFile('/private/tmp/gb-logo-browser.json',JSON.stringify({browser:await chrome.send('Browser.getVersion'),svgSha256:createHash('sha256').update(svg).digest('hex')},null,2));
- console.log(`PASS: ${circles.length} equal-radius circles; Bezier-only geometry; deterministic SVG; Chrome preview PDF; production logo unchanged`);
+ console.log(`PASS: ${circles.length} equal-radius circles; Bezier-only geometry; deterministic SVG; Chrome preview PDF; production logo matches accepted v3`);
 }finally{await chrome.stop()}

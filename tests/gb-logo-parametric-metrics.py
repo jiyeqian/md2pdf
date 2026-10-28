@@ -50,7 +50,7 @@ svg_hi=black('/private/tmp/gb-logo-parametric-4x.png')
 pdf_hi=black('/private/tmp/gb-parametric-pdf-4.png')
 parity=iou(svg_hi,pdf_hi); assert parity>.99,parity
 baseline=json.loads((ROOT/'docs/gb-logo-reconstruction-measurements.json').read_text())
-report={'status':'Independent normalized candidate; not production replacement; fails v1 SVG IoU>=0.97 target',
+report={'status':'User-approved v3 deployed to GB template; reconstruction remains below v1 SVG IoU>=0.97 target',
         'sources':records,'baselineSvgIoU':baseline['sources'][0]['pixelIoU'],
         'pdf':{'sizeMm':size,'vectorObjects':vector_count,'images':0,'textCharacters':0,
                'svgPdfIoU4x':parity,'pdfSourceIoU1x':iou(black('/private/tmp/gb-parametric-pdf-1.png'),primary)},

@@ -1,0 +1,96 @@
+{
+  "status": "Current user-approved v3 used by the GB template; new logo exploration paused",
+  "geometryCommit": "fd9924b",
+  "productionAsset": "assets/gb-logo.svg",
+  "assetSha256": "b2f545cf56dbb1acd659a61167ba06ba73c46a23965e8d508bcfc792cd5a9437",
+  "candidateSha256": "475cc1cbc62592c4f5d236c65c01c5bfefed072a13581b3397c151ca87701e22",
+  "difference": "Only aria-label differs; path, circle and clipping geometry unchanged",
+  "runtimeCases": [
+    {
+      "case": "diagram",
+      "runtime": "cli",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "7ad25c875a54a09ea5a5b037aa666705f607c8b96aaf88cce9507572a39ee898"
+    },
+    {
+      "case": "diagram",
+      "runtime": "node",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "3796ecd66366759be79d78d4468f48383d00bcae5d7785f4c0f6fb9154d9ca9d"
+    },
+    {
+      "case": "diagram",
+      "runtime": "static",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "793a2d30091e489727ebee682551d9f14fbdc6596aaa0c2560a627e065ae2eb7"
+    },
+    {
+      "case": "example",
+      "runtime": "cli",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "bc14a581f8c35e6e8b4a38858dce2a650c61fdf8d989f03c6639a49c748e52ac"
+    },
+    {
+      "case": "example",
+      "runtime": "node",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "53949e3594a89342423d01fd441c86572c4bedb3eed1e1fbbced81d3cac8e21d"
+    },
+    {
+      "case": "example",
+      "runtime": "static",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "8361c752a112f38e5854e0e58e405bc271c66c9d3d6297c976b7990342818050"
+    },
+    {
+      "case": "issuer-0",
+      "runtime": "cli",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "37cfc7f8ae255cc38693422ff4c03cd5af1807622569ec660c68840778fea7db"
+    },
+    {
+      "case": "issuer-0",
+      "runtime": "node",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "b9a727e230e2f75d9ce11db4f4e38394f839771a702a2f1d835a17bfe95daf90"
+    },
+    {
+      "case": "issuer-0",
+      "runtime": "static",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "47d6ca961fc66b0d8e89e93115959234ae5966553c101efa9ab5b2b203371f50"
+    },
+    {
+      "case": "issuer-1",
+      "runtime": "cli",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "d8f17148107c5767cb1ae5394c83e6b3e6c6404cd0df30a6fd77796d6e3f3265"
+    },
+    {
+      "case": "issuer-1",
+      "runtime": "node",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "a619ce8361db71aa777e0b1c1c058fa0a497c1892592be0c065916dd33fc24de"
+    },
+    {
+      "case": "issuer-1",
+      "runtime": "static",
+      "constraints": 36,
+      "passed": 36,
+      "pdfSha256": "e87647a3026925bab824fa551b3af76ad63606a5525f88d24b09651bc062942c"
+    }
+  ],
+  "manualReview": "CLI/Node/static example cover pages rendered and inspected; all three 1500px renders have identical pixel bytes",
+  "limits": "Browser-printable static PDF checked, not OS print dialog or physical printing; body improvements discussion only"
+}

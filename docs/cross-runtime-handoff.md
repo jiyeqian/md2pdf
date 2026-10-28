@@ -1,5 +1,25 @@
 # CLI 与 WebApp 一致性及本次交接
 
+## 2026-10-28 当前 GB Logo 接入国家标准模板
+
+按用户指令暂停新图形探索，将 v3 共享边图生成的 Logo 用于 `assets/gb-logo.svg`。与 `assets/candidates/gb-logo-parametric.svg` 仅 aria-label 不同，不改图形、尺寸、字距或正文。CLI 文件资源、Node 内嵌 SVG、静态版内嵌 SVG 已逐字节核对一致；四组 × 三入口的 36 项墨迹约束全部通过。GB 模板库静态卡片截图已同步，`npm run check:consistency` 通过。[资源哈希和三入口结果](gb-logo-deployment.json)。
+
+当前工作树 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`，分支 `codex/template`。无需服务即可验收：
+
+- `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf/output/pdf/gb-template-logo-three-runtimes.pdf`：三页依次为 CLI、Node、静态版封面。
+- 完整 PDF：同目录下 `gb-template-logo-cli.pdf`、`gb-template-logo-node.pdf`、`gb-template-logo-static.pdf`。
+
+验收顺序：对照三页右上新标志 → 放大检查接点与透明镂空 → 确认封面其他元素未变。实际三页的 1500 像素栅格一致；仍不代表实体打印验收。
+
+现有 Web 服务需要从本工作树重启，旧主工作树服务不能代表本次修改。若要单独启动本工作树，先确认端口空闲后执行：
+
+```bash
+cd /Users/jiyeqian/.codex/worktrees/f96a/md2pdf
+PORT=8766 npm start
+```
+
+访问 `http://127.0.0.1:8766/`；本次没有替用户启动常驻服务。静态版须重新构建并部署，客户端须更新缓存；不把本地 Chrome 静态 PDF 检查当作 Pages 部署或系统打印窗口已验收。封面之后正文改进仅讨论，未执行。
+
 ## 2026-10-28 GB 标志全图边界修复（v3）
 
 独立候选改为 49 条唯一边、41 个节点的共享边图；平端点、半宽／全宽单侧带、显式有界交点补片，同宽子路径一次绘制。实体轮廓为唯一裁切边界，G 外弧、内弧、B 顶弧复用其精确子曲线，孔洞轮廓直接供斜面复用。移除 B 外凹口短边和 G 下部 2 单位偏移；修复 G 尖刺、B 交会和分段抗锯齿亮缝。v1 保留；v2 的 SVG、模型和指标另存 `*-v2*`，旧研究快照不改。

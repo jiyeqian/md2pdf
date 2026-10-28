@@ -16,6 +16,10 @@ const chrome = new Chrome(findChrome(), temp), app = createApp();
 const nativeFetch = globalThis.fetch;
 const ledger = JSON.parse(await readFile(new URL('./fixtures/gb-cover-e5.json', import.meta.url)));
 const issuerSpacing = JSON.parse(await readFile(new URL('./fixtures/gb-issuer-spacing.json', import.meta.url)));
+const logoSvg = await readFile(new URL('../assets/gb-logo.svg',import.meta.url),'utf8');
+const acceptedLogo = (await readFile(new URL('../assets/candidates/gb-logo-parametric.svg',import.meta.url),'utf8')).replace('GB 参数化几何候选','GB 标志');
+assert.equal(logoSvg,acceptedLogo,'GB template deploys the accepted v3 logo without geometry changes');
+const logoData='data:image/svg+xml;base64,'+Buffer.from(logoSvg).toString('base64');
 const bannerSvg = await readFile(new URL('../assets/gb-cover-banner.svg', import.meta.url),'utf8');
 const bannerManifest = JSON.parse(await readFile(new URL('../docs/gb-cover-banner-manifest.json',import.meta.url)));
 assert.equal(createHash('sha256').update(bannerSvg).digest('hex'),bannerManifest.assetSha256);
@@ -71,6 +75,10 @@ try {
     const stat = await offline.renderDocument({md,opts},false);
     for (const [runtime,html] of [['cli',core.pagedHtml],['node',node.html],['static',stat.html]]) {
       const prefix = `${out}/${name}-${runtime}`;
+      const logoSource=/<img class="cover-logo" src="([^"]+)"/.exec(html)?.[1];
+      assert.ok(logoSource,'cover logo exists');
+      if(runtime==='cli')assert.equal(await readFile(new URL(logoSource),'utf8'),logoSvg,'CLI uses deployed vector');
+      else assert.equal(logoSource,logoData,runtime+': embeds exactly the deployed vector');
       if(runtime==='cli') execFileSync(process.execPath,['src/md2pdf.mjs',`${out}/${name}.md`,'--html-only','--type','gb','--paged-html=','-o',prefix+'.html'],{stdio:'pipe'});
       else await writeFile(prefix+'.html',html);
       await writeFile(prefix+'-full.pdf',await (runtime==='cli' ? chrome.print(prefix+'.html',{...core.printOptions,waitPaged:true}) : chrome.printHtml(html,{...core.printOptions,webSafe:true,waitPaged:true})));

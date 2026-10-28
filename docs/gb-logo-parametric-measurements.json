@@ -1,5 +1,5 @@
 {
-  "status": "Independent normalized candidate; not production replacement; fails v1 SVG IoU>=0.97 target",
+  "status": "User-approved v3 deployed to GB template; reconstruction remains below v1 SVG IoU>=0.97 target",
   "sources": [
     {
       "file": "GB:T 48316—2026.pdf",
