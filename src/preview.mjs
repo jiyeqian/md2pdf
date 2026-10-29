@@ -374,7 +374,6 @@ function runtimeScript(type) {
     '    if (!suspended) check();',
     '  });',
     '  function check() {',
-    '    if (window.__md2pdfFontError) { document.body.style.visibility = "hidden"; parent.postMessage({type:\'md2pdf-error\',error:"未能加载字体："+window.__md2pdfFontError.fonts.join("、")}, "*"); return; }',
     '    var failed = window.__md2pdfMermaidError || window.__md2pdfPagedError;',
     '    if (failed) { parent.postMessage({type:\'md2pdf-error\',error:\'公式、图表或分页失败\'}, \'*\'); return; }',
     '    if (suspended || readySent) return;',
@@ -398,10 +397,11 @@ function runtimeScript(type) {
     '          flowStyle.textContent = "@scope (#md2pdf-preview-flow) {" + flowStyles + "}";',
     '          document.head.appendChild(flowStyle);',
     '        }',
+    '        if (window.__md2pdfFontError && !document.getElementById("font-fallback-warning")) { var warning = document.createElement("div"); warning.id = "font-fallback-warning"; warning.textContent = "字体未完整加载，当前为替代字体预览，分页和版式可能不同。"; warning.style.cssText = "padding:10px 16px;background:#fff7df;color:#665126;font:14px/1.5 system-ui;"; document.body.prepend(warning); }',
     '        applyPreviewMode(); fit();',
     '        addEventListener("resize", fit);',
     '        sendOutline();',
-    '        if (!suspended && !readySent) { readySent = true; parent.postMessage({type:\'md2pdf-ready\'}, \'*\'); }',
+    '        if (!suspended && !readySent) { readySent = true; parent.postMessage({type:\'md2pdf-ready\',fonts:window.__md2pdfFontError ? window.__md2pdfFontError.fonts : []}, \'*\'); }',
     '      });',
     '      return;',
     '    }',
@@ -420,6 +420,6 @@ function runtimeScript(type) {
 export function enhancePreview(html, type = 'general') {
   if (typeof html !== 'string') throw new TypeError('enhancePreview 需要 HTML 字符串');
   if (html.includes('data-' + PREVIEW_MARKER + '="1"')) return html; // 幂等：已增强过就不再注入
-  const enhanced = stampToc(html).replace(/window\.PagedPolyfill\.preview\(\)/g, '(window.__md2pdfPreviewSnapshot && window.__md2pdfPreviewSnapshot(), window.PagedPolyfill.preview())');
+  const enhanced = stampToc(html).replace('<head>', '<head><script>window.__md2pdfAllowFontFallback=true;</script>').replace(/window\.PagedPolyfill\.preview\(\)/g, '(window.__md2pdfPreviewSnapshot && window.__md2pdfPreviewSnapshot(), window.PagedPolyfill.preview())');
   return enhanced.includes('</body>') ? enhanced.replace('</body>', runtimeScript(type) + '\n</body>') : enhanced + runtimeScript(type);
 }

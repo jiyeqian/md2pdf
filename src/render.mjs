@@ -878,7 +878,7 @@ export async function render(src, options = {}, context = {}) {
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
-    profile.gbDoc ? '  function start() { requireGbFonts(' + JSON.stringify(GB_FONT_CHECKS) + ').then(run).catch(function (error) { window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
+    profile.gbDoc ? '  function start() { requireGbFonts(' + JSON.stringify(GB_FONT_CHECKS) + ').then(run).catch(function (error) { if (window.__md2pdfAllowFontFallback && window.__md2pdfFontError) { document.fonts.ready.then(run); return; } window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
     '  if (document.readyState === "complete") start(); else window.addEventListener("load", start);',
     '})();',
     '</script>',

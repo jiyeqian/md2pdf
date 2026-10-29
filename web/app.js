@@ -276,9 +276,18 @@ function readHandoff() {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
+let previewMissingFonts = [];
 function setStatus(message, error = false) {
   if (!statusEl) return;
   statusEl.textContent = message;
+  if (previewMissingFonts.length) {
+    const link = document.createElement('a');
+    link.href = './gb-fonts.html';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = '未能加载字体：' + previewMissingFonts.join('、') + '。';
+    statusEl.replaceChildren(link);
+  }
   statusEl.dataset.error = String(error);
 }
 
@@ -687,6 +696,7 @@ async function renderPreview() {
     hasPreview = false;
     clearConfigErrors();
     if (emptyPreview) emptyPreview.hidden = false;
+    previewMissingFonts = [];
     setStatus('输入 Markdown 即可开始排版。');
     saveDraft();
     return;
@@ -772,6 +782,7 @@ window.addEventListener('message', event => {
   }
   if (previewRevision !== revision) return;
   if (event.data.type === 'md2pdf-ready') {
+    previewMissingFonts = Array.isArray(event.data.fonts) ? event.data.fonts.filter(font => typeof font === 'string') : [];
     sendPreviewMode();
     window.__MD2PDF_PREVIEW_READY__ = true;
     window.dispatchEvent(new Event('md-preview-ready'));
