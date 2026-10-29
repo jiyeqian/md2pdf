@@ -47,10 +47,10 @@
             auth_type: https
             username: ${GITHUB_SYNC_USERNAME}
             password: ${GITHUB_SYNC_TOKEN}
-            # 显式标签引用只推送本次标签，不批量推送历史标签。
-            branch: refs/tags/${CNB_BRANCH}
+            # branch 仅接受分支名；标签通过 push_tags 推送。限定 main，避免同步其他分支。
+            branch: main
             force: false
-            push_tags: false
+            push_tags: true
     - name: 发布
       docker:
         image: node:22
@@ -81,4 +81,5 @@ main:
             password: ${GITHUB_SYNC_TOKEN}
             branch: main
             force: false
-            push_tags: false
+            # main 推送时也补齐标签，避免 tag_push 的单标签同步失败后长期遗漏。
+            push_tags: true
