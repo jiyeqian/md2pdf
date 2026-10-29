@@ -335,3 +335,8 @@ main .gb-example-inline > p:first-child { text-indent: 2em; }
 /* Equal baselines inside each contents group; every row reserves quarter-line space. */
 .toc li { line-height: 1.2; padding: .3em 0; margin: 0; }
 .toc li.toc-level-0:not(.toc-float) { line-height: 1.2; padding: .3em 0; }
+/* 2026 references: 18.34pt baseline step = one line plus two quarter-line gaps. */
+.toc { --gb-toc-line: 12.226667pt; --gb-toc-quarter: 3.056667pt; }
+.toc li, .toc li.toc-level-0:not(.toc-float) { line-height: var(--gb-toc-line); padding: var(--gb-toc-quarter) 0; }
+.toc li a::after { line-height: inherit; }
+.toc .gb-float-toc { margin-top: var(--gb-toc-line); }

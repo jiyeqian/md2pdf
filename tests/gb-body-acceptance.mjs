@@ -53,7 +53,7 @@ try{
    const typography={header:style('.gb-fixed-header'),term:style('.gb-term-name'),body:style('.gb-term-definition p'),reference:style('.fnref-back'),front:style('h2.front'),references:style('h2.gb-references-title')};
    const scope=document.querySelector('.pagedjs_pages');
    const extras={figureContents:scope.querySelectorAll('.toc-float').length,nestedContents:scope.querySelectorAll('.toc-level-1').length,indexLinks:scope.querySelectorAll('.gb-index-locations a').length,unresolved:scope.querySelectorAll('[data-gb-index-unresolved]').length,source:scope.querySelector('.gb-source')?.textContent,visibleCitations:[...scope.querySelectorAll('.fnref-back')].every(e=>getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'),vectorRules:scope.querySelectorAll('[data-gb-table-rules]').length};
-   extras.tocRowHeights=[...scope.querySelectorAll('.toc li')].filter(e=>e.textContent.trim()).map(e=>e.getBoundingClientRect().height);
+   extras.tocRowHeights=[...scope.querySelectorAll('.toc li')].filter(e=>e.textContent.trim()).map(e=>e.getBoundingClientRect().height/(e.closest('.pagedjs_page').querySelector('.pagedjs_pagebox').getBoundingClientRect().width/(210*96/25.4)));
    extras.footnotes=[...scope.querySelectorAll('.pagedjs_footnote_area .gb-footnote')].map(e=>({number:parseInt(e.querySelector('.gb-footnote-label').textContent,10),page:pages.indexOf(e.closest('.pagedjs_page'))}));
    extras.depth4=[...scope.querySelectorAll('h5')].some(e=>e.textContent.includes('5.6.1.1'));
    extras.depth3Term=!!scope.querySelector('[id="gb-term-grasp"]');
@@ -72,6 +72,7 @@ try{
   assert.ok(state.extras.source?.includes('[来源：GB/T 20000.1—2014，5.3]'),'bracketed terminology source');
   assert.ok(state.extras.visibleCitations&&state.extras.vectorRules>0,'visible citations and vector table rules');
   assert.ok(Math.max(...state.extras.tocRowHeights)-Math.min(...state.extras.tocRowHeights)<.1,'equal contents row spacing across all levels and groups');
+  assert.ok(state.extras.tocRowHeights.every(h=>Math.abs(h*.75-18.34)<.1),'contents rows match 2026 reference 18.34pt');
   assert.ok(state.extras.depth4&&state.extras.depth3Term,'four-level clauses and three-level terms');
   const footnotes=state.extras.footnotes;
   assert.ok(footnotes.length>=3&&new Set(footnotes.map(n=>n.page)).size>=3,'footnotes span front/body/appendix pages');
