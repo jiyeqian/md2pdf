@@ -276,9 +276,18 @@ function readHandoff() {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
+let previewMissingFonts = [];
 function setStatus(message, error = false) {
   if (!statusEl) return;
   statusEl.textContent = message;
+  if (previewMissingFonts.length) {
+    const link = document.createElement('a');
+    link.href = './gb-fonts.html';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = '未能加载字体：' + previewMissingFonts.join('、') + '。';
+    statusEl.replaceChildren(link);
+  }
   statusEl.dataset.error = String(error);
 }
 
@@ -643,6 +652,8 @@ async function request(url, body, signal) {
     const detail = await response.json().catch(() => ({}));
     const failure = new Error(detail.error || `请求失败（${response.status}）`);
     failure.status = response.status;
+    failure.code = detail.code;
+    failure.fonts = detail.fonts;
     // 配置错误：保留逐条行号信息，供顶部提示条展示与跳转。
     if (Array.isArray(detail.configErrors)) failure.configErrors = detail.configErrors;
     throw failure;
@@ -689,6 +700,7 @@ async function renderPreview() {
     hasPreview = false;
     clearConfigErrors();
     if (emptyPreview) emptyPreview.hidden = false;
+    previewMissingFonts = [];
     setStatus('输入 Markdown 即可开始排版。');
     saveDraft();
     return;
@@ -774,6 +786,7 @@ window.addEventListener('message', event => {
   }
   if (previewRevision !== revision) return;
   if (event.data.type === 'md2pdf-ready') {
+    previewMissingFonts = Array.isArray(event.data.fonts) ? event.data.fonts.filter(font => typeof font === 'string') : [];
     sendPreviewMode();
     window.__MD2PDF_PREVIEW_READY__ = true;
     window.dispatchEvent(new Event('md-preview-ready'));
@@ -1062,11 +1075,11 @@ download.addEventListener('click', async () => {
     if (exportName) pdfBody.filename = exportName;
     if (window.__MD2PDF_STATIC_BASE__) {
       const runtime = await import('./runtime-request.mjs');
-      await runtime.exportPdf({ md:exportMd, opts:exportOptions, filename:exportName });
+      await window.mdExportWithFontConsent(allowFontFallback => runtime.exportPdf({ md:exportMd, opts:exportOptions, filename:exportName, allowFontFallback }));
       setStatus('已打开打印，请另存为 PDF。');
       return;
     }
-    const response = await request('/api/pdf', pdfBody);
+    const response = await window.mdExportWithFontConsent(allowFontFallback => request('/api/pdf', { ...pdfBody, allowFontFallback }));
     const blob = await response.blob();
     const anchor = document.createElement('a');
     const disposition = response.headers.get('Content-Disposition') || '';
@@ -1088,6 +1101,7 @@ download.addEventListener('click', async () => {
     if (revision !== exportRevision) setStatus('PDF 已生成并开始下载（导出的是开始导出时的版本，期间编辑未包含）。');
     else setStatus('PDF 已生成，下载已开始。');
   } catch (error) {
+    if (error.code === 'EXPORT_CANCELLED') { setStatus('已取消 PDF 下载。'); return; }
     // 下载请求同样可能因文档配置错误被拒：提示行号并禁用后续导出，Markdown 下载不受影响。
     trackUsage('export_failed', { method: exportMethod, code: error.status === 504 ? 'timeout' : error.status === 503 ? 'unavailable' : 'failed' });
     if (Array.isArray(error.configErrors) && error.configErrors.length) {

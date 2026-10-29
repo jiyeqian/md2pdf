@@ -317,6 +317,14 @@ main section :is(ol, ul):not(.references):not(.footnotes) { margin-top: 0; margi
 .gb-index-dots { border: 0; height: auto; align-self: baseline; overflow: hidden; white-space: nowrap; }
 .gb-index-dots::before { content: "………………………………………………………………………………………………………………………………"; font: 10.5pt/1.62 var(--font-body); }
 .gb-vector-rules, .gb-vector-rules th, .gb-vector-rules td { border-color: transparent !important; }
+/* Chromium snaps CSS borders to screen device pixels, but recalculates them for
+ * print. Fractional pt borders therefore change row heights after pagination.
+ * Reserve the former 1px collapsed grid in padding; only SVG paints the rules. */
+table:not(.gb-equation-legend):not([role="presentation"]) { border-width: 0; --gb-table-grid: 1; }
+table:not(.gb-equation-legend):not([role="presentation"]) > :is(thead, tbody, tfoot) > tr > :is(th, td) {
+  border-width: 0;
+  padding: calc(.25em + .5px) calc(.5em + .5px);
+}
 
 /* GB-only rhythm: no decorative gaps inside bibliography/index entries. */
 .toc { line-height: 1.2; }
