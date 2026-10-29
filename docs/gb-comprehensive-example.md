@@ -77,6 +77,12 @@ GB/T 1.1 无规定的项目按所供正式样本执行，工程取值不冒充�
 
 新增文献GB/T 1526—1989的长题名已用所供GB/T 1.1参考文献和[官方详情](https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=D19A1DF7C8A8058E26EC8DFE9EBD001B)核对；术语来源GB/T 20000.1—2014见[官方详情](https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=BA6DE806E0BDF1BE7A35EE0B236F8E15)。核对日期2026-10-29。
 
+## 图表目次外边距回归修复
+
+旧 `.toc li.toc-level-0` 的上下 `.405em` 外边距，未被较低优先级的通用清零规则覆盖；正文另有清零规则，图表条目则保留了边距。此前仅比较行框高度未覆盖边距，导致图表实际基线约22.5～23.25pt。现将该旧规则本身清零，仅在分组容器保留间隔。
+
+全面范例检查所有目次条目的实际计算外边距均为0。专项PDF回归以较浅目次保证正文、图、表各有相邻条目在同页，直接测量中文文字基线；单步容差为18.34±0.5pt，覆盖浏览器0.75pt坐标量化，拒绝原先额外4.25pt。实测与条目数量见 `gb-toc-spacing-measurements.json`。运行：`PYTHON=/Users/jiyeqian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 node tests/gb-toc-spacing-checks.mjs`。测试PDF仅为临时回归夹具，仍只交付Node全面范例。
+
 ## 2026样本目录与索引测量
 
 21922、48316、47032的目次中文基线步长均约18.3396pt；目次目标已改为18.34pt，Node PDF首页块内平均约18.325pt（单步坐标量化为18或18.75pt），归一化分页预览行框也通过18.34±0.1pt检查。分组间隔另计，不混入普通条目平均。
