@@ -789,6 +789,7 @@ function frontmatterCompletions(text, pos, catalog = {}) {
   const suffix = text.slice(pos, lineEnd < 0 ? text.length : lineEnd).replace(/\r$/, '');
   const valuesFor = field => {
     const canonical = canonicalFrontmatterField(field);
+    if (canonical === 'toc') return ['0', '1', '2', '3'];
     if (BOOL_FIELDS.includes(canonical)) return ['true', 'false'];
     if (NUMBER_FIELDS[canonical]?.enum) return NUMBER_FIELDS[canonical].enum.map(String);
     if (canonical === 'numbering') return NUMBERING_VALUES;

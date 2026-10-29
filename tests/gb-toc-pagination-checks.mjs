@@ -12,6 +12,7 @@ try {
   const fixture=await readFile(new URL('../web/examples/gb.md',import.meta.url),'utf8');
   const cases=[
     {name:'standard',md:fixture,opts:{}},
+    {name:'third-level-toc',md:fixture,opts:{toc:3}},
     {name:'no-cover',md:fixture,opts:{gbCover:false}},
     {name:'no-toc',md:fixture,opts:{toc:false}},
     {name:'no-cover-no-toc',md:fixture,opts:{gbCover:false,toc:false}},
@@ -47,6 +48,12 @@ try {
       assert.ok(toc[0].number%2===1,'contents begins on an odd physical page');
     }
     if(item.name==='long-toc') assert.ok(toc.length>1,'contents spans multiple pages');
+    if(item.name==='third-level-toc') {
+      assert.ok(toc.length>1,'three-level comprehensive contents spans pages');
+      const third=await chrome.send('Runtime.evaluate',{returnByValue:true,expression:`[...document.querySelectorAll('.pagedjs_pages .toc-level-2 a')].map(a=>({text:a.textContent,target:!!document.getElementById(a.hash.slice(1))}))`});
+      assert.ok(third.result.value.length>0,'third-level entries are actually rendered');
+      assert.ok(third.result.value.every(a=>a.target),'all third-level entries retain destinations');
+    }
     console.log(`${item.name}: ${pages.length} pages, PDF checked`);
   }
 } finally {await chrome.stop();await rm(temp,{recursive:true,force:true});}

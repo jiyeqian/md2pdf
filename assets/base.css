@@ -108,6 +108,7 @@ h1 {
 .toc li { position: relative; margin: 3px 0; padding-left: 0; font-size: inherit; }
 .toc li::before { content: none; }
 .toc li.toc-level-1 > a { margin-left: 1.5em; }
+.toc li.toc-level-2 > a { margin-left: 3em; }
 .toc a { color: var(--ink); text-decoration: none; border: none; }
 
 /* ---------- 章节 ---------- */

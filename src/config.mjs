@@ -17,7 +17,7 @@
  * 安全：解析结果经 sanitize 深拷贝，剔除 __proto__ / prototype / constructor，
  * 防止 YAML 反序列化污染原型；解析设置 maxAliasCount 上限，避免别名炸弹。
  */
-import { CHAPTER_START_VALUES, TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from './frontmatter-fields.mjs';
+import { CHAPTER_START_VALUES, TOC_LEVEL_VALUES, TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from './frontmatter-fields.mjs';
 import { paperAuthorErrors, paperAuthorWarnings } from './paper-authors.mjs';
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { GLOBAL_OPTION_DEFAULTS, FEATURES, RUNTIME_FEATURES, listThemes } from './options.mjs';
@@ -150,18 +150,17 @@ const coerceEnum = (v, rawKey, canon, pos) => {
   return s;
 };
 
-const coerceBoolField = (v, rawKey, canon, pos, tocDepthSink) => {
+const coerceBoolField = (v, rawKey, canon, pos, tocDepthSink, explicitDepth = false) => {
   if (canon === 'toc') {
-    // 兼容 Web 三态：false / 1 / 2（2 同时把目录深度设为二级）
-    if (typeof v === 'number' && (v === 0 || v === 1 || v === 2)) {
-      if (v === 2 && tocDepthSink) tocDepthSink(2);
-      return v !== 0;
-    }
-    if (typeof v === 'string' && ['0', '1', '2'].includes(v.trim())) {
-      const n = Number(v.trim());
-      if (n === 2 && tocDepthSink) tocDepthSink(2);
+    // 0 关闭，1–3 显示层级；旧的 1 + toc-depth 组合继续由显式深度决定。
+    if ((typeof v === 'number' && TOC_LEVEL_VALUES.includes(v)) ||
+        (typeof v === 'string' && TOC_LEVEL_VALUES.map(String).includes(v.trim()))) {
+      const n = Number(v);
+      if ((n >= 2 || (n === 1 && !explicitDepth)) && tocDepthSink) tocDepthSink(n);
       return n !== 0;
     }
+    try { return toBool(v, rawKey, canon, pos); }
+    catch { throw cfgError(`字段 ${rawKey} 的目录层级应为0、1、2或3（兼容 true / false）`, canon, pos); }
   }
   return toBool(v, rawKey, canon, pos);
 };
@@ -196,6 +195,7 @@ function ingestLayer(raw, opts = {}) {
   if (authorErrors.length) throw new ConfigError(authorErrors[0].message, authorErrors.map(issue => ({...issue, ...(positions[issue.field] || positions.authors || positions.affiliations)})));
   for (const message of paperAuthorWarnings(raw)) if (!warnings.includes(message)) warnings.push(message);
   const fields = {};
+  const explicitTocDepth = Object.keys(raw || {}).some(key => canonicalField(key) === 'tocDepth');
   const enableList = [];
   const disableList = [];
   const posOf = key => positions[key] || { line: null, column: null };
@@ -261,7 +261,7 @@ function ingestLayer(raw, opts = {}) {
     if (TEXT_FIELDS.includes(canon)) { setField(canon, coerceText(rawValue, rawKey, canon, pos), rawKey); continue; }
     if (canon in NUMBER_FIELDS) { setField(canon, coerceNumber(rawValue, rawKey, canon, pos), rawKey); continue; }
     if (BOOL_FIELDS.includes(canon)) {
-      setField(canon, coerceBoolField(rawValue, rawKey, canon, pos, d => setField('tocDepth', d, rawKey)), rawKey);
+      setField(canon, coerceBoolField(rawValue, rawKey, canon, pos, d => setField('tocDepth', d, rawKey), explicitTocDepth), rawKey);
       continue;
     }
     if (canon in ENUM_FIELDS) { setField(canon, coerceEnum(rawValue, rawKey, canon, pos), rawKey); continue; }

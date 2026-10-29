@@ -65,7 +65,7 @@ md2pdf ${VERSION} — Markdown 转 PDF
       --chapter-start <策略> continuous（连续，默认）| page（新页）| odd-page（奇数页）；作用于 ##
       --number-scheme <名称> 编号方案：${SCHEME_NAMES.join('、')}；通用文档默认 cjk，其他模板沿用各自默认
   -t, --toc                  显示目录
-      --toc-depth <层级>     目录深度：1、2；默认 1
+      --toc-depth <层级>     目录深度：1、2、3；默认 1（frontmatter toc: 0 隐藏，1–3 指定层级）
       --header-{left,center,right} <文字>
       --footer-{left,center,right} <文字>
       --colophon-{left,center,right} <文字>

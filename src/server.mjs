@@ -119,6 +119,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   for (const size of [180, 192, 512]) staticRoutes.set('/icons/app-' + size + '.png', ['web/icons/app-' + size + '.png', 'image/png']);
   for (const id of ['general', 'paper', 'gb', 'skill']) staticRoutes.set('/template-previews/' + id + '.png', ['web/template-previews/' + id + '.png', 'image/png']);
   staticRoutes.set('/src/frontmatter-fields.mjs', ['src/frontmatter-fields.mjs', 'text/javascript']);
+  staticRoutes.set('/src/profiles.mjs', ['src/profiles.mjs', 'text/javascript']);
   staticRoutes.set('/src/gb-blocks.mjs', ['src/gb-blocks.mjs', 'text/javascript']);
   staticRoutes.set('/version.mjs', ['web/version.mjs', 'text/javascript']);
   for (const file of ['analytics.mjs', 'analytics-schema.mjs', 'analytics-bootstrap.mjs', 'analytics.css', 'privacy.html']) {
@@ -240,7 +241,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       const pdf = await pdfTask(await webDocument(rendered.html), rendered.printOptions);
       // 与 Markdown 下载共用同一命名：客户端提交的 filename 优先（共享浏览器时间戳），
       // 否则服务端按同一 helper 从正文推导，保证直接调用 API 的命名同样合理。
-      const name = filename || documentDownloadName(md, new Date(), 'pdf');
+      const name = filename || documentDownloadName(md, new Date(), 'pdf', rendered.type);
       const encodedName = encodeURIComponent(name).replace(/[!'()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());
       res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="document.pdf"; filename*=UTF-8''${encodedName}` }); res.end(pdf);
     } catch (e) {
