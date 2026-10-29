@@ -4,6 +4,7 @@ authors:
   - name: Jiye Qian
     affiliations: [state-grid]
     corresponding: true
+    email: qianjiye@gmail.com
   - name: GPT-6.1 Sol
     affiliations: [openai]
 affiliations:
@@ -382,6 +383,19 @@ $$
 本文配套材料保存在`research/gb-logo-paper/`，包含实验程序、逐项数据、图表和输入哈希。历史研究快照保存在`md2pdf-research/gb/logo-function-study/`，作为只读来源。源封面不随本论文重复分发，复现时需提供相同文件并核对哈希。完整轮廓与点阵系数由项目中的JSON模型和方程文档提供；生成器、实验版本及命令见配套说明。
 
 Jiye Qian为通讯作者。GPT-6.1 Sol署名标识AI辅助工作，涉及材料整理、数学表达、程序与文稿生成；研究判断与投稿责任由人类作者最终核验。作者单位列示不表示机构背书；正式投稿时，作者资格及AI披露方式须遵循目标刊物政策。
+
+## 致谢
+
+本论文排版由 md2pdf[^md2pdf] 提供支持。
+
+<!-- pagebreak -->
+
+[^md2pdf]: @misc{md2pdf,
+  author = {Qian, Jiye},
+  title = {md2pdf: Markdown 驱动的专业 PDF 排版工具},
+  year = {2026},
+  url = {https://github.com/jiyeqian/md2pdf}
+  }
 
 [^selinger2003]: SELINGER P. Potrace: a polygon-based tracing algorithm[R/OL]. 2003[2026-10-29]. [技术报告原文](https://potrace.sourceforge.net/potrace.pdf).
 

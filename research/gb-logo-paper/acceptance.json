@@ -1,13 +1,13 @@
 {
   "date": "2026-10-29",
-  "softwareBaseCommit": "c183ab3b96cee048f58c70e01757fa49e0070d1e",
-  "manuscriptSha256": "6acc0231de2700c2c8ec3f6ad22b03d9b698dff3743f361b1a5cb82a4a84367e",
-  "pdfSha256": "8b790b2a89f1e22d0ab525ee081394a4b698910095c1ac472c5c9d1044c31679",
-  "pages": 14,
+  "softwareBaseCommit": "913db1d63d4f6a82fdff2e6209bfaf5590a3addc",
+  "manuscriptSha256": "611a054d86ac966c5c893f72dd4955a463ee7af4dc9e88cadd6fcee34407f192",
+  "pdfSha256": "51a0ac4536f8681dddbe416f2c3c9b2631e5e75c16e53191d27432718d2c575a",
+  "pages": 15,
   "figures": 6,
   "tables": 8,
   "displayEquations": 12,
-  "references": 8,
+  "references": 9,
   "checks": {
     "actualCliNodeBodyEqual": true,
     "nodeStaticBodyEqual": true,
@@ -18,15 +18,23 @@
     "completeShortTables": true,
     "paperAuthorsAndReferences": {
       "authors": true,
-      "pages": 14,
+      "pages": 15,
       "noRawLatex": true,
       "references": true
-    }
+    },
+    "correspondenceEmail": true,
+    "acknowledgementAndSoftwareCitation": true
   },
   "visualReview": {
-    "allPagesContactSheetDpi": 70,
+    "reviewedPages": [
+      1,
+      14,
+      15
+    ],
+    "dpi": 90,
     "reviewed": true,
-    "detectedClippingOrOverlap": false
+    "detectedClippingOrOverlap": false,
+    "referencesTogetherOnPage": 15
   },
   "limits": [
     "No independent design test set",

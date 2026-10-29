@@ -69,7 +69,9 @@ try{
   assert.deepEqual(state.tables.map(t=>t.rows),[3,6,3,4,2,3,3,3]);
   // MathJax's SVG equation tags are vector paths in the PDF, not searchable text.
   assert.equal(state.displayEquations,12,'all twelve display formulas are rendered');
-  assert.equal(state.refs.length,8);assert.equal(state.mathErrors,0);assert.equal(state.pagedError,null);
+  assert.equal(state.refs.length,9);assert.equal(state.mathErrors,0);assert.equal(state.pagedError,null);
+  assert.ok(state.authors.includes('qianjiye@gmail.com'),'correspondence email is rendered');
+  assert.ok(text.includes('致谢')&&text.includes('md2pdf: Markdown'),'acknowledgement and software citation are present');
   assert.ok(Object.values(state.pdfTextChecks).every(Boolean),'PDF text integrity');
   assert.equal(state.overflows.length,0,JSON.stringify(state.overflows));
   console.log(JSON.stringify({pages:state.pages,tableFragments:state.tables.length,tables:state.tables,figures:state.figures.length,refs:state.refs.length,mathErrors:state.mathErrors,overflows:state.overflows}));
