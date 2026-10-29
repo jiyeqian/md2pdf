@@ -366,6 +366,10 @@ function enumEntries(name, control) {
 function applyPolicy(policy) {
   if (!policy || !policy.controls) return;
   currentPolicy = policy;
+  form.dataset.documentType = policy.type || '';
+  if (policy.type === 'gb') {
+    for (const popup of form.querySelectorAll('.toolbar-field:not([data-control="type"]) details[open]')) popup.open = false;
+  }
   document.dispatchEvent(new CustomEvent('md-document-type', { detail: { type: policy.type } }));
   const controls = policy.controls;
   for (const [name, control] of Object.entries(controls)) {

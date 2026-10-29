@@ -101,6 +101,13 @@ try {
   assert.equal(await evaluate(`document.querySelector('[data-view=editor]').hidden`),true,'template icon keeps its destination');
   await evaluate(`document.querySelector('#editor-link-top').click()`);
   await wait('!document.querySelector("[data-view=editor]").hidden');
+  await evaluate(`document.querySelector('#options [name=type]').value='gb';document.querySelector('#options [name=type]').dispatchEvent(new Event('change',{bubbles:true}))`);
+  await wait(`document.querySelector('#options').dataset.documentType==='gb'`);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#preview-open-markdown,.preview-toolbar .toolbar-field>button,.preview-toolbar summary')).filter(e=>e.getClientRects().length).map(e=>e.getAttribute('aria-label').split('：')[0])`),['打开 Markdown','模板'],'GB preview toolbar contains only open and template selection');
+  await evaluate(`document.querySelector('#options [name=type]').value='general';document.querySelector('#options [name=type]').dispatchEvent(new Event('change',{bubbles:true}))`);
+  await wait(`document.querySelector('#options').dataset.documentType==='general'`);
+  assert.equal(await evaluate(`document.querySelector('[data-preview-mode-toggle]').getClientRects().length>0`),true,'other templates restore preview controls');
+  assert.equal(await evaluate(`document.querySelector('[data-control=toc]').getClientRects().length>0`),true,'TOC restored outside GB');
   for (const width of [2200,1440,780,390]) {
     await evaluate('scrollTo(0,0)');
     await browser.send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});
