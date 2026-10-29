@@ -1,4 +1,4 @@
-import { CHAPTER_START_VALUES } from './frontmatter-fields.mjs';
+import { CHAPTER_START_VALUES, TOC_DEPTH_VALUES } from './frontmatter-fields.mjs';
 import { PROFILES, PROFILE_NAMES, detectProfile } from './profiles.mjs';
 import { SCHEME_NAMES } from './numbering.mjs';
 import { parseFrontmatter, resolveDocumentOptions } from './config.mjs';
@@ -43,7 +43,7 @@ export const MARGIN_RANGE = { min: 10, max: 40 };
 export const WEB_OPTION_SPEC = {
   enums: { chapterStart: CHAPTER_START_VALUES.slice(), type: PROFILE_NAMES.slice(), theme: Object.keys(THEME_LABELS), numbering: Object.keys(NUMBERING_LABELS), numberScheme: SCHEME_NAMES.slice() },
   booleans: ['toc', 'landscape'],
-  numbers: { tocDepth: [1, 2], fontSize: [8, 24], lineHeight: [1, 2.5], marginTop: [10, 40], marginBottom: [10, 40], marginSide: [10, 40], marginLeft: [10, 40], marginRight: [10, 40] },
+  numbers: { tocDepth: [TOC_DEPTH_VALUES[0], TOC_DEPTH_VALUES.at(-1)], fontSize: [8, 24], lineHeight: [1, 2.5], marginTop: [10, 40], marginBottom: [10, 40], marginSide: [10, 40], marginLeft: [10, 40], marginRight: [10, 40] },
 };
 
 /**
@@ -115,7 +115,7 @@ export function policyForType(type = '', effective = null) {
     type: { name: 'type', label: '文档类型', available: true, values: PROFILE_NAMES.slice(), allowEmpty: true, emptyValue: '', emptyLabel: '自动识别' },
     theme: control('theme', caps.theme, { kind: 'enum', fixedValue: fixed.theme, fixedLabel: THEME_LABELS[fixed.theme] || fixed.theme }),
     landscape: control('landscape', caps.landscape, { kind: 'boolean', allowEmpty: true, fixedValue: Boolean(pick('landscape', false)) }),
-    toc: control('toc', caps.toc, { kind: 'tri', allowEmpty: true, fixedValue: type ? Boolean(pick('toc', WEB_BASELINE.toc)) : false, triValues: ['false', '1', '2'] }),
+    toc: control('toc', caps.toc, { kind: 'tri', allowEmpty: true, fixedValue: type ? Boolean(pick('toc', WEB_BASELINE.toc)) : false, triValues: ['false', '1', '2', '3'] }),
     fontSize: control('fontSize', caps.fontSize, { kind: 'number', allowEmpty: true, unsettable: true, min: FONT_SIZE_RANGE.min, max: FONT_SIZE_RANGE.max, step: FONT_SIZE_RANGE.step, defaultValue: WEB_BASELINE.fontSize, fixedValue: pick('fontSize', WEB_BASELINE.fontSize) }),
     lineHeight: control('lineHeight', caps.lineHeight, { kind: 'number', allowEmpty: true, unsettable: true, min: LINE_HEIGHT_RANGE.min, max: LINE_HEIGHT_RANGE.max, step: LINE_HEIGHT_RANGE.step, defaultValue: WEB_BASELINE.lineHeight, fixedValue: type === 'gb' ? GB_LINE_HEIGHT : pick('lineHeight', WEB_BASELINE.lineHeight) }),
     margin: control('margin', caps.margin, { kind: 'enum', allowEmpty: true, values: caps.margin ? MARGIN_OPTIONS.map(o => o.value) : [], fixedValue: `${fixed.marginTop} / ${fixed.marginBottom}`, fixedNote: `左右 ${fixed.marginLeft} / ${fixed.marginRight} mm` }),
@@ -225,7 +225,7 @@ export function assertOptionsAllowed(opts, type, frontmatter = {}) {
   const merged = { ...frontmatter };
   for (const [key, value] of Object.entries(opts || {})) merged[key] = value;
   opts = merged;
-  if (opts.tocDepth !== undefined && ![1, 2].includes(opts.tocDepth)) throw error400('目录层级只能为一级或二级');
+  if (opts.tocDepth !== undefined && !TOC_DEPTH_VALUES.includes(opts.tocDepth)) throw error400('目录层级只能为一级、二级或三级');
   const present = key => Object.hasOwn(opts, key);
   const caps = TYPE_CAPABILITIES[type] ?? AUTO_CAPABILITIES;
   if (type !== 'gb') {
@@ -292,7 +292,7 @@ export function normalizeSelections(selections = {}, type = '') {
  */
 export function effectiveOptions(opts = {}, type = 'general', fm = {}, positions = {}) {
   const effective = resolveDocumentOptions(opts, fm, PROFILES[type] || PROFILES.general, { positions });
-  const keys = ['chapterStart', 'theme', 'numberScheme', 'numbering', 'toc', 'fontSize', 'lineHeight', 'landscape', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
+  const keys = ['chapterStart', 'theme', 'numberScheme', 'numbering', 'toc', 'tocDepth', 'fontSize', 'lineHeight', 'landscape', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
   const result = Object.fromEntries(keys.map(key => [key, effective[key]]));
   if (type === 'gb') result.lineHeight = GB_LINE_HEIGHT;
   return result;

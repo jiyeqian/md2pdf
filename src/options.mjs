@@ -1,4 +1,4 @@
-import { CHAPTER_START_VALUES } from './frontmatter-fields.mjs';
+import { CHAPTER_START_VALUES, TOC_DEPTH_VALUES } from './frontmatter-fields.mjs';
 import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -208,7 +208,7 @@ export function parseArgs(argv) {
       case '--line-height': put('lineHeight', numberFrom(takeValue('--line-height', { numeric: true }), '--line-height', { min: 0.1 }), '--line-height'); break;
       case '--toc-depth': {
         const v = numberFrom(takeValue('--toc-depth', { numeric: true }), '--toc-depth', { min: 1 });
-        if (v !== 1 && v !== 2) throw err('选项 --toc-depth 只能为 1 或 2', '--toc-depth');
+        if (!TOC_DEPTH_VALUES.includes(v)) throw err('选项 --toc-depth 只能为 1、2 或 3', '--toc-depth');
         put('tocDepth', v, '--toc-depth');
         break;
       }

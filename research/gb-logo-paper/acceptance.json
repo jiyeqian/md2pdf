@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-29",
+  "softwareBaseCommit": "913db1d63d4f6a82fdff2e6209bfaf5590a3addc",
+  "manuscriptSha256": "611a054d86ac966c5c893f72dd4955a463ee7af4dc9e88cadd6fcee34407f192",
+  "pdfSha256": "51a0ac4536f8681dddbe416f2c3c9b2631e5e75c16e53191d27432718d2c575a",
+  "pages": 15,
+  "figures": 6,
+  "tables": 8,
+  "displayEquations": 12,
+  "references": 9,
+  "checks": {
+    "actualCliNodeBodyEqual": true,
+    "nodeStaticBodyEqual": true,
+    "allFigureBytesMatchManifest": true,
+    "experimentArithmetic": true,
+    "mathErrors": 0,
+    "layoutOverflows": [],
+    "completeShortTables": true,
+    "paperAuthorsAndReferences": {
+      "authors": true,
+      "pages": 15,
+      "noRawLatex": true,
+      "references": true
+    },
+    "correspondenceEmail": true,
+    "acknowledgementAndSoftwareCitation": true
+  },
+  "visualReview": {
+    "reviewedPages": [
+      1,
+      14,
+      15
+    ],
+    "dpi": 90,
+    "reviewed": true,
+    "detectedClippingOrOverlap": false,
+    "referencesTogetherOnPage": 15
+  },
+  "limits": [
+    "No independent design test set",
+    "Grid holdouts conditional on globally inferred indices",
+    "Finite candidate search, not global optimization",
+    "No physical print, phone or deployed static-print acceptance",
+    "AI attribution and submission policy require human author review"
+  ]
+}

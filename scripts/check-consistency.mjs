@@ -11,6 +11,7 @@ import { createApp, webDocument } from '../src/server.mjs';
 import { attachSourcePositions } from '../src/editor-position.mjs';
 import { syncGbExample } from './sync-gb-example.mjs';
 import { VERSION } from '../src/version.mjs';
+import { documentDownloadName } from '../web/editor-files.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 await syncGbExample(root,true);
@@ -86,6 +87,41 @@ try {
     sameHtml(online.html,await webDocument(attachSourcePositions(core.pagedHtml,md),true,core.type),mode+': chapter/table prepared HTML');
   }
   console.log('✓ 章分页三种策略与表头运行时：CLI、Node、静态配置及 HTML 一致');
+  for (const depth of [0,1,2,3]) {
+    const md=`---\n标准号: GB/T 39999—2026\n中文名称: 目录命名验收\ntitle: 旧标题\nversion: v2\ntoc: ${depth}\n---\n## 范围\n\n### 次级条\n\n#### 三级条\n\n##### 四级条\n`;
+    const body={md,opts:{}};
+    const response=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    assert.equal(response.status,200);
+    const online=await response.json();
+    const offline=await (await browser.appFetch('/api/render',{body:JSON.stringify(body)})).json();
+    sameHtml(offline.html,online.html,`GB toc ${depth}`);
+    assert.deepEqual(offline.effective,online.effective);
+    assert.equal(online.effective.toc,depth!==0);
+    if(depth)assert.equal(online.effective.tocDepth,depth);
+    const core=await render(md,{pagedHtml:true},{webSafe:true});
+    const input=path.join(tmp,'toc.md'),output=path.join(tmp,'toc.html');
+    await writeFile(input,md);
+    execFileSync(process.execPath,['src/md2pdf.mjs',input,'--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});
+    sameHtml(await readFile(output,'utf8'),core.pagedHtml,`CLI toc ${depth}`);
+    if(depth===3)assert.match(core.html,/class="toc-level-2"/);
+    const staticFiles=await import(pathToFileURL(path.join(build.directory,'editor-files.mjs')));
+    assert.equal(staticFiles.documentDownloadName(md,new Date(),'pdf'),documentDownloadName(md,new Date(),'pdf'));
+    assert.equal(documentDownloadName(md,new Date(),'pdf'),'目录命名验收_v2.pdf');
+  }
+  console.log('✓ GB目录0–3级、CLI/Node/静态内容及中文名称下载命名一致');
+  {
+    const md='---\n标准号: GB/T 39999—2026\n中文名称: 显式三级目录\ntoc: 1\n---\n## 范围\n\n### 次级\n\n#### 三级\n';
+    const opts={toc:true,tocDepth:3},body={md,opts};
+    const response=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    assert.equal(response.status,200);
+    const online=await response.json(),offline=await(await browser.appFetch('/api/render',{body:JSON.stringify(body)})).json();
+    assert.equal(online.effective.tocDepth,3);
+    sameHtml(offline.html,online.html,'explicit depth3 preview');
+    const input=path.join(tmp,'explicit-toc.md'),output=path.join(tmp,'explicit-toc.html');
+    await writeFile(input,md);
+    execFileSync(process.execPath,['src/md2pdf.mjs',input,'--toc','--toc-depth','3','--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});
+    sameHtml(await readFile(output,'utf8'),(await render(md,{...opts,pagedHtml:true},{webSafe:true})).pagedHtml,'CLI explicit depth3');
+  }
   const invalid={md:'---\nfont-size: bad\n---\n# Invalid',opts:{}};
   const online=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(invalid)});
   const offline=await browser.appFetch('/api/render',{body:JSON.stringify(invalid)});

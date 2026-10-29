@@ -1,5 +1,7 @@
 // 统一的下载命名：filename_version.ext。
-// 标题优先取 front matter 的 title，其次正文首个一级标题（ATX / Setext）；没有有效标题时
+import { detectProfile, PROFILE_NAMES } from '../src/profiles.mjs';
+
+// GB 标题优先取中文名称，其他模板取 title；其次正文首个一级标题（ATX / Setext）；没有有效标题时
 // 回落到 md2pdf_设置一级标题为文档标题。版本优先取 front matter 的 version 标量；缺失 /
 // 空 / 非法（对象 / 列表 / 纯符号）时回落到本地时间戳 YYYYMMDD_HHmmss。
 // Markdown 与 PDF 共用本模块，保证同一文档 / 版本得到完全相同的基名。
@@ -122,29 +124,40 @@ function parseFrontmatterScalar(raw) {
 }
 
 /**
- * front matter 的顶层 title / version 标量：支持带引号（'1.2.3' / "1.2.3"，含转义）与未加引号的
- * 数字 / 文本，并正确剥离行内注释；只认顶层键（嵌套字段不算）。
- * 缺失 / 未闭合 front matter / 对象 / 列表 / 块 / null / 布尔一律返回 ''（调用方采用回退值）。
+ * 读取顶层字段首行原文；不把嵌套字段当作标题，也不读取未闭合的frontmatter。
+ * 标量语法和安全回退由frontmatterScalar继续处理。
  */
-function frontmatterScalar(markdown, key) {
+function frontmatterRaw(markdown, key) {
   const lines = stripBom(markdown).split(/\r?\n/);
   const open = lines[0];
-  if (!isFenceDelimiter(open)) return '';
+  if (!isFenceDelimiter(open)) return null;
   let raw = null;
   let closed = false;
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     if (/^(---|\.\.\.|\+\+\+)\s*$/.test(line)) { closed = true; break; }
     // 只读取顶层字段，忽略嵌套元数据。
-    const match = /^(title|version)[ \t]*:[ \t]*(.*)$/.exec(line);
+    const match = /^([^\s:#]+)[ \t]*:[ \t]*(.*)$/.exec(line);
     if (match && match[1] === key && raw === null) raw = match[2];
   }
-  if (!closed || raw === null) return ''; // front matter 未闭合 / 无指定顶层字段
-  return parseFrontmatterScalar(raw) || '';
+  return closed ? raw : null;
 }
 
-export function frontmatterTitle(markdown) {
-  return frontmatterScalar(markdown, 'title');
+function frontmatterScalar(markdown, key) {
+  return parseFrontmatterScalar(frontmatterRaw(markdown, key)) || '';
+}
+
+export function frontmatterTitle(markdown, type = '') {
+  const title = frontmatterScalar(markdown, 'title');
+  const chinese = frontmatterScalar(markdown, '中文名称');
+  if (!chinese) return title;
+  const fm = Object.fromEntries(['type', 'standard', '标准号', 'name', 'abstract'].map(key => [key, frontmatterScalar(markdown, key)]));
+  // 这里只为沿用模板识别优先级检查关键词是否非空，不解析其内容。
+  const keywords = frontmatterRaw(markdown, 'keywords');
+  if (keywords !== null && !/^(?:\[\s*\]|null|~)\s*(?:#.*)?$/i.test(keywords.trim())) fm.keywords = [''];
+  const selected = type || fm.type;
+  const profile = detectProfile({ basename: '', fm, explicit: PROFILE_NAMES.includes(selected) ? selected : '' });
+  return profile.gbDoc ? chinese : title;
 }
 
 export function frontmatterVersion(markdown) {
@@ -156,18 +169,19 @@ export function frontmatterVersion(markdown) {
  * @param {string} markdown 文档源码
  * @param {Date} [date] 版本缺省时用于时间戳（本地时间 YYYYMMDD_HHmmss）
  * @param {string} [ext] 扩展名（不含点），默认 md
+ * @param {string} [type] 显式模板；为空时沿用文档自动识别
  * @returns {string}
  */
-export function documentDownloadName(markdown, date = new Date(), ext = 'md') {
-  const title = sanitizeStem(frontmatterScalar(markdown, 'title')) || sanitizeStem(firstHeadingTitle(markdown)) || TITLE_FALLBACK;
+export function documentDownloadName(markdown, date = new Date(), ext = 'md', type = '') {
+  const title = sanitizeStem(frontmatterTitle(markdown, type)) || sanitizeStem(firstHeadingTitle(markdown)) || TITLE_FALLBACK;
   const version = frontmatterVersion(markdown) || timestamp(date);
   const suffix = String(ext == null ? '' : ext).replace(/[^A-Za-z0-9]/g, '').slice(0, 8) || 'md';
   return title + '_' + version + '.' + suffix;
 }
 
 // 兼容旧调用：Markdown 下载名。
-export function markdownDownloadName(markdown, date = new Date()) {
-  return documentDownloadName(markdown, date, 'md');
+export function markdownDownloadName(markdown, date = new Date(), type = '') {
+  return documentDownloadName(markdown, date, 'md', type);
 }
 
 function timestamp(date) {

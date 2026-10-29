@@ -77,7 +77,7 @@ test('文本字段显式空串合法：清空且阻止低层回退', () => {
 test('数值字段不能为空 / 非法值报错，合法数值通过', () => {
   throws(() => parseFrontmatter(FM('font-size: ""')), /font-size/);
   throws(() => parseFrontmatter(FM('font-size: abc')), /font-size/);
-  throws(() => parseFrontmatter(FM('toc-depth: 3')), /toc-depth/);
+  throws(() => parseFrontmatter(FM('toc-depth: 4')), /toc-depth/);
   assert.equal(parseFrontmatter(FM('font-size: 12')).config.fontSize, 12);
   assert.equal(parseFrontmatter(FM('line-height: 1.6')).config.lineHeight, 1.6);
 });

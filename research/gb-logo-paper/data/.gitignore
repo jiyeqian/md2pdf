@@ -1,0 +1,6 @@
+# Reproduced by experiments.py prepare/analyze and capture.mjs.
+*.png
+*.svg
+*.pdf
+jobs.json
+browser.json

@@ -393,7 +393,7 @@ function applyPolicy(policy) {
       fillSelect(field, enumEntries(name, control), '跟随文档');
     } else if (control.kind === 'tri' && field.tagName === 'SELECT') {
       if (field.value === 'true') field.value = '1';
-      fillSelect(field, [['false', '隐藏目录'], ['1', '一级目录'], ['2', '二级目录']], '跟随文档');
+      fillSelect(field, [['false', '隐藏目录'], ['1', '一级目录'], ['2', '二级目录'], ['3', '三级目录']], '跟随文档');
     } else if (control.kind === 'number') {
       if (control.min != null) field.min = control.min;
       if (control.max != null) field.max = control.max;
@@ -484,7 +484,7 @@ function updateOptionTriggers() {
     if (field.value === '') {
       let effective = renderedEffective[name];
       if (name === 'type') effective = currentPolicy && currentPolicy.type;
-      if (name === 'toc' && typeof effective === 'boolean') effective = effective ? '开启' : '关闭';
+      if (name === 'toc' && typeof effective === 'boolean') effective = effective ? `${renderedEffective.tocDepth || 1}级目录` : '关闭';
       if (effective !== undefined) text += `（当前 ${effective}）`;
     }
     trigger.title = `${label}：${text}`;
@@ -623,7 +623,7 @@ function collectedOptions() {
     if (name === 'margin') { const n = rangeOptionValue(name, value); if (n !== undefined) { options.marginTop = options.marginBottom = options.marginLeft = options.marginRight = n; } }
     else if (name === 'fontSize' || name === 'lineHeight') { const n = rangeOptionValue(name, value); if (n !== undefined) options[name] = n; }
     else if (name === 'landscape') options.landscape = value === 'true';
-    else if (name === 'toc') { options.toc = value !== 'false'; if (options.toc) options.tocDepth = value === '2' ? 2 : 1; }
+    else if (name === 'toc') { options.toc = value !== 'false'; if (options.toc) options.tocDepth = Number(value); }
     else if (name === 'numbering') Object.assign(options, headingOptionsFromToken(value, controls));
     else options[name] = value;
   }
@@ -1023,7 +1023,7 @@ window.addEventListener('pagehide', () => { localDrafts?.flush().catch(() => {})
 async function downloadNameFor(md, ext) {
   try {
     const files = await import('./editor-files.mjs');
-    return files.documentDownloadName(md, new Date(), ext);
+    return files.documentDownloadName(md, new Date(), ext, form.elements.type.value);
   } catch { return ''; }
 }
 

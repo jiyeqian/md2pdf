@@ -260,6 +260,7 @@ main section .gb-index ul.gb-index-entries > li::before { display: none !importa
 
 /* 10.2/10.3: semantic indentation, not generic list/paragraph decoration. */
 .toc li.toc-level-1 > a { margin-left: 1em; }
+.toc li.toc-level-2 > a { margin-left: 2em; }
 .toc li.toc-level-0 { margin-top: 0; margin-bottom: 0; }
 main .references > li { padding-left: 0; }
 main .gb-figure-note p, main .gb-figure-footnote p, main .gb-table-footnote p {

@@ -1,0 +1,56 @@
+{
+  "sourceInputs": {
+    "docs/gb-logo-parametric-model.json": "a8960aef3a82aa5f94722a7770daee86cb310b4a2a547996c704c682d8bdd204",
+    "docs/gb-logo-parametric-v2-model.json": "729efc5311774c2a12ac87428f06dc1cec1196d8f61919b6b265438c0fade493",
+    "docs/gb-logo-reconstruction-model.json": "abec8d1c0db2b4b670e5dd1af6b776da5543194017a4f732ce2afce8c91d32ce",
+    "scripts/build-gb-logo-parametric.py": "e1cac17d834816add29ba668592f697c4d739028f94e0f379a16aeb037058f91",
+    "scripts/gb_logo_topology.py": "dbd90810a13059f88f0ab78feea2b181dc1096ceefc463582f0b0af74ff4480a",
+    "assets/candidates/gb-logo-parametric.svg": "475cc1cbc62592c4f5d236c65c01c5bfefed072a13581b3397c151ca87701e22",
+    "assets/candidates/gb-logo-parametric-v2.svg": "e9f44787d3f3a959a0fcd159986adf5fdffa93f7cea1c31e7de99cf7ae773d40",
+    "assets/candidates/gb-logo-reconstruction.svg": "873f16dc5fcb0d1169954251a192927592eb62ca7d83a8882c068e0e4c38f8b4"
+  },
+  "sourceCovers": [
+    {
+      "file": "GB:T 48316—2026.pdf",
+      "pdfSha256": "ea30418a73978baa7ad3209204a1c31826c99f49627888d776f08008685e5a2a",
+      "decodedStreamSha256": "649ab5c3a741040cd03bbc7fd98a26ae65dc605baf5b94c27b59513069162537",
+      "maskSha256": "84a946b1a2f100640b845ea146fccd7e8b4e3dcccec0a978d79f8a2a262603d4",
+      "blackPixels": 211252
+    },
+    {
+      "file": "GB 48319—2026.pdf",
+      "pdfSha256": "420f68ee9b89bd203101b6d682ecc7ed57c3dc55cd79d348f5aafe4af5c708be",
+      "decodedStreamSha256": "401a622275f2814b76fbd0df844a256af38a821557ae106c56a9de4014656670",
+      "maskSha256": "f996c7f8897aec30479653693b2e8b2195b5060ddfc1975e1afddb14b27db8d1",
+      "blackPixels": 211250
+    },
+    {
+      "file": "GB:T 48300—2026.pdf",
+      "pdfSha256": "0107877ad4b405c7dfee4403e9139df0887d21753bbc1ee7f6a635a72e369c85",
+      "decodedStreamSha256": "ce931d54695789ac5e2c46063686204c766b7247d27190a94e7cb71c346ab405",
+      "maskSha256": "fb657ea299699950f6c427b80028f1a4d89cd07bf06e3136b901203db97da94a",
+      "blackPixels": 211250
+    },
+    {
+      "file": "GB:Z 295.2—2026.pdf",
+      "pdfSha256": "d9fa84f86245ad1ec9546f4dbd985f56859e0a79b04360560bc8225fb794b303",
+      "decodedStreamSha256": "649ab5c3a741040cd03bbc7fd98a26ae65dc605baf5b94c27b59513069162537",
+      "maskSha256": "84a946b1a2f100640b845ea146fccd7e8b4e3dcccec0a978d79f8a2a262603d4",
+      "blackPixels": 211252
+    }
+  ],
+  "outputs": {
+    "data/results.json": "cfeedae02ca572b6083c6e3c5b396c6934c44023e07f1b0d074053f9114a0618",
+    "data/dot-centers.json": "f2a02e42f7c111ef7219e0c44542c832a960691aa340619ce58814990c655a6e",
+    "data/experimental-best-model.json": "bfee352408003af50046e1681c612d94a1afa487fef04e573c27714808ab6ee0",
+    "data/parameter-sweep.csv": "86038e6c8c98a9e97013a9bde3c8f55ac2a4cf02507e1992922e51be555920b6",
+    "figures/fig01-reconstruction.png": "837af14a1629c3675df213ddf04588b86762c04e52b65f60fd1cbcc726b108a6",
+    "figures/fig02-junctions.png": "10a034a6b89b09ff327c1ae6630f99a90789e6e60ca567faec03f2f7fd6b9785",
+    "figures/fig03-parameter-search.png": "be7133e79c657c6696c45af8bde05b6285eb28d59a557a243e4d0f8d2c8c0128",
+    "figures/fig04-grid-models.png": "2166d4b82614dc9e90f2d118c00d09041cfaf108bcf895336af695eb787dc536",
+    "figures/fig05-search-and-parity.png": "68a9271f4cc81aa28657eb3bb3bf54c55f820ee30e76ab029f0007161fc4df3d",
+    "figures/fig06-difference.png": "ae2f6e6d22c4be7fa6d9bed030ea3ba85f97285fe689ffd3869efc7df0b67374"
+  },
+  "generatorSha256": "9873ca212b3a6b1365735734602250a442ca05e71ef94b65e111553504d9adb0",
+  "captureSha256": "8edc14315374ff4e73ba9c24fa8adb69ba472753acb0aabb4ab346acce9eeab8"
+}

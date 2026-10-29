@@ -624,7 +624,8 @@ test('frontmatter value recommendations are scoped, canonical and use parser def
     const pos = text.length - 4;
     return provideCompletions({ text, pos, frontmatterValues: catalog }, analyzeMarkdown(text));
   };
-  assert.deepEqual(complete('toc-depth: ').options.map(o => o.label), ['1', '2']);
+  assert.deepEqual(complete('toc-depth: ').options.map(o => o.label), ['1', '2', '3']);
+  assert.deepEqual(complete('toc: ').options.map(o => o.label), ['0', '1', '2', '3']);
   assert.deepEqual(complete('header: ').options.map(o => o.label), ['true', 'false']);
   assert.deepEqual(complete('bibliography: ').options.map(o => o.label), ['footnote', 'bib']);
   assert.deepEqual(complete('toc-depth: 2').options.map(o => o.label), ['2']);

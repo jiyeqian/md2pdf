@@ -1,9 +1,10 @@
 import { firstHeadingTitle, frontmatterTitle } from './editor-files.mjs';
 
 export const DRAFT_LIST_LIMIT = 10;
-export function draftTitle({ md = '', filename = '' }) {
-  return frontmatterTitle(md) || firstHeadingTitle(md) || filename.replace(/\.(md|markdown|mdown)$/i, '') || '未命名文档';
+export function draftTitle({ md = '', filename = '', opts = {} }) {
+  return frontmatterTitle(md, opts.type || '') || firstHeadingTitle(md) || filename.replace(/\.(md|markdown|mdown)$/i, '') || '未命名文档';
 }
+const withTitle = record => record ? { ...record, title: draftTitle(record) } : record;
 
 export class DraftConflict extends Error {
   constructor() { super('草稿已在其他页面修改或删除，请先下载当前 Markdown，再重新打开草稿。'); }
@@ -35,9 +36,9 @@ export function openDraftStore(factory = globalThis.indexedDB) {
       resolve({
         close: () => db.close(),
         list: () => transact('readonly', (drafts, meta, done) => {
-          drafts.getAll().onsuccess = event => done(event.target.result.sort((a, b) => b.savedAt - a.savedAt || a.id.localeCompare(b.id)));
+          drafts.getAll().onsuccess = event => done(event.target.result.map(withTitle).sort((a, b) => b.savedAt - a.savedAt || a.id.localeCompare(b.id)));
         }),
-        get: id => transact('readonly', (drafts, meta, done) => { drafts.get(id).onsuccess = event => done(event.target.result); }),
+        get: id => transact('readonly', (drafts, meta, done) => { drafts.get(id).onsuccess = event => done(withTitle(event.target.result)); }),
         active: () => transact('readonly', (drafts, meta, done) => { meta.get('active').onsuccess = event => done(event.target.result); }),
         activate: id => transact('readwrite', (drafts, meta) => { meta.put(id, 'active'); }),
         save: record => transact('readwrite', (drafts, meta, done, fail) => {

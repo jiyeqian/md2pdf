@@ -714,7 +714,7 @@ export async function render(src, options = {}, context = {}) {
   let toc = '';
   if (useToc && secIds.length) {
     const levels = [...new Set(secIds.map(s => s.level))].sort((a, b) => a - b);
-    const included = levels.slice(0, eff.tocDepth === 2 ? 2 : 1);
+    const included = levels.slice(0, eff.tocDepth || 1);
     const items = secIds.filter(s => included.includes(s.level));
     const tocItem = s => profile.gbDoc
       ? `<li class="toc-level-${included.indexOf(s.level)}${s.float ? ' toc-float' : ''}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`

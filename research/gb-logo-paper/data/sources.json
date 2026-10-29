@@ -1,0 +1,30 @@
+[
+  {
+    "file": "GB:T 48316—2026.pdf",
+    "pdfSha256": "ea30418a73978baa7ad3209204a1c31826c99f49627888d776f08008685e5a2a",
+    "decodedStreamSha256": "649ab5c3a741040cd03bbc7fd98a26ae65dc605baf5b94c27b59513069162537",
+    "maskSha256": "84a946b1a2f100640b845ea146fccd7e8b4e3dcccec0a978d79f8a2a262603d4",
+    "blackPixels": 211252
+  },
+  {
+    "file": "GB 48319—2026.pdf",
+    "pdfSha256": "420f68ee9b89bd203101b6d682ecc7ed57c3dc55cd79d348f5aafe4af5c708be",
+    "decodedStreamSha256": "401a622275f2814b76fbd0df844a256af38a821557ae106c56a9de4014656670",
+    "maskSha256": "f996c7f8897aec30479653693b2e8b2195b5060ddfc1975e1afddb14b27db8d1",
+    "blackPixels": 211250
+  },
+  {
+    "file": "GB:T 48300—2026.pdf",
+    "pdfSha256": "0107877ad4b405c7dfee4403e9139df0887d21753bbc1ee7f6a635a72e369c85",
+    "decodedStreamSha256": "ce931d54695789ac5e2c46063686204c766b7247d27190a94e7cb71c346ab405",
+    "maskSha256": "fb657ea299699950f6c427b80028f1a4d89cd07bf06e3136b901203db97da94a",
+    "blackPixels": 211250
+  },
+  {
+    "file": "GB:Z 295.2—2026.pdf",
+    "pdfSha256": "d9fa84f86245ad1ec9546f4dbd985f56859e0a79b04360560bc8225fb794b303",
+    "decodedStreamSha256": "649ab5c3a741040cd03bbc7fd98a26ae65dc605baf5b94c27b59513069162537",
+    "maskSha256": "84a946b1a2f100640b845ea146fccd7e8b4e3dcccec0a978d79f8a2a262603d4",
+    "blackPixels": 211252
+  }
+]

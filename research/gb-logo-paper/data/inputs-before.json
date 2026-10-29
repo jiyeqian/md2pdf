@@ -1,0 +1,10 @@
+{
+  "docs/gb-logo-parametric-model.json": "a8960aef3a82aa5f94722a7770daee86cb310b4a2a547996c704c682d8bdd204",
+  "docs/gb-logo-parametric-v2-model.json": "729efc5311774c2a12ac87428f06dc1cec1196d8f61919b6b265438c0fade493",
+  "docs/gb-logo-reconstruction-model.json": "abec8d1c0db2b4b670e5dd1af6b776da5543194017a4f732ce2afce8c91d32ce",
+  "scripts/build-gb-logo-parametric.py": "e1cac17d834816add29ba668592f697c4d739028f94e0f379a16aeb037058f91",
+  "scripts/gb_logo_topology.py": "dbd90810a13059f88f0ab78feea2b181dc1096ceefc463582f0b0af74ff4480a",
+  "assets/candidates/gb-logo-parametric.svg": "475cc1cbc62592c4f5d236c65c01c5bfefed072a13581b3397c151ca87701e22",
+  "assets/candidates/gb-logo-parametric-v2.svg": "e9f44787d3f3a959a0fcd159986adf5fdffa93f7cea1c31e7de99cf7ae773d40",
+  "assets/candidates/gb-logo-reconstruction.svg": "873f16dc5fcb0d1169954251a192927592eb62ca7d83a8882c068e0e4c38f8b4"
+}

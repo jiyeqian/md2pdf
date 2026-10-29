@@ -1,0 +1,227 @@
+[
+  {
+    "name": "sweep-w1.5-r2.5",
+    "width": 1.5,
+    "radius": 2.5
+  },
+  {
+    "name": "sweep-w1.5-r2.625",
+    "width": 1.5,
+    "radius": 2.625
+  },
+  {
+    "name": "sweep-w1.5-r2.75",
+    "width": 1.5,
+    "radius": 2.75
+  },
+  {
+    "name": "sweep-w1.5-r2.875",
+    "width": 1.5,
+    "radius": 2.875
+  },
+  {
+    "name": "sweep-w1.5-r3",
+    "width": 1.5,
+    "radius": 3.0
+  },
+  {
+    "name": "sweep-w1.75-r2.5",
+    "width": 1.75,
+    "radius": 2.5
+  },
+  {
+    "name": "sweep-w1.75-r2.625",
+    "width": 1.75,
+    "radius": 2.625
+  },
+  {
+    "name": "sweep-w1.75-r2.75",
+    "width": 1.75,
+    "radius": 2.75
+  },
+  {
+    "name": "sweep-w1.75-r2.875",
+    "width": 1.75,
+    "radius": 2.875
+  },
+  {
+    "name": "sweep-w1.75-r3",
+    "width": 1.75,
+    "radius": 3.0
+  },
+  {
+    "name": "sweep-w2-r2.5",
+    "width": 2.0,
+    "radius": 2.5
+  },
+  {
+    "name": "sweep-w2-r2.625",
+    "width": 2.0,
+    "radius": 2.625
+  },
+  {
+    "name": "sweep-w2-r2.75",
+    "width": 2.0,
+    "radius": 2.75
+  },
+  {
+    "name": "sweep-w2-r2.875",
+    "width": 2.0,
+    "radius": 2.875
+  },
+  {
+    "name": "sweep-w2-r3",
+    "width": 2.0,
+    "radius": 3.0
+  },
+  {
+    "name": "sweep-w2.25-r2.5",
+    "width": 2.25,
+    "radius": 2.5
+  },
+  {
+    "name": "sweep-w2.25-r2.625",
+    "width": 2.25,
+    "radius": 2.625
+  },
+  {
+    "name": "sweep-w2.25-r2.75",
+    "width": 2.25,
+    "radius": 2.75
+  },
+  {
+    "name": "sweep-w2.25-r2.875",
+    "width": 2.25,
+    "radius": 2.875
+  },
+  {
+    "name": "sweep-w2.25-r3",
+    "width": 2.25,
+    "radius": 3.0
+  },
+  {
+    "name": "sweep-w2.5-r2.5",
+    "width": 2.5,
+    "radius": 2.5
+  },
+  {
+    "name": "sweep-w2.5-r2.625",
+    "width": 2.5,
+    "radius": 2.625
+  },
+  {
+    "name": "sweep-w2.5-r2.75",
+    "width": 2.5,
+    "radius": 2.75
+  },
+  {
+    "name": "sweep-w2.5-r2.875",
+    "width": 2.5,
+    "radius": 2.875
+  },
+  {
+    "name": "sweep-w2.5-r3",
+    "width": 2.5,
+    "radius": 3.0
+  },
+  {
+    "name": "sweep-w2.75-r2.5",
+    "width": 2.75,
+    "radius": 2.5
+  },
+  {
+    "name": "sweep-w2.75-r2.625",
+    "width": 2.75,
+    "radius": 2.625
+  },
+  {
+    "name": "sweep-w2.75-r2.75",
+    "width": 2.75,
+    "radius": 2.75
+  },
+  {
+    "name": "sweep-w2.75-r2.875",
+    "width": 2.75,
+    "radius": 2.875
+  },
+  {
+    "name": "sweep-w2.75-r3",
+    "width": 2.75,
+    "radius": 3.0
+  },
+  {
+    "name": "sweep-w3-r2.5",
+    "width": 3.0,
+    "radius": 2.5
+  },
+  {
+    "name": "sweep-w3-r2.625",
+    "width": 3.0,
+    "radius": 2.625
+  },
+  {
+    "name": "sweep-w3-r2.75",
+    "width": 3.0,
+    "radius": 2.75
+  },
+  {
+    "name": "sweep-w3-r2.875",
+    "width": 3.0,
+    "radius": 2.875
+  },
+  {
+    "name": "sweep-w3-r3",
+    "width": 3.0,
+    "radius": 3.0
+  },
+  {
+    "name": "sweep-w3.25-r2.5",
+    "width": 3.25,
+    "radius": 2.5
+  },
+  {
+    "name": "sweep-w3.25-r2.625",
+    "width": 3.25,
+    "radius": 2.625
+  },
+  {
+    "name": "sweep-w3.25-r2.75",
+    "width": 3.25,
+    "radius": 2.75
+  },
+  {
+    "name": "sweep-w3.25-r2.875",
+    "width": 3.25,
+    "radius": 2.875
+  },
+  {
+    "name": "sweep-w3.25-r3",
+    "width": 3.25,
+    "radius": 3.0
+  },
+  {
+    "name": "sweep-w3.5-r2.5",
+    "width": 3.5,
+    "radius": 2.5
+  },
+  {
+    "name": "sweep-w3.5-r2.625",
+    "width": 3.5,
+    "radius": 2.625
+  },
+  {
+    "name": "sweep-w3.5-r2.75",
+    "width": 3.5,
+    "radius": 2.75
+  },
+  {
+    "name": "sweep-w3.5-r2.875",
+    "width": 3.5,
+    "radius": 2.875
+  },
+  {
+    "name": "sweep-w3.5-r3",
+    "width": 3.5,
+    "radius": 3.0
+  }
+]

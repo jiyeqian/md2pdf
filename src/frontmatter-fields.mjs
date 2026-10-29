@@ -1,4 +1,6 @@
 export const CHAPTER_START_VALUES = ['continuous', 'page', 'odd-page'];
+export const TOC_DEPTH_VALUES = [1, 2, 3];
+export const TOC_LEVEL_VALUES = [0, ...TOC_DEPTH_VALUES];
 export const TEXT_FIELDS = ['title', 'kicker', 'colophonLeft', 'colophonCenter', 'colophonRight', 'headerLeft', 'headerCenter', 'headerRight', 'footerLeft', 'footerCenter', 'footerRight', 'bibliographyTitle'];
 export const NUMBER_FIELDS = {
   fontSize: { min: 0.1 },
@@ -8,7 +10,7 @@ export const NUMBER_FIELDS = {
   marginLeft: { min: 0 },
   marginRight: { min: 0 },
   marginSide: { min: 0 },
-  tocDepth: { min: 1, enum: [1, 2] },
+  tocDepth: { min: 1, enum: TOC_DEPTH_VALUES },
 };
 export const BOOL_FIELDS = ['header', 'colophonEnabled', 'footer', 'meta', 'lead', 'toc', 'outline', 'floatNumbering', 'gbCover', 'gbDefaults', 'linkUrls', 'landscape'];
 export const CONTROL_FIELDS = ['enable', 'disable'];
