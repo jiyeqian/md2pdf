@@ -23,7 +23,7 @@ const cases = [
   ['主题变量', 'assets/themes/elegant.css', 'var(--accent)', 'var(--accentt)', '主题 elegant.css：var(--x) 全部有定义'],
   ['共享版本漂移', 'src/version.mjs', "export const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;", "export const VERSION = '9.9.9';", '版本号：共享模块与 package.json 一致'],
   ['技能名称', 'integrations/skills/md2pdf/SKILL.md', 'name: md-to-pdf\n', 'name: md-to-pdff\n', '技能：frontmatter name 为 md-to-pdf'],
-  ['目录内链', 'src/render.mjs', '<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>', '<li>${esc(s.text)}</li>', '渲染：目录项是可点击内链'],
+  ['目录内链', 'src/render.mjs', 'href="#${s.id}"', 'href="#"', '渲染：目录项是可点击内链'],
   ['PDF 书签', 'src/chrome.mjs', 'generateDocumentOutline: true', 'generateDocumentOutline: false', '书签：printToPDF 传入 generateDocumentOutline'],
 ];
 try {

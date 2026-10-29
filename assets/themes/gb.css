@@ -273,7 +273,14 @@ figure.fig { break-inside: avoid; }
 .gb-table-notes { break-inside: avoid; }
 /* 数字列按原数值的小数点/个位对齐，不补零或改写数值。 */
 .gb-number-cell { text-align: center; }
-.gb-decimal { display: inline-grid; grid-template-columns: var(--gb-int-width) var(--gb-frac-width) var(--gb-suffix-width); text-indent: 0; }
+.gb-decimal {
+  --gb-int-width: 0px;
+  --gb-frac-width: 0px;
+  --gb-suffix-width: 0px;
+  display: inline-grid;
+  grid-template-columns: var(--gb-int-width) var(--gb-frac-width) var(--gb-suffix-width);
+  text-indent: 0;
+}
 .gb-decimal > :first-child { text-align: right; }
 .gb-decimal > :not(:first-child) { text-align: left; }
 
