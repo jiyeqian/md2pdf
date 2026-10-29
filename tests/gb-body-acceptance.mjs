@@ -53,6 +53,7 @@ try{
    const typography={header:style('.gb-fixed-header'),term:style('.gb-term-name'),body:style('.gb-term-definition p'),reference:style('.fnref-back'),front:style('h2.front'),references:style('h2.gb-references-title')};
    const scope=document.querySelector('.pagedjs_pages');
    const extras={figureContents:scope.querySelectorAll('.toc-float').length,nestedContents:scope.querySelectorAll('.toc-level-1').length,indexLinks:scope.querySelectorAll('.gb-index-locations a').length,unresolved:scope.querySelectorAll('[data-gb-index-unresolved]').length,source:scope.querySelector('.gb-source')?.textContent,visibleCitations:[...scope.querySelectorAll('.fnref-back')].every(e=>getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'),vectorRules:scope.querySelectorAll('[data-gb-table-rules]').length};
+   extras.indexSections=[...scope.querySelectorAll('.gb-index-section')].map(e=>({lang:e.dataset.gbIndexLang,columns:getComputedStyle(e.querySelector('.gb-index-columns')).columnCount}));
    extras.tocRowHeights=[...scope.querySelectorAll('.toc li')].filter(e=>e.textContent.trim()).map(e=>e.getBoundingClientRect().height/(e.closest('.pagedjs_page').querySelector('.pagedjs_pagebox').getBoundingClientRect().width/(210*96/25.4)));
    extras.tocMargins=[...scope.querySelectorAll('.toc li')].map(e=>({top:parseFloat(getComputedStyle(e).marginTop),bottom:parseFloat(getComputedStyle(e).marginBottom)}));
    extras.tocGroups=[...scope.querySelectorAll('.toc>ol')].map(ol=>{const page=ol.closest('.pagedjs_page');const rows=[...ol.querySelectorAll('.toc-text')];return {page:pages.indexOf(page)+1,kind:rows[0]?.textContent.startsWith('图')?'figure':rows[0]?.textContent.startsWith('表')?'table':'body',rows:rows.map(e=>({text:e.textContent,box:box(e,page)}))};});
@@ -82,6 +83,7 @@ try{
   assert.deepEqual(footnotes.map(n=>n.number),footnotes.map((_,i)=>i+1),'document-wide footnote sequence');
   assert.ok(state.extras.notes.some(n=>n.lines>1&&n.aligned),'long notes wrap at the content start');
   assert.ok(state.extras.intros.length>=2&&state.extras.intros.every(p=>p.indent===28&&p.before==='0px'&&p.after==='0px'),'unified introduction paragraphs');
+  assert.ok(state.extras.indexSections.some(e=>e.lang==='zh'&&e.columns==='2')&&state.extras.indexSections.some(e=>e.lang==='en'&&e.columns==='1'),'Chinese two-column and English single-column sections');
   assert.ok(state.extras.indexClean&&state.extras.referenceGaps&&state.extras.exampleLayouts,'index, bibliography and example styles');
   assert.ok(state.extras.autoExampleLabels.includes('示例3：'),'local automatic example numbering');
   assert.equal(state.error,null);assert.equal(state.audit.problems.length,0);assert.ok(state.legend,'structured equation legend');

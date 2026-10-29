@@ -59,7 +59,11 @@ export function prepareGbBodyAudit() {
       document.body.appendChild(measure);const height=measure.getBoundingClientRect().height;measure.remove();
       if(height>areaHeight-50)throw new Error('国家标准条文脚注超过单页可用空间，请拆分或移入资料性附录后导出');
     }
-    for(const node of document.querySelectorAll('main .gb-footnote, main .gb-note, main .gb-example, main .gb-figure-note, main .gb-figure-footnote, main .gb-table-note, main .gb-table-footnote, main table tr, main li[data-gb-marker]')){
+    for(const entry of document.querySelectorAll('main .gb-index-entries > li')) {
+      if(entry.getBoundingClientRect().height>areaHeight-4)
+        throw new Error('国家标准索引单条超过单页可用高度，请缩短关键词或拆分位置');
+    }
+    for(const node of document.querySelectorAll('main .gb-footnote, main .gb-note, main .gb-example, main .gb-figure-note, main .gb-figure-footnote, main .gb-table-note, main .gb-table-footnote, main table tr, main li[data-gb-marker], main .gb-index-entries > li')){
       const id=String(expected.length+1);node.dataset.gbAudit=id;
       expected.push({id,text:text(node),role:node.className||node.tagName});
     }

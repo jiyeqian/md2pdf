@@ -340,3 +340,20 @@ main .gb-example-inline > p:first-child { text-indent: 2em; }
 .toc li, .toc li.toc-level-0:not(.toc-float) { line-height: var(--gb-toc-line); padding: var(--gb-toc-quarter) 0; }
 .toc li a::after { line-height: inherit; }
 .toc .gb-float-toc { margin-top: var(--gb-toc-line); }
+
+/* 2026 term standards: Chinese pinyin in two columns, English in one. */
+.gb-index-section { margin: 0 0 15.72pt; }
+.gb-index-section-title { font: 10.5pt/15.72pt var(--font-head); text-align: left; text-indent: 0; margin: 0 0 15.72pt; break-after: avoid; }
+.gb-index-columns[data-gb-index-columns="2"] { column-count: 2; column-gap: 3mm; column-fill: balance; }
+.gb-index-columns[data-gb-index-columns="1"] { column-count: 1; }
+.gb-index-section .gb-index-letter { line-height: 15.72pt; margin: 7.86pt 0; break-after: avoid; }
+.gb-index-section .gb-index-letter + ul { break-before: avoid; }
+main section .gb-index-section .gb-index ul.gb-index-entries > li { line-height: 15.72pt; break-inside: avoid; }
+.gb-index-section .gb-index-term { flex: 0 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.gb-index-section .gb-index-locations { flex: 0 0 auto; max-width: 45%; overflow-wrap: anywhere; }
+.gb-index-section .gb-index-dots { flex: 1 1 0; min-width: .5em; }
+.gb-index-en .gb-index-term { font-family: var(--font-head); }
+.gb-index-section .gb-index-letter { margin: 0; padding: 7.86pt 0; }
+/* Keep references on the final keyword baseline; leader widths are finalized after pagination. */
+main section .gb-index-section .gb-index ul.gb-index-entries > li { position: relative; align-items: last baseline; }
+.gb-index-section .gb-index-locations { margin-left: auto; padding-left: .35em; }

@@ -284,3 +284,30 @@ test('自动术语根据章与分类编号，稳定索引随插入更新，旧�
     await assert.rejects(()=>render(source.replace(':::gb-term id=second',':::gb-term 3.1'),{type:'gb'},context),e=>e.status===400);
   }
 });
+
+test('中英索引分区采用对应栏数，旧中文分组保持单栏',()=>{
+  const group=':::gb-index A\n词条 | 3.1\n:::';
+  const zh=parse(':::gb-index-section lang=zh\n'+group+'\n:::');
+  assert.match(zh,/data-gb-index-lang="zh"/);
+  assert.match(zh,/汉语拼音索引/);
+  assert.match(zh,/data-gb-index-columns="2"/);
+  const en=parse(':::gb-index-section lang=en\n'+group+'\n:::');
+  assert.match(en,/英文对应词索引/);
+  assert.match(en,/data-gb-index-columns="1"/);
+  assert.match(parse(':::gb-index-section lang=zh columns=1\n'+group+'\n:::'),/data-gb-index-columns="1"/);
+  assert.doesNotMatch(parse(group),/gb-index-section|gb-index-columns/);
+  for(const arg of ['lang=xx','lang=en columns=2','lang=zh columns=3','lang=zh onclick=x']) assert.throws(()=>parse(':::gb-index-section '+arg+'\n'+group+'\n:::'),e=>e.status===400);
+  assert.throws(()=>parse(':::gb-index-section lang=zh\n普通正文\n:::'),e=>e.status===400);
+});
+
+
+test('索引分区中的稳定链接保持CLI与Web相同，缺少闭合明确报错',async()=>{
+  const {render}=await import('../src/render.mjs');
+  const source='# 标准\n\n## 术语和定义\n\n:::gb-term id=term\n词\nterm\n\n定义\n:::\n\n## 索引\n\n:::gb-index-section lang=zh\n\n:::gb-index C\n词 | @term\n:::\n\n:::';
+  for(const context of [{},{webSafe:true}]) {
+    const {html}=await render(source,{type:'gb'},context);
+    assert.match(html,/data-gb-index-columns="2"/);
+    assert.match(html,/href="#gb-term-term">1\.1<\/a>/);
+  }
+  assert.throws(()=>parse(':::gb-index-section lang=zh\n:::gb-index A\n词 | 1.1\n:::'),e=>e.status===400);
+});

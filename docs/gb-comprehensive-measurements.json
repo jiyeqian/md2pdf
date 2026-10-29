@@ -1587,7 +1587,7 @@
           },
           {
             "name": "title_to_first",
-            "actual": 5.038,
+            "actual": 5.08,
             "target": 5,
             "tolerance": 0.5,
             "pass": true
@@ -1614,9 +1614,9 @@
           },
           "first": {
             "left": 20.066,
-            "top": 51.181,
+            "top": 51.22333333333333,
             "right": 184.86966666666666,
-            "bottom": 67.90266666666666
+            "bottom": 131.953
           }
         }
       },

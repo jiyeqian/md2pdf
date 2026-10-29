@@ -30,5 +30,11 @@ try {
   await new Promise(r=>setTimeout(r,150));
   assert.equal(await evaluate(`document.querySelectorAll('.cm-tooltip-autocomplete li[role="option"]').length`),count,type+' completion count');
  }
+ await evaluate(`mdEditor.setValue(':::gb-index');gbView.dispatch({selection:{anchor:11}});mdEditor.setCompletions(c=>gbAnalysis.provideCompletions({...c,templateType:'gb'},gbAnalysis.analyzeMarkdown(c.text)));MDEditorVendor.startCompletion(gbView);`);
+ await new Promise(r=>setTimeout(r,150));
+ const indexMenu=await evaluate(`document.querySelector('.cm-tooltip-autocomplete')?.textContent||''`);
+ assert.ok(indexMenu.includes('中文索引分区')&&indexMenu.includes('英文索引分区'));
+ assert.ok(await evaluate("MDEditorVendor.completionKeymap.find(k=>k.key==='Enter').run(gbView)"));
+ assert.match(await evaluate('mdEditor.getValue()'),/^:::gb-index-section lang=zh\n:::gb-index A[\s\S]*:::\n:::$/);
  console.log('PASS: real editor GB completion menu, insertion and template isolation');
 }finally{await chrome.stop();await app.close();await rm(temp,{recursive:true,force:true});}

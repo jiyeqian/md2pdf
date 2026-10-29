@@ -11,6 +11,7 @@ export const GB_BLOCKS = [
   { name: 'figure-note', description: '图注', body: '图注内容' },
   { name: 'figure-footnote', description: '图脚注', argument: 'a）', body: '图脚注内容' },
   { name: 'table-footnote', description: '表脚注', argument: 'a）', body: '表脚注内容' },
+  { name: 'index-section', description: '中文索引分区（双栏）', argument: 'lang=zh', body: ':::gb-index A\n关键词 | 3.1\n:::' },
   { name: 'index', description: '索引分组', argument: 'A', body: '关键词 | 3.1' },
   { name: 'equation', description: '公式', body: '$$a=b$$\n\n式中：\n$a$ | 参数 a；\n$b$ | 参数 b。' },
   { name: 'table', description: '复杂表格', body: 'head:\n| 项目 | 数值 |\nbody:\n| 示例 | 1 |' },

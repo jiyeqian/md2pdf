@@ -307,6 +307,8 @@ body:
 
 [^@clock]: 时间同步方法、估计误差和同步有效期应形成记录；采用外部时钟时还应记录时钟源及异常切换策略。对持续时间较长的试验，应定期检查时钟偏差，保证不同阶段的数据可比较。记录不应只保留结论，还应保留必要的过程证据与计算依据，以便复核。
 
+记录中应保留采集装置时钟偏差与异常切换过程的追溯信息，以便复核时间同步结果。
+
 ### 控制流程
 
 控制流程见图 \ref{fig:flow}，数据处理的层次关系见图 \ref{fig:data}。图中的箭头分别表示状态转换或数据传递方向，流程图的图形表达可参阅参考文献[^gb1526]。
@@ -502,8 +504,13 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 
 <!-- gb-check: 10.3.6/E.11；索引位于参考文献之后，分组、关键词与位置 -->
 
+:::gb-index-section lang=zh
+
+:::gb-index C
+采集装置时钟偏差与异常切换过程的追溯信息 | 6.1
+:::
+
 :::gb-index G
-抓取成功率 | @grasp，5.3.1
 刚度系数 | 4，5.3.2
 :::
 
@@ -519,10 +526,44 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 :::
 
 :::gb-index Y
-异常恢复时间 | @recovery，5.2
 异常恢复流程 | 图1
+异常恢复时间 | @recovery，5.2
 原始记录 | 表4，6.3
 :::
+
+:::gb-index Z
+抓取成功率 | @grasp，5.3.1
+:::
+
+:::
+
+:::gb-index-section lang=en
+
+:::gb-index C
+control flow | 图1，图2
+controller verification | 表3
+:::
+
+:::gb-index F
+fault recovery time | @recovery，5.2
+:::
+
+:::gb-index G
+grasping success rate | @grasp，5.3.1
+:::
+
+:::gb-index I
+impedance control | @impedance
+:::
+
+:::gb-index T
+test report | 附录A，A.2
+timestamp traceability | 6.1，B.1
+traceability information for acquisition clock deviations and abnormal clock source switching | 6.1
+:::
+
+:::
+
 
 
 

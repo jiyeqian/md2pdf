@@ -721,7 +721,7 @@ test('pagebreak insertion preserves selections, isolates the marker and reuses e
 test('GB 指令补全只在有效 GB 模板的块起始位置出现', () => {
   const complete = (text, templateType = 'gb', pos = text.length) => provideCompletions({ text, pos, templateType }, analyzeMarkdown(text));
   const all = complete(':::');
-  assert.equal(all.options.length, 15);
+  assert.equal(all.options.length, 17);
   assert.ok(all.options.every(option => option.label.startsWith('gb-') && option.detail));
   assert.deepEqual(complete(':::gb-figure-f').options.map(option => option.label), ['gb-figure-footnote']);
   assert.equal(complete(':::', 'general'), null);
@@ -729,7 +729,7 @@ test('GB 指令补全只在有效 GB 模板的块起始位置出现', () => {
   assert.equal(complete('```\n:::'), null);
   assert.equal(complete('---\ntitle: x\n:::'), null);
   assert.equal(complete('`:::gb-'), null);
-  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 15);
+  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 17);
 });
 
 test('GB 指令补全插入有效参数与成对结构，并复用已有关闭行', () => {
@@ -769,4 +769,14 @@ test('示例补全提供标签独立和同行两种明确选项',()=>{
   assert.equal(result.options.length,2);
   assert.match(result.options.find(o=>o.label==='gb-example').apply,/^gb-example\n/);
   assert.match(result.options.find(o=>o.label==='gb-example layout=inline').apply,/^gb-example layout=inline\n/);
+});
+
+
+test('新索引补全优先提供中英分区并保留旧分组入口',()=>{
+  const text=':::gb-index';
+  const result=provideCompletions({text,pos:text.length,templateType:'gb'},analyzeMarkdown(text));
+  assert.deepEqual(result.options.map(o=>o.label),['gb-index-section','gb-index-section lang=en','gb-index']);
+  assert.match(result.options[0].apply,/^gb-index-section lang=zh\n/);
+  assert.match(result.options[1].apply,/^gb-index-section lang=en\n/);
+  assert.ok(result.options[0].apply.endsWith(':::\n:::'));
 });

@@ -1,0 +1,47 @@
+{
+  "tests": "tests/gb-index-layout-checks.mjs",
+  "cases": {
+    "short": {
+      "entries": 14,
+      "index_physical_pages": [
+        2
+      ],
+      "column_counts": [
+        "2",
+        "1"
+      ],
+      "entry_order_and_uniqueness_verified": true,
+      "letter_and_first_entry_same_column_verified": true,
+      "leader_non_overlap_and_reentry_verified": true
+    },
+    "long": {
+      "entries": 152,
+      "index_physical_pages": [
+        2,
+        3,
+        4
+      ],
+      "column_counts": [
+        "2",
+        "2",
+        "2",
+        "1"
+      ],
+      "entry_order_and_uniqueness_verified": true,
+      "letter_and_first_entry_same_column_verified": true,
+      "leader_non_overlap_and_reentry_verified": true
+    },
+    "legacy": {
+      "entries": 14,
+      "index_physical_pages": [
+        2
+      ],
+      "column_counts": [],
+      "entry_order_and_uniqueness_verified": true,
+      "letter_and_first_entry_same_column_verified": true,
+      "leader_non_overlap_and_reentry_verified": true
+    }
+  },
+  "delivery": "Only output/pdf/gb-comprehensive-node.pdf is updated for human acceptance",
+  "oversized_entry_explicit_rejection_verified": true
+}

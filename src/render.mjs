@@ -1,5 +1,6 @@
 import { prepareGbContent, transformGbContent } from './gb-content.mjs';
 import { finalizeGbLayout, prepareGbLayout } from './gb-layout.mjs';
+import { finalizeGbIndexLayout } from './gb-index-layout.mjs';
 import { finalizeGbTableRules } from './gb-table-rules.mjs';
 import { prepareGbBodyLayout, finalizeGbBodyLayout } from './gb-body-layout.mjs';
 import { prepareGbBodyAudit, finalizeGbBodyAudit } from './gb-body-audit.mjs';
@@ -861,7 +862,7 @@ export async function render(src, options = {}, context = {}) {
     'window.__md2pdfPagedReady = false;',
     installPagedLayout.toString(),
     profile.gbDoc ? '' : stampPagedLists.toString(),
-    profile.gbDoc ? [prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbTableRules, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
+    profile.gbDoc ? [prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbTableRules, finalizeGbIndexLayout, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
     '(function () {',
     '  function depsReady() {',
     '    return window.__md2pdfMathReady !== false && window.__md2pdfMermaidReady !== false;',
@@ -872,7 +873,7 @@ export async function render(src, options = {}, context = {}) {
     (profile.gbDoc ? '      prepareGbLayout(); prepareGbBodyLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); prepareGbBodyAudit();\n' : '') + '      installPagedLayout(' + (profile.gbDoc ? '(' + (297-effMarginBottom)*96/25.4 + ' - window.__gbContentTop)' : ((eff.landscape ? 210 : 297) - effMarginTop - effMarginBottom) * 96 / 25.4) + ', ' + JSON.stringify(chapterStart) + ', ' + (!profile.gbDoc && !useToc) + ', ' + ((eff.landscape ? 297 : 210) - effMarginLeft - effMarginRight) * 96 / 25.4 + ', ' + profile.gbDoc + ');',
     profile.gbDoc ? '' : '      stampPagedLists();',
     '      window.PagedPolyfill.preview()',
-    '        .then(function () { ' + (profile.gbDoc ? 'finalizeGbLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); finalizeGbBodyLayout(); finalizeGbTableRules(); finalizeGbEquations(); finalizeGbBodyAudit(); ' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
+    '        .then(function () { ' + (profile.gbDoc ? 'finalizeGbLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); finalizeGbBodyLayout(); finalizeGbTableRules(); finalizeGbIndexLayout(); finalizeGbEquations(); finalizeGbBodyAudit(); ' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
