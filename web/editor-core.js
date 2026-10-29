@@ -474,6 +474,7 @@
     const externalCompartment = new V.Compartment();
     let externalExtensions = [];
     let completionProvider = null;
+    let completionLimit = 5;
     let view = null;
     let ready = false;
     let lastCursorLine = -1;
@@ -696,7 +697,7 @@
       V.bracketMatching(),
       V.closeBrackets(),
       V.highlightSelectionMatches(),
-      completionCompartment.of(V.autocompletion({ override: [completionSource], activateOnTyping: true, icons: false, maxRenderedOptions: 5 })),
+      completionCompartment.of(V.autocompletion({ override: [completionSource], activateOnTyping: true, icons: false, maxRenderedOptions: completionLimit })),
       markdownSupport,
       V.syntaxHighlighting(V.defaultHighlightStyle, { fallback: true }),
       V.syntaxHighlighting(highlightStyle),
@@ -794,9 +795,15 @@
       startCompletion: function () {
         return V.startCompletion(view);
       },
+      setCompletionLimit: function (limit) {
+        const next = limit === 10 ? 10 : 5;
+        if (next === completionLimit) return;
+        completionLimit = next;
+        view.dispatch({ effects: completionCompartment.reconfigure(V.autocompletion({ override: completionProvider ? [completionSource] : [], activateOnTyping: true, icons: false, maxRenderedOptions: completionLimit })) });
+      },
       setCompletions: function (provider) {
         completionProvider = typeof provider === 'function' ? provider : null;
-        view.dispatch({ effects: completionCompartment.reconfigure(V.autocompletion({ override: completionProvider ? [completionSource] : [], activateOnTyping: true, icons: false, maxRenderedOptions: 5 })) });
+        view.dispatch({ effects: completionCompartment.reconfigure(V.autocompletion({ override: completionProvider ? [completionSource] : [], activateOnTyping: true, icons: false, maxRenderedOptions: completionLimit })) });
       },
     };
 

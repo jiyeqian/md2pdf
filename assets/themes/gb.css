@@ -331,3 +331,7 @@ main .gb-example-inline > p:first-child { text-indent: 2em; }
 .toc li a .toc-dots { flex: 1 1 0; width: 0; }
 .gb-term-number, .gb-term-name { break-after: avoid; }
 .gb-term-definition > p:first-child { break-before: avoid; }
+
+/* Equal baselines inside each contents group; every row reserves quarter-line space. */
+.toc li { line-height: 1.2; padding: .3em 0; margin: 0; }
+.toc li.toc-level-0:not(.toc-float) { line-height: 1.2; padding: .3em 0; }

@@ -140,6 +140,8 @@
 .md-editor-host .cm-tooltip.cm-tooltip-autocomplete > ul {
   min-width: 0;
   max-width: min(360px, 90vw);
+  max-height: min(240px, 50vh);
+  overflow-y: auto;
   font-family: inherit;
   font-size: 12px;
 }

@@ -25,5 +25,10 @@ try {
  await new Promise(r=>setTimeout(r,150));
  const examples=await evaluate(`document.querySelector('.cm-tooltip-autocomplete')?.textContent||''`);
  assert.ok(examples.includes('标签独立')&&examples.includes('标签同行'),'both example layouts are available');
+ for(const [type,count] of [['gb',10],['general',5]]) {
+  await evaluate(`mdEditor.setValue(':::');gbView.dispatch({selection:{anchor:3}});mdEditor.setCompletions(c=>gbAnalysis.provideCompletions({...c,templateType:'gb'},gbAnalysis.analyzeMarkdown(c.text)));document.dispatchEvent(new CustomEvent('md-document-type',{detail:{type:${JSON.stringify(type)}}}));MDEditorVendor.startCompletion(gbView);`);
+  await new Promise(r=>setTimeout(r,150));
+  assert.equal(await evaluate(`document.querySelectorAll('.cm-tooltip-autocomplete li[role="option"]').length`),count,type+' completion count');
+ }
  console.log('PASS: real editor GB completion menu, insertion and template isolation');
 }finally{await chrome.stop();await app.close();await rm(temp,{recursive:true,force:true});}

@@ -547,6 +547,8 @@ function init() {
   let frontmatterValues = {};
   appFetch('/api/frontmatter-values').then(response => response.ok ? response.json() : {}).then(values => { frontmatterValues = values; }).catch(() => {});
 
+  editor.setCompletionLimit?.((formTypeValue() || window.mdEffectiveTemplateType) === 'gb' ? 10 : 5);
+
   // 补全使用「当前文本」实时分析，避免节流导致候选过期。
   if (typeof editor.setCompletions === 'function') {
     editor.setCompletions(function (context) {
@@ -564,7 +566,7 @@ function init() {
   });
   document.addEventListener('md-document-type', function (event) {
     const type = event && event.detail ? event.detail.type : '';
-    if (typeof type === 'string') { currentType = type; render(); }
+    if (typeof type === 'string') { currentType = type; editor.setCompletionLimit?.(type === 'gb' ? 10 : 5); render(); }
   });
   document.addEventListener('md-document-diagnostics', function (event) {
     if (event.detail?.source !== editor.getValue()) return;

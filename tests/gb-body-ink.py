@@ -49,6 +49,7 @@ def measure(image, box, role):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('directory', nargs='?', default='/private/tmp/md2pdf-gb-body')
+    parser.add_argument('--runtime', choices=['cli','node','static'], help='Measure a single supplied runtime instead of all three')
     args = parser.parse_args()
     directory = Path(args.directory)
     state = json.loads((directory / 'states.json').read_text())
@@ -57,9 +58,9 @@ def main():
         'Page area bounds come from the browser layout; header, footer and title coordinates come from PDF raster ink.',
     ]}
     failures = []
-    expected_runtimes = {'cli', 'node', 'static'}
+    expected_runtimes = {args.runtime} if args.runtime else {'cli', 'node', 'static'}
     if len(state) != len(expected_runtimes) or {item['runtime'] for item in state} != expected_runtimes:
-        raise ValueError('states.json must contain cli, node and static exactly once')
+        raise ValueError('states.json must contain each requested runtime exactly once')
     for runtime in state:
         name = runtime['runtime']
         if runtime.get('error') or runtime.get('audit', {}).get('problems'):

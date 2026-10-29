@@ -63,9 +63,9 @@ body:
 
 ## 本轮补充校准
 
-GB/T 1.1 无规定的项目按所供正式样本执行，工程取值不冒充规范数值。目次深度为2，普通条目行高收紧为1.2（12.6pt）；章等条目上下各留四分之一行，整体基线间距约18.9pt，图表清单前留一行。实际数值为本轮紧凑排版的工程选择，不是规范指定的固定行高。正文列表、注与示例去掉额外块间距，章标题的规范间隔保留。两幅图展示清单行距，注与示例展示本地连续编号。
+GB/T 1.1 无规定的项目按所供正式样本执行，工程取值不冒充规范数值。目次深度为2，正文目录、图目录、表目录各块内所有条目采用相同的1.2正文行高及上下各四分之一行留白，基线间距约18.9pt；组间留一行。层级仅通过缩进体现。实际数值为本轮紧凑排版的工程选择，不是规范指定的固定行高。正文列表、注与示例去掉额外块间距，章标题的规范间隔保留。两幅图展示清单行距，注与示例展示本地连续编号。
 
-索引使用真实省略号，位置分别链接到章条、术语、图表及附录；未解析的位置保持文字而非编造链接。正文文献上标继续显示，参考文献增加长题名以展示自然回行。第3.4条采用GB/T 1.1所引原定义，演示单层中括号来源，不将来源错误归给自拟机器人术语。
+索引使用真实省略号，位置分别链接到章条、术语、图表及附录；未解析的位置保持文字而非编造链接。正文文献上标继续显示，参考文献增加长题名以展示自然回行。第3.2.1条采用GB/T 1.1所引原定义，演示单层中括号来源，不将来源错误归给自拟机器人术语。
 
 `:::` 补全与解析器共用 `src/gb-blocks.mjs`，仅有效国家标准模板启用；参数、内容和成对关闭行自动补齐，已有非空块保留正文，代码围栏内不触发。服务端与静态构建均包含该模块。
 
@@ -77,7 +77,17 @@ GB/T 1.1 无规定的项目按所供正式样本执行，工程取值不冒充�
 
 新增文献GB/T 1526—1989的长题名已用所供GB/T 1.1参考文献和[官方详情](https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=D19A1DF7C8A8058E26EC8DFE9EBD001B)核对；术语来源GB/T 20000.1—2014见[官方详情](https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=BA6DE806E0BDF1BE7A35EE0B236F8E15)。核对日期2026-10-29。
 
-## 本轮实测结果
+## 自动术语与验收交付
+
+`:::gb-term` 不写数字时，按所在章或分类标题自动编号；补全不再预填3.1。可用 `:::gb-term id=grasp` 设置稳定标识，索引写 `抓取成功率 | @grasp`，显示编号随插入、移动更新。旧写法 `:::gb-term 3.1` 继续有效；显式编号与所在标题层级不符、重复编号、与分类标题冲突或重复稳定标识返回明确400错误。自动编号要求位于已编号的章或分类标题下；无需分类时顺序为3.1、3.2，有3.1分类时顺序为3.1.1、3.1.2。
+
+GB补全最多渲染10项，其他模板5项；菜单限制为可用屏幕高度的一部分，其余滚动。两种示例补全保留。
+
+本轮按约定只更新Node验收PDF：19页、166项尺寸检查通过，目录各层级行框实测等高，术语／稳定索引／冲突诊断、菜单切换及一致性检查通过。CLI／静态HTML仍参与一致性核对，没有重新生成它们的PDF。下列三入口PDF及像素对照为前一轮历史结果，不应作为本轮CLI／静态PDF验收。
+
+静态网页使用浏览器原生打印，不能设置受控Chrome的 `generateDocumentOutline`，因此不保证生成PDF书签。预览中的网页大纲与PDF书签分开验收。稳定PDF书签由Node／CLI受控导出提供；此前测试用Chrome打印静态HTML不代表静态网页原生打印具备同等书签能力。
+
+## 前轮实测结果
 
 - 唯一范例19 页，三个入口共57 页，498 项尺寸检查全部在±0.5 mm工程容差内；最大偏差0.124 mm。该容差不是GB/T 1.1规定的通用容差。
 - 内容、脚注、公式和合并表模块检查通过；七种封面／目录组合通过实际PDF检查；六类过大内容明确拒绝，长注、多脚注及末页内容保持完整。
@@ -87,7 +97,7 @@ GB/T 1.1 无规定的项目按所供正式样本执行，工程取值不冒充�
 
 ## 验收入口与步骤
 
-工作树 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`，分支 `codex/template`。无需服务，直接打开 `output/pdf/gb-comprehensive-node.pdf`，其 CLI、静态对应文件为同目录 `gb-comprehensive-cli.pdf`、`gb-comprehensive-static.pdf`。
+工作树 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`，分支 `codex/template`。无需服务，直接打开 `output/pdf/gb-comprehensive-node.pdf`，本轮只更新该Node文件，同目录CLI／静态PDF为历史文件。
 
 1. 前言、引言及术语：核对疏排、页眉、英文候选和回行。
 2. 安全状态：核对 a)、b)、c) 与二层列项的内容起点。
@@ -96,6 +106,6 @@ GB/T 1.1 无规定的项目按所供正式样本执行，工程取值不冒充�
 5. 连续记录：核对 R001～R040，每条一次，续表标题、表头、单位及列宽一致。
 6. 附录、参考文献和索引：核对（B.1）、标题字距、无装饰虚线和终结线。
 
-自动检查：`npm run test:gb-body`、`npm run test:gb-ef`、`npm run test:gb-cover`、`npm run check:consistency`。墨迹测量运行 `tests/gb-body-ink.py /private/tmp/md2pdf-gb-comprehensive`；本轮新增检查：`node tests/gb-completion-browser-checks.mjs`（真实编辑器补全）与 `PYTHON=/Users/jiyeqian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 node tests/gb-table-rules-checks.mjs`（真实PDF线宽）。完整结果归档于 `docs/gb-comprehensive-measurements.json`。其他模板以前一提交导出源码作基线，逐页比较实际 PDF 的 90 dpi 光栅，记录见 `docs/gb-other-templates-regression.json`。
+自动检查：`npm run test:gb-body`、`npm run test:gb-ef`、`npm run test:gb-cover`、`npm run check:consistency`。本轮Node PDF生成运行 `node tests/gb-body-acceptance.mjs --node-only`，墨迹测量运行 `tests/gb-body-ink.py /private/tmp/md2pdf-gb-comprehensive --runtime node`；本轮新增检查：`node tests/gb-completion-browser-checks.mjs`（真实编辑器补全）与 `PYTHON=/Users/jiyeqian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 node tests/gb-table-rules-checks.mjs`（真实PDF线宽）。完整结果归档于 `docs/gb-comprehensive-measurements.json`。其他模板以前一提交导出源码作基线，逐页比较实际 PDF 的 90 dpi 光栅，记录见 `docs/gb-other-templates-regression.json`。
 
 WebApp 需从本工作树重启；确认端口空闲后执行 `PORT=8766 npm start`，访问 `http://127.0.0.1:8766/`，从国家标准模板创建并导出。静态版需重新构建、部署和更新缓存。本次不替代手机、Pages 线上部署或实体打印验收。

@@ -90,7 +90,7 @@ GB/T 12643—2013、GB/T 20000.1—2014 界定的以及下列术语和定义适�
 
 ### 控制与性能术语
 
-:::gb-term 3.1.1
+:::gb-term id=grasp
 抓取成功率
 grasping success rate
 
@@ -105,7 +105,7 @@ grasping success rate
 :::
 :::
 
-:::gb-term 3.1.2
+:::gb-term id=impedance
 阻抗控制
 impedance control
 
@@ -113,7 +113,7 @@ impedance control
 
 :::
 
-:::gb-term 3.1.3
+:::gb-term id=recovery
 异常恢复时间
 fault recovery time
 
@@ -122,7 +122,7 @@ fault recovery time
 
 ### 基础概念
 
-:::gb-term 3.2.1
+:::gb-term id=standard
 标准
 standard
 
@@ -503,7 +503,7 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 <!-- gb-check: 10.3.6/E.11；索引位于参考文献之后，分组、关键词与位置 -->
 
 :::gb-index G
-抓取成功率 | 3.1.1，5.3.1
+抓取成功率 | @grasp，5.3.1
 刚度系数 | 4，5.3.2
 :::
 
@@ -519,7 +519,7 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 :::
 
 :::gb-index Y
-异常恢复时间 | 3.1.3，5.2
+异常恢复时间 | @recovery，5.2
 异常恢复流程 | 图1
 原始记录 | 表4，6.3
 :::

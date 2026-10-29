@@ -40,7 +40,7 @@ export function prepareGbContent(source, depth = 0) {
       if (open[1] === 'table') { const error = new Error('gb-table：块未闭合'); error.status = 400; throw error; }
       out.push(lines[i]); continue;
     }
-    if (open[1] === 'term' && !/^\d+(?:\.\d+)+$/.test((open[2] || '').trim())) {
+    if (open[1] === 'term' && !/^(?:(\d+(?:\.\d+)+)(?:\s+|$))?(?:id=([A-Za-z][\w:-]*))?$/.test((open[2] || '').trim())) {
       out.push(...lines.slice(i, end + 1)); i = end; continue;
     }
     const key = marker + blocks.length + 'END';
@@ -110,7 +110,9 @@ function renderBlock({ role, label, text }, marked, depth) {
     const gap = rows.findIndex(line => !line.trim());
     const names = (gap < 0 ? rows.slice(0, 1) : rows.slice(0, gap)).map(line => escape(line.trim())).join('　');
     const definition = gap < 0 ? rows.slice(1).join('\n') : rows.slice(gap + 1).join('\n');
-    return '<div class="gb-term" id="gb-term-' + escape(label) + '"><div class="gb-term-number">' + escape(label) + '</div><div class="gb-term-name">' + names + '</div><div class="gb-term-definition">' + markdown(definition, marked, depth) + '</div></div>';
+    const args = /^(?:(\d+(?:\.\d+)+)(?:\s+|$))?(?:id=([A-Za-z][\w:-]*))?$/.exec(label);
+    const number = args?.[1] || '', key = args?.[2] || '';
+    return '<div class="gb-term"' + (number || key ? ' id="gb-term-' + escape(key || number) + '"' : '') + (key ? ' data-gb-term-key="' + escape(key) + '"' : '') + (number ? '' : ' data-gb-term-auto="true"') + '><div class="gb-term-number">' + number + '</div><div class="gb-term-name">' + names + '</div><div class="gb-term-definition">' + markdown(definition, marked, depth) + '</div></div>';
   }
   if (['figure-footnote', 'table-footnote'].includes(role) && !label) {
     const error = new Error('图、表脚注必须显式填写脚注标记（例如 a））');
@@ -157,6 +159,7 @@ export function transformGbContent(html, title) {
     (_, attrs, text) => '<h2' + attrs.replace('class="', 'class="gb-references-title ') + '>' + text + '</h2>');
   html = html.replace(/<h2([^>]*class="[^"]*\bback\b[^"]*"[^>]*)>(索引)<\/h2>/g,
     (_, attrs, text) => '<h2' + attrs.replace('class="', 'class="gb-index-title ') + '>' + text + '</h2>');
+  html = numberGbTerms(html);
   html = markIntroParagraphs(html);
   html = numberExamples(html);
   html = linkIndexLocations(html);
@@ -209,6 +212,44 @@ function classes(node) {
 function noteRole(node, allowed) {
   return node.tag === 'div' && classes(node).some(name => allowed.has(name));
 }
+// Headings are already numbered; terms consume the next slot below their containing heading.
+function numberGbTerms(html) {
+  const all = elements(html), used = new Set(), ids = new Set(), counters = new Map(), edits = [];
+  let prefix = '';
+  const fail = message => { const error = new Error('gb-term：' + message); error.status = 400; throw error; };
+  for (const node of all.filter(n => /^h[2-6]$/.test(n.tag))) {
+    const number = /^(\d+(?:\.\d+)*)(?=\s|　)/.exec(html.slice(node.openEnd,node.closeStart).replace(/<[^>]*>/g,''))?.[1];
+    if (number) used.add(number);
+  }
+  for (const node of all) {
+    if (/^h[2-6]$/.test(node.tag)) {
+      prefix = /^(\d+(?:\.\d+)*)(?=\s|　)/.exec(html.slice(node.openEnd,node.closeStart).replace(/<[^>]*>/g,''))?.[1] || '';
+    }
+    if (!classes(node).includes('gb-term')) continue;
+    const field = node.children.find(n=>classes(n).includes('gb-term-number'));
+    if (!field?.closeStart) continue;
+    let number = html.slice(field.openEnd,field.closeStart);
+    if (!number) {
+      if (!prefix) fail('自动编号需要位于已编号的章或分类标题之后');
+      const next = (counters.get(prefix)||0)+1;
+      number = prefix + '.' + next;
+    } else if (prefix && number.slice(0,number.lastIndexOf('.')) !== prefix) fail('显式编号与所在标题层级不一致：' + number);
+    if (used.has(number)) fail('编号重复或与分类标题冲突：' + number);
+    used.add(number);
+    const parent = number.slice(0,number.lastIndexOf('.'));
+    counters.set(parent,Math.max(counters.get(parent)||0,Number(number.split('.').at(-1))));
+    const key = /data-gb-term-key="([^"]+)"/.exec(node.token)?.[1];
+    const id = 'gb-term-' + (key || number);
+    if (ids.has(id)) fail('术语标识重复：' + id);
+    ids.add(id);
+    let token=node.token.replace(/ id="[^"]*"/,'');
+    token=token.replace(/>$/, ' id="' + id + '">');
+    edits.push({start:node.start,end:node.openEnd,text:token},{start:field.openEnd,end:field.closeStart,text:number});
+  }
+  for (const edit of edits.sort((a,b)=>b.start-a.start)) html=html.slice(0,edit.start)+edit.text+html.slice(edit.end);
+  return html;
+}
+
 function markIntroParagraphs(html) {
   const edits = [];
   for (const node of elements(html)) {
@@ -251,7 +292,7 @@ function numberExamples(html) {
 
 // Resolve only explicit, unambiguous locations backed by an existing element ID.
 function linkIndexLocations(html) {
-  const all = elements(html), targets = new Map(), edits = [];
+  const all = elements(html), targets = new Map(), labels = new Map(), edits = [];
   const key = value => value.replace(/\s+/g, '').toUpperCase();
   const add = (name, id) => {
     const k = key(name), existing = targets.get(k);
@@ -261,7 +302,11 @@ function linkIndexLocations(html) {
     if (classes(node).includes('gb-term')) {
       const id = /\bid="([A-Za-z0-9_.:-]+)"/.exec(node.token)?.[1];
       const number = node.children.find(n => classes(n).includes('gb-term-number'));
-      if (id && number?.closeStart) add(html.slice(number.openEnd, number.closeStart), id);
+      if (id && number?.closeStart) {
+        const value=html.slice(number.openEnd,number.closeStart); add(value,id);
+        const stable=/data-gb-term-key="([^"]+)"/.exec(node.token)?.[1];
+        if(stable) { add('@'+stable,id); labels.set(key('@'+stable),value); }
+      }
     }
     if (!node.end || !/^(?:h[2-6]|figure|table)$/.test(node.tag)) continue;
     if (classes(node).includes('gb-index-title')) continue;
@@ -284,10 +329,10 @@ function linkIndexLocations(html) {
     let unresolved = false;
     const linked = value.split(/([,，、;；/])/).map(part => {
       const location = part.trim();
-      if (!/^(?:附录\s*[A-Z]|[图表]\s*(?:[A-Z]\.)?\d+|(?:[A-Z]\.)?\d+(?:\.\d+)*)$/i.test(location)) return part;
+      if (!/^(?:@[A-Za-z][\w:-]*|附录\s*[A-Z]|[图表]\s*(?:[A-Z]\.)?\d+|(?:[A-Z]\.)?\d+(?:\.\d+)*)$/i.test(location)) return part;
       const id = targets.get(key(location));
       if (!id) { unresolved = true; return part; }
-      return part.replace(location, '<a href="#' + id + '">' + location + '</a>');
+      return part.replace(location, '<a href="#' + id + '">' + (labels.get(key(location)) || location) + '</a>');
     }).join('');
     if (linked !== value) edits.push({start:node.openEnd,end:node.closeStart,text:linked});
     if (unresolved) edits.push({start:node.openEnd-1,end:node.openEnd-1,text:' data-gb-index-unresolved="true"'});

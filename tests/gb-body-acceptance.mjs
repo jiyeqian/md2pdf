@@ -11,6 +11,7 @@ const temp=await mkdtemp('/private/tmp/gb-body-acceptance-');
 const chrome=new Chrome(findChrome(),temp);
 const app=createApp(),nativeFetch=globalThis.fetch;
 const md=await readFile(new URL('../web/examples/gb.md',import.meta.url),'utf8');
+const runtimes=process.argv.includes('--node-only')?['node']:['cli','node','static'];
 const opts={type:'gb'},body=JSON.stringify({md,opts});
 try{
  const build=await buildStatic();
@@ -19,7 +20,7 @@ try{
  await new Promise((resolve,reject)=>{app.server.once('error',reject);app.server.listen(0,'127.0.0.1',resolve);});
  const base='http://127.0.0.1:'+app.server.address().port;
  await chrome.start();const reports=[];
- for(const runtime of ['cli','node','static']){
+ for(const runtime of runtimes){
   const core=await render(md,{type:'gb',pagedHtml:true},{webSafe:true});let html;
   if(runtime==='cli'){
    await writeFile(out+'/input.md',md);
@@ -52,9 +53,10 @@ try{
    const typography={header:style('.gb-fixed-header'),term:style('.gb-term-name'),body:style('.gb-term-definition p'),reference:style('.fnref-back'),front:style('h2.front'),references:style('h2.gb-references-title')};
    const scope=document.querySelector('.pagedjs_pages');
    const extras={figureContents:scope.querySelectorAll('.toc-float').length,nestedContents:scope.querySelectorAll('.toc-level-1').length,indexLinks:scope.querySelectorAll('.gb-index-locations a').length,unresolved:scope.querySelectorAll('[data-gb-index-unresolved]').length,source:scope.querySelector('.gb-source')?.textContent,visibleCitations:[...scope.querySelectorAll('.fnref-back')].every(e=>getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'),vectorRules:scope.querySelectorAll('[data-gb-table-rules]').length};
+   extras.tocRowHeights=[...scope.querySelectorAll('.toc li')].filter(e=>e.textContent.trim()).map(e=>e.getBoundingClientRect().height);
    extras.footnotes=[...scope.querySelectorAll('.pagedjs_footnote_area .gb-footnote')].map(e=>({number:parseInt(e.querySelector('.gb-footnote-label').textContent,10),page:pages.indexOf(e.closest('.pagedjs_page'))}));
    extras.depth4=[...scope.querySelectorAll('h5')].some(e=>e.textContent.includes('5.6.1.1'));
-   extras.depth3Term=!!scope.querySelector('[id="gb-term-3.1.1"]');
+   extras.depth3Term=!!scope.querySelector('[id="gb-term-grasp"]');
    extras.notes=[...scope.querySelectorAll('.gb-note-text')].map(e=>{const r=document.createRange();r.selectNodeContents(e);const boxes=[...r.getClientRects()].filter(r=>r.width>0);return {lines:boxes.length,aligned:boxes.every(b=>Math.abs(b.left-boxes[0].left)<1)};});
    extras.intros=[...scope.querySelectorAll('.gb-intro')].map(e=>({indent:parseFloat(getComputedStyle(e).textIndent),before:getComputedStyle(e).marginTop,after:getComputedStyle(e).marginBottom}));
    extras.indexClean=[...scope.querySelectorAll('.gb-index-locations a')].every(e=>getComputedStyle(e).textDecorationLine==='none'&&parseFloat(getComputedStyle(e).borderBottomWidth)===0);
@@ -69,6 +71,7 @@ try{
   assert.ok(state.extras.indexLinks>=10&&state.extras.unresolved===0,'all index locations resolve');
   assert.ok(state.extras.source?.includes('[来源：GB/T 20000.1—2014，5.3]'),'bracketed terminology source');
   assert.ok(state.extras.visibleCitations&&state.extras.vectorRules>0,'visible citations and vector table rules');
+  assert.ok(Math.max(...state.extras.tocRowHeights)-Math.min(...state.extras.tocRowHeights)<.1,'equal contents row spacing across all levels and groups');
   assert.ok(state.extras.depth4&&state.extras.depth3Term,'four-level clauses and three-level terms');
   const footnotes=state.extras.footnotes;
   assert.ok(footnotes.length>=3&&new Set(footnotes.map(n=>n.page)).size>=3,'footnotes span front/body/appendix pages');
@@ -124,9 +127,9 @@ try{
   }
   await copyFile(out+'/'+runtime+'.pdf','output/pdf/gb-comprehensive-'+runtime+'.pdf');
  }
- const pdfTexts=['cli','node','static'].map(runtime=>execFileSync('pdftotext',['-layout',out+'/'+runtime+'.pdf','-'],{encoding:'utf8'}));
- assert.equal(pdfTexts[0],pdfTexts[1],'CLI and Node PDF text and pagination');
- assert.equal(pdfTexts[1],pdfTexts[2],'Node and static PDF text and pagination');
+ const pdfTexts=runtimes.map(runtime=>execFileSync('pdftotext',['-layout',out+'/'+runtime+'.pdf','-'],{encoding:'utf8'}));
+ if(runtimes.length===3) assert.equal(pdfTexts[0],pdfTexts[1],'CLI and Node PDF text and pagination');
+ if(runtimes.length===3) assert.equal(pdfTexts[1],pdfTexts[2],'Node and static PDF text and pagination');
  await writeFile(out+'/states.json',JSON.stringify(reports,null,2));
- console.log('PASS: CLI/Node/static body PDF, semantic guards and equation leaders; '+out);
+ console.log('PASS: '+runtimes.join('/')+' body PDF, semantic guards and equation leaders; '+out);
 }finally{globalThis.fetch=nativeFetch;await chrome.stop();await app.close();await rm(temp,{recursive:true,force:true});}

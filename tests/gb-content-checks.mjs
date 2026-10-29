@@ -264,3 +264,23 @@ test('示例布局在CLI与Web安全渲染一致，并返回相同的参数错�
     await assert.rejects(()=>render(source.replace('一段正文','一段\n\n另一段'),{type:'gb'},context),e=>e.status===400);
   }
 });
+
+test('自动术语根据章与分类编号，稳定索引随插入更新，旧编号兼容',async()=>{
+  const {render}=await import('../src/render.mjs');
+  const term=(key)=>`:::gb-term${key?' id='+key:''}\n术语\nterm\n\n定义\n:::\n\n`;
+  const source='# 标准\n\n## 范围\n\n正文\n\n## 术语和定义\n\n'+term('first')+term('second')+'## 索引\n\n:::gb-index\n第二项 | @second\n:::';
+  for(const context of [{},{webSafe:true}]) {
+    const html=(await render(source,{type:'gb'},context)).html;
+    assert.match(html, /id="gb-term-first"><div class="gb-term-number">2\.1/);
+    assert.match(html, /href="#gb-term-second">2\.2<\/a>/);
+    const inserted=(await render(source.replace(term('first'),term('new')+term('first')),{type:'gb'},context)).html;
+    assert.match(inserted,/href="#gb-term-second">2\.3<\/a>/);
+    const grouped=(await render(source.replace(term('first'),'### 分类\n\n'+term('first')),{type:'gb'},context)).html;
+    assert.match(grouped,/id="gb-term-first"><div class="gb-term-number">2\.1\.1/);
+    const legacy=source.replace(':::gb-term id=first',':::gb-term 2.4 id=first');
+    assert.match((await render(legacy,{type:'gb'},context)).html,/href="#gb-term-second">2\.5<\/a>/);
+    await assert.rejects(()=>render(source.replace('id=second','id=first'),{type:'gb'},context),e=>e.status===400);
+    await assert.rejects(()=>render(source.replace(':::gb-term id=second',':::gb-term 2.1'),{type:'gb'},context),e=>e.status===400);
+    await assert.rejects(()=>render(source.replace(':::gb-term id=second',':::gb-term 3.1'),{type:'gb'},context),e=>e.status===400);
+  }
+});
