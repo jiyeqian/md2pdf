@@ -4,6 +4,7 @@ import { analyticsConfig } from './analytics-config.mjs';
 import { createOperationalMetrics } from './operational-metrics.mjs';
 import { appCacheScript } from './app-cache.mjs';
 import { isIP } from 'node:net';
+import { gbFontDiagnostic } from './gb-fonts.mjs';
 import path from 'node:path';
 import os from 'node:os';
 import { existsSync } from 'node:fs';
@@ -122,7 +123,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   staticRoutes.set('/src/profiles.mjs', ['src/profiles.mjs', 'text/javascript']);
   staticRoutes.set('/src/gb-blocks.mjs', ['src/gb-blocks.mjs', 'text/javascript']);
   staticRoutes.set('/version.mjs', ['web/version.mjs', 'text/javascript']);
-  for (const file of ['analytics.mjs', 'analytics-schema.mjs', 'analytics-bootstrap.mjs', 'analytics.css', 'privacy.html']) {
+  for (const file of ['analytics.mjs', 'analytics-schema.mjs', 'analytics-bootstrap.mjs', 'analytics.css', 'privacy.html', 'gb-fonts.html']) {
     staticRoutes.set('/' + file, ['web/' + file, file.endsWith('.css') ? 'text/css' : file.endsWith('.html') ? 'text/html' : 'text/javascript']);
   }
   staticRoutes.set('/runtime-request.mjs', ['web/runtime-request.mjs', 'text/javascript']);
@@ -246,10 +247,13 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="document.pdf"; filename*=UTF-8''${encodedName}` }); res.end(pdf);
     } catch (e) {
       if (!res.headersSent && !res.destroyed) {
-        const payload = { error: e.status ? e.message : req.url === '/api/doi' ? 'DOI 查询失败，请稍后重试' : '渲染失败，请检查文档或 Chrome 配置后重试' };
+        const fontIssue = gbFontDiagnostic(e);
+        const payload = fontIssue
+          ? { ...fontIssue, error: '未能加载字体：' + fontIssue.fonts.join('、') + '。' }
+          : { error: e.status ? e.message : req.url === '/api/doi' ? 'DOI 查询失败，请稍后重试' : '渲染失败，请检查文档或 Chrome 配置后重试' };
         // 配置错误（ConfigError / 文档配置校验）保留逐条行号定位信息，供 Web 端展示与跳转。
         if (Array.isArray(e.configErrors) && e.configErrors.length) payload.configErrors = e.configErrors;
-        json(e.status || 500, payload);
+        json(fontIssue ? 503 : e.status || 500, payload);
       }
     }
   });

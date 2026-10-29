@@ -42,3 +42,35 @@
     return pending;
   };
 })();
+
+// Use the existing application dialog style for actionable font failures.
+window.mdShowFontError = fonts => {
+  if (document.querySelector('.font-error-dialog')) return;
+  const previous = document.activeElement;
+  const dialog = document.createElement('dialog');
+  dialog.className = 'template-confirm font-error-dialog';
+  dialog.setAttribute('aria-label', '字体未能加载');
+  const message = document.createElement('p');
+  message.textContent = '未能加载字体：' + fonts.join('、') + '。';
+  const help = document.createElement('p');
+  help.append('请查看');
+  const link = document.createElement('a');
+  link.href = './gb-fonts.html';
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = '字体配置说明';
+  help.append(link, '。');
+  const actions = document.createElement('div');
+  actions.className = 'template-confirm-actions';
+  const close = document.createElement('button');
+  close.className = 'primary';
+  close.textContent = '知道了';
+  actions.append(close);
+  dialog.append(message, help, actions);
+  document.body.append(dialog);
+  const finish = () => { dialog.close(); dialog.remove(); if (previous?.isConnected) previous.focus(); };
+  close.addEventListener('click', finish);
+  dialog.addEventListener('cancel', event => { event.preventDefault(); finish(); });
+  dialog.showModal();
+  close.focus();
+};

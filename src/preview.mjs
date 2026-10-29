@@ -374,6 +374,7 @@ function runtimeScript(type) {
     '    if (!suspended) check();',
     '  });',
     '  function check() {',
+    '    if (window.__md2pdfFontError) { document.body.style.visibility = "hidden"; parent.postMessage({type:\'md2pdf-error\',error:"未能加载字体："+window.__md2pdfFontError.fonts.join("、")}, "*"); return; }',
     '    var failed = window.__md2pdfMermaidError || window.__md2pdfPagedError;',
     '    if (failed) { parent.postMessage({type:\'md2pdf-error\',error:\'公式、图表或分页失败\'}, \'*\'); return; }',
     '    if (suspended || readySent) return;',

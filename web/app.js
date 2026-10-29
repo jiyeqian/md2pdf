@@ -639,6 +639,8 @@ async function request(url, body, signal) {
     const detail = await response.json().catch(() => ({}));
     const failure = new Error(detail.error || `请求失败（${response.status}）`);
     failure.status = response.status;
+    failure.code = detail.code;
+    failure.fonts = detail.fonts;
     // 配置错误：保留逐条行号信息，供顶部提示条展示与跳转。
     if (Array.isArray(detail.configErrors)) failure.configErrors = detail.configErrors;
     throw failure;
@@ -1091,6 +1093,7 @@ download.addEventListener('click', async () => {
       setStatus('配置无效 · 无法生成 PDF，请先修正文档配置。', true);
     } else {
       setStatus(error.message, true);
+      if (error.code === 'GB_FONT_MISSING') window.mdShowFontError(error.fonts);
     }
   } finally {
     downloading = false;

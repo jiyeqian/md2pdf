@@ -1,4 +1,5 @@
 import { prepareGbContent, transformGbContent } from './gb-content.mjs';
+import { GB_FONT_CHECKS, requireGbFonts } from './gb-fonts.mjs';
 import { finalizeGbLayout, prepareGbLayout } from './gb-layout.mjs';
 import { finalizeGbIndexLayout } from './gb-index-layout.mjs';
 import { finalizeGbTableRules } from './gb-table-rules.mjs';
@@ -862,7 +863,7 @@ export async function render(src, options = {}, context = {}) {
     'window.__md2pdfPagedReady = false;',
     installPagedLayout.toString(),
     profile.gbDoc ? '' : stampPagedLists.toString(),
-    profile.gbDoc ? [prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbTableRules, finalizeGbIndexLayout, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
+    profile.gbDoc ? [requireGbFonts, prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbTableRules, finalizeGbIndexLayout, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
     '(function () {',
     '  function depsReady() {',
     '    return window.__md2pdfMathReady !== false && window.__md2pdfMermaidReady !== false;',
@@ -877,7 +878,7 @@ export async function render(src, options = {}, context = {}) {
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
-    profile.gbDoc ? '  function start() { Promise.all([document.fonts.load(\'10.5pt \"GB Song\"\'), document.fonts.load(\'10.5pt \"GB Hei\"\'), document.fonts.load(\'17pt \"GB Cover\"\'), document.fonts.load(\'14pt \"GB Cover Latin\"\', \'ABCabc-\'), document.fonts.load(\'10.5pt \"GB Hei Latin\"\', \'ABCabc\'), document.fonts.load(\'10.5pt \"GB Symbols\"\', \'−•\')]).then(function (faces) { if (faces.some(function (list) { return !list.length; })) throw new Error(\'国家标准所需本机字体未加载，请安装方正书宋_GBK、方正黑体_GBK、方正小标宋_GBK及 Times New Roman 普通／粗体\'); return document.fonts.ready; }).then(run).catch(function (error) { window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
+    profile.gbDoc ? '  function start() { requireGbFonts(' + JSON.stringify(GB_FONT_CHECKS) + ').then(run).catch(function (error) { window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
     '  if (document.readyState === "complete") start(); else window.addEventListener("load", start);',
     '})();',
     '</script>',

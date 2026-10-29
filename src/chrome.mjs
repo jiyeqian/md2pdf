@@ -4,6 +4,7 @@ import path from 'node:path';
 import http from 'node:http';
 import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { gbFontDiagnostic } from './gb-fonts.mjs';
 import { pathToFileURL } from 'node:url';
 let _WS;
 async function getWSClass() {
@@ -178,7 +179,14 @@ export class Chrome {
     }
     if (opts.webSafe || opts.requireGbFonts) {
       const failure = await this.send('Runtime.evaluate', { expression: 'window.__md2pdfMermaidError || window.__md2pdfPagedError || null', returnByValue: true });
-      if (failure.result?.value) throw new Error('Document rendering failed' + (opts.requireGbFonts ? ': ' + failure.result.value : ''));
+      if (failure.result?.value) {
+        if (opts.requireGbFonts) {
+          const result = await this.send('Runtime.evaluate', { expression: 'window.__md2pdfFontError || null', returnByValue: true });
+          const issue = gbFontDiagnostic(result.result?.value);
+          if (issue) throw Object.assign(new Error('国家标准所需字体未能加载：' + issue.fonts.join('、')), issue);
+        }
+        throw new Error('Document rendering failed' + (opts.requireGbFonts ? ': ' + failure.result.value : ''));
+      }
     }
     await this.send('Runtime.evaluate', { expression: 'document.fonts.ready.then(() => true)', awaitPromise: true, returnByValue: true });
     const base = {
