@@ -27,6 +27,9 @@ test('font popup uses application styling and published help link', async () => 
   assert.match(nodes[0].className,/template-confirm/);
   assert.equal(nodes[0].children[0].textContent,'未能加载字体：方正小标宋_GBK。当前为替代字体，输出 PDF 的分页和版式可能不同。');
   assert.equal(nodes[0].children[1].children[1].href,'./gb-fonts.html');
+  assert.equal(nodes[0].children[2].children[0].className,'template-confirm-cancel');
+  assert.equal(nodes[0].children[2].children[1].className,'primary');
+  assert.equal(nodes[0].children[2].children[1].type,'button');
   assert.equal(nodes[0].children[2].children[1].textContent,'下载');
   assert.equal(nodes[0].children[2].children[1].focused,true);
 });

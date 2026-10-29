@@ -63,8 +63,11 @@ window.mdShowFontError = fonts => {
   const actions = document.createElement('div');
   actions.className = 'template-confirm-actions';
   const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'template-confirm-cancel';
   cancel.textContent = '取消';
   const download = document.createElement('button');
+  download.type = 'button';
   download.className = 'primary';
   download.textContent = '下载';
   actions.append(cancel, download);
