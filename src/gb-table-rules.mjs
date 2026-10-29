@@ -33,7 +33,8 @@ export function finalizeGbTableRules() {
           ['Top', 'h', r.top, r.left, r.right], ['Bottom', 'h', r.bottom, r.left, r.right],
           ['Left', 'v', r.left, r.top, r.bottom], ['Right', 'v', r.right, r.top, r.bottom],
         ]) {
-          if (style[`border${side}Style`] !== 'none' && parseFloat(style[`border${side}Width`]) > 0) segments[axis].push({ line, start, end });
+          if (style.getPropertyValue('--gb-table-grid').trim() === '1' ||
+              (style[`border${side}Style`] !== 'none' && parseFloat(style[`border${side}Width`]) > 0)) segments[axis].push({ line, start, end });
         }
       }
       const path = (d, strokeWidth) => {
