@@ -366,6 +366,7 @@ function enumEntries(name, control) {
 function applyPolicy(policy) {
   if (!policy || !policy.controls) return;
   currentPolicy = policy;
+  window.mdEffectiveTemplateType = policy.type;
   document.dispatchEvent(new CustomEvent('md-document-type', { detail: { type: policy.type } }));
   const controls = policy.controls;
   for (const [name, control] of Object.entries(controls)) {

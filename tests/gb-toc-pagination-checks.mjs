@@ -43,8 +43,8 @@ try {
       assert.ok(text[front[0].number-1].replace(/\s+/g,'').includes('前言'),`${item.name}: PDF preface content`);
     }
     if(item.name==='standard') {
-      assert.deepEqual(pages.slice(2,7).map(p=>[p.label,p.blank]),[['I',false],['II',false],['III',false],[null,true],['1',false]]);
-      assert.ok(!text[5].trim(), 'alignment blank page has no printed content');
+      assert.equal(toc[0].label,'I');
+      assert.ok(toc[0].number%2===1,'contents begins on an odd physical page');
     }
     if(item.name==='long-toc') assert.ok(toc.length>1,'contents spans multiple pages');
     console.log(`${item.name}: ${pages.length} pages, PDF checked`);

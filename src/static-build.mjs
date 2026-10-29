@@ -28,7 +28,7 @@ async function include(file) {
   const source=await readFile(path.join(root,'src',file),'utf8');
   for (const match of source.matchAll(/from ['"]\.\/([^'"]+\.mjs)['"]/g)) await include(match[1]);
 }
-for(const file of ['render.mjs','web-input.mjs','web-options.mjs','web-document.mjs','editor-position.mjs','doi.mjs']) await include(file);
+for(const file of ['render.mjs','web-input.mjs','web-options.mjs','web-document.mjs','editor-position.mjs','doi.mjs','gb-blocks.mjs']) await include(file);
 for (const file of modules) {
   let source = await readFile(path.join(root, 'src', file), 'utf8');
   if (file === 'render.mjs') {

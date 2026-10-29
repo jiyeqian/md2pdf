@@ -119,6 +119,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   for (const size of [180, 192, 512]) staticRoutes.set('/icons/app-' + size + '.png', ['web/icons/app-' + size + '.png', 'image/png']);
   for (const id of ['general', 'paper', 'gb', 'skill']) staticRoutes.set('/template-previews/' + id + '.png', ['web/template-previews/' + id + '.png', 'image/png']);
   staticRoutes.set('/src/frontmatter-fields.mjs', ['src/frontmatter-fields.mjs', 'text/javascript']);
+  staticRoutes.set('/src/gb-blocks.mjs', ['src/gb-blocks.mjs', 'text/javascript']);
   staticRoutes.set('/version.mjs', ['web/version.mjs', 'text/javascript']);
   for (const file of ['analytics.mjs', 'analytics-schema.mjs', 'analytics-bootstrap.mjs', 'analytics.css', 'privacy.html']) {
     staticRoutes.set('/' + file, ['web/' + file, file.endsWith('.css') ? 'text/css' : file.endsWith('.html') ? 'text/html' : 'text/javascript']);

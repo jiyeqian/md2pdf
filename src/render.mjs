@@ -1,5 +1,6 @@
 import { prepareGbContent, transformGbContent } from './gb-content.mjs';
 import { finalizeGbLayout, prepareGbLayout } from './gb-layout.mjs';
+import { finalizeGbTableRules } from './gb-table-rules.mjs';
 import { prepareGbBodyLayout, finalizeGbBodyLayout } from './gb-body-layout.mjs';
 import { prepareGbBodyAudit, finalizeGbBodyAudit } from './gb-body-audit.mjs';
 import { applyGbEquations, finalizeGbEquations, GB_EQUATION_CSS } from './gb-equations.mjs';
@@ -715,11 +716,11 @@ export async function render(src, options = {}, context = {}) {
     const included = levels.slice(0, eff.tocDepth === 2 ? 2 : 1);
     const items = secIds.filter(s => included.includes(s.level));
     const tocItem = s => profile.gbDoc
-      ? `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
-      : `<li class="toc-level-${included.indexOf(s.level)}"><a href="#${s.id}"><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`;
+      ? `<li class="toc-level-${included.indexOf(s.level)}${s.float ? ' toc-float' : ''}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
+      : `<li class="toc-level-${included.indexOf(s.level)}${s.float ? ' toc-float' : ''}"><a href="#${s.id}"><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`;
     const floatLists = profile.gbDoc ? ['fig', 'tab'].map(kind => {
       const entries = [...html.matchAll(kind === 'fig' ? /<figure class="fig" id="([^"]+)">[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/g : /<table class="tbl" id="([^"]+)">\s*<caption>([\s\S]*?)<\/caption>/g)];
-      return entries.length ? '<ol class="gb-float-toc">' + entries.map(m => tocItem({id:m[1],text:stripTags(m[2]),level:2})).join('') + '</ol>' : '';
+      return entries.length ? '<ol class="gb-float-toc">' + entries.map(m => tocItem({id:m[1],text:stripTags(m[2]),level:2,float:true})).join('') + '</ol>' : '';
     }).join('') : '';
     toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目  录'}</div><ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';
   }
@@ -860,7 +861,7 @@ export async function render(src, options = {}, context = {}) {
     'window.__md2pdfPagedReady = false;',
     installPagedLayout.toString(),
     profile.gbDoc ? '' : stampPagedLists.toString(),
-    profile.gbDoc ? [prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
+    profile.gbDoc ? [prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbTableRules, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
     '(function () {',
     '  function depsReady() {',
     '    return window.__md2pdfMathReady !== false && window.__md2pdfMermaidReady !== false;',
@@ -871,7 +872,7 @@ export async function render(src, options = {}, context = {}) {
     (profile.gbDoc ? '      prepareGbLayout(); prepareGbBodyLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); prepareGbBodyAudit();\n' : '') + '      installPagedLayout(' + (profile.gbDoc ? '(' + (297-effMarginBottom)*96/25.4 + ' - window.__gbContentTop)' : ((eff.landscape ? 210 : 297) - effMarginTop - effMarginBottom) * 96 / 25.4) + ', ' + JSON.stringify(chapterStart) + ', ' + (!profile.gbDoc && !useToc) + ', ' + ((eff.landscape ? 297 : 210) - effMarginLeft - effMarginRight) * 96 / 25.4 + ', ' + profile.gbDoc + ');',
     profile.gbDoc ? '' : '      stampPagedLists();',
     '      window.PagedPolyfill.preview()',
-    '        .then(function () { ' + (profile.gbDoc ? 'finalizeGbLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); finalizeGbBodyLayout(); finalizeGbEquations(); finalizeGbBodyAudit(); ' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
+    '        .then(function () { ' + (profile.gbDoc ? 'finalizeGbLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); finalizeGbBodyLayout(); finalizeGbTableRules(); finalizeGbEquations(); finalizeGbBodyAudit(); ' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',

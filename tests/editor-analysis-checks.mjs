@@ -717,3 +717,48 @@ test('pagebreak insertion preserves selections, isolates the marker and reuses e
     assert.equal(value,expected);assert.equal(position,cursor);assert.equal(edits,1);
   }
 });
+
+test('GB 指令补全只在有效 GB 模板的块起始位置出现', () => {
+  const complete = (text, templateType = 'gb', pos = text.length) => provideCompletions({ text, pos, templateType }, analyzeMarkdown(text));
+  const all = complete(':::');
+  assert.equal(all.options.length, 14);
+  assert.ok(all.options.every(option => option.label.startsWith('gb-') && option.detail));
+  assert.deepEqual(complete(':::gb-figure-f').options.map(option => option.label), ['gb-figure-footnote']);
+  assert.equal(complete(':::', 'general'), null);
+  assert.equal(complete('正文 :::'), null);
+  assert.equal(complete('```\n:::'), null);
+  assert.equal(complete('---\ntitle: x\n:::'), null);
+  assert.equal(complete('`:::gb-'), null);
+  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 14);
+});
+
+test('GB 指令补全插入有效参数与成对结构，并复用已有关闭行', () => {
+  const apply = (text, label, pos = text.length) => {
+    const result = provideCompletions({ text, pos, templateType: 'gb' }, analyzeMarkdown(text));
+    const option = result.options.find(item => item.label === label);
+    assert.ok(option);
+    return { text: text.slice(0, result.from) + option.apply + text.slice(result.to), option };
+  };
+  assert.match(apply(':::', 'gb-term').text, /^:::gb-term 3\.1\n.+\nterm name\n\n.+\n:::$/);
+  assert.match(apply(':::', 'gb-index').text, /^:::gb-index A\n.+ \| 3\.1\n:::$/);
+  assert.match(apply(':::', 'gb-table-footnote').text, /^:::gb-table-footnote a）\n/);
+  const closed = apply(':::gb-\n:::', 'gb-note', 6);
+  assert.equal(closed.text, ':::gb-note\n注的内容\n:::');
+  assert.equal(closed.option.selectionOffset, 'gb-note\n'.length);
+  assert.equal(apply(':::gb-note\n:::', 'gb-note', 6).text, ':::gb-note\n注的内容\n:::');
+});
+
+test('GB 补全保留已有非空块，并正确跳过嵌套块和代码围栏', () => {
+  const complete = text => {
+    const pos = text.indexOf('\n');
+    const result = provideCompletions({ text, pos, templateType: 'gb' }, analyzeMarkdown(text));
+    const option = result.options.find(item => item.label === 'gb-note');
+    return text.slice(0, result.from) + option.apply + text.slice(result.to);
+  };
+  for (const body of ['已有正文', ':::gb-example\n嵌套\n:::\n后文', '```\n:::\n```\n后文']) {
+    const text = ':::gb-\n' + body + '\n:::';
+    assert.equal(complete(text), ':::gb-note\n' + body + '\n:::');
+  }
+  const unclosed = ':::gb-\n```\n:::\n```';
+  assert.equal(complete(unclosed), ':::gb-note\n注的内容\n:::\n```\n:::\n```', '围栏内闭合行不应被误认');
+});

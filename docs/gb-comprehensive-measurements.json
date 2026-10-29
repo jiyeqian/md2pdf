@@ -166,7 +166,7 @@
       {
         "page": 4,
         "label": "II",
-        "kind": "front",
+        "kind": null,
         "right": false,
         "checks": [
           {
@@ -231,20 +231,6 @@
             "target": 24,
             "tolerance": 0.5,
             "pass": true
-          },
-          {
-            "name": "header_to_title",
-            "actual": 14.944,
-            "target": 15,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "title_to_first",
-            "actual": 11.98,
-            "target": 12,
-            "tolerance": 0.5,
-            "pass": true
           }
         ],
         "ink": {
@@ -259,18 +245,6 @@
             "top": 274.87033333333335,
             "right": 25.907999999999998,
             "bottom": 276.98699999999997
-          },
-          "title": {
-            "left": 91.44,
-            "top": 42.75666666666667,
-            "right": 113.36866666666667,
-            "bottom": 47.879
-          },
-          "first": {
-            "left": 20.023666666666667,
-            "top": 59.85933333333333,
-            "right": 184.785,
-            "bottom": 69.42666666666666
           }
         }
       },
@@ -345,7 +319,7 @@
           },
           {
             "name": "header_to_title",
-            "actual": 14.986,
+            "actual": 14.944,
             "target": 15,
             "tolerance": 0.5,
             "pass": true
@@ -372,23 +346,23 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 96.68933333333334,
-            "top": 42.799,
+            "left": 96.43533333333333,
+            "top": 42.75666666666667,
             "right": 118.36399999999999,
             "bottom": 47.879
           },
           "first": {
-            "left": 25.061333333333334,
+            "left": 25.019,
             "top": 59.85933333333333,
-            "right": 189.738,
-            "bottom": 69.51133333333333
+            "right": 189.78033333333332,
+            "bottom": 69.42666666666666
           }
         }
       },
       {
         "page": 6,
-        "label": null,
-        "kind": null,
+        "label": "IV",
+        "kind": "front",
         "right": false,
         "checks": [
           {
@@ -404,8 +378,97 @@
             "target": 297,
             "tolerance": 1,
             "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 277.029,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.986,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 11.98,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
           }
-        ]
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.87033333333335,
+            "right": 26.924,
+            "bottom": 277.02933333333334
+          },
+          "title": {
+            "left": 91.694,
+            "top": 42.799,
+            "right": 113.36866666666667,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 20.066,
+            "top": 59.85933333333333,
+            "right": 184.74266666666665,
+            "bottom": 69.51133333333333
+          }
+        }
       },
       {
         "page": 7,
@@ -1116,7 +1179,7 @@
       {
         "page": 15,
         "label": "9",
-        "kind": null,
+        "kind": "appendix",
         "right": true,
         "checks": [
           {
@@ -1181,6 +1244,20 @@
             "target": 24,
             "tolerance": 0.5,
             "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 15.028,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 5.122,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
           }
         ],
         "ink": {
@@ -1195,6 +1272,18 @@
             "top": 274.828,
             "right": 185.97033333333331,
             "bottom": 277.02933333333334
+          },
+          "title": {
+            "left": 99.90666666666667,
+            "top": 42.84133333333333,
+            "right": 115.01966666666667,
+            "bottom": 57.99666666666666
+          },
+          "first": {
+            "left": 25.019,
+            "top": 63.119,
+            "right": 49.06433333333333,
+            "bottom": 66.46333333333334
           }
         }
       },
@@ -1296,15 +1385,15 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 94.91133333333333,
+            "left": 91.48233333333333,
             "top": 42.84133333333333,
-            "right": 110.02433333333333,
+            "right": 113.32633333333332,
             "bottom": 57.99666666666666
           },
           "first": {
-            "left": 20.023666666666667,
+            "left": 20.066,
             "top": 63.119,
-            "right": 44.068999999999996,
+            "right": 54.94866666666667,
             "bottom": 66.46333333333334
           }
         }
@@ -1312,7 +1401,7 @@
       {
         "page": 17,
         "label": "11",
-        "kind": "appendix",
+        "kind": "back",
         "right": true,
         "checks": [
           {
@@ -1380,14 +1469,14 @@
           },
           {
             "name": "header_to_title",
-            "actual": 15.028,
+            "actual": 14.901,
             "target": 15,
             "tolerance": 0.5,
             "pass": true
           },
           {
             "name": "title_to_first",
-            "actual": 5.122,
+            "actual": 4.995,
             "target": 5,
             "tolerance": 0.5,
             "pass": true
@@ -1407,16 +1496,16 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 96.47766666666666,
-            "top": 42.84133333333333,
-            "right": 118.32166666666666,
-            "bottom": 57.99666666666666
+            "left": 94.69966666666666,
+            "top": 42.71433333333333,
+            "right": 120.26899999999999,
+            "bottom": 46.14333333333333
           },
           "first": {
-            "left": 25.061333333333334,
-            "top": 63.119,
-            "right": 59.943999999999996,
-            "bottom": 66.46333333333334
+            "left": 25.146,
+            "top": 51.138666666666666,
+            "right": 189.14533333333333,
+            "bottom": 93.55666666666666
           }
         }
       },
@@ -1491,14 +1580,14 @@
           },
           {
             "name": "header_to_title",
-            "actual": 14.901,
+            "actual": 14.944,
             "target": 15,
             "tolerance": 0.5,
             "pass": true
           },
           {
             "name": "title_to_first",
-            "actual": 4.995,
+            "actual": 5.038,
             "target": 5,
             "tolerance": 0.5,
             "pass": true
@@ -1518,135 +1607,24 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 89.66199999999999,
-            "top": 42.71433333333333,
-            "right": 115.23133333333332,
+            "left": 95.377,
+            "top": 42.75666666666667,
+            "right": 109.26233333333333,
             "bottom": 46.14333333333333
           },
           "first": {
-            "left": 27.558999999999997,
-            "top": 51.138666666666666,
-            "right": 157.099,
-            "bottom": 79.29033333333334
+            "left": 20.066,
+            "top": 51.181,
+            "right": 184.86966666666666,
+            "bottom": 70.27333333333333
           }
         }
       },
       {
         "page": 19,
-        "label": "13",
-        "kind": "back",
-        "right": true,
-        "checks": [
-          {
-            "name": "paper_width",
-            "actual": 209.889,
-            "target": 210,
-            "tolerance": 1,
-            "pass": true
-          },
-          {
-            "name": "paper_height",
-            "actual": 297.011,
-            "target": 297,
-            "tolerance": 1,
-            "pass": true
-          },
-          {
-            "name": "area_left",
-            "actual": 24.999,
-            "target": 25,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "area_right_margin",
-            "actual": 19.89,
-            "target": 20,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "area_width",
-            "actual": 164.999,
-            "target": 165,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "header_top",
-            "actual": 25.061,
-            "target": 25,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "header_outer",
-            "actual": 189.95,
-            "target": 190,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "footer_bottom",
-            "actual": 276.987,
-            "target": 277,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "footer_outer_distance",
-            "actual": 23.918,
-            "target": 24,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "header_to_title",
-            "actual": 14.944,
-            "target": 15,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "title_to_first",
-            "actual": 4.995,
-            "target": 5,
-            "tolerance": 0.5,
-            "pass": true
-          }
-        ],
-        "ink": {
-          "header": {
-            "left": 158.19966666666667,
-            "top": 25.061333333333334,
-            "right": 189.94966666666667,
-            "bottom": 27.813
-          },
-          "footer": {
-            "left": 183.388,
-            "top": 274.828,
-            "right": 185.97033333333331,
-            "bottom": 276.98699999999997
-          },
-          "title": {
-            "left": 100.37233333333333,
-            "top": 42.75666666666667,
-            "right": 114.25766666666667,
-            "bottom": 46.14333333333333
-          },
-          "first": {
-            "left": 25.061333333333334,
-            "top": 51.138666666666666,
-            "right": 189.56866666666667,
-            "bottom": 63.16133333333333
-          }
-        }
-      },
-      {
-        "page": 20,
         "label": null,
         "kind": null,
-        "right": false,
+        "right": true,
         "checks": [
           {
             "name": "paper_width",
@@ -1824,7 +1802,7 @@
       {
         "page": 4,
         "label": "II",
-        "kind": "front",
+        "kind": null,
         "right": false,
         "checks": [
           {
@@ -1889,20 +1867,6 @@
             "target": 24,
             "tolerance": 0.5,
             "pass": true
-          },
-          {
-            "name": "header_to_title",
-            "actual": 14.944,
-            "target": 15,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "title_to_first",
-            "actual": 11.98,
-            "target": 12,
-            "tolerance": 0.5,
-            "pass": true
           }
         ],
         "ink": {
@@ -1917,18 +1881,6 @@
             "top": 274.87033333333335,
             "right": 25.907999999999998,
             "bottom": 276.98699999999997
-          },
-          "title": {
-            "left": 91.44,
-            "top": 42.75666666666667,
-            "right": 113.36866666666667,
-            "bottom": 47.879
-          },
-          "first": {
-            "left": 20.023666666666667,
-            "top": 59.85933333333333,
-            "right": 184.785,
-            "bottom": 69.42666666666666
           }
         }
       },
@@ -2003,7 +1955,7 @@
           },
           {
             "name": "header_to_title",
-            "actual": 14.986,
+            "actual": 14.944,
             "target": 15,
             "tolerance": 0.5,
             "pass": true
@@ -2030,23 +1982,23 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 96.68933333333334,
-            "top": 42.799,
+            "left": 96.43533333333333,
+            "top": 42.75666666666667,
             "right": 118.36399999999999,
             "bottom": 47.879
           },
           "first": {
-            "left": 25.061333333333334,
+            "left": 25.019,
             "top": 59.85933333333333,
-            "right": 189.738,
-            "bottom": 69.51133333333333
+            "right": 189.78033333333332,
+            "bottom": 69.42666666666666
           }
         }
       },
       {
         "page": 6,
-        "label": null,
-        "kind": null,
+        "label": "IV",
+        "kind": "front",
         "right": false,
         "checks": [
           {
@@ -2062,8 +2014,97 @@
             "target": 297,
             "tolerance": 1,
             "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 20,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.889,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 165,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 277.029,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.986,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 11.98,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
           }
-        ]
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.87033333333335,
+            "right": 26.924,
+            "bottom": 277.02933333333334
+          },
+          "title": {
+            "left": 91.694,
+            "top": 42.799,
+            "right": 113.36866666666667,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 20.066,
+            "top": 59.85933333333333,
+            "right": 184.74266666666665,
+            "bottom": 69.51133333333333
+          }
+        }
       },
       {
         "page": 7,
@@ -2774,7 +2815,7 @@
       {
         "page": 15,
         "label": "9",
-        "kind": null,
+        "kind": "appendix",
         "right": true,
         "checks": [
           {
@@ -2839,6 +2880,20 @@
             "target": 24,
             "tolerance": 0.5,
             "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 15.028,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 5.122,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
           }
         ],
         "ink": {
@@ -2853,6 +2908,18 @@
             "top": 274.828,
             "right": 185.97033333333331,
             "bottom": 277.02933333333334
+          },
+          "title": {
+            "left": 99.90666666666667,
+            "top": 42.84133333333333,
+            "right": 115.01966666666667,
+            "bottom": 57.99666666666666
+          },
+          "first": {
+            "left": 25.019,
+            "top": 63.119,
+            "right": 49.06433333333333,
+            "bottom": 66.46333333333334
           }
         }
       },
@@ -2954,15 +3021,15 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 94.91133333333333,
+            "left": 91.48233333333333,
             "top": 42.84133333333333,
-            "right": 110.02433333333333,
+            "right": 113.32633333333332,
             "bottom": 57.99666666666666
           },
           "first": {
-            "left": 20.023666666666667,
+            "left": 20.066,
             "top": 63.119,
-            "right": 44.068999999999996,
+            "right": 54.94866666666667,
             "bottom": 66.46333333333334
           }
         }
@@ -2970,7 +3037,7 @@
       {
         "page": 17,
         "label": "11",
-        "kind": "appendix",
+        "kind": "back",
         "right": true,
         "checks": [
           {
@@ -3038,14 +3105,14 @@
           },
           {
             "name": "header_to_title",
-            "actual": 15.028,
+            "actual": 14.901,
             "target": 15,
             "tolerance": 0.5,
             "pass": true
           },
           {
             "name": "title_to_first",
-            "actual": 5.122,
+            "actual": 4.995,
             "target": 5,
             "tolerance": 0.5,
             "pass": true
@@ -3065,16 +3132,16 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 96.47766666666666,
-            "top": 42.84133333333333,
-            "right": 118.32166666666666,
-            "bottom": 57.99666666666666
+            "left": 94.69966666666666,
+            "top": 42.71433333333333,
+            "right": 120.26899999999999,
+            "bottom": 46.14333333333333
           },
           "first": {
-            "left": 25.061333333333334,
-            "top": 63.119,
-            "right": 59.943999999999996,
-            "bottom": 66.46333333333334
+            "left": 25.146,
+            "top": 51.138666666666666,
+            "right": 189.14533333333333,
+            "bottom": 93.55666666666666
           }
         }
       },
@@ -3149,14 +3216,14 @@
           },
           {
             "name": "header_to_title",
-            "actual": 14.901,
+            "actual": 14.944,
             "target": 15,
             "tolerance": 0.5,
             "pass": true
           },
           {
             "name": "title_to_first",
-            "actual": 4.995,
+            "actual": 5.038,
             "target": 5,
             "tolerance": 0.5,
             "pass": true
@@ -3176,135 +3243,24 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 89.66199999999999,
-            "top": 42.71433333333333,
-            "right": 115.23133333333332,
+            "left": 95.377,
+            "top": 42.75666666666667,
+            "right": 109.26233333333333,
             "bottom": 46.14333333333333
           },
           "first": {
-            "left": 27.558999999999997,
-            "top": 51.138666666666666,
-            "right": 157.099,
-            "bottom": 79.29033333333334
+            "left": 20.066,
+            "top": 51.181,
+            "right": 184.86966666666666,
+            "bottom": 70.27333333333333
           }
         }
       },
       {
         "page": 19,
-        "label": "13",
-        "kind": "back",
-        "right": true,
-        "checks": [
-          {
-            "name": "paper_width",
-            "actual": 209.889,
-            "target": 210,
-            "tolerance": 1,
-            "pass": true
-          },
-          {
-            "name": "paper_height",
-            "actual": 297.011,
-            "target": 297,
-            "tolerance": 1,
-            "pass": true
-          },
-          {
-            "name": "area_left",
-            "actual": 25,
-            "target": 25,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "area_right_margin",
-            "actual": 19.889,
-            "target": 20,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "area_width",
-            "actual": 165,
-            "target": 165,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "header_top",
-            "actual": 25.061,
-            "target": 25,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "header_outer",
-            "actual": 189.95,
-            "target": 190,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "footer_bottom",
-            "actual": 276.987,
-            "target": 277,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "footer_outer_distance",
-            "actual": 23.918,
-            "target": 24,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "header_to_title",
-            "actual": 14.944,
-            "target": 15,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "title_to_first",
-            "actual": 4.995,
-            "target": 5,
-            "tolerance": 0.5,
-            "pass": true
-          }
-        ],
-        "ink": {
-          "header": {
-            "left": 158.19966666666667,
-            "top": 25.061333333333334,
-            "right": 189.94966666666667,
-            "bottom": 27.813
-          },
-          "footer": {
-            "left": 183.388,
-            "top": 274.828,
-            "right": 185.97033333333331,
-            "bottom": 276.98699999999997
-          },
-          "title": {
-            "left": 100.37233333333333,
-            "top": 42.75666666666667,
-            "right": 114.25766666666667,
-            "bottom": 46.14333333333333
-          },
-          "first": {
-            "left": 25.061333333333334,
-            "top": 51.138666666666666,
-            "right": 189.56866666666667,
-            "bottom": 63.16133333333333
-          }
-        }
-      },
-      {
-        "page": 20,
         "label": null,
         "kind": null,
-        "right": false,
+        "right": true,
         "checks": [
           {
             "name": "paper_width",
@@ -3482,7 +3438,7 @@
       {
         "page": 4,
         "label": "II",
-        "kind": "front",
+        "kind": null,
         "right": false,
         "checks": [
           {
@@ -3547,20 +3503,6 @@
             "target": 24,
             "tolerance": 0.5,
             "pass": true
-          },
-          {
-            "name": "header_to_title",
-            "actual": 14.944,
-            "target": 15,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "title_to_first",
-            "actual": 11.98,
-            "target": 12,
-            "tolerance": 0.5,
-            "pass": true
           }
         ],
         "ink": {
@@ -3575,18 +3517,6 @@
             "top": 274.87033333333335,
             "right": 25.907999999999998,
             "bottom": 276.98699999999997
-          },
-          "title": {
-            "left": 91.44,
-            "top": 42.75666666666667,
-            "right": 113.36866666666667,
-            "bottom": 47.879
-          },
-          "first": {
-            "left": 20.023666666666667,
-            "top": 59.85933333333333,
-            "right": 184.785,
-            "bottom": 69.42666666666666
           }
         }
       },
@@ -3661,7 +3591,7 @@
           },
           {
             "name": "header_to_title",
-            "actual": 14.986,
+            "actual": 14.944,
             "target": 15,
             "tolerance": 0.5,
             "pass": true
@@ -3688,23 +3618,23 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 96.68933333333334,
-            "top": 42.799,
+            "left": 96.43533333333333,
+            "top": 42.75666666666667,
             "right": 118.36399999999999,
             "bottom": 47.879
           },
           "first": {
-            "left": 25.061333333333334,
+            "left": 25.019,
             "top": 59.85933333333333,
-            "right": 189.738,
-            "bottom": 69.51133333333333
+            "right": 189.78033333333332,
+            "bottom": 69.42666666666666
           }
         }
       },
       {
         "page": 6,
-        "label": null,
-        "kind": null,
+        "label": "IV",
+        "kind": "front",
         "right": false,
         "checks": [
           {
@@ -3720,8 +3650,97 @@
             "target": 297,
             "tolerance": 1,
             "pass": true
+          },
+          {
+            "name": "area_left",
+            "actual": 19.997,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_right_margin",
+            "actual": 24.892,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "area_width",
+            "actual": 164.999,
+            "target": 165,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_top",
+            "actual": 25.061,
+            "target": 25,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_outer",
+            "actual": 19.981,
+            "target": 20,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_bottom",
+            "actual": 277.029,
+            "target": 277,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "footer_outer_distance",
+            "actual": 23.961,
+            "target": 24,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 14.986,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 11.98,
+            "target": 12,
+            "tolerance": 0.5,
+            "pass": true
           }
-        ]
+        ],
+        "ink": {
+          "header": {
+            "left": 19.981333333333332,
+            "top": 25.061333333333334,
+            "right": 51.773666666666664,
+            "bottom": 27.813
+          },
+          "footer": {
+            "left": 23.960666666666665,
+            "top": 274.87033333333335,
+            "right": 26.924,
+            "bottom": 277.02933333333334
+          },
+          "title": {
+            "left": 91.694,
+            "top": 42.799,
+            "right": 113.36866666666667,
+            "bottom": 47.879
+          },
+          "first": {
+            "left": 20.066,
+            "top": 59.85933333333333,
+            "right": 184.74266666666665,
+            "bottom": 69.51133333333333
+          }
+        }
       },
       {
         "page": 7,
@@ -4432,7 +4451,7 @@
       {
         "page": 15,
         "label": "9",
-        "kind": null,
+        "kind": "appendix",
         "right": true,
         "checks": [
           {
@@ -4497,6 +4516,20 @@
             "target": 24,
             "tolerance": 0.5,
             "pass": true
+          },
+          {
+            "name": "header_to_title",
+            "actual": 15.028,
+            "target": 15,
+            "tolerance": 0.5,
+            "pass": true
+          },
+          {
+            "name": "title_to_first",
+            "actual": 5.122,
+            "target": 5,
+            "tolerance": 0.5,
+            "pass": true
           }
         ],
         "ink": {
@@ -4511,6 +4544,18 @@
             "top": 274.828,
             "right": 185.97033333333331,
             "bottom": 277.02933333333334
+          },
+          "title": {
+            "left": 99.90666666666667,
+            "top": 42.84133333333333,
+            "right": 115.01966666666667,
+            "bottom": 57.99666666666666
+          },
+          "first": {
+            "left": 25.019,
+            "top": 63.119,
+            "right": 49.06433333333333,
+            "bottom": 66.46333333333334
           }
         }
       },
@@ -4612,15 +4657,15 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 94.91133333333333,
+            "left": 91.48233333333333,
             "top": 42.84133333333333,
-            "right": 110.02433333333333,
+            "right": 113.32633333333332,
             "bottom": 57.99666666666666
           },
           "first": {
-            "left": 20.023666666666667,
+            "left": 20.066,
             "top": 63.119,
-            "right": 44.068999999999996,
+            "right": 54.94866666666667,
             "bottom": 66.46333333333334
           }
         }
@@ -4628,7 +4673,7 @@
       {
         "page": 17,
         "label": "11",
-        "kind": "appendix",
+        "kind": "back",
         "right": true,
         "checks": [
           {
@@ -4696,14 +4741,14 @@
           },
           {
             "name": "header_to_title",
-            "actual": 15.028,
+            "actual": 14.901,
             "target": 15,
             "tolerance": 0.5,
             "pass": true
           },
           {
             "name": "title_to_first",
-            "actual": 5.122,
+            "actual": 4.995,
             "target": 5,
             "tolerance": 0.5,
             "pass": true
@@ -4723,16 +4768,16 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 96.47766666666666,
-            "top": 42.84133333333333,
-            "right": 118.32166666666666,
-            "bottom": 57.99666666666666
+            "left": 94.69966666666666,
+            "top": 42.71433333333333,
+            "right": 120.26899999999999,
+            "bottom": 46.14333333333333
           },
           "first": {
-            "left": 25.061333333333334,
-            "top": 63.119,
-            "right": 59.943999999999996,
-            "bottom": 66.46333333333334
+            "left": 25.146,
+            "top": 51.138666666666666,
+            "right": 189.14533333333333,
+            "bottom": 93.55666666666666
           }
         }
       },
@@ -4807,14 +4852,14 @@
           },
           {
             "name": "header_to_title",
-            "actual": 14.901,
+            "actual": 14.944,
             "target": 15,
             "tolerance": 0.5,
             "pass": true
           },
           {
             "name": "title_to_first",
-            "actual": 4.995,
+            "actual": 5.038,
             "target": 5,
             "tolerance": 0.5,
             "pass": true
@@ -4834,135 +4879,24 @@
             "bottom": 276.98699999999997
           },
           "title": {
-            "left": 89.66199999999999,
-            "top": 42.71433333333333,
-            "right": 115.23133333333332,
+            "left": 95.377,
+            "top": 42.75666666666667,
+            "right": 109.26233333333333,
             "bottom": 46.14333333333333
           },
           "first": {
-            "left": 27.558999999999997,
-            "top": 51.138666666666666,
-            "right": 157.099,
-            "bottom": 79.29033333333334
+            "left": 20.066,
+            "top": 51.181,
+            "right": 184.86966666666666,
+            "bottom": 70.27333333333333
           }
         }
       },
       {
         "page": 19,
-        "label": "13",
-        "kind": "back",
-        "right": true,
-        "checks": [
-          {
-            "name": "paper_width",
-            "actual": 209.889,
-            "target": 210,
-            "tolerance": 1,
-            "pass": true
-          },
-          {
-            "name": "paper_height",
-            "actual": 297.011,
-            "target": 297,
-            "tolerance": 1,
-            "pass": true
-          },
-          {
-            "name": "area_left",
-            "actual": 24.999,
-            "target": 25,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "area_right_margin",
-            "actual": 19.89,
-            "target": 20,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "area_width",
-            "actual": 164.999,
-            "target": 165,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "header_top",
-            "actual": 25.061,
-            "target": 25,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "header_outer",
-            "actual": 189.95,
-            "target": 190,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "footer_bottom",
-            "actual": 276.987,
-            "target": 277,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "footer_outer_distance",
-            "actual": 23.918,
-            "target": 24,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "header_to_title",
-            "actual": 14.944,
-            "target": 15,
-            "tolerance": 0.5,
-            "pass": true
-          },
-          {
-            "name": "title_to_first",
-            "actual": 4.995,
-            "target": 5,
-            "tolerance": 0.5,
-            "pass": true
-          }
-        ],
-        "ink": {
-          "header": {
-            "left": 158.19966666666667,
-            "top": 25.061333333333334,
-            "right": 189.94966666666667,
-            "bottom": 27.813
-          },
-          "footer": {
-            "left": 183.388,
-            "top": 274.828,
-            "right": 185.97033333333331,
-            "bottom": 276.98699999999997
-          },
-          "title": {
-            "left": 100.37233333333333,
-            "top": 42.75666666666667,
-            "right": 114.25766666666667,
-            "bottom": 46.14333333333333
-          },
-          "first": {
-            "left": 25.061333333333334,
-            "top": 51.138666666666666,
-            "right": 189.56866666666667,
-            "bottom": 63.16133333333333
-          }
-        }
-      },
-      {
-        "page": 20,
         "label": null,
         "kind": null,
-        "right": false,
+        "right": true,
         "checks": [
           {
             "name": "paper_width",

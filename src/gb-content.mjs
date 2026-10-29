@@ -1,6 +1,7 @@
 import { renderGbTable } from './gb-tables.mjs';
+import { GB_BLOCKS } from './gb-blocks.mjs';
 const escape = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-const OPEN = /^ {0,3}:::gb-(note|example|term|source|unit|subfigure|table-note|important|figure-note|figure-footnote|table-footnote|index|equation|table)(?:[ \t]+(.*))?[ \t]*$/;
+const OPEN = new RegExp('^ {0,3}:::gb-(' + GB_BLOCKS.map(block => block.name).join('|') + ')(?:[ \t]+(.*))?[ \t]*$');
 const CLOSE = /^ {0,3}:::[ \t]*$/;
 
 // Structured GB blocks are opt-in: ordinary prose beginning with 注/示例 is unchanged.
@@ -89,12 +90,27 @@ function renderBlock({ role, label, text }, marked, depth) {
       + '<ul class="gb-index-entries">' + entries.map(([term,locations]) => '<li><span class="gb-index-term">' + escape(term)
         + '</span><span class="gb-index-dots"></span><span class="gb-index-locations">' + escape(locations) + '</span></li>').join('') + '</ul></div>';
   }
+  if (role === 'source') {
+    let value = text.trim();
+    if (label && !/^来源\s*[:：]?$/.test(label)) value = label + ' ' + value;
+    // Strip only literal outer delimiters and the leading label; Markdown remains intact.
+    for (let i = 0; i < 2; i++) {
+      value = value.replace(/^\s*(?:\[([\s\S]*)\]|［([\s\S]*)］)\s*$/, (_, ascii, full) => ascii ?? full).trim();
+      value = value.replace(/^来源\s*[:：]\s*/, '').trim();
+    }
+    const content = markdown(value, marked, depth);
+    const paragraph = /^<p>([\s\S]*?)<\/p>\s*$/.exec(content);
+    if (!value || !paragraph || /<\/?(?:p|div|ul|ol|pre|table|blockquote)\b/.test(paragraph[1])) {
+      const error = new Error('gb-source 只支持单个来源段落'); error.status = 400; throw error;
+    }
+    return '<div class="gb-source"><p>[<span class="gb-label">来源：</span>' + paragraph[1] + ']</p></div>';
+  }
   if (role === 'term') {
     const rows = text.trim().split('\n');
     const gap = rows.findIndex(line => !line.trim());
     const names = (gap < 0 ? rows.slice(0, 1) : rows.slice(0, gap)).map(line => escape(line.trim())).join('　');
     const definition = gap < 0 ? rows.slice(1).join('\n') : rows.slice(gap + 1).join('\n');
-    return '<div class="gb-term"><div class="gb-term-number">' + escape(label) + '</div><div class="gb-term-name">' + names + '</div><div class="gb-term-definition">' + markdown(definition, marked, depth) + '</div></div>';
+    return '<div class="gb-term" id="gb-term-' + escape(label) + '"><div class="gb-term-number">' + escape(label) + '</div><div class="gb-term-name">' + names + '</div><div class="gb-term-definition">' + markdown(definition, marked, depth) + '</div></div>';
   }
   if (['figure-footnote', 'table-footnote'].includes(role) && !label) {
     const error = new Error('图、表脚注必须显式填写脚注标记（例如 a））');
@@ -126,6 +142,7 @@ export function transformGbContent(html, title) {
     (_, attrs, text) => '<h2' + attrs.replace('class="', 'class="gb-references-title ') + '>' + text + '</h2>');
   html = html.replace(/<h2([^>]*class="[^"]*\bback\b[^"]*"[^>]*)>(索引)<\/h2>/g,
     (_, attrs, text) => '<h2' + attrs.replace('class="', 'class="gb-index-title ') + '>' + text + '</h2>');
+  html = linkIndexLocations(html);
   html = attachTableUnits(html);
 
   html = html.replace(/<h2([^>]*\bclass="[^"]*\bbody-start\b[^"]*"[^>]*)>([\s\S]*?)<\/h2>/, (_, attrs, inner) =>
@@ -174,6 +191,52 @@ function classes(node) {
 }
 function noteRole(node, allowed) {
   return node.tag === 'div' && classes(node).some(name => allowed.has(name));
+}
+// Resolve only explicit, unambiguous locations backed by an existing element ID.
+function linkIndexLocations(html) {
+  const all = elements(html), targets = new Map(), edits = [];
+  const key = value => value.replace(/\s+/g, '').toUpperCase();
+  const add = (name, id) => {
+    const k = key(name), existing = targets.get(k);
+    targets.set(k, existing === undefined ? id : existing === id ? id : null);
+  };
+  for (const node of all) {
+    if (classes(node).includes('gb-term')) {
+      const id = /\bid="([A-Za-z0-9_.:-]+)"/.exec(node.token)?.[1];
+      const number = node.children.find(n => classes(n).includes('gb-term-number'));
+      if (id && number?.closeStart) add(html.slice(number.openEnd, number.closeStart), id);
+    }
+    if (!node.end || !/^(?:h[2-6]|figure|table)$/.test(node.tag)) continue;
+    if (classes(node).includes('gb-index-title')) continue;
+    let parent = node.parent, insideIndex = false;
+    while (parent?.tag) { if (classes(parent).includes('gb-index')) insideIndex = true; parent = parent.parent; }
+    if (insideIndex) continue;
+    const id = /\bid="([A-Za-z0-9_.:-]+)"/.exec(node.token)?.[1];
+    if (!id) continue;
+    const caption = node.tag === 'figure' ? node.children.find(n => n.tag === 'figcaption') : node.tag === 'table' ? node.children.find(n => n.tag === 'caption') : node;
+    if (!caption?.end) continue;
+    const text = html.slice(caption.openEnd, caption.closeStart).replace(/<[^>]*>/g, '').trim();
+    const number = node.tag === 'figure' ? /^图\s*([A-Z]\.\d+|\d+)(?=\s|[：:、]|$)/i.exec(text)
+      : node.tag === 'table' ? /^表\s*([A-Z]\.\d+|\d+)(?=\s|[：:、]|$)/i.exec(text)
+      : /^(附录\s*[A-Z]|(?:[A-Z]\.)?\d+(?:\.\d+)*)(?=\s|[、：:（(]|$)/i.exec(text);
+    if (number) add((node.tag === 'figure' ? '图' : node.tag === 'table' ? '表' : '') + number[1], id);
+  }
+  for (const node of all) {
+    if (node.tag !== 'span' || !classes(node).includes('gb-index-locations') || node.closeStart === undefined) continue;
+    const value = html.slice(node.openEnd, node.closeStart);
+    let unresolved = false;
+    const linked = value.split(/([,，、;；/])/).map(part => {
+      const location = part.trim();
+      if (!/^(?:附录\s*[A-Z]|[图表]\s*(?:[A-Z]\.)?\d+|(?:[A-Z]\.)?\d+(?:\.\d+)*)$/i.test(location)) return part;
+      const id = targets.get(key(location));
+      if (!id) { unresolved = true; return part; }
+      return part.replace(location, '<a href="#' + id + '">' + location + '</a>');
+    }).join('');
+    if (linked !== value) edits.push({start:node.openEnd,end:node.closeStart,text:linked});
+    if (unresolved) edits.push({start:node.openEnd-1,end:node.openEnd-1,text:' data-gb-index-unresolved="true"'});
+  }
+  for (const edit of edits.sort((a,b) => b.start-a.start)) html = html.slice(0,edit.start) + edit.text + html.slice(edit.end);
+  return html;
 }
 function attachTableUnits(html) {
   const edits=[];

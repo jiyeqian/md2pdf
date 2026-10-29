@@ -551,7 +551,7 @@ function init() {
   if (typeof editor.setCompletions === 'function') {
     editor.setCompletions(function (context) {
       const analysis = analyzeAndCache(context.text);
-      return provideCompletions(Object.assign({}, context, { frontmatterValues }), analysis);
+      return provideCompletions(Object.assign({}, context, { frontmatterValues, templateType: formTypeValue() || window.mdEffectiveTemplateType || '' }), analysis);
     });
   }
 

@@ -1,3 +1,4 @@
+import { GB_BLOCKS } from '../src/gb-blocks.mjs';
 import { FRONTMATTER_FIELDS, ARRAY_FIELDS, canonicalFrontmatterField, TEXT_FIELDS, TEXT_METADATA_FIELDS, BOOL_FIELDS, NUMBER_FIELDS, FEATURES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from '../src/frontmatter-fields.mjs';
 /**
  * md2pdf 专业辅助 · 纯解析模块
@@ -658,6 +659,29 @@ function isSuppressedContext(text, pos) {
   return inInlineCodeAt(cursorLine, pos - lineStart);
 }
 
+// Find this block's closing marker while ignoring nested directives and code fences.
+function existingGbBlock(afterLine) {
+  if (!/^[ \t]*\r?\n/.test(afterLine)) return null;
+  const lines = afterLine.replace(/^[ \t]*\r?\n/, '').split('\n');
+  const names = new Set(GB_BLOCKS.map(block => block.name));
+  let depth = 0;
+  let fence = null;
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].replace(/\r$/, '');
+    const transition = fenceTransition(line, fence);
+    if (transition === 'open') { fence = fenceInfo(line); continue; }
+    if (transition === 'close') { fence = null; continue; }
+    if (fence) continue;
+    const open = /^ {0,3}:::gb-([a-z-]+)(?:[ \t]+.*)?[ \t]*$/.exec(line);
+    if (open && names.has(open[1])) { depth += 1; continue; }
+    if (/^ {0,3}:::[ \t]*$/.test(line)) {
+      if (depth) { depth -= 1; continue; }
+      return { hasContent: lines.slice(0, i).some(value => value.trim()) };
+    }
+  }
+  return null;
+}
+
 /**
  * 补全提供器：脚注定义 ID、\ref{}（图/表）与 \eqref{}（公式）目标。
  * 候选只包含渲染器能真正解析的交叉引用目标，锚点与非法 ID 不会出现。
@@ -675,6 +699,21 @@ export function provideCompletions(context, analysis) {
   const before = text.slice(0, pos);
   const fields = frontmatterCompletions(text, pos, context.frontmatterValues);
   if (fields) return fields;
+  if (context.templateType === 'gb') {
+    const match = /(?:^|\n)( {0,3}):::(gb-[a-z-]*)?$/.exec(before);
+    if (match && !isSuppressedContext(text, pos)) {
+      const typed = match[2] || '';
+      const suffix = /^[a-z-]*/.exec(text.slice(pos))[0];
+      const afterLine = text.slice(pos + suffix.length);
+      const existing = existingGbBlock(afterLine);
+      const options = GB_BLOCKS.filter(block => ('gb-' + block.name).startsWith(typed)).map(block => {
+        const opening = 'gb-' + block.name + (block.argument ? ' ' + block.argument : '');
+        const apply = existing?.hasContent ? opening : opening + '\n' + block.body + (existing ? '' : '\n:::');
+        return { label: 'gb-' + block.name, detail: block.description, type: 'text', apply, selectionOffset: existing?.hasContent ? opening.length : opening.length + 1 };
+      });
+      return { from: pos - typed.length, to: pos + suffix.length, options };
+    }
+  }
   for (const trigger of COMPLETION_TRIGGERS) {
     const m = trigger.re.exec(before);
     if (!m) continue;

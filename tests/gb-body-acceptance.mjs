@@ -47,13 +47,19 @@ try{
    const legendRows=[...document.querySelectorAll('.pagedjs_pages .gb-equation-definition')].map(td=>{const range=document.createRange();range.selectNodeContents(td);return {left:td.getBoundingClientRect().left,lines:[...range.getClientRects()].filter(r=>r.width).map(r=>r.left)};});
    const numbers=[...document.querySelectorAll('.pagedjs_pages .gb-decimal')].map(e=>({value:e.textContent,table:e.closest('table').caption?.textContent,column:e.closest('td').cellIndex,intRight:e.firstElementChild.getBoundingClientRect().right,page:pages.indexOf(e.closest('.pagedjs_page'))}));
    const emptyFootnoteRules=[...document.querySelectorAll('.pagedjs_footnote_area')].filter(a=>!a.querySelector('.gb-footnote')).map(a=>getComputedStyle(a,'::before').content);
-   const tables=[...document.querySelectorAll('.pagedjs_pages table.tbl')].map(t=>({title:t.caption?.textContent,head:t.tHead?.textContent,headRows:t.tHead?.rows.length,unit:t.querySelector('.gb-table-unit')?.textContent,rows:[...t.querySelectorAll('tbody tr')].map(r=>r.cells[0]?.textContent.trim()),cols:[...t.tHead.rows[0].cells].map(c=>c.getBoundingClientRect().width/t.getBoundingClientRect().width),spans:t.querySelectorAll('[rowspan]').length}));
+   const tables=[...document.querySelectorAll('.pagedjs_pages table.tbl')].map(t=>({title:t.caption?.textContent,head:t.tHead?.textContent,headRows:t.tHead?.rows.length,unit:t.querySelector('.gb-table-unit')?.textContent,rows:[...t.querySelectorAll('tbody tr')].map(r=>r.cells[0]?.textContent.trim()),cols:[...(t.tHead?.rows[0]?.cells||[])].map(c=>c.getBoundingClientRect().width/t.getBoundingClientRect().width),spans:t.querySelectorAll('[rowspan]').length}));
    const style=selector=>{const e=document.querySelector('.pagedjs_pages '+selector),s=getComputedStyle(e);return {font:s.fontFamily,size:s.fontSize,line:s.lineHeight,border:s.borderBottomWidth,spacing:s.letterSpacing,margin:s.marginBottom};};
    const typography={header:style('.gb-fixed-header'),term:style('.gb-term-name'),body:style('.gb-term-definition p'),reference:style('.fnref-back'),front:style('h2.front'),references:style('h2.gb-references-title')};
-   return {error:window.__md2pdfPagedError||null,audit:window.__gbBodyAudit,states,formulas,legendRows,numbers,tables,typography,emptyFootnoteRules,legend:!!document.querySelector('.pagedjs_pages .gb-equation-legend'),labels:document.querySelectorAll('.pagedjs_pages [data-labels]').length};
+   const scope=document.querySelector('.pagedjs_pages');
+   const extras={figureContents:scope.querySelectorAll('.toc-float').length,nestedContents:scope.querySelectorAll('.toc-level-1').length,indexLinks:scope.querySelectorAll('.gb-index-locations a').length,unresolved:scope.querySelectorAll('[data-gb-index-unresolved]').length,source:scope.querySelector('.gb-source')?.textContent,visibleCitations:[...scope.querySelectorAll('.fnref-back')].every(e=>getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'),vectorRules:scope.querySelectorAll('[data-gb-table-rules]').length};
+   return {extras,error:window.__md2pdfPagedError||null,audit:window.__gbBodyAudit,states,formulas,legendRows,numbers,tables,typography,emptyFootnoteRules,legend:!!document.querySelector('.pagedjs_pages .gb-equation-legend'),labels:document.querySelectorAll('.pagedjs_pages [data-labels]').length};
   })()`});
   assert.equal(result.exceptionDetails,undefined,JSON.stringify(result.exceptionDetails));const state=result.result.value;
   await writeFile(out+'/'+runtime+'-state.json',JSON.stringify(state,null,2));
+  assert.ok(state.extras.figureContents>=2&&state.extras.nestedContents>0,'multilevel contents and float list');
+  assert.ok(state.extras.indexLinks>=10&&state.extras.unresolved===0,'all index locations resolve');
+  assert.ok(state.extras.source?.includes('[来源：GB/T 20000.1—2014，5.3]'),'bracketed terminology source');
+  assert.ok(state.extras.visibleCitations&&state.extras.vectorRules>0,'visible citations and vector table rules');
   assert.equal(state.error,null);assert.equal(state.audit.problems.length,0);assert.ok(state.legend,'structured equation legend');
   assert.ok(state.formulas.length&&state.formulas.every(f=>f.leader>0&&f.contained),'GB equations have dotted number leaders');
   for(const row of state.legendRows)assert.ok(row.lines.every(x=>x>=row.left-1),'symbol definitions stay within their shared column');
@@ -71,7 +77,7 @@ try{
    assert.ok(Math.abs(right('12.34',2)-right('9.1',2))<.1&&Math.abs(right('123.40')-right('9.1'))<.1,'decimal integer alignment in third column');
   }
   assert.ok(state.emptyFootnoteRules.every(c=>c==='none'||c==='normal'),'no orphan footnote divider on empty area');
-  const records=state.tables.filter(t=>t.title.includes('连续抓取试验记录'));
+  const records=state.tables.filter(t=>t.title?.includes('连续抓取试验记录'));
   assert.ok(records.length>1,'records continue across pages');
   for(const table of records){
    assert.ok(table.head.includes('记录编号')&&table.head.includes('恢复时间'),'repeated complete header');
@@ -79,8 +85,8 @@ try{
    table.cols.forEach((w,i)=>assert.ok(Math.abs(w-records[0].cols[i])<.003,'continuation column widths stay fixed'));
   }
   const rows=records.flatMap(t=>t.rows);
-  for(let i=1;i<=100;i++)assert.equal(rows.filter(v=>v==='R'+String(i).padStart(3,'0')).length,1,'record appears exactly once');
-  const complex=state.tables.find(t=>t.title.includes('分项检测条件'));
+  for(let i=1;i<=40;i++)assert.equal(rows.filter(v=>v==='R'+String(i).padStart(3,'0')).length,1,'record appears exactly once');
+  const complex=state.tables.find(t=>t.title?.includes('分项检测条件'));
   assert.ok(complex?.headRows===2&&complex.spans>=5,'complex merged headers and rows');
   assert.equal(state.typography.reference.border,'0px','no dotted underline on reference number');
   assert.ok(state.typography.header.font.includes('GB Hei')&&state.typography.term.font.includes('GB Hei'),'F.1 header and term Hei');

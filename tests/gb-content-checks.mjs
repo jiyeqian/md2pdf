@@ -193,3 +193,45 @@ test('表格单位只附到紧邻的表题，不跨过前表或正文', () => {
   assert.match(out,/<caption>表2<span class="gb-table-unit">单位为毫米<\/span><\/caption>/);
   assert.doesNotMatch(out,/class="gb-unit"/);
 });
+
+test('来源规范化括号及标签，并保留安全的行内 Markdown',()=>{
+  for(const value of ['GB/T 20000.1—2014，5.3','来源: GB/T 20000.1—2014，5.3','[来源：GB/T 20000.1—2014，5.3]','［GB/T 20000.1—2014，5.3］']) {
+    assert.match(parse(`:::gb-source\n${value}\n:::`), /<p>\[<span class="gb-label">来源：<\/span>GB\/T 20000\.1—2014，5\.3\]<\/p>/);
+  }
+  const html=parse(':::gb-source 来源：\n[来源：**GB/T 1**，有修改 [链接](https://example.com) <script> [坏](javascript:alert)]\n:::');
+  assert.match(html, /<strong>GB\/T 1<\/strong>/);
+  assert.match(html, /href="https:\/\/example.com"/);
+  assert.ok(!html.includes('<script>'));
+  assert.ok(!html.includes('href="javascript:'));
+  assert.throws(()=>parse(':::gb-source\n第一段\n\n第二段\n:::'), error=>error.status===400);
+});
+
+test('索引仅链接已存在且无歧义的标题和图表编号',()=>{
+  const index=parse(':::gb-index A\n术语 | 3.1， 5.2 / 图1、表 A.1；附录A, A.1, 9.9, <img src=x>\n:::');
+  const html='<h2 id="sec-1">3.1 范围</h2><h3 id="sec-2">5.2 内容</h3><h2 class="appendix" id="app">附录 A （资料性） 标题</h2><h3 id="app-1">A.1 内容</h3><figure id="fig-1"><figcaption>图 1　示意</figcaption></figure><table id="tab-1"><caption>表 A.1　数据</caption></table>'+index;
+  const result=transformGbContent(html,'');
+  for(const [label,id] of [['3.1','sec-1'],['5.2','sec-2'],['图1','fig-1'],['表 A.1','tab-1'],['附录A','app'],['A.1','app-1']]) assert.ok(result.includes(`<a href="#${id}">${label}</a>`),label);
+  assert.ok(result.includes('9.9'));
+  assert.ok(!result.includes('href="#9.9"'));
+  assert.ok(!result.includes('<img src=x>'));
+  const ambiguous=transformGbContent('<h2 id="one">3.1 甲</h2><h2 id="two">3.1 乙</h2>'+index,'');
+  assert.ok(!ambiguous.includes('<a href="#one">3.1</a>'));
+  const self=transformGbContent('<div class="gb-index"><h3 id="fake">3.1 自身</h3>'+index+'</div>','');
+  assert.ok(!self.includes('href="#fake"'));
+});
+
+test('CLI 与 webSafe 对 GB 来源和索引生成相同链接',async()=>{
+  const {render}=await import('../src/render.mjs');
+  const source='# 标准\n\n## 范围\n\n### 内容\n\n:::gb-source\n[来源：GB/T 1—2020，5.3]\n:::\n\n## 索引\n\n:::gb-index\n术语 | 1.1，9.9\n:::';
+  for(const context of [{},{webSafe:true}]) {
+    const {html}=await render(source,{type:'gb'},context);
+    assert.match(html, /\[<span class="gb-label">来源：<\/span>GB\/T 1—2020，5\.3\]/);
+    assert.match(html, /<a href="#sec-\d+">1\.1<\/a>，9\.9/);
+  }
+});
+
+test('术语编号提供可跳转的索引目标',()=>{
+  const term=parse(':::gb-term 3.1\n术语\nterm\n\n定义\n:::');
+  const index=parse(':::gb-index S\n术语 | 3.1\n:::');
+  assert.match(transformGbContent(term+index,''), /<a href="#gb-term-3\.1">3\.1<\/a>/);
+});

@@ -4,7 +4,7 @@
 
 以 `web/examples/gb.md` 同时承载展示和验收；删除旧 GB body calibration 正文副本。增加 GB 专用安全合并表格、完整公式块同页、续表列宽与单位重复，调整参考链接装饰、字距、段落和显式西文候选。共用文件中的新逻辑均以 GB 条件启用；其他模板以前一提交的实际 PDF 逐页作像素对照。规范、样本观察、工程取值和未确认字形分开记录。
 
-最新验收见[全面范例说明](gb-comprehensive-example.md)。无需服务打开 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf/output/pdf/gb-comprehensive-node.pdf`；CLI/静态对应文件同目录。按前言／术语 → 多层列项 → 公式 → 合并表 → 100条续表 → 附录／参考文献／索引核对。WebApp 必须从 f96a 工作树重启；静态版须重建、部署并更新缓存。没有进行线上 Pages、手机或实体打印验收。
+最新验收见[全面范例说明](gb-comprehensive-example.md)。无需服务打开 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf/output/pdf/gb-comprehensive-node.pdf`；CLI/静态对应文件同目录。按前言／术语 → 多层列项 → 公式 → 合并表 → 40条续表 → 附录／参考文献／索引核对。WebApp 必须从 f96a 工作树重启；静态版须重建、部署并更新缓存。没有进行线上 Pages、手机或实体打印验收。
 
 
 ## 2026-10-28 国家标准正文校准

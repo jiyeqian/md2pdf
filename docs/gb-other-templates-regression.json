@@ -1,5 +1,5 @@
 {
-  "baseline": "/private/tmp/gb-comprehensive-baseline",
+  "baseline": "/private/tmp/gb-current-baseline",
   "results": [
     {
       "template": "general",
@@ -47,6 +47,5 @@
       ]
     }
   ],
-  "baseline_commit": "491dffd75322ee9ec3a94de47534c4ff58e790f7",
-  "worktree": "/Users/jiyeqian/.codex/worktrees/f96a/md2pdf"
+  "baseline_commit": "464bf57"
 }
