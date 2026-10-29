@@ -721,7 +721,7 @@ test('pagebreak insertion preserves selections, isolates the marker and reuses e
 test('GB 指令补全只在有效 GB 模板的块起始位置出现', () => {
   const complete = (text, templateType = 'gb', pos = text.length) => provideCompletions({ text, pos, templateType }, analyzeMarkdown(text));
   const all = complete(':::');
-  assert.equal(all.options.length, 14);
+  assert.equal(all.options.length, 15);
   assert.ok(all.options.every(option => option.label.startsWith('gb-') && option.detail));
   assert.deepEqual(complete(':::gb-figure-f').options.map(option => option.label), ['gb-figure-footnote']);
   assert.equal(complete(':::', 'general'), null);
@@ -729,7 +729,7 @@ test('GB 指令补全只在有效 GB 模板的块起始位置出现', () => {
   assert.equal(complete('```\n:::'), null);
   assert.equal(complete('---\ntitle: x\n:::'), null);
   assert.equal(complete('`:::gb-'), null);
-  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 14);
+  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 15);
 });
 
 test('GB 指令补全插入有效参数与成对结构，并复用已有关闭行', () => {
@@ -761,4 +761,12 @@ test('GB 补全保留已有非空块，并正确跳过嵌套块和代码围栏',
   }
   const unclosed = ':::gb-\n```\n:::\n```';
   assert.equal(complete(unclosed), ':::gb-note\n注的内容\n:::\n```\n:::\n```', '围栏内闭合行不应被误认');
+});
+
+test('示例补全提供标签独立和同行两种明确选项',()=>{
+  const text=':::gb-ex';
+  const result=provideCompletions({text,pos:text.length,templateType:'gb'},analyzeMarkdown(text));
+  assert.equal(result.options.length,2);
+  assert.match(result.options.find(o=>o.label==='gb-example').apply,/^gb-example\n/);
+  assert.match(result.options.find(o=>o.label==='gb-example layout=inline').apply,/^gb-example layout=inline\n/);
 });

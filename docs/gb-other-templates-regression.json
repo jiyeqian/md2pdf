@@ -1,5 +1,5 @@
 {
-  "baseline": "/private/tmp/gb-current-baseline",
+  "baseline": "/private/tmp/gb-depth-baseline",
   "results": [
     {
       "template": "general",
@@ -47,5 +47,5 @@
       ]
     }
   ],
-  "baseline_commit": "464bf57"
+  "baseline_commit": "01a06ab"
 }

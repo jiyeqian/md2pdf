@@ -1,7 +1,7 @@
 // Shared directive names and editor examples; this module is browser-safe.
 export const GB_BLOCKS = [
   { name: 'note', description: '注', body: '注的内容' },
-  { name: 'example', description: '示例', body: '示例内容' },
+  { name: 'example', description: '示例：标签独立', body: '示例内容' },
   { name: 'term', description: '术语与定义', argument: '3.1', body: '术语名称\nterm name\n\n术语定义' },
   { name: 'source', description: '来源', body: 'GB/T 20000.1—2014，5.3' },
   { name: 'unit', description: '单位', body: '单位为毫米' },

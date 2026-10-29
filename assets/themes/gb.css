@@ -309,3 +309,25 @@ main section :is(ol, ul):not(.references):not(.footnotes) { margin-top: 0; margi
 .gb-index-dots { border: 0; height: auto; align-self: baseline; overflow: hidden; white-space: nowrap; }
 .gb-index-dots::before { content: "………………………………………………………………………………………………………………………………"; font: 10.5pt/1.62 var(--font-body); }
 .gb-vector-rules, .gb-vector-rules th, .gb-vector-rules td { border-color: transparent !important; }
+
+/* GB-only rhythm: no decorative gaps inside bibliography/index entries. */
+.toc { line-height: 1.2; }
+.toc li, .toc li a::after { line-height: 1.2; }
+.toc li.toc-level-0:not(.toc-float) { line-height: 1.2; padding: .3em 0; }
+.toc .gb-float-toc { margin-top: 1.2em; }
+.toc li a .toc-dots { top: 0; border: 0; overflow: hidden; white-space: nowrap; }
+.toc li a .toc-dots::before { content: "………………………………………………………………………………………………………………………………"; font: inherit; }
+main .references > li { margin: 0; line-height: 1.62; }
+main section .gb-index ul.gb-index-entries > li { margin: 0; line-height: 1.45; }
+.gb-index-dots::before { line-height: inherit; }
+.gb-index-locations a { color: inherit; text-decoration: none; border: none; }
+main .gb-intro { margin: 0; text-indent: 2em; }
+main .gb-example-block > p:first-child { text-indent: 0; }
+.gb-example-block > p:first-child > .gb-label, .gb-example-block .gb-example-text { display: block; text-indent: 2em; }
+main .gb-example-inline > p:first-child { text-indent: 2em; }
+.gb-example-inline > p:first-child > .gb-label { display: inline; text-indent: 0; }
+.gb-example-block > .gb-label { display: block; text-indent: 2em; }
+.toc li a .toc-text { flex: 0 1 auto; min-width: 0; }
+.toc li a .toc-dots { flex: 1 1 0; width: 0; }
+.gb-term-number, .gb-term-name { break-after: avoid; }
+.gb-term-definition > p:first-child { break-before: avoid; }

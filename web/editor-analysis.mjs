@@ -706,10 +706,10 @@ export function provideCompletions(context, analysis) {
       const suffix = /^[a-z-]*/.exec(text.slice(pos))[0];
       const afterLine = text.slice(pos + suffix.length);
       const existing = existingGbBlock(afterLine);
-      const options = GB_BLOCKS.filter(block => ('gb-' + block.name).startsWith(typed)).map(block => {
+      const options = GB_BLOCKS.flatMap(block => block.name === 'example' ? [block, {...block, argument:'layout=inline', description:'示例：标签同行', completionLabel:'gb-example layout=inline'}] : [block]).filter(block => ('gb-' + block.name).startsWith(typed)).map(block => {
         const opening = 'gb-' + block.name + (block.argument ? ' ' + block.argument : '');
         const apply = existing?.hasContent ? opening : opening + '\n' + block.body + (existing ? '' : '\n:::');
-        return { label: 'gb-' + block.name, detail: block.description, type: 'text', apply, selectionOffset: existing?.hasContent ? opening.length : opening.length + 1 };
+        return { label: block.completionLabel || 'gb-' + block.name, detail: block.description, type: 'text', apply, selectionOffset: existing?.hasContent ? opening.length : opening.length + 1 };
       });
       return { from: pos - typed.length, to: pos + suffix.length, options };
     }

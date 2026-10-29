@@ -21,5 +21,9 @@ try {
    assert.equal(await evaluate('mdEditor.getValue()'),':::gb-note\n注的内容\n:::');
   }else assert.equal(menu,'','other templates do not show GB suggestions');
  }
+ await evaluate(`mdEditor.setValue(':::gb-ex');gbView.dispatch({selection:{anchor:8}});mdEditor.setCompletions(c=>gbAnalysis.provideCompletions({...c,templateType:'gb'},gbAnalysis.analyzeMarkdown(c.text)));MDEditorVendor.startCompletion(gbView);`);
+ await new Promise(r=>setTimeout(r,150));
+ const examples=await evaluate(`document.querySelector('.cm-tooltip-autocomplete')?.textContent||''`);
+ assert.ok(examples.includes('标签独立')&&examples.includes('标签同行'),'both example layouts are available');
  console.log('PASS: real editor GB completion menu, insertion and template isolation');
 }finally{await chrome.stop();await app.close();await rm(temp,{recursive:true,force:true});}

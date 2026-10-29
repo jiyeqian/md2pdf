@@ -116,9 +116,24 @@ function renderBlock({ role, label, text }, marked, depth) {
     const error = new Error('图、表脚注必须显式填写脚注标记（例如 a））');
     error.status = 400; throw error;
   }
+  let exampleLayout = 'block';
+  if (role === 'example') {
+    const layout = /(?:^|\s)layout=(\S+)/.exec(label);
+    if (layout) {
+      if (!['block', 'inline'].includes(layout[1])) {
+        const error = new Error('gb-example layout 仅支持 block 或 inline'); error.status = 400; throw error;
+      }
+      exampleLayout = layout[1];
+      label = label.replace(layout[0], '').trim();
+    }
+  }
   const defaults = { note: '注：', example: '示例：', source: '来源：', 'table-note': '注：', 'figure-note': '注：' };
   const title = label || defaults[role] || '';
   const content = markdown(text, marked, depth);
+  if (role === 'example' && exampleLayout === 'inline' &&
+      (!/^<p>[\s\S]*<\/p>\s*$/.test(content) || /<\/?(?:div|ul|ol|table|pre|blockquote|h[1-6])\b/.test(content) || (content.match(/<p>/g)||[]).length !== 1)) {
+    const error = new Error('gb-example layout=inline 只支持单个文字段落；请改用 layout=block'); error.status = 400; throw error;
+  }
   if (role === 'important') {
     const paragraphs = content.match(/<p>[\s\S]*?<\/p>/g) || [];
     const remainder = content.replace(/<p>[\s\S]*?<\/p>/g, '').trim();
@@ -132,9 +147,9 @@ function renderBlock({ role, label, text }, marked, depth) {
   const lead = title ? '<span class="gb-label">' + escape(title) + '</span>' : '';
   const hanging = ['note', 'table-note', 'figure-note', 'figure-footnote', 'table-footnote'].includes(role);
   const body = lead && content.startsWith('<p>')
-    ? content.replace(/^<p>([\s\S]*?)<\/p>/, (_, first) => '<p>' + lead + (hanging ? '<span class="gb-note-text">' + first + '</span>' : first) + '</p>')
+    ? content.replace(/^<p>([\s\S]*?)<\/p>/, (_, first) => '<p>' + lead + (hanging ? '<span class="gb-note-text">' + first + '</span>' : role === 'example' && exampleLayout === 'block' ? '<span class="gb-example-text">' + first + '</span>' : first) + '</p>')
     : lead + content;
-  return '<div class="gb-' + role + '">' + body + '</div>';
+  return '<div class="gb-' + role + (role === 'example' ? ' gb-example-' + exampleLayout : '') + '"' + (role === 'example' && !label ? ' data-gb-example-auto="true"' : '') + '>' + body + '</div>';
 }
 
 export function transformGbContent(html, title) {
@@ -142,6 +157,8 @@ export function transformGbContent(html, title) {
     (_, attrs, text) => '<h2' + attrs.replace('class="', 'class="gb-references-title ') + '>' + text + '</h2>');
   html = html.replace(/<h2([^>]*class="[^"]*\bback\b[^"]*"[^>]*)>(索引)<\/h2>/g,
     (_, attrs, text) => '<h2' + attrs.replace('class="', 'class="gb-index-title ') + '>' + text + '</h2>');
+  html = markIntroParagraphs(html);
+  html = numberExamples(html);
   html = linkIndexLocations(html);
   html = attachTableUnits(html);
 
@@ -192,6 +209,46 @@ function classes(node) {
 function noteRole(node, allowed) {
   return node.tag === 'div' && classes(node).some(name => allowed.has(name));
 }
+function markIntroParagraphs(html) {
+  const edits = [];
+  for (const node of elements(html)) {
+    if (node.tag !== 'p' || (node.parent?.tag && node.parent.tag !== 'section')) continue;
+    const position = node.parent.children.indexOf(node);
+    const following = node.parent.children.slice(position+1).find(n => /^h[2-6]$/.test(n.tag) || classes(n).includes('gb-term'));
+    if (!following || (following.tag !== 'h3' && !classes(following).includes('gb-term'))) continue;
+    const preceding = node.parent.children.slice(0,position);
+    const heading = preceding.filter(n => /^h[2-6]$/.test(n.tag)).at(-1);
+    if (heading?.tag !== 'h2' || preceding.slice(preceding.indexOf(heading)+1).some(n => classes(n).includes('gb-term'))) continue;
+    edits.push({start:node.start,end:node.openEnd,text:node.token.replace('<p','<p class="gb-intro"')});
+  }
+  for (const edit of edits.sort((a,b)=>b.start-a.start)) html=html.slice(0,edit.start)+edit.text+html.slice(edit.end);
+  return html;
+}
+
+// Number unlabelled examples within the nearest clause or terminology entry.
+function numberExamples(html) {
+  const groups = new Map(); let heading = 'document';
+  for (const node of elements(html)) {
+    if (/^h[2-6]$/.test(node.tag)) heading = node.start;
+    if (!classes(node).includes('gb-example')) continue;
+    let parent = node.parent;
+    while (parent?.tag && !classes(parent).includes('gb-term')) parent = parent.parent;
+    const scope = parent?.tag ? 'term:' + parent.start : heading;
+    if (!groups.has(scope)) groups.set(scope, []);
+    groups.get(scope).push(node);
+  }
+  const edits = [];
+  for (const group of groups.values()) {
+    group.forEach((node, i) => {
+      if (!node.token.includes('data-gb-example-auto="true"')) return;
+      const label = [...node.children, ...node.children.flatMap(n => n.children || [])].find(n => classes(n).includes('gb-label'));
+      if (label?.closeStart) edits.push({start:label.openEnd,end:label.closeStart,text:group.length > 1 ? '示例' + (i + 1) + '：' : '示例：'});
+    });
+  }
+  for (const edit of edits.sort((a,b)=>b.start-a.start)) html = html.slice(0,edit.start)+edit.text+html.slice(edit.end);
+  return html;
+}
+
 // Resolve only explicit, unambiguous locations backed by an existing element ID.
 function linkIndexLocations(html) {
   const all = elements(html), targets = new Map(), edits = [];

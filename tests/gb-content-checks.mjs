@@ -27,7 +27,7 @@ test('注和示例角色具有独立标签，保留 Markdown 强调与多段内�
   const html=parse(':::gb-note 注1：\n**内容**\n\n第二段\n:::\n\n:::gb-example\n示例内容\n:::');
   assert.match(html,/<div class="gb-note"><p><span class="gb-label">注1：<\/span><span class="gb-note-text"><strong>内容<\/strong><\/span><\/p>/);
   assert.match(html,/<p>第二段<\/p>/);
-  assert.match(html,/<div class="gb-example"><p><span class="gb-label">示例：<\/span>示例内容/);
+  assert.match(html,/<div class="gb-example gb-example-block"[^>]*><p><span class="gb-label">示例：<\/span><span class="gb-example-text">示例内容/);
 });
 test('术语使用显式编号和中英文名，定义可包含独立注块',()=>{
   const html=parse(':::gb-term 3.1\n机械手\nmanipulator\n\n用于操作的装置。\n\n:::gb-note\n术语附注。\n:::\n:::');
@@ -234,4 +234,33 @@ test('术语编号提供可跳转的索引目标',()=>{
   const term=parse(':::gb-term 3.1\n术语\nterm\n\n定义\n:::');
   const index=parse(':::gb-index S\n术语 | 3.1\n:::');
   assert.match(transformGbContent(term+index,''), /<a href="#gb-term-3\.1">3\.1<\/a>/);
+});
+
+test('示例布局显式选择，拒绝同行复杂块，默认示例局部连续编号',()=>{
+  const block=parse(':::gb-example\n段落\n:::');
+  const inline=parse(':::gb-example layout=inline\n同行正文\n:::');
+  assert.match(block,/gb-example-block/);
+  assert.match(inline,/gb-example-inline/);
+  assert.doesNotMatch(inline,/gb-label">layout/);
+  for(const text of ['一\n\n二','- 列表','```\n代码\n```']) assert.throws(()=>parse(':::gb-example layout=inline\n'+text+'\n:::'),e=>e.status===400);
+  assert.throws(()=>parse(':::gb-example layout=wide\n正文\n:::'),e=>e.status===400);
+  const numbered=transformGbContent('<section><h3>5.1 标题</h3>'+block+inline+'</section><section><h3>5.2 标题</h3>'+block+'</section>','');
+  assert.match(numbered,/gb-label">示例1：/);
+  assert.match(numbered,/gb-label">示例2：/);
+  assert.match(numbered,/gb-label">示例：/);
+});
+
+test('章后引导段使用统一标记，普通条后段落不混入',()=>{
+  const html=transformGbContent('<section><h2>3 术语和定义</h2><p>引导</p><h3>3.1 分类</h3><p>普通段落</p></section>','');
+  assert.match(html,/<p class="gb-intro">引导/);
+  assert.match(html,/<p>普通段落/);
+});
+
+test('示例布局在CLI与Web安全渲染一致，并返回相同的参数错误',async()=>{
+  const {render}=await import('../src/render.mjs');
+  const source='# 标准\n\n## 范围\n\n:::gb-example layout=inline\n一段正文\n:::';
+  for(const context of [{},{webSafe:true}]) {
+    assert.match((await render(source,{type:'gb'},context)).html,/gb-example-inline/);
+    await assert.rejects(()=>render(source.replace('一段正文','一段\n\n另一段'),{type:'gb'},context),e=>e.status===400);
+  }
 });
