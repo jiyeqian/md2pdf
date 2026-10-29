@@ -4,7 +4,7 @@
 
 GB/T 1.1—2020 为最高依据，目录内三份 2026 年正式标准用于实例核对，不将样本习惯冒充规范义务。参考文件、页码、哈希和未确认项见[参考核对](gb-comprehensive-reference-audit.md)及[证据清单](gb-comprehensive-reference-ledger.json)。目前未确认必须升级处理的条款冲突，也没有需要新增参考文件才能实现的项目；47032 跨页分区表头不能未经判定就视为违规。
 
-唯一维护的全面范例是 `web/examples/gb.md`，同时用于模板库、从模板创建和三入口实际 PDF 验收。已删除旧 `tests/fixtures/gb-body-calibration.md`；固定的历史回归夹具保留用于防退化，不再作为第二份同步维护的范例。范例标明为假设标准，数据不能用于实际产品判定。
+唯一维护的全面范例是 `web/examples/gb.md`，同时用于模板库、从模板创建和三入口实际 PDF 验收。CLI展示副本 `examples/gb.md` 由 `npm run generate:gb-example` 逐字节同步，`npm run check:gb-example` 与一致性检查拒绝漂移；`templates/gb.md` 维持空白骨架，不复制演示正文。GB演示构建先同步源，可用 `bash scripts/build-demo-assets.sh --gb-only` 只更新GB PDF与封面图，卡片预览用 `node scripts/generate-template-previews.mjs --type gb` 更新。已删除旧 `tests/fixtures/gb-body-calibration.md`；固定的历史回归夹具保留用于防退化，不再作为第二份同步维护的范例。范例标明为假设标准，数据不能用于实际产品判定。
 
 `<!-- gb-check: ... -->` 为 GB 校准注释，围栏外不印出，围栏内按代码保留；CLI 与 WebApp 一致。
 

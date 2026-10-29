@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { createApp } from '../src/server.mjs';
 import { Chrome, findChrome } from '../src/chrome.mjs';
 
+const args=process.argv.slice(2);
+if(args.length&&(args.length!==2||args[0]!=='--type'||!['general','paper','gb','skill'].includes(args[1])))throw new Error('用法：node scripts/generate-template-previews.mjs [--type gb]');
+const selectedType=args[1];
 const output = fileURLToPath(new URL('../web/template-previews/', import.meta.url));
 const temp = await mkdtemp(path.join(os.tmpdir(), 'md2pdf-snapshots-'));
 const app = createApp();
@@ -17,7 +20,7 @@ try {
   await browser.start();
   await browser.send('Emulation.setDeviceMetricsOverride', { width: 820, height: 1200, deviceScaleFactor: 1, mobile: false });
   const { examples } = await (await fetch(base + '/api/examples')).json();
-  for (const example of examples) {
+  for (const example of examples.filter(example=>!selectedType||example.type===selectedType)) {
     const { md } = await (await fetch(base + '/api/example?id=' + encodeURIComponent(example.id))).json();
     const response = await fetch(base + '/api/render', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ md, opts: { type: example.type } }) });
     if (!response.ok) throw new Error(`Render failed: ${example.id}`);

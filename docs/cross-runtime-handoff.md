@@ -1,5 +1,11 @@
 # CLI 与 WebApp 一致性及本次交接
 
+## 2026-10-29 GB范例单一来源与空白骨架
+
+完整范例只编辑web/examples/gb.md，examples/gb.md由 `npm run generate:gb-example` 同步，一致性检查先拒绝副本漂移；GB演示构建会先自动同步。templates/gb.md保留空白骨架，frontmatter置首以保证自动识别，术语自动编号，索引使用中英分区；移除会导致重复生成的手写参考文献标题。历史tests/fixtures不变。
+
+已针对GB更新examples/gb.pdf、docs/theme-gb.png，并重新生成卡片预览（内容与已跟踪GB首屏相同）。可用 `bash scripts/build-demo-assets.sh --gb-only` 和 `node scripts/generate-template-previews.mjs --type gb` 定向重建，未改其他模板产物。验收依旧只提供output/pdf/gb-comprehensive-node.pdf；网页请从f96a重启，静态重建更新缓存。
+
 ## 2026-10-29 中英分区索引
 
 GB新范例及补全优先用 `gb-index-section lang=zh`（双栏）／`lang=en`（单栏），内部沿用gb-index字母分组；旧独立gb-index保持单栏，新中文分区可columns=1。索引编号、跳转共用既有稳定引用；跨页顺序、长关键词、字母与首条同栏及引导点已验证。新增 `src/gb-index-layout.mjs` 只在GB分页后定位引导点，不修改其他模板。只更新Node全面范例PDF，查看正文第12页的中英索引；需f96a重启服务，静态重建更新缓存。实现语法、测量与验收范围见全面范例说明。

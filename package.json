@@ -22,6 +22,9 @@
   },
   "scripts": {
     "validate": "bash scripts/validate.sh",
+    "generate:gb-example": "node scripts/sync-gb-example.mjs",
+    "check:gb-example": "node scripts/sync-gb-example.mjs --check",
+    "test:gb-example": "node --test tests/gb-example-sync-checks.mjs",
     "check:consistency": "node scripts/check-consistency.mjs",
     "test:analytics": "node --test tests/analytics-client-checks.mjs tests/analytics-worker-checks.mjs tests/analytics-report-checks.mjs tests/analytics-integration-checks.mjs tests/operational-metrics-checks.mjs",
     "test:analytics-browser": "node tests/analytics-browser-checks.mjs",

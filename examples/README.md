@@ -38,7 +38,12 @@ frontmatter 含 abstract/keywords 自动识别，报头三件套（作者行、�
 
 frontmatter 含「标准号」自动识别。自动生成封面（GB 标志、题头、标准号、中英文名称、
 发布/实施日期与机构块）、目次（点线 + 真实页码，前置部分罗马页码）、奇偶页眉、
-章条与附录编号（前言/引言不编号、附录 A 及其下 A.1）。版式细节见 ../docs/gb-template.md。
+章条与附录编号（前言/引言不编号、附录 A 及其下 A.1）。还包含自动术语编号、四级章节、
+长注与连续脚注、复杂表格及续表、公式，以及中文双栏／英文单栏索引。
+
+完整GB范例只维护 [`../web/examples/gb.md`](../web/examples/gb.md)，本目录的 `gb.md` 为自动同步副本，
+不要单独编辑；`../templates/gb.md` 保持空白起稿骨架。版式与验收见
+[全面范例说明](../docs/gb-comprehensive-example.md)及[写法约定](../docs/gb-template.md)。
 
 ## 如何起步
 
@@ -56,6 +61,16 @@ frontmatter 含「标准号」自动识别。自动生成封面（GB 标志、�
 改了任何示例或样式后，在仓库根目录执行：
 
 ```bash
-bash scripts/build-demo-assets.sh    # 按输入时间增量重渲，无关样例自动跳过
+bash scripts/build-demo-assets.sh    # 自动同步GB源，按输入时间增量重渲
+
+# 只更新GB示例PDF、封面效果图与模板卡片预览
+bash scripts/build-demo-assets.sh --gb-only
+node scripts/generate-template-previews.mjs --type gb
+
+# 仅同步完整范例副本，或只检查是否漂移
+npm run generate:gb-example
+npm run check:gb-example
 ```
 
+
+`npm run check:consistency` 会先检查GB源副本，发现漂移即失败；构建产物和历史回归夹具不是另一份手工维护来源。

@@ -9,9 +9,11 @@ import { buildStatic } from '../src/static-build.mjs';
 import { render } from '../src/render.mjs';
 import { createApp, webDocument } from '../src/server.mjs';
 import { attachSourcePositions } from '../src/editor-position.mjs';
+import { syncGbExample } from './sync-gb-example.mjs';
 import { VERSION } from '../src/version.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+await syncGbExample(root,true);
 const build = await buildStatic();
 const tmp = await mkdtemp(path.join(os.tmpdir(), 'md2pdf-consistency-'));
 const nativeFetch = globalThis.fetch;
