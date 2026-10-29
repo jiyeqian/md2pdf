@@ -51,7 +51,7 @@ window.mdShowFontError = fonts => {
   dialog.className = 'template-confirm font-error-dialog';
   dialog.setAttribute('aria-label', '字体未能加载');
   const message = document.createElement('p');
-  message.textContent = '未能加载字体：' + fonts.join('、') + '。';
+  message.textContent = '未能加载字体：' + fonts.join('、') + '。当前为替代字体，输出 PDF 的分页和版式可能不同。';
   const help = document.createElement('p');
   help.append('请查看');
   const link = document.createElement('a');
@@ -62,15 +62,30 @@ window.mdShowFontError = fonts => {
   help.append(link, '。');
   const actions = document.createElement('div');
   actions.className = 'template-confirm-actions';
-  const close = document.createElement('button');
-  close.className = 'primary';
-  close.textContent = '知道了';
-  actions.append(close);
+  const cancel = document.createElement('button');
+  cancel.textContent = '取消';
+  const download = document.createElement('button');
+  download.className = 'primary';
+  download.textContent = '下载';
+  actions.append(cancel, download);
   dialog.append(message, help, actions);
   document.body.append(dialog);
-  const finish = () => { dialog.close(); dialog.remove(); if (previous?.isConnected) previous.focus(); };
-  close.addEventListener('click', finish);
-  dialog.addEventListener('cancel', event => { event.preventDefault(); finish(); });
-  dialog.showModal();
-  close.focus();
+  return new Promise(resolve => {
+    const finish = accepted => { dialog.close(); dialog.remove(); if (previous?.isConnected) previous.focus(); resolve(accepted); };
+    cancel.addEventListener('click', () => finish(false));
+    download.addEventListener('click', () => finish(true));
+    dialog.addEventListener('cancel', event => { event.preventDefault(); finish(false); });
+    dialog.showModal();
+    download.focus();
+  });
+};
+
+// A failed strict attempt never silently opts the document into fallback export.
+window.mdExportWithFontConsent = async action => {
+  try { return await action(false); }
+  catch (error) {
+    if (error.code !== 'GB_FONT_MISSING') throw error;
+    if (!await window.mdShowFontError(error.fonts)) throw Object.assign(new Error('已取消 PDF 下载。'), {code:'EXPORT_CANCELLED'});
+    return action(true);
+  }
 };

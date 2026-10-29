@@ -1071,11 +1071,11 @@ download.addEventListener('click', async () => {
     if (exportName) pdfBody.filename = exportName;
     if (window.__MD2PDF_STATIC_BASE__) {
       const runtime = await import('./runtime-request.mjs');
-      await runtime.exportPdf({ md:exportMd, opts:exportOptions, filename:exportName });
+      await window.mdExportWithFontConsent(allowFontFallback => runtime.exportPdf({ md:exportMd, opts:exportOptions, filename:exportName, allowFontFallback }));
       setStatus('已打开打印，请另存为 PDF。');
       return;
     }
-    const response = await request('/api/pdf', pdfBody);
+    const response = await window.mdExportWithFontConsent(allowFontFallback => request('/api/pdf', { ...pdfBody, allowFontFallback }));
     const blob = await response.blob();
     const anchor = document.createElement('a');
     const disposition = response.headers.get('Content-Disposition') || '';
@@ -1097,6 +1097,7 @@ download.addEventListener('click', async () => {
     if (revision !== exportRevision) setStatus('PDF 已生成并开始下载（导出的是开始导出时的版本，期间编辑未包含）。');
     else setStatus('PDF 已生成，下载已开始。');
   } catch (error) {
+    if (error.code === 'EXPORT_CANCELLED') { setStatus('已取消 PDF 下载。'); return; }
     // 下载请求同样可能因文档配置错误被拒：提示行号并禁用后续导出，Markdown 下载不受影响。
     trackUsage('export_failed', { method: exportMethod, code: error.status === 504 ? 'timeout' : error.status === 503 ? 'unavailable' : 'failed' });
     if (Array.isArray(error.configErrors) && error.configErrors.length) {
@@ -1104,7 +1105,6 @@ download.addEventListener('click', async () => {
       setStatus('配置无效 · 无法生成 PDF，请先修正文档配置。', true);
     } else {
       setStatus(error.message, true);
-      if (error.code === 'GB_FONT_MISSING') window.mdShowFontError(error.fonts);
     }
   } finally {
     downloading = false;

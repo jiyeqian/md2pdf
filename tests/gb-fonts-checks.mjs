@@ -20,13 +20,15 @@ test('font failures report all missing families once before pagination', async (
 
 test('font popup uses application styling and published help link', async () => {
   const nodes = [];
-  const document = { querySelector:()=>null, body:{append:n=>nodes.push(n)}, createElement:()=>({children:[],events:{},setAttribute(){},append(...items){this.children.push(...items)},addEventListener(k,f){this.events[k]=f},showModal(){},focus(){},close(){},remove(){}}) };
+  const document = { querySelector:()=>null, body:{append:n=>nodes.push(n)}, createElement:()=>({children:[],events:{},setAttribute(){},append(...items){this.children.push(...items)},addEventListener(k,f){this.events[k]=f},showModal(){},focus(){this.focused=true;},close(){},remove(){}}) };
   const window = {};
   vm.runInNewContext(await readFile(new URL('../web/template-confirm.js',import.meta.url),'utf8'),{window,document});
   window.mdShowFontError(['方正小标宋_GBK']);
   assert.match(nodes[0].className,/template-confirm/);
-  assert.equal(nodes[0].children[0].textContent,'未能加载字体：方正小标宋_GBK。');
+  assert.equal(nodes[0].children[0].textContent,'未能加载字体：方正小标宋_GBK。当前为替代字体，输出 PDF 的分页和版式可能不同。');
   assert.equal(nodes[0].children[1].children[1].href,'./gb-fonts.html');
+  assert.equal(nodes[0].children[2].children[1].textContent,'下载');
+  assert.equal(nodes[0].children[2].children[1].focused,true);
 });
 
 test('only enhanced preview enables fallback; PDF keeps strict font validation', async () => {
@@ -57,5 +59,22 @@ test('missing fonts run pagination only in preview fallback mode', async () => {
     await new Promise(resolve=>setImmediate(resolve));
     assert.equal(runs,fallback?1:0);
     assert.equal(Boolean(window.__md2pdfPagedError),!fallback);
+  }
+});
+
+test('export retries with fallback only after consent, cancellation never retries', async () => {
+  for (const consent of [true,false]) {
+    const window = {};
+    vm.runInNewContext(await readFile(new URL('../web/template-confirm.js',import.meta.url),'utf8'),{window,document:{}});
+    window.mdShowFontError=async()=>consent;
+    const attempts=[];
+    const result=window.mdExportWithFontConsent(async allow=>{
+      attempts.push(allow);
+      if(!allow) throw Object.assign(new Error('missing'),{code:'GB_FONT_MISSING',fonts:['方正书宋_GBK']});
+      return 'pdf';
+    });
+    if(consent) assert.equal(await result,'pdf');
+    else await assert.rejects(result,/已取消/);
+    assert.deepEqual(attempts,consent?[false,true]:[false]);
   }
 });

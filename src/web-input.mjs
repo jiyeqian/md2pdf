@@ -107,7 +107,7 @@ export function imageBudget(md) {
 const formatMiB = bytes => (bytes / (1024 * 1024)).toFixed(1); // 仅用于错误提示的粗略显示
 
 export function validateInput(body) {
-  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(k => !['md', 'opts', 'filename'].includes(k))) throw error(400, '请求必须包含 md 和可选 opts');
+  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(k => !['md', 'opts', 'filename', 'allowFontFallback'].includes(k))) throw error(400, '请求必须包含 md 和可选 opts');
   if (typeof body.md !== 'string' || !body.md.trim()) throw error(400, '请输入 Markdown 正文');
   // 合法内嵌图片的 Data URL 不计入正文字符预算；其余（含代码内假图片、非图片/非法 Data URL）照常计入。
   const images = imageBudget(body.md);
@@ -137,13 +137,14 @@ export function validateInput(body) {
     filename = sanitizeDownloadFileName(body.filename, 'pdf');
     if (!filename) throw error(400, 'filename 非法');
   }
-  return { md: body.md, opts: { ...opts, pagedHtml: true }, filename };
+  if (body.allowFontFallback !== undefined && typeof body.allowFontFallback !== 'boolean') throw error(400, 'allowFontFallback 必须是布尔值');
+  return { allowFontFallback: body.allowFontFallback === true, md: body.md, opts: { ...opts, pagedHtml: true }, filename };
 }
 
 
 // 在线接口与静态适配器共用解析、优先级及可调选项校验。
 export function resolveWebInput(body, { autoPreview = false } = {}) {
-  const { md, opts, filename } = validateInput(body);
+  const { md, opts, filename, allowFontFallback } = validateInput(body);
   const parsedFrontmatterResult = parseFrontmatter(md);
   const { fm, positions, warnings = [] } = parsedFrontmatterResult;
   const explicitType = opts.type ?? fm.type;
@@ -163,5 +164,5 @@ export function resolveWebInput(body, { autoPreview = false } = {}) {
   }
   const effective = effectiveOptions(opts, type, fm, positions);
   assertOptionsAllowed(opts, type, frontmatterOverrides(fm));
-  return { md, opts, filename, type, effective, resetOptions: [...new Set(resetOptions)], parsedFrontmatter: { source: md, parsed: parsedFrontmatterResult }, authorDiagnostics: warnings.filter(message => message.includes('未被任何作者引用')).map(message => ({ severity:'warning', message, line:positions.affiliations?.line })), policy:policyForType(type, effective) };
+  return { md, opts, filename, allowFontFallback, type, effective, resetOptions: [...new Set(resetOptions)], parsedFrontmatter: { source: md, parsed: parsedFrontmatterResult }, authorDiagnostics: warnings.filter(message => message.includes('未被任何作者引用')).map(message => ({ severity:'warning', message, line:positions.affiliations?.line })), policy:policyForType(type, effective) };
 }

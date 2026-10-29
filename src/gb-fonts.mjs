@@ -28,3 +28,8 @@ export function gbFontDiagnostic(value) {
   const fonts = known.filter(label => Array.isArray(value.fonts) && value.fonts.includes(label));
   return { code: 'GB_FONT_MISSING', fonts: fonts.length ? fonts : known };
 }
+
+// Only called by export entry points after explicit user confirmation.
+export function withGbFontFallback(html) {
+  return html.replace('<head>', '<head><script>window.__md2pdfAllowFontFallback=true;</script>');
+}

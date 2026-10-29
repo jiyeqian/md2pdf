@@ -482,3 +482,18 @@ test('font failures expose safe families and publish the font guide', async t =>
   assert.equal(guide.status,200);
   assert.match(await guide.text(),/在服务器安装/);
 });
+
+test('PDF fallback requires explicit per-request confirmation', async t => {
+  const attempts=[];
+  const {post}=await fixture(t,{chromeFactory:()=>({async start(){},async stop(){},async printHtml(html){
+    const fallback=html.includes('window.__md2pdfAllowFontFallback=true');
+    attempts.push(fallback);
+    if(!fallback) throw Object.assign(new Error('missing'),{code:'GB_FONT_MISSING',fonts:['方正书宋_GBK']});
+    return Buffer.from('%PDF-test');
+  }})});
+  assert.equal((await post('/api/pdf',doc)).status,503);
+  assert.equal((await post('/api/pdf',{...doc,allowFontFallback:true})).status,200);
+  assert.equal((await post('/api/pdf',doc)).status,503);
+  assert.deepEqual(attempts,[false,true,false]);
+  assert.throws(()=>validateInput({...doc,allowFontFallback:'true'}),{status:400});
+});
