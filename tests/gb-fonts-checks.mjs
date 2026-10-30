@@ -54,10 +54,10 @@ test('only enhanced preview enables fallback; PDF keeps strict font validation',
 test('missing fonts run pagination only in preview fallback mode', async () => {
   const {render} = await import('../src/render.mjs');
   const {pagedHtml} = await render('# 字体测试',{type:'gb',pagedHtml:true});
-  const start = pagedHtml.match(/function start\(\) \{ requireGbFonts\([^\n]+/)[0];
+  const start = pagedHtml.match(/function start\(\) \{ window\.__md2pdfFontCheck[^\n]+/)[0];
   for (const fallback of [true,false]) {
     let runs=0;
-    const window={__md2pdfAllowFontFallback:fallback,__md2pdfFontError:{fonts:['方正书宋_GBK']}};
+    const window={__md2pdfAllowFontFallback:fallback,__md2pdfFontError:{fonts:['方正书宋_GBK']},__md2pdfFontCheck:Promise.reject(new Error('missing'))};
     vm.runInNewContext(start+'; start();',{window,document:{fonts:{ready:Promise.resolve()}},requireGbFonts:async()=>{throw new Error('missing');},run:()=>{runs++;}});
     await new Promise(resolve=>setImmediate(resolve));
     assert.equal(runs,fallback?1:0);
@@ -66,14 +66,14 @@ test('missing fonts run pagination only in preview fallback mode', async () => {
 });
 
 test('export retries with fallback only after consent, cancellation never retries', async () => {
-  for (const consent of [true,false]) {
+  for (const consent of [true,false]) for (const code of ['GB_FONT_MISSING','FONT_MISSING']) {
     const window = {};
     vm.runInNewContext(await readFile(new URL('../web/template-confirm.js',import.meta.url),'utf8'),{window,document:{}});
     window.mdShowFontError=async()=>consent;
     const attempts=[];
     const result=window.mdExportWithFontConsent(async allow=>{
       attempts.push(allow);
-      if(!allow) throw Object.assign(new Error('missing'),{code:'GB_FONT_MISSING',fonts:['方正书宋_GBK']});
+      if(!allow) throw Object.assign(new Error('missing'),{code,fonts:['方正书宋_GBK']});
       return 'pdf';
     });
     if(consent) assert.equal(await result,'pdf');

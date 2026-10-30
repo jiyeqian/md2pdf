@@ -294,6 +294,7 @@ export function effectiveOptions(opts = {}, type = 'general', fm = {}, positions
   const effective = resolveDocumentOptions(opts, fm, PROFILES[type] || PROFILES.general, { positions });
   const keys = ['chapterStart', 'theme', 'numberScheme', 'numbering', 'toc', 'tocDepth', 'fontSize', 'lineHeight', 'landscape', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight'];
   const result = Object.fromEntries(keys.map(key => [key, effective[key]]));
+  if (effective.fonts !== undefined) result.fonts = effective.fonts;
   if (type === 'gb') result.lineHeight = GB_LINE_HEIGHT;
   return result;
 }

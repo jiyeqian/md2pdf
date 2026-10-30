@@ -1,4 +1,5 @@
 import { prepareGbContent, transformGbContent } from './gb-content.mjs';
+import { documentFonts } from './fonts.mjs';
 import { GB_FONT_CHECKS, requireGbFonts } from './gb-fonts.mjs';
 import { finalizeGbLayout, prepareGbLayout } from './gb-layout.mjs';
 import { finalizeGbIndexLayout } from './gb-index-layout.mjs';
@@ -779,6 +780,9 @@ export async function render(src, options = {}, context = {}) {
   // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 themes/gb.css 的
   // body{line-height:1.62} 直接覆盖，且 server 拒绝为 gb 传入 lineHeight。
   const effLineHeight = Number.isFinite(eff.lineHeight) ? eff.lineHeight : 1.9;
+  const fontPlan = documentFonts(eff.fonts, profile.gbDoc);
+  const fontChecks = [...(profile.gbDoc ? GB_FONT_CHECKS : []), ...fontPlan.checks];
+  const fontScript = fontChecks.length ? '<script>\nwindow.__md2pdfFontsReady=false;\n' + requireGbFonts.toString() + '\nwindow.__md2pdfFontCheck=requireGbFonts(' + JSON.stringify(fontChecks) + ');\nwindow.__md2pdfFontCheck.then(function(){window.__md2pdfFontsReady=true;},function(){window.__md2pdfFontsReady=true;});\n</script>\n' : '';
   const css = (base + '\n' + theme + (profile.gbDoc ? '\n' + GB_EQUATION_CSS : ''))
     .replace(/\{\{PAGE_SIZE\}\}/g, eff.landscape ? 'A4 landscape' : 'A4')
     .replace(/\{\{MARGIN_TOP\}\}/g, `${effMarginTop}mm`)
@@ -792,7 +796,7 @@ export async function render(src, options = {}, context = {}) {
   // 做不到奇偶差异，改由 Paged.js 的命名页 margin box 绘制（故标准号在这里动态成 CSS）。
   const stdno = fm['标准号'] || fm.standard || '';
   const pageCss = profile.gbDoc ? gbHeaderCss(stdno) : '';
-  let finalCss = (pageCss ? css + '\n' + pageCss : css) + (gbNotes ? '\n' + gbNotes.css : '');
+  let finalCss = (pageCss ? css + '\n' + pageCss : css) + (gbNotes ? '\n' + gbNotes.css : '') + (fontPlan.css ? '\n' + fontPlan.css : '');
 
   const chapterStart = eff.chapterStart;
   if (chapterStart !== 'continuous') {
@@ -840,7 +844,7 @@ export async function render(src, options = {}, context = {}) {
     'window.__md2pdfMermaidReady = false;',
     'try {',
     // 用文档主题的 CSS 变量驱动 mermaid 配色/字体（elegant / minimal 自动适配）
-    '  var cs = getComputedStyle(document.documentElement);',
+    fontPlan.checks.length ? '  var cs = getComputedStyle(document.querySelector("main") || document.body);' : '  var cs = getComputedStyle(document.documentElement);',
     '  var v = function (n) { return (cs.getPropertyValue(n) || "").trim(); };',
     '  mermaid.initialize({',
     '    startOnLoad: false,',
@@ -861,7 +865,7 @@ export async function render(src, options = {}, context = {}) {
     '      edgeLabelBackground: v("--paper")',
     '    }',
     '  });',
-    '  mermaid.run().then(function () { window.__md2pdfMermaidReady = true; })',
+    (fontPlan.checks.length ? '  window.__md2pdfFontCheck.catch(function () {}).then(function () { return mermaid.run(); })' : '  mermaid.run()') + '.then(function () { window.__md2pdfMermaidReady = true; })',
     '    .catch(function () { window.__md2pdfMermaidReady = true; });',
     '} catch (e) { window.__md2pdfMermaidReady = true; }',
     '</script>',
@@ -897,7 +901,7 @@ export async function render(src, options = {}, context = {}) {
     'window.__md2pdfPagedReady = false;',
     installPagedLayout.toString(),
     profile.gbDoc ? '' : stampPagedLists.toString(),
-    profile.gbDoc ? [requireGbFonts, prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbTableRules, finalizeGbIndexLayout, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
+    profile.gbDoc ? [prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbTableRules, finalizeGbIndexLayout, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
     '(function () {',
     '  function depsReady() {',
     '    return window.__md2pdfMathReady !== false && window.__md2pdfMermaidReady !== false;',
@@ -912,7 +916,7 @@ export async function render(src, options = {}, context = {}) {
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
-    profile.gbDoc ? '  function start() { requireGbFonts(' + JSON.stringify(GB_FONT_CHECKS) + ').then(run).catch(function (error) { if (window.__md2pdfAllowFontFallback && window.__md2pdfFontError) { document.fonts.ready.then(run); return; } window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
+    fontChecks.length ? '  function start() { window.__md2pdfFontCheck.then(run).catch(function (error) { if (window.__md2pdfAllowFontFallback && window.__md2pdfFontError) { document.fonts.ready.then(run); return; } window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
     '  if (document.readyState === "complete") start(); else window.addEventListener("load", start);',
     '})();',
     '</script>',
@@ -959,7 +963,7 @@ export async function render(src, options = {}, context = {}) {
     '{{COVER}}': coverHtml,
     '{{AUTHORS}}': authorsHtml,
     '{{PAPER}}': paperHtml,
-    '{{MATHJAX}}': mathScript,
+    '{{MATHJAX}}': fontScript + mathScript,
     '{{MERMAID}}': mermaidScript,
     '{{PAGEDJS}}': pagedScript,
     '{{HEAD_META}}': headMeta,
@@ -1019,6 +1023,6 @@ export async function render(src, options = {}, context = {}) {
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
   return { title, warnings, html: assetHtml(usePaged && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
-    printOptions: { ...(profile.gbDoc ? {requireGbFonts:true} : {}), footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
+    printOptions: { ...(profile.gbDoc ? {requireGbFonts:true} : {}), ...(fontChecks.length ? {requireFonts:true,waitFonts:true} : {}), footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
       landscape: eff.landscape, outline: eff.outline !== false, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
 }

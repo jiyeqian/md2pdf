@@ -18,6 +18,7 @@
  * 防止 YAML 反序列化污染原型；解析设置 maxAliasCount 上限，避免别名炸弹。
  */
 import { CHAPTER_START_VALUES, TOC_LEVEL_VALUES, TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from './frontmatter-fields.mjs';
+import { normalizeFonts } from './fonts.mjs';
 import { paperAuthorErrors, paperAuthorWarnings } from './paper-authors.mjs';
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { GLOBAL_OPTION_DEFAULTS, FEATURES, RUNTIME_FEATURES, listThemes } from './options.mjs';
@@ -95,7 +96,7 @@ const MERGE_KEYS = [
   ...TEXT_FIELDS,
   ...BOOL_FIELDS,
   ...Object.keys(ENUM_FIELDS),
-  'fontSize', 'lineHeight', 'tocDepth', 'bibliography',
+  'fontSize', 'lineHeight', 'tocDepth', 'bibliography', 'fonts',
 ];
 
 /* ---------------- 值规范化 ---------------- */
@@ -256,6 +257,11 @@ function ingestLayer(raw, opts = {}) {
     if (canon === 'enable' || canon === 'disable') {
       const names = readFeatureList(rawKey, rawValue, pos);
       (canon === 'enable' ? enableList : disableList).push(...names.map(n => [n, rawKey]));
+      continue;
+    }
+    if (canon === 'fonts') {
+      try { setField(canon, normalizeFonts(rawValue), rawKey); }
+      catch (error) { throw cfgError(error.message, 'fonts', pos); }
       continue;
     }
     if (TEXT_FIELDS.includes(canon)) { setField(canon, coerceText(rawValue, rawKey, canon, pos), rawKey); continue; }
@@ -487,6 +493,8 @@ export function resolveDocumentOptions(explicit = {}, fm = {}, profile = null, c
   const out = {};
   for (const key of MERGE_KEYS) out[key] = pick(key);
 
+  if ([p,f,e].some(layer => layer.fonts !== undefined)) out.fonts = { ...p.fonts, ...f.fonts, ...e.fonts };
+
   // 文档版本仅作落款中栏的缺省值，不覆盖显式空串或类型固定版式。
   if (out.colophonCenter === undefined && (typeof fm.version === 'string' || (typeof fm.version === 'number' && Number.isFinite(fm.version)))) {
     out.colophonCenter = String(fm.version);
@@ -524,6 +532,7 @@ export function resolveDocumentOptions(explicit = {}, fm = {}, profile = null, c
   // 运行字段透传（仅来自 explicit；frontmatter 不可控制）
   out.inputs = Array.isArray(explicit.inputs) ? explicit.inputs.slice() : [];
   out.output = explicit.output;
+  out.allowFontFallback = explicit.allowFontFallback === true;
   out.help = explicit.help === true;
   out.version = explicit.version === true;
   out.open = hasOwn(e, 'open') ? e.open : explicit.open === true;

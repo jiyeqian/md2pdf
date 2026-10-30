@@ -14,7 +14,7 @@ export const NUMBER_FIELDS = {
 };
 export const BOOL_FIELDS = ['header', 'colophonEnabled', 'footer', 'meta', 'lead', 'toc', 'outline', 'floatNumbering', 'gbCover', 'gbDefaults', 'linkUrls', 'landscape'];
 export const CONTROL_FIELDS = ['enable', 'disable'];
-export const SPECIAL_FIELDS = ['margin', 'bibliography'];
+export const SPECIAL_FIELDS = ['margin', 'bibliography', 'fonts'];
 export const CONFIG_FIELDS = new Set([
   ...TEXT_FIELDS, ...Object.keys(NUMBER_FIELDS), ...BOOL_FIELDS,
   ...'theme type numbering numberScheme chapterStart'.split(' '), ...CONTROL_FIELDS, ...SPECIAL_FIELDS,

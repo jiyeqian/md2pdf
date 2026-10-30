@@ -158,6 +158,7 @@ export class Chrome {
     await new Promise(r => setTimeout(r, 250));
     // MathJax / Mermaid 异步渲染：轮询等待完成再打印（否则公式/图表是空白）
     const waits = [];
+    if (opts.waitFonts) waits.push('window.__md2pdfFontsReady === true');
     if (opts.waitMath) waits.push('window.__md2pdfMathReady === true');
     if (opts.waitMermaid) waits.push('window.__md2pdfMermaidReady === true');
     // Paged.js 分页完成（GB 专用）：必须在公式/图表之后，否则页框尺寸不对
@@ -177,14 +178,14 @@ export class Chrome {
       }
       if (!ready) throw new Error('Chrome asynchronous rendering timeout');
     }
+    if (opts.requireFonts || opts.requireGbFonts) {
+      const fontState = await this.send('Runtime.evaluate', {expression:'window.__md2pdfAllowFontFallback ? null : window.__md2pdfFontError || null',returnByValue:true});
+      const issue = gbFontDiagnostic(fontState.result?.value);
+      if (issue) throw Object.assign(new Error('未能加载字体：' + issue.fonts.join('、')), issue);
+    }
     if (opts.webSafe || opts.requireGbFonts) {
       const failure = await this.send('Runtime.evaluate', { expression: 'window.__md2pdfMermaidError || window.__md2pdfPagedError || null', returnByValue: true });
       if (failure.result?.value) {
-        if (opts.requireGbFonts) {
-          const result = await this.send('Runtime.evaluate', { expression: 'window.__md2pdfFontError || null', returnByValue: true });
-          const issue = gbFontDiagnostic(result.result?.value);
-          if (issue) throw Object.assign(new Error('国家标准所需字体未能加载：' + issue.fonts.join('、')), issue);
-        }
         throw new Error('Document rendering failed' + (opts.requireGbFonts ? ': ' + failure.result.value : ''));
       }
     }

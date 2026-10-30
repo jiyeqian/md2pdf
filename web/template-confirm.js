@@ -87,7 +87,7 @@ window.mdShowFontError = fonts => {
 window.mdExportWithFontConsent = async action => {
   try { return await action(false); }
   catch (error) {
-    if (error.code !== 'GB_FONT_MISSING') throw error;
+    if (!['GB_FONT_MISSING','FONT_MISSING'].includes(error.code)) throw error;
     if (!await window.mdShowFontError(error.fonts)) throw Object.assign(new Error('已取消 PDF 下载。'), {code:'EXPORT_CANCELLED'});
     return action(true);
   }

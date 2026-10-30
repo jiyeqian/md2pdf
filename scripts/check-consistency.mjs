@@ -87,6 +87,25 @@ try {
     sameHtml(online.html,await webDocument(attachSourcePositions(core.pagedHtml,md),true,core.type),mode+': chapter/table prepared HTML');
   }
   console.log('✓ 章分页三种策略与表头运行时：CLI、Node、静态配置及 HTML 一致');
+  for (const type of ['general','paper','gb','skill']) {
+    const md='---\nfonts:\n  body: Arial\n  heading: Helvetica\n  western: Times New Roman\n  code: Menlo\n---\n# 字体一致性\n\n## 范围\n\n正文 ABC 123。`code`';
+    const body={md,opts:{type}},opts={type,pagedHtml:true};
+    const core=await render(md,opts,{webSafe:true});
+    const local=await browserRender(md,opts,{webSafe:true});
+    sameHtml(local.pagedHtml,core.pagedHtml,type+': custom font core');
+    assert.deepEqual(local.printOptions,core.printOptions);
+    const response=await nativeFetch(base+'/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    assert.equal(response.status,200);
+    const online=await response.json(),offline=await(await browser.appFetch('/api/preview',{body:JSON.stringify(body)})).json();
+    sameHtml(offline.html,online.html,type+': custom font preview');
+    assert.deepEqual(offline.effective.fonts,{body:'Arial',heading:'Helvetica',western:'Times New Roman',code:'Menlo'});
+    assert.deepEqual(offline.effective.fonts,online.effective.fonts);
+    const input=path.join(tmp,'fonts-'+type+'.md'),output=path.join(tmp,'fonts-'+type+'.html');
+    await writeFile(input,md);
+    execFileSync(process.execPath,['src/md2pdf.mjs',input,'--type',type,'--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});
+    sameHtml(await readFile(output,'utf8'),core.pagedHtml,type+': custom font CLI');
+  }
+  console.log('✓ 四模板 fonts 映射、CLI HTML、Node 与静态预览及字体检查规则一致');
   for (const depth of [0,1,2,3]) {
     const md=`---\n标准号: GB/T 39999—2026\n中文名称: 目录命名验收\ntitle: 旧标题\nversion: v2\ntoc: ${depth}\n---\n## 范围\n\n### 次级条\n\n#### 三级条\n\n##### 四级条\n`;
     const body={md,opts:{}};

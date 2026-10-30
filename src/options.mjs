@@ -1,3 +1,4 @@
+import { normalizeFonts } from './fonts.mjs';
 import { CHAPTER_START_VALUES, TOC_DEPTH_VALUES } from './frontmatter-fields.mjs';
 import { readdirSync } from 'node:fs';
 import path from 'node:path';
@@ -204,6 +205,14 @@ export function parseArgs(argv) {
       case '--bibliography-title': put('bibliographyTitle', takeValue('--bibliography-title'), '--bibliography-title'); break;
 
       // 数值
+      case '--font-body': case '--font-heading': case '--font-western': case '--font-code': {
+        const role = name.slice('--font-'.length), family = takeValue(name);
+        if (o.fonts?.[role] !== undefined && o.fonts[role] !== family) throw err('字体选项重复且冲突：' + name, name);
+        try { o.fonts = normalizeFonts({ ...o.fonts, [role]: family }); }
+        catch (error) { throw err(error.message, name); }
+        break;
+      }
+      case '--allow-font-fallback': o.allowFontFallback = eq === undefined ? true : boolFrom(eq, name); break;
       case '--font-size': put('fontSize', numberFrom(takeValue('--font-size', { numeric: true }), '--font-size', { min: 0.1 }), '--font-size'); break;
       case '--line-height': put('lineHeight', numberFrom(takeValue('--line-height', { numeric: true }), '--line-height', { min: 0.1 }), '--line-height'); break;
       case '--toc-depth': {

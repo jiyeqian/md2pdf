@@ -1,5 +1,19 @@
 # CLI 与 WebApp 一致性及本次交接
 
+## 2026-10-30 四模板自定义字体
+
+共同配置是`fonts`映射，键为`body`、`heading`、`western`、`code`；CLI的`--font-body/--font-heading/--font-western/--font-code`按键覆盖frontmatter，其余键继续继承。未设置的字体保留模板默认；映射及单个字体名称统一校验，拒绝列表、未知键、空值、路径、URL和CSS。仅使用本机`local()`字面，不提供字体目录、上传、远程下载或设置面板。字号、行距和字重仍由模板规则决定。西文字母／数字优先使用western，代码独立使用code；GB封面、正文首页文件名称、页眉标准号、页码及封底等专用区域保留既有字体。Mermaid在字体检查完成后按正文对应字体测量。
+
+字体检查推广到用户指定字体：浏览器预览提示并回退，下载默认严格检查，弹窗确认后单次允许回退；取消不导出。CLI默认提示并停止，`--allow-font-fallback`显式允许；frontmatter不能开启该运行选项。回退不改写配置。GB专用字体依赖仍保留。字体家族同名不保证字体文件、字形覆盖及浏览器／打印环境相同，不能承诺跨设备结果完全一致。配置说明见[字体配置](fonts.md)，弹窗继续链接`gb-fonts.html`，内容已推广为全部模板的安装说明。
+
+工作树`/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`，分支`codex/template`。开始时main仅多出CI提交，本轮未同步、合并、推送或创建tag。已有服务需从本工作树重启，可用`PORT=8766 npm start`，入口`http://127.0.0.1:8766/`；静态部署需在目标提交上重建并更新缓存。
+
+验收：在任意模板frontmatter填写四项字体，检查正文、标题、西文与代码；将body换成不存在的名称，核对预览警告及说明链接，下载时分别取消和确认。CLI同一文件默认报缺字体停止，加`--allow-font-fallback`后才输出；以`--font-body Arial`覆盖缺失字体时无需允许回退。GB再核对封面、正文首页文件名称及页眉标准号的专用字体未变。
+
+验证：157项配置／字体／预览／服务器／导航回归通过，108项基础检查通过；`npm run check:consistency`新增四模板fonts映射的CLI HTML、Node、静态预览及字体检查比较并通过。`npm run test:fonts-browser`在本机Chrome 156.0.8078.74、Arial/Helvetica/Times New Roman/Menlo及现有GB字体环境中通过：8组模板／运行时检查真实采用的字形，附加简洁主题标题字体检查；模拟不存在字体，实际Node接口严格503、确认后PDF成功，CLI严格拒绝／显式回退／参数覆盖均验证。静态真实沙箱验证拒绝及取消／默认下载焦点／确认后排版，仅系统打印交接替身化，未声称系统保存框或手机验收。记录`/private/tmp/md2pdf-fonts-acceptance.json`可由测试重建；Node样张`output/pdf/custom-fonts-node.pdf`已抽查，并核对嵌入的Times New Roman、Helvetica、Arial、Menlo等字体。未配置fonts的完整GB Node PDF验收通过。
+
+测试环境未覆盖Linux部署字体差异、真实系统打印保存框、手机、线上部署及缓存更新；这些仍需相应环境验收。临时记录可能被系统清理，永久操作方法与验证范围保存在本文及测试中。
+
 ## 2026-10-30 GB 章节同步定位修复
 
 GB标题新增稳定标识后，渲染隐藏`{#sec:…}`，旧的源行映射仍按包含标识的原文比较，只剩前言和引言匹配，导致后续编辑位置均回退到引言。映射现优先使用唯一稳定标识和层级；普通标题保留文本匹配，并仅从GB正文首页组合标题中提取“范围”部分匹配。重复、缺失或层级不符的稳定标识不猜测行号。

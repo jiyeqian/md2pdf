@@ -41,6 +41,7 @@ import { PROFILE_NAMES } from './profiles.mjs';
 import { SCHEME_NAMES } from './numbering.mjs';
 import { parseArgs, expandArgs } from './options.mjs';
 import { render } from './render.mjs';
+import { withGbFontFallback } from './gb-fonts.mjs';
 import { Chrome, findChrome } from './chrome.mjs';
 import { VERSION } from './version.mjs';
 
@@ -58,6 +59,11 @@ md2pdf ${VERSION} — Markdown 转 PDF
       --theme <名称>         主题：elegant、minimal；默认 elegant
       --title <文字>         文档标题
       --kicker <文字>        报头小标题
+      --font-body <name>     正文字体（本机已安装的字体名称）
+      --font-heading <name>  各级标题字体
+      --font-western <name>  正文和标题中的西文字母、数字字体
+      --font-code <name>     行内代码与代码块字体
+      --allow-font-fallback  缺字体时明确允许使用替代字体导出
       --font-size <pt>       正文字号，默认 10.5
       --line-height <倍数>   正文行距，默认 1.9
       --margin <mm>          页边距，支持“上下,左右”
@@ -104,6 +110,10 @@ md2pdf ${VERSION} — Markdown 转 PDF
 
 async function renderOne(mdPath, opts, chrome, tmpRoot) {
   const res = await render(await readFile(mdPath, 'utf8'), opts, { filename: mdPath });
+  if (opts.allowFontFallback) {
+    res.html = withGbFontFallback(res.html);
+    if (res.pagedHtml) res.pagedHtml = withGbFontFallback(res.pagedHtml);
+  }
   for (const warning of res.warnings) console.warn('md2pdf: ' + warning);
   if (opts.htmlOnly) return { ...res, html: res.pagedHtml ?? res.html };
   const tmpDir = await mkdtemp(path.join(tmpRoot, 'doc-'));
