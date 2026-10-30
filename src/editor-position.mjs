@@ -6,7 +6,7 @@
 //
 // 设计边界：
 //   * 只改写标题的开始标签，不触碰标题内部（可能含被转义的用户内容），不改变版式；
-//   * 仅在「层级相同且纯文本匹配」时写入；不匹配的标题保持原样，不臆造行号；
+//   * 优先按唯一的 GB 稳定标识及层级匹配；其他标题按纯文本匹配，不臆造行号；
 //   * 编号前缀剥离只识别 md2pdf 渲染器已知的编号格式（阿拉伯 / 第X章 / 中文 / 括号 /
 //     GB 附录字母），不做泛化猜测；
 //   * Markdown 侧只统计 frontmatter 与代码围栏之外的 ATX（可选 setext）标题。
@@ -111,16 +111,24 @@ export function attachSourcePositions(html, md) {
   if (!/<h[2-6][\s>]/.test(html)) return html;
   const targets = parseMarkdownHeadings(md)
     .filter(h => h.level >= 2 && h.level <= 6)
-    .map(h => ({ line: h.line, level: h.level, norm: normalize(markdownHeadingText(h.text)) }));
+    .map(h => ({ line: h.line, level: h.level, stable: /\s*\{#(sec:[\w.-]+)\}\s*$/.exec(h.text)?.[1], norm: normalize(markdownHeadingText(h.text)) }));
   if (!targets.length) return html;
+  const stableTargets = new Map();
+  for (const [index, target] of targets.entries()) {
+    if (target.stable) stableTargets.set(target.stable, stableTargets.has(target.stable) ? null : index);
+  }
   let pointer = 0;
   return html.replace(HEADING_RE, (match, level, attrs, inner) => {
     if (/(?:^|\s)data-md2pdf-source-line\s*=/.test(attrs)) return match; // 幂等：已标注不再重复
     const lvl = Number(level);
-    const rawNorm = normalize(inner);
-    const strippedNorm = normalize(inner.replace(RENDER_NUMBER_PREFIX, ''));
-    let found = -1;
-    for (let k = pointer; k < targets.length && k < pointer + 6; k++) {
+    // GB's first h2 also contains the document name and optional warning.
+    const headingInner = /<span class="gb-first-heading">([\s\S]*?)<\/span>/.exec(inner)?.[1] ?? inner;
+    const rawNorm = normalize(headingInner);
+    const strippedNorm = rawNorm.replace(RENDER_NUMBER_PREFIX, '');
+    const stable = /data-gb-stable-key="(sec:[\w.-]+)"/.exec(attrs)?.[1];
+    let found = stable ? stableTargets.get(stable) : -1;
+    if (stable && (found == null || targets[found].level !== lvl)) return match;
+    for (let k = pointer; !stable && k < targets.length && k < pointer + 6; k++) {
       const target = targets[k];
       if (target.level !== lvl) continue;
       if (target.norm === rawNorm || target.norm === strippedNorm) { found = k; break; }
