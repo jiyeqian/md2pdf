@@ -45,11 +45,12 @@ GB的草稿显示名、Markdown与PDF下载名优先取frontmatter的 `中文名
 | 参数 | 取值 | 省略时 |
 | --- | --- | --- |
 | `scope` | `table` 或 `figure` | 保留在当前位置；写在术语内部即属于术语 |
-| `kind` | `unit` 或 `source` | 普通说明 |
+| `position` | `top` 或 `bottom` | `bottom` |
+| `align` | `left`、`center` 或 `right` | `left` |
 | `label` | 任意文字，含空格时必须加引号 | 不加标签，不预留标签空间 |
-| `label-weight` | `bold` 或 `normal` | 显式标签使用黑体；`normal` 使用正文宋体 |
+| `weight` | `bold` 或 `normal` | 显式标签使用黑体；`normal` 使用正文宋体 |
 
-参数顺序不限；支持英文单双引号及引号、反斜线转义。重复、未知参数及冲突组合明确报错。单位和来源采用专用格式，不与 `label`、`label-weight` 混用。`label-weight` 需要非空标签。
+参数顺序不限，可以组合；支持英文单双引号及引号、反斜线转义。重复、未知参数及非法取值明确报错。`weight` 仅控制标签；没有标签时忽略有效的 `weight`。不再接受 `kind`、`label-weight`。
 
 ```markdown
 :::gb-note label="注1："
@@ -60,32 +61,34 @@ GB的草稿显示名、Markdown与PDF下载名优先取frontmatter的 `中文名
 无自动标签的说明。
 :::
 
-:::gb-note scope=table kind=unit
-单位为毫米
-:::
-
 表：检测记录
 
 | 测点 | 数值 |
 | --- | --- |
 | 测点一 | 10 |
 
+:::gb-note scope=table position=top align=right
+单位为毫米
+:::
+
 :::gb-note scope=table label="注："
 表的补充说明。
 :::
 
-:::gb-note label="a）" label-weight=normal scope=table
+:::gb-note label="a）" weight=normal scope=table
 图表脚注说明。表内对应标记由作者另行填写，不自动建立引用关系。
 :::
 
-:::gb-note scope=table kind=source
-GB/T XXXXX—2026，表2
+:::gb-note scope=table
+[来源：GB/T XXXXX—2026，表2]
 :::
 ```
 
-表、图的普通说明及来源必须紧跟对应对象，可连续写多条；表注收入表底部，图注移至图题前。单位必须指定 `scope` 并紧放在对象前（表题或图题之前），表单位附到表题并随续表重复。指定归属却找不到相邻对象时明确报错，不跨过正文猜测。图的写法将 `scope=table` 换成 `scope=figure`。
+所有指定 `scope` 的说明都紧跟对应对象，可连续写多条。`position=top` 的表说明放在表题文字之后、表格之前，并随续表重复；图说明放在图像之前。`bottom` 的表说明收入表底部，图说明放在图题之前。同一位置按书写顺序排列，不跨正文寻找对象。省略 `scope` 时保留原位置或嵌套归属，`position` 不移动普通说明。图的写法将 `scope=table` 换成 `scope=figure`。
 
-来源使用 `kind=source`，内容只支持一个段落。自动规范为 `[来源：……]`，允许输入中已有括号和“来源：”，不会重复添加：
+`scope=table label="注："` 与再显式写出 `position=bottom align=left weight=bold` 等效。单位可用上例的顶部右对齐说明表达，不需要专用用途参数。
+
+来源也是普通说明，括号、“来源：”及引用文字均由作者填写；不自动补齐、识别用途或切换专用字体。术语内直接嵌套，无需 `scope=term`：
 
 ```markdown
 :::gb-term id=grasp
@@ -94,8 +97,8 @@ grasping success rate
 
 在规定条件下成功抓取的次数与总尝试次数之比。
 
-:::gb-note kind=source
-GB/T XXXXX—2026，3.1
+:::gb-note
+[来源：GB/T XXXXX—2026，3.1]
 :::
 
 :::gb-note label="注："
@@ -154,7 +157,6 @@ flowchart LR
 `[^@id]` 是新增条文脚注；历史 `[^id]` 的文献引用行为不变。条文脚注缺失／重复定义报错，代码、链接目标及图片说明中的同形文字不会成为条文脚注。术语编号可自动生成；单位值、标准号、英文名称、引用内容及图表脚注字母由作者负责提供。
 
 完整范例唯一来源是 [`../web/examples/gb.md`](../web/examples/gb.md)，CLI副本 [`../examples/gb.md`](../examples/gb.md) 通过 `npm run generate:gb-example` 同步；[`../templates/gb.md`](../templates/gb.md) 仅提供空白骨架。历史 `tests/fixtures/gb-ef.md` 保留为回归夹具，不替换。
-
 
 > 用途：把一份国家标准（GB/GB\T）排成接近现行版式的 A4 PDF。
 > 识别：frontmatter 含 `标准号` 或 `standard` 时自动判为 `gb`（也可 `--type gb` 显式指定）。

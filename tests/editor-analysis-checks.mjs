@@ -742,7 +742,7 @@ test('GB 指令补全插入有效参数与成对结构，并复用已有关闭�
   };
   assert.match(apply(':::', 'gb-term').text, /^:::gb-term\n.+\nterm name\n\n.+\n:::$/);
   assert.match(apply(':::', 'gb-index').text, /^:::gb-index A\n.+ \| 3\.1\n:::$/);
-  assert.match(apply(':::', 'gb-note scope=table label="a）" label-weight=normal').text, /^:::gb-note scope=table label=\"a）\" label-weight=normal\n/);
+  assert.match(apply(':::', 'gb-note scope=table label="a）" weight=normal').text, /^:::gb-note scope=table label=\"a）\" weight=normal\n/);
   const closed = apply(':::gb-\n:::', 'gb-note', 6);
   assert.equal(closed.text, ':::gb-note\n注的内容\n:::');
   assert.equal(closed.option.selectionOffset, 'gb-note\n'.length);

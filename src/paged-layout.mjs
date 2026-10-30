@@ -59,7 +59,7 @@ export function installPagedLayout(contentHeight, chapterStart, relaxFirstChapte
         const continued = document.createElement('span');
         continued.className = 'gb-continuation';
         continued.textContent = '（续）';
-        caption.insertBefore(continued, caption.querySelector('.gb-table-unit'));
+        caption.insertBefore(continued, caption.querySelector('.gb-table-top'));
         table.insertBefore(caption, table.firstChild);
       }
     }

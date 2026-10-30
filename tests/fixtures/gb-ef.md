@@ -43,8 +43,8 @@ verification term
 在规定条件下用于验证排版的术语定义。
 :::
 
-:::gb-note kind=source
-GB/T 1.1—2020，3.1
+:::gb-note
+[来源：GB/T 1.1—2020，3.1]
 :::
 
 ## 技术要求
@@ -61,10 +61,6 @@ EXAMPLE_MARK 这是示例内容。
 SUBFIGURE_MARK 分图说明
 :::
 
-:::gb-note scope=figure kind=unit
-单位为毫米
-:::
-
 图：检查流程 {#fig:flow}
 
 ```mermaid
@@ -72,11 +68,15 @@ flowchart LR
   A[输入] --> B[验收]
 ```
 
+:::gb-note scope=figure position=top align=right
+单位为毫米
+:::
+
 :::gb-note scope=figure label="注："
 FIGURENOTEMARK 图中附加说明。
 :::
 
-:::gb-note scope=figure label="a）" label-weight=normal
+:::gb-note scope=figure label="a）" weight=normal
 FIGUREFOOTMARK 图脚注内容。
 :::
 
@@ -201,7 +201,7 @@ APPENDIX_MARK 依次检查排版和内容。
 | --- | --- |
 | 附录项目 | 合格 |
 
-:::gb-note scope=table label="a）" label-weight=normal
+:::gb-note scope=table label="a）" weight=normal
 TABLEFOOTMARK 表脚注内容。
 :::
 

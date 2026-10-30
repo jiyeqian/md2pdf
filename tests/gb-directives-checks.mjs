@@ -15,15 +15,15 @@ test('nine directives; labels are explicit, arbitrary text never implies a footn
  assert.ok(!plain.includes('gb-label'));
  assert.match(plain,/gb-unlabelled/);
  assert.match(parse(':::gb-note label="注："\n说明\n:::'),/class="gb-label">注：/);
- assert.match(parse(':::gb-note label="a）" label-weight=normal\n说明\n:::'),/data-gb-label-weight="normal"/);
+ assert.match(parse(':::gb-note label="a）" weight=normal\n说明\n:::'),/data-gb-note-weight="normal"/);
 });
 
 test('named parameters allow reordered, quoted, escaped values without accepting duplicate or unknown keys',()=>{
- const a='scope=table label="标签 有空格：" label-weight=normal';
- const b="label-weight='normal' label=\"标签 有空格：\" scope='table'";
+ const a='scope=table label="标签 有空格：" weight=normal';
+ const b="weight='normal' label=\"标签 有空格：\" scope='table'";
  assert.equal(parse(`:::gb-note ${a}\n说明\n:::`),parse(`:::gb-note ${b}\n说明\n:::`));
  assert.deepEqual(parseGbParameters('label="a\\"b"',['label']),{label:'a"b'});
- for(const args of ['scope=table scope=figure','scope=','scope=term','kind=other','label=未闭合 文本','label="未闭合','foo=bar','kind=source label="注："','kind=unit','label-weight=normal','label="a）" label-weight=heavy']) {
+ for(const args of ['scope=table scope=figure','scope=','scope=term','kind=other','label=未闭合 文本','label="未闭合','foo=bar','position=unknown','align=justify','kind=source','label-weight=normal','label="a）" weight=heavy']) {
   assert.throws(()=>parse(`:::gb-note ${args}\n说明\n:::`),e=>e.status===400,args);
  }
 });
@@ -38,19 +38,33 @@ test('removed directives and old bare labels fail, while fenced code remains lit
  assert.throws(()=>parse(':::gb-term id=test\n术语\n\n:::gb-source\n旧来源\n:::\n:::'),e=>e.status===400);
 });
 
-test('table and figure sources follow their own objects; unit precedes and stays inside its object',()=>{
+test('table and figure notes are authored after their object, with independent placement',()=>{
  for(const [scope,object] of [['table',table],['figure',figure]]) {
-  const source=parse(`:::gb-note kind=source scope=${scope}\n[来源：GB/T 1，表2]\n:::`);
-  const out=transformGbContent(object+source,'');
-  assert.ok(out.indexOf('[<span class="gb-label">来源：')<out.lastIndexOf(`</${scope}>`));
+  const source=parse(`:::gb-note scope=${scope}\n[来源：GB/T 1，表2]\n:::`);
+  const top=parse(`:::gb-note position=top align=right scope=${scope} label="自定义：" weight=normal\n单位或其他内容\n:::`);
+  const out=transformGbContent(object+source+top,'');
+  assert.ok(out.indexOf('单位或其他内容')<out.indexOf('<tbody>')||scope==='figure');
+  if(scope==='figure') assert.ok(out.indexOf('单位或其他内容')<out.indexOf('<img'));
   assert.equal((out.match(/来源：/g)||[]).length,1);
-  const unit=parse(`:::gb-note kind=unit scope=${scope}\n单位为毫米\n:::`);
-  assert.match(transformGbContent(unit+object,''),/单位为毫米/);
-  assert.throws(()=>transformGbContent(unit+'<p>阻隔</p>'+object,''),e=>e.status===400);
+  assert.ok(out.indexOf('[来源：')<out.lastIndexOf(`</${scope}>`));
+  assert.throws(()=>transformGbContent(top+object,''),e=>e.status===400);
+  assert.throws(()=>transformGbContent(object+'<p>阻隔</p>'+top,''),e=>e.status===400);
   assert.throws(()=>transformGbContent(source,''),e=>e.status===400);
-  assert.throws(()=>transformGbContent(object+'<p>阻隔</p>'+source,''),e=>e.status===400);
-  assert.throws(()=>transformGbContent(object+unit,''),e=>e.status===400);
  }
+});
+
+test('explicit defaults are identical and unlabelled weight has no effect',()=>{
+ const compact=parse(':::gb-note scope=table label="注："\n内容\n:::');
+ const expanded=parse(':::gb-note align=left position=bottom weight=bold label="注：" scope=table\n内容\n:::');
+ assert.equal(compact,expanded);
+ assert.equal(parse(':::gb-note weight=normal\n内容\n:::'),parse(':::gb-note\n内容\n:::'));
+});
+
+test('multiple top and bottom notes keep per-position source order',()=>{
+ const note=(position,text)=>parse(`:::gb-note scope=table position=${position} align=center label="标签："\n${text}\n:::`);
+ const html=transformGbContent(table+note('bottom','B1')+note('top','T1')+note('bottom','B2')+note('top','T2'),'');
+ assert.ok(html.indexOf('T1')<html.indexOf('T2')&&html.indexOf('T2')<html.indexOf('<tbody>'));
+ assert.ok(html.indexOf('</tbody>')<html.indexOf('B1')&&html.indexOf('B1')<html.indexOf('B2'));
 });
 
 test('all completion forms parse and Markdown examples use the new grammar',async()=>{

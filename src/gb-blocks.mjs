@@ -16,13 +16,13 @@ export const GB_NOTE_FORMS = [
   { argument: 'label="注："', description: '正文或术语注' },
   { argument: 'scope=table label="注："', description: '表注（放在表后）' },
   { argument: 'scope=figure label="注："', description: '图注（放在图后）' },
-  { argument: 'scope=table label="a）" label-weight=normal', description: '表脚注（标记另行填写）' },
-  { argument: 'scope=figure label="a）" label-weight=normal', description: '图脚注（标记另行填写）' },
-  { argument: 'scope=table kind=unit', description: '表单位（放在表前）', body: '单位为毫米' },
-  { argument: 'scope=figure kind=unit', description: '图单位（放在图前）', body: '单位为毫米' },
-  { argument: 'kind=source', description: '术语或正文来源', body: 'GB/T 20000.1—2014，5.3' },
-  { argument: 'scope=table kind=source', description: '表来源（放在表后）', body: 'GB/T XXXXX—2026，表2' },
-  { argument: 'scope=figure kind=source', description: '图来源（放在图后）', body: 'GB/T XXXXX—2026，图1' },
+  { argument: 'scope=table label="a）" weight=normal', description: '表脚注（标记另行填写）' },
+  { argument: 'scope=figure label="a）" weight=normal', description: '图脚注（标记另行填写）' },
+  { argument: 'scope=table position=top align=right', description: '表上方右对齐说明（写在表后）', body: '单位为毫米' },
+  { argument: 'scope=figure position=top align=right', description: '图上方右对齐说明（写在图后）', body: '单位为毫米' },
+  { argument: 'weight=normal', description: '来源文字（原样显示）', body: '[来源：GB/T 20000.1—2014，5.3]' },
+  { argument: 'scope=table align=left', description: '表来源（原样显示，写在表后）', body: '[来源：GB/T XXXXX—2026，表2]' },
+  { argument: 'scope=figure align=left', description: '图来源（原样显示，写在图后）', body: '[来源：GB/T XXXXX—2026，图1]' },
 ];
 
 export function parseGbParameters(value, allowed) {

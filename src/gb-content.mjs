@@ -152,33 +152,17 @@ function renderBlock({ role, label, text }, marked, depth) {
 }
 
 function renderNote(argumentsText, text, marked, depth) {
-  const args = parseGbParameters(argumentsText, ['scope','kind','label','label-weight']);
+  const args = parseGbParameters(argumentsText, ['scope','position','align','label','weight']);
   const fail = message => { const error = new Error('gb-note：' + message); error.status = 400; throw error; };
   if (args.scope !== undefined && !['table','figure'].includes(args.scope)) fail('scope 仅支持 table 或 figure');
-  if (args.kind !== undefined && !['unit','source'].includes(args.kind)) fail('kind 仅支持 unit 或 source');
-  if (args['label-weight'] !== undefined && !['bold','normal'].includes(args['label-weight'])) fail('label-weight 仅支持 bold 或 normal');
-  if (args['label-weight'] && !args.label) fail('label-weight 需要非空 label');
-  if (args.kind && (args.label !== undefined || args['label-weight'])) fail('kind=unit/source 不支持自定义 label 或 label-weight');
-  if (args.kind === 'unit' && !args.scope) fail('单位说明需要 scope=table 或 scope=figure');
-  const attributes = (args.scope ? ' data-gb-note-scope="' + args.scope + '"' : '') + (args.kind ? ' data-gb-note-kind="' + args.kind + '"' : '') + (args['label-weight'] === 'normal' ? ' data-gb-label-weight="normal"' : '');
-  if (args.kind === 'source') {
-    let value = text.trim();
-    for (let i=0; i<2; i++) {
-      value = value.replace(/^\s*(?:\[([\s\S]*)\]|［([\s\S]*)］)\s*$/, (_,ascii,full)=>ascii ?? full).trim();
-      value = value.replace(/^来源\s*[:：]\s*/, '').trim();
-    }
-    const content = markdown(value, marked, depth);
-    const paragraph = /^<p>([\s\S]*?)<\/p>\s*$/.exec(content);
-    if (!value || !paragraph || /<\/?(?:p|div|ul|ol|pre|table|blockquote)\b/.test(paragraph[1])) fail('来源只支持单个来源段落');
-    return '<div class="gb-source"' + attributes + '><p>[<span class="gb-label">来源：</span>' + paragraph[1] + ']</p></div>';
-  }
-  const content = markdown(text, marked, depth);
-  if (args.kind === 'unit') {
-    if (!/^<p>[^]*<\/p>\s*$/.test(content) || (content.match(/<p>/g)||[]).length !== 1 || /<(?:div|ul|ol|table|pre|blockquote|h[1-6])\b/.test(content)) fail('单位只支持单个段落');
-    return '<div class="gb-unit"' + attributes + '>' + content + '</div>';
-  }
-  const role = args.scope ? args.scope + '-note' : 'note';
+  if (args.position !== undefined && !['top','bottom'].includes(args.position)) fail('position 仅支持 top 或 bottom');
+  if (args.align !== undefined && !['left','center','right'].includes(args.align)) fail('align 仅支持 left、center 或 right');
+  if (args.weight !== undefined && !['bold','normal'].includes(args.weight)) fail('weight 仅支持 bold 或 normal');
+  const position = args.position || 'bottom', align = args.align || 'left';
   const lead = args.label ? '<span class="gb-label">' + escape(args.label) + '</span>' : '';
+  const attributes = (args.scope ? ' data-gb-note-scope="' + args.scope + '"' : '') + ' data-gb-note-position="' + position + '" data-gb-note-align="' + align + '"' + (lead && args.weight === 'normal' ? ' data-gb-note-weight="normal"' : '');
+  const content = markdown(text, marked, depth);
+  const role = args.scope ? args.scope + '-note' : 'note';
   const body = lead && content.startsWith('<p>') ? content.replace(/^<p>([\s\S]*?)<\/p>/, (_,first)=>'<p>'+lead+'<span class="gb-note-text">'+first+'</span></p>') : lead + content;
   return '<div class="gb-' + role + (lead ? '' : ' gb-unlabelled') + '"' + attributes + '>' + body + '</div>';
 }
@@ -192,7 +176,6 @@ export function transformGbContent(html, title) {
   html = markIntroParagraphs(html);
   html = numberExamples(html);
   html = linkIndexLocations(html);
-  html = attachFloatUnits(html);
 
   html = html.replace(/<h2([^>]*\bclass="[^"]*\bbody-start\b[^"]*"[^>]*)>([\s\S]*?)<\/h2>/, (_, attrs, inner) =>
     '<h2' + attrs + '>' + (title ? '<span class="gb-body-title">' + escape(title) + '</span>' : '') + '<span class="gb-first-heading">' + inner + '</span></h2>');
@@ -209,7 +192,7 @@ export function transformGbContent(html, title) {
     if (!scope) continue;
     let parent = node.parent;
     while (parent?.tag && parent.tag !== scope) parent = parent.parent;
-    if (!parent?.tag) { const error = new Error('gb-note scope=' + scope + '：未找到相邻的对应图表（单位放在图表前，其他说明放在图表后）'); error.status = 400; throw error; }
+    if (!parent?.tag) { const error = new Error('gb-note scope=' + scope + '：未找到相邻的对应图表（所有图表说明均须紧接对应图表之后）'); error.status = 400; throw error; }
   }
   return html;
 }
@@ -247,7 +230,7 @@ function classes(node) {
   return /\bclass="([^"]*)"/.exec(node.token)?.[1].split(/\s+/) || [];
 }
 function noteRole(node, allowed) {
-  return node.tag === 'div' && !classes(node).includes('gb-unit') && (classes(node).some(name => allowed.has(name)) || (allowed === TABLE_NOTES && /data-gb-note-scope="table"/.test(node.token)) || (allowed === FIGURE_NOTES && /data-gb-note-scope="figure"/.test(node.token)));
+  return node.tag === 'div' && (classes(node).some(name => allowed.has(name)) || (allowed === TABLE_NOTES && /data-gb-note-scope="table"/.test(node.token)) || (allowed === FIGURE_NOTES && /data-gb-note-scope="figure"/.test(node.token)));
 }
 // Headings are already numbered; terms consume the next slot below their containing heading.
 function numberGbTerms(html) {
@@ -386,23 +369,6 @@ function linkIndexLocations(html) {
   for (const edit of edits.sort((a,b) => b.start-a.start)) html = html.slice(0,edit.start) + edit.text + html.slice(edit.end);
   return html;
 }
-function attachFloatUnits(html) {
-  const edits=[];
-  for (const unit of elements(html).filter(n=>classes(n).includes('gb-unit'))) {
-    const scope = /data-gb-note-scope="(table|figure)"/.exec(unit.token)?.[1];
-    const siblings=unit.parent.children, object=siblings[siblings.indexOf(unit)+1];
-    if (!scope || !object || object.tag !== scope || !/^\s*$/.test(html.slice(unit.end, object.start))) continue;
-    const content=/^\s*<p>([\s\S]*?)<\/p>\s*$/.exec(html.slice(unit.openEnd,unit.closeStart));
-    if (!content) continue;
-    const caption=object.children.find(n=>n.tag==='caption');
-    if (scope === 'table' && !caption) continue;
-    edits.push({start:unit.start,end:unit.end,text:''});
-    const position=scope==='table' ? caption.closeStart : object.openEnd;
-    edits.push({start:position,end:position,text:scope==='table' ? '<span class="gb-table-unit">'+content[1]+'</span>' : html.slice(unit.start,unit.end)});
-  }
-  for(const e of edits.sort((a,b)=>b.start-a.start))html=html.slice(0,e.start)+e.text+html.slice(e.end);
-  return html;
-}
 
 function fillEmptyTableCells(html) {
   const edits = [];
@@ -458,23 +424,35 @@ function attachFloatNotes(html) {
       notes.push(next); end = next.end;
     }
     if (!notes.length) continue;
-    const content = notes.map(note => html.slice(note.start,note.end)).join('\n');
-    let insert, markup;
+    const top = [], bottom = [];
+    for (const note of notes) (/data-gb-note-position="top"/.test(note.token) ? top : bottom).push(html.slice(note.start,note.end));
+    const insertions = [];
     if (node.tag === 'figure') {
-      insert = node.children.find(child => child.tag === 'figcaption')?.start ?? node.closeStart;
-      markup = content + '\n';
+      if (top.length) insertions.push({at:node.openEnd,text:top.join('\n')+'\n'});
+      if (bottom.length) insertions.push({at:node.children.find(child=>child.tag==='figcaption')?.start ?? node.closeStart,text:bottom.join('\n')+'\n'});
     } else {
-      const rows = all.filter(row => row.tag === 'tr' && row.start > node.start && row.end < node.end && (() => {
-        let table = row.parent; while (table && table.tag !== 'table') table = table.parent;
-        return table === node;
-      })());
-      const columns = tableColumns(rows);
-      const foot = node.children.find(child => child.tag === 'tfoot' && child.closeStart !== undefined);
-      insert = foot?.closeStart ?? node.closeStart;
-      const row = '<tr class="gb-table-notes"><td colspan="' + columns + '">' + content + '</td></tr>';
-      markup = foot ? row : '<tfoot>' + row + '</tfoot>';
+      if (top.length) {
+        const caption=node.children.find(child=>child.tag==='caption');
+        const content='<div class="gb-table-top">'+top.join('\n')+'</div>';
+        insertions.push({at:caption?.closeStart ?? node.openEnd,text:caption ? content : '<caption>'+content+'</caption>'});
+      }
+      if (bottom.length) {
+        const rows = all.filter(row => row.tag === 'tr' && row.start > node.start && row.end < node.end && (() => {
+          let table = row.parent; while (table && table.tag !== 'table') table = table.parent;
+          return table === node;
+        })());
+        const columns = tableColumns(rows);
+        const foot = node.children.find(child => child.tag === 'tfoot' && child.closeStart !== undefined);
+        const row = '<tr class="gb-table-notes"><td colspan="' + columns + '">' + bottom.join('\n') + '</td></tr>';
+        insertions.push({at:foot?.closeStart ?? node.closeStart,text:foot ? row : '<tfoot>'+row+'</tfoot>'});
+      }
     }
-    edits.push({start:node.start,end,text:html.slice(node.start,insert) + markup + html.slice(insert,node.end)});
+    let output=html.slice(node.start,node.end);
+    for (const insertion of insertions.sort((a,b)=>b.at-a.at)) {
+      const offset=insertion.at-node.start;
+      output=output.slice(0,offset)+insertion.text+output.slice(offset);
+    }
+    edits.push({start:node.start,end,text:output});
   }
   for (const edit of edits.sort((a,b) => b.start-a.start)) html = html.slice(0,edit.start) + edit.text + html.slice(edit.end);
   return html;

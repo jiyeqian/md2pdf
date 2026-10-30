@@ -7,15 +7,16 @@ class InspectionChrome extends Chrome {
   const pdf=await super.printHtml(...args);
  this.inspection=await this.send('Runtime.evaluate',{returnByValue:true,expression:`(()=>{
  const pages=document.querySelector('.pagedjs_pages');
- const labels=[...pages.querySelectorAll('[data-gb-label-weight="normal"] .gb-label')];
+ const labels=[...pages.querySelectorAll('[data-gb-note-weight="normal"] .gb-label')];
  return {
  pages:pages.querySelectorAll('.pagedjs_page').length,
  normal:labels.length,
  normalFont:labels[0] && getComputedStyle(labels[0]).fontFamily,
  bodyFont:getComputedStyle(pages.querySelector('.gb-note-text')).fontFamily,
  orphan:[...pages.querySelectorAll('[data-gb-note-scope]')].filter(n=>!n.closest(n.dataset.gbNoteScope)).length,
- units:pages.querySelectorAll('caption .gb-table-unit').length,
- sources:pages.querySelectorAll('.gb-source').length,
+ topAlignment:[...pages.querySelectorAll('[data-gb-note-position="top"] > p')].map(n=>getComputedStyle(n).textAlign),
+ units:pages.querySelectorAll('caption .gb-table-top').length,
+ sources:[...pages.querySelectorAll('.gb-note')].filter(n=>n.textContent.includes('[来源：')).length,
  records:[...pages.querySelectorAll('td')].map(n=>n.textContent.trim()).filter(s=>/^R\\d{3}$/.test(s)),
  fontWarning:window.__md2pdfFontError || null
  };
@@ -43,6 +44,7 @@ try {
  assert.equal(result.normalFont,result.bodyFont);
  assert.equal(result.orphan,0);
  assert.ok(result.units>=2);
+ assert.ok(result.topAlignment.length>=2 && result.topAlignment.every(a=>a==='right'),'top-right notes keep paragraph alignment');
  assert.ok(result.sources>=1);
  assert.equal(result.records.length,40);
  assert.equal(new Set(result.records).size,40);

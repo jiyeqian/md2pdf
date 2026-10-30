@@ -128,7 +128,7 @@ standard
 
 通过标准化活动，按照规定的程序经协商一致制定，为各种活动或其结果提供规则、指南或特性，供共同使用和重复使用的文件。
 
-:::gb-note kind=source
+:::gb-note
 [来源：GB/T 20000.1—2014，5.3]
 :::
 :::
@@ -237,10 +237,6 @@ $s_F$ | 接触力归一化基准量。
 
 位移标定记录见表 \ref{tab:calibration}，同一数值列中的整数、小数和空单元格分别展示对齐及缺值表达。
 
-:::gb-note scope=table kind=unit
-单位为毫米
-:::
-
 表：位移标定记录 {#tab:calibration}
 
 | 测点 | 设定值 | 实测值 |
@@ -249,6 +245,10 @@ $s_F$ | 接触力归一化基准量。
 | 中间位置 | 12.34 | 12.34 |
 | 行程末端 | 123.45 | 123.40 |
 | 未布置测点 | | |
+
+:::gb-note scope=table position=top align=right
+单位为毫米
+:::
 
 :::gb-note scope=table label="注："
 空白测点不构成有效的标定数据；一字线表示该测点没有对应记录。
@@ -279,7 +279,7 @@ body:
 高低温条件仅用于区分不同检测状态，实际产品的环境适用范围应以产品文件为准。
 :::
 
-:::gb-note scope=table label="a）" label-weight=normal
+:::gb-note scope=table label="a）" weight=normal
 传感器安装位置应在试验记录中说明，回行文字与本条脚注的内容起点对齐。
 :::
 
@@ -328,7 +328,7 @@ flowchart LR
 异常保持状态不表示试验完成；未满足恢复条件时应继续保持安全状态。
 :::
 
-:::gb-note scope=figure label="a）" label-weight=normal
+:::gb-note scope=figure label="a）" weight=normal
 图示只表达状态转换关系，实际控制器还应记录各状态的进入与退出时刻。
 :::
 
@@ -354,10 +354,6 @@ flowchart LR
 试验结果宜按表 \ref{tab:records} 的顺序逐项记录。该表节选连续 40 条示意记录，用于核对跨页时的续表、表头、单位和表注；正式试验仍应满足每组不少于 100 次的要求。
 
 <!-- gb-check: 9.8.3；40条记录逐条出现一次，续表重复表编号、表头、单位，表注在末段 -->
-
-:::gb-note scope=table kind=unit
-单位为毫秒
-:::
 
 表：连续抓取试验记录 {#tab:records}
 
@@ -403,6 +399,10 @@ flowchart LR
 | R038 | 正常抓取 | 9.4 | — |
 | R039 | 正常抓取 | 9.5 | — |
 | R040 | 异常恢复 | 9.6 | 160 |
+
+:::gb-note scope=table position=top align=right
+单位为毫秒
+:::
 
 :::gb-note scope=table label="注："
 记录中的数值为排版演示数据，不能据此评价实际系统性能。

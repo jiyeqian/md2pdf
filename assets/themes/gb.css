@@ -162,8 +162,7 @@ ol li, ul li { padding-left: 0; }
 .footnotes li, .gb-note, .gb-example, .gb-table-note { font: 9pt/1.62 var(--font-body); }
 .gb-label { font-family: var(--font-head); font-weight: 400; }
 .gb-term-number, .gb-term-name { font: 10.5pt/1.62 var(--font-head); }
-.gb-term-definition, .gb-source { font: 10.5pt/1.62 var(--font-body); }
-.gb-unit { font: 9pt/1.62 var(--font-body); text-align: right; }
+.gb-term-definition { font: 10.5pt/1.62 var(--font-body); }
 .gb-subfigure { font: 9pt/1.62 var(--font-head); }
 .gb-continuation { font: 10.5pt/1.62 var(--font-body); }
 .gb-figure-text, figure.fig svg text { font-family: var(--font-body) !important; font-size: 7.5pt !important; }
@@ -178,7 +177,6 @@ ol li, ul li { padding-left: 0; }
   transform: rotate(180deg); font: 14pt/1 var(--font-head); white-space: nowrap; }
 /* 终结线与前一内容同页；不可单独排到下一面。 */
 .gb-end-line { width: 25%; margin: 1.62em auto 0; border: none; border-top: 1pt solid #000; break-before: avoid; break-inside: avoid; }
-.gb-source .gb-label { font-family: var(--font-body); }
 .gb-table-note { border: 1pt solid #000; padding: .5em; }
 
 /* 条文脚注采用独立的 [^@id] 语法，文献引用仍走原有 [^id]。 */
@@ -196,7 +194,6 @@ ol li, ul li { padding-left: 0; }
 @page :blank { @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
 .pagedjs_blank_page .pagedjs_margin-content { visibility: hidden !important; }
 .toc .gb-float-toc { margin-top: 1.62em; }
-.gb-source .gb-label { font-family: var(--font-body); }
 
 /* 10.2：段首空两字；列表文字用悬挂缩进，标记不占正文列。 */
 main p { text-indent: 2em; }
@@ -224,9 +221,7 @@ main .gb-note p, main .gb-table-note p { text-indent: 0; padding-left: 2em; disp
 .gb-note-text { flex: 1; min-width: 0; }
 .gb-example > p:first-child > .gb-label { display: block; text-indent: 2em; }
 main .gb-example > p:first-child { text-indent: 0; }
-main .gb-unit p, main .gb-subfigure p, main figcaption p { text-indent: 0; }
-main .gb-unit p { text-align: right; }
-main .gb-source p { font: 10.5pt/1.62 var(--font-body); }
+main .gb-subfigure p, main figcaption p { text-indent: 0; }
 
 .gb-important, .gb-important-paragraph { display: block; font: 10.5pt/1.62 var(--font-head); }
 .gb-important-paragraph { text-indent: 2em; text-align: justify; }
@@ -295,7 +290,8 @@ main p, main li { margin-top: 0; margin-bottom: 0; }
 thead th { text-align: center; }
 thead th, tbody td, tbody td:first-child, tfoot td { padding: .25em .5em; }
 table > tbody:has(td[rowspan]) { break-inside: avoid; }
-.gb-table-unit { display: block; text-align: right; font: 9pt/1.62 var(--font-body); }
+.gb-table-top { display: block; font: 9pt/1.62 var(--font-body); }
+.gb-table-top > .gb-table-note { border: 0; padding: 0; }
 
 tbody td[rowspan] { vertical-align: middle; }
 
@@ -376,5 +372,12 @@ main section .gb-index-section .gb-index ul.gb-index-entries > li { position: re
 
 /* Explicit note labels: an absent label reserves no label column. */
 main .gb-unlabelled > p { display: block; padding-left: 0; text-indent: 0; }
-[data-gb-label-weight="normal"] > p:first-child > .gb-label, [data-gb-label-weight="normal"] > .gb-label { font-family: var(--font-body); font-weight: 400; }
-figure > .gb-unit { text-align: right; }
+[data-gb-note-weight="normal"] > p:first-child > .gb-label, [data-gb-note-weight="normal"] > .gb-label { font-family: var(--font-body); font-weight: 400; }
+
+[data-gb-note-align="left"], main [data-gb-note-align="left"] > p { text-align: left; }
+[data-gb-note-align="center"], main [data-gb-note-align="center"] > p { text-align: center; }
+[data-gb-note-align="right"], main [data-gb-note-align="right"] > p { text-align: right; }
+main :is([data-gb-note-align="center"], [data-gb-note-align="right"]) > p { padding-left: 0; text-indent: 0; }
+[data-gb-note-align="center"] > p { justify-content: center; }
+[data-gb-note-align="right"] > p { justify-content: flex-end; }
+:is([data-gb-note-align="center"], [data-gb-note-align="right"]) > p > .gb-note-text { flex: 0 1 auto; }

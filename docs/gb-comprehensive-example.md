@@ -38,10 +38,6 @@ GB/T 1.1—2020 为最高依据，目录内三份 2026 年正式标准用于实�
 普通表格继续使用 GFM。合并表格采用 GB 专用的受控块，单元格支持安全行内 Markdown，禁止原样透传 HTML：
 
 ```markdown
-:::gb-note scope=table kind=unit
-单位为毫米
-:::
-
 表：检测记录
 
 :::gb-table
@@ -53,11 +49,15 @@ body:
 | {rowspan=2} 控制器 | 稳态 | 合格 |
 | 恢复 | 合格 |
 :::
+
+:::gb-note scope=table position=top align=right
+单位为毫米
+:::
 ```
 
 `widths` 是列宽权重，可省略为等宽；每行必须填满网格，跨行单元格不能越过表头／表体分界。支持最多 12 列、500 行，非法跨度、缺格或属性返回明确错误。跨行连通组保持同页，组过高时要求作者拆分，不静默裁切；不支持嵌套表、跨页超大合并组或任意 HTML 属性。复杂表单元格中的图片和相对资源链接返回明确的400错误，请将图放在独立图中；单元格链接只接受 HTTP/HTTPS、mailto 和锚点，代码中的字面写法不误判。普通 Markdown 表格的既有图片行为不受此限制。
 
-单位陈述使用 `:::gb-note scope=table kind=unit`，置于对应表题前（如上例）；渲染时附到该表的表题，并随续表重复。图单位使用 `scope=figure kind=unit`，放在图前。完整的九个指令及参数规则见[模板说明](gb-template.md)。
+单位陈述使用 `:::gb-note scope=table position=top align=right`，写在对应表格之后；渲染时置于表题文字与表格之间，并随续表重复。图同样在对象后定义，使用 `scope=figure position=top`。完整的九个指令及参数规则见[模板说明](gb-template.md)。
 
 ## 本轮补充校准
 

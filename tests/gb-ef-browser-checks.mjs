@@ -120,7 +120,7 @@ try {
       endLine:(()=>{const e=document.querySelector('.pagedjs_pages .gb-end-line');return e&&{box:rect(e),page:pages.indexOf(e.closest('.pagedjs_page'))+1,previous:e.previousElementSibling?.textContent};})(),
       back:(()=>{const e=document.querySelector('.pagedjs_pages .gb-back-standard');return e&&{box:rect(e),size:style(e).size};})(),
       toc:[...document.querySelectorAll('.pagedjs_pages .toc a')].map(a=>({text:a.innerText,href:a.getAttribute('href')})),
-      semantic:Object.fromEntries(['term-number','term-name','term-definition','note','example','source','unit','subfigure','table-note'].map(name=>{const e=document.querySelector('.pagedjs_pages .gb-'+name); return [name,e&&{text:e.innerText,html:e.innerHTML,...style(e)}]})),
+      semantic:Object.fromEntries(['term-number','term-name','term-definition','note','example','source','unit','subfigure','table-note'].map(name=>{const e=name==='source'?[...document.querySelectorAll('.pagedjs_pages .gb-note')].find(n=>n.textContent.includes('[来源：')):name==='unit'?document.querySelector('.pagedjs_pages [data-gb-note-position=top]'):name==='note'?[...document.querySelectorAll('.pagedjs_pages .gb-note')].find(n=>n.querySelector('.gb-label')):document.querySelector('.pagedjs_pages .gb-'+name); return [name,e&&{text:e.innerText,html:e.innerHTML,...style(e)}]})),
       index:(()=>{const e=document.querySelector('.pagedjs_pages .gb-index-entries li');return e&&{marker:getComputedStyle(e,'::before').display,term:rect(e.querySelector('.gb-index-term')),dots:rect(e.querySelector('.gb-index-dots')),area:rect(e.closest('.pagedjs_area'))};})(),
       diagram:(()=>{const e=document.querySelector('.pagedjs_pages .fig svg .nodeLabel');return e&&style(e);})(),
       styles:{title:style(document.querySelector('.pagedjs_pages .gb-body-title')), body:style(firstText(document,'.pagedjs_pages p','BODY_START')),
@@ -142,7 +142,7 @@ try {
   near(state.diagram.size,pt(7.5),.1,'diagram text font');
   near(state.styles.title.size, pt(16), 0.15, 'body title font size');
   near(state.styles.body.size, pt(10.5), 0.15, 'body font size');
-  for (const [role, size] of Object.entries({'term-number':10.5,'term-name':10.5,'term-definition':10.5,note:9,example:9,source:10.5,unit:9,subfigure:9,'table-note':9})) {
+  for (const [role, size] of Object.entries({'term-number':10.5,'term-name':10.5,'term-definition':10.5,note:9,example:9,source:9,unit:9,subfigure:9,'table-note':9})) {
     assert.ok(state.semantic[role], `semantic block ${role}`);
     near(state.semantic[role].size, pt(size), 0.15, `${role} font size`);
   }
@@ -185,10 +185,10 @@ try {
   }
   const printable = await staticRuntime.renderDocument({md,opts},false);
   const missingFontHtml = printable.html.replace('local("FZHTK--GBK1-0"), local("方正黑体_GBK")', 'local("MD2PDF Nonexistent GB Font")');
-  for (const webSafe of [true,false]) await assert.rejects(chrome.printHtml(missingFontHtml,{...core.printOptions,webSafe,waitPaged:true}),/Document rendering failed/,'missing required local font must fail');
+  for (const webSafe of [true,false]) await assert.rejects(chrome.printHtml(missingFontHtml,{...core.printOptions,webSafe,waitPaged:true}),/未能加载字体/,'missing required local font must fail');
   const missingLatinHtml=printable.html.replace('font-family: "GB Cover Latin"; src: local("FZXBSK--GBK1-0"), local("方正小标宋_GBK")','font-family: "GB Cover Latin"; src: local("MD2PDF Nonexistent Cover Latin")');
   assert.notEqual(missingLatinHtml,printable.html,'negative case replaces the cover Latin face');
-  await assert.rejects(chrome.printHtml(missingLatinHtml,{...core.printOptions,webSafe:true,waitPaged:true}),/Document rendering failed/,'missing cover Latin face must not silently revert to sans-serif');
+  await assert.rejects(chrome.printHtml(missingLatinHtml,{...core.printOptions,webSafe:true,waitPaged:true}),/未能加载字体/,'missing cover Latin face must not silently revert to sans-serif');
   const overlong = await staticRuntime.renderDocument({md:md.replace(/^发布日期:.*$/m,'').replace(/^实施日期:.*$/m,'').replace('国家标准排版综合验收方法','超长标准名称'.repeat(80)),opts},false);
   await assert.rejects(chrome.printHtml(overlong.html,{...core.printOptions,webSafe:true,waitPaged:true}),/Document rendering failed/,'overlong cover must not overlap issuer when dates absent');
   for (const [label, invalidMd] of [

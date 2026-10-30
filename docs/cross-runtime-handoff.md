@@ -32,7 +32,7 @@ GB章条用标题末尾的 `{#sec:…}`，图表沿用 `{#fig:…}`／`{#tab:…
 
 ## 2026-10-30 GB 统一说明指令
 
-GB说明统一为 `gb-note`：`scope=table/figure` 指定归属，`kind=unit/source` 指定用途，`label` 显式标签，`label-weight=normal` 使用非黑体标签。省略标签不生成“注：”；参数可换序、带引号；重复、未知和冲突参数报错。图表说明放在对象后，单位放在对象前；没有相邻对象报错。其余八个指令保留，重要提示沿用标准专用位置。旧指令不兼容，项目内Markdown、编辑器补全及测试均迁移。
+GB说明统一为 `gb-note`：`scope=table/figure` 指定归属，`position=top/bottom` 指定位置，`align=left/center/right` 指定对齐，`label` 显式标签，`weight=normal/bold` 仅控制标签。默认 bottom、left、bold；省略标签不预留空间，无标签的有效 weight 忽略。所有图表说明紧跟对象书写，顶部表说明随续表重复。来源按普通说明原样呈现。移除 kind 和 label-weight，不兼容旧参数；项目 Markdown、补全和测试同步迁移。CLI、服务端与静态 WebApp 使用同一解析规则。
 
 验收工作树为 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`。在此运行 `PORT=8766 npm start`，打开 `http://127.0.0.1:8766/`；已有服务需重启。静态版需重建、重新部署并更新缓存。加载国家标准模板，核对来源、表单位、注及非黑体脚注标签；输入 `:::` 核对新指令补全；交换参数位置应得到相同结果，输入旧指令或重复参数应收到错误。下载与CLI使用同一范例，检查表格续页、标签续行及字体提示。字体不足的替代版式不能证明GB标准字体环境验收，系统打印、手机及线上部署需人工确认。
 
