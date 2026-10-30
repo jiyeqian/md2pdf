@@ -21,7 +21,7 @@ export function prepareGbBodyLayout(standard) {
       if (section.querySelector(':scope > h2.front')) {
         section.dataset.page = 'gb-front';
         if (index) section.dataset.breakBefore = 'page';
-      } else if (section.querySelector(':scope > h2.body-start')) {
+      } else if (section.querySelector(':scope > .gb-body-heading > h2.body-start')) {
         section.dataset.page = 'gb-body';
         if (index) section.dataset.breakBefore = 'right';
       }
@@ -103,11 +103,12 @@ export function prepareGbBodyLayout(standard) {
   const toc = document.querySelector('.toc');
   if (toc) calibrate(toc,toc.querySelector('.toc-title'),toc.querySelector('.toc-title'),toc.querySelector('ol li'),12);
   for (const section of document.querySelectorAll('main > section')) {
-    const heading = section.querySelector(':scope > h2.front, :scope > h2.back, :scope > h2.appendix, :scope > h2.body-start');
+    const heading = section.querySelector(':scope > h2.front, :scope > h2.back, :scope > h2.appendix, :scope > .gb-body-heading > h2.body-start');
     if (!heading) continue;
     if (heading.classList.contains('body-start')) {
-      const title = heading.querySelector('.gb-body-title');
-      if (title) calibrate(section,heading,title,heading.querySelector('.gb-important, .gb-first-heading'),12);
+      const group = heading.closest('.gb-body-heading');
+      const title = group.querySelector('.gb-body-title');
+      if (title) calibrate(section,group,title,group.querySelector('.gb-important, .gb-first-heading'),12);
     } else {
       calibrate(section,heading,heading,heading.nextElementSibling,heading.classList.contains('front') ? 12 : 5);
     }

@@ -466,3 +466,9 @@ function placeImportant(html) {
   if (!blocks.length) return html;
   return html.slice(0,firstHeading.start) + blocks.join('\n') + html.slice(firstHeading.start,heading.end) + html.slice(end);
 }
+
+// Keep the visual first-page group together without making its document title part of h2.
+export function separateGbBodyHeading(html) {
+  return html.replace(/<h2([^>]*\bclass="[^"]*\bbody-start\b[^"]*"[^>]*)>([\s\S]*?)<span class="gb-first-heading">([\s\S]*?)<\/span><\/h2>/,
+    (_,attrs,lead,chapter)=>'<div class="gb-body-heading">'+lead+'<h2'+attrs+'><span class="gb-first-heading">'+chapter+'</span></h2></div>');
+}

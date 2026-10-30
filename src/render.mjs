@@ -1,5 +1,5 @@
 import { gbSectionCatalog, gbSectionDiagnostics } from './gb-sections.mjs';
-import { prepareGbContent, transformGbContent } from './gb-content.mjs';
+import { prepareGbContent, transformGbContent, separateGbBodyHeading } from './gb-content.mjs';
 import { documentFonts } from './fonts.mjs';
 import { GB_FONT_CHECKS, requireGbFonts } from './gb-fonts.mjs';
 import { finalizeGbLayout, prepareGbLayout } from './gb-layout.mjs';
@@ -775,6 +775,7 @@ export async function render(src, options = {}, context = {}) {
   if (profile.gbDoc) html = applyGbEquations(transformGbContent(html, title));
   if (gbNotes) html = gbNotes.finalize(html);
   html = sectionize(html);
+  if (profile.gbDoc) html = separateGbBodyHeading(html);
   if (profile.gbDoc && /data-gb-role="toc"/.test(html)) {
     const contentsSection = /<section>\s*<h2[^>]*data-gb-role="toc"[^>]*>[\s\S]*?<\/h2>([\s\S]*?)<\/section>/;
     const contents = contentsSection.exec(html);

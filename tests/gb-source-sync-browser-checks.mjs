@@ -32,6 +32,8 @@ try {
    const outline=await browser.send('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:'new Promise(resolve=>setTimeout(()=>resolve(window.__testOutline?.map(h=>h.text)),100))'});
    assert.ok(outline.result.value?.includes('目次'),runtime+' contents in preview outline');
    assert.ok(outline.result.value?.includes('参考文献'),runtime+' bibliography in preview outline');
+   assert.ok(outline.result.value?.includes('1　范围'),runtime+' first chapter outline excludes document title');
+   assert.ok(!outline.result.value.some(t=>t.includes('仿生机械手抓取控制系统技术要求')&&t.includes('1　范围')),runtime+' document title not included in chapter outline');
   }
   const lines=parseMarkdownHeadings(md).filter(h=>h.level>=2&&h.level<=6).map(h=>h.line);
   const result=await browser.send('Runtime.evaluate',{returnByValue:true,expression:`(()=>{

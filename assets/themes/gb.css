@@ -114,11 +114,11 @@ main > section { page: gb-body; }
 main > section:has(> h2.front) { page: gb-front; break-before: page; }
 main > section:first-child:has(> h2.front) { break-before: auto; }
 main > section:has(> h2.appendix), main > section:has(> h2.back) { break-before: page; }
-main > section:has(> h2.body-start) { counter-reset: page 1; break-before: right; }
+main > section:has(> .gb-body-heading) { counter-reset: page 1; break-before: right; }
 /* 目录之后直接进入正文时，在 main 之前完成奇数页对齐。 */
-.toc:has(+ main > section:first-child > h2.body-start) { break-after: right; }
-.toc + main:has(> section:first-child > h2.body-start) { page: gb-body; }
-.toc + main > section:first-child:has(> h2.body-start) { break-before: auto; }
+.toc:has(+ main > section:first-child > .gb-body-heading) { break-after: right; }
+.toc + main:has(> section:first-child > .gb-body-heading) { page: gb-body; }
+.toc + main > section:first-child:has(> .gb-body-heading) { break-before: auto; }
 
 /* F.1：章条和正文均五号，字号相同而字体不同。 */
 h2, h3, h4, h5, h6 { font: 10.5pt/1.62 var(--font-head); border: none; padding: 0; text-align: left; letter-spacing: 0; }
@@ -386,3 +386,6 @@ main :is([data-gb-note-align="center"], [data-gb-note-align="right"]) > p { padd
 main > section.gb-toc-section { page: gb-front; counter-reset: page 1; break-before: right; break-after: page; }
 .gb-toc-section > .toc { counter-reset: none; break-before: auto; break-after: auto; }
 main h2.toc-title { margin: 0 0 12mm; text-align: center; font: 16pt/1 var(--font-head); }
+
+.gb-body-heading { display: flow-root; break-inside: avoid; font: 10.5pt/1.62 var(--font-head); margin: 0 0 1.62em; }
+.gb-body-heading > h2.body-start { margin: 0; }

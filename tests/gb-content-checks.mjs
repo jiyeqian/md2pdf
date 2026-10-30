@@ -8,7 +8,7 @@ const parse = source => {
   return restore(marked.parse(body),marked);
 };
 
-test('正文首页名称与首章在同一个 h2 中，title 按纯文本转义',()=>{
+test('正文首页准备阶段保留名称与首章，title 按纯文本转义',()=>{
   const html=transformGbContent('<h2 data-chapter class="body-start" id="sec-1">1 范围</h2>','名称 <测试>');
   assert.match(html,/<h2 data-chapter class="body-start" id="sec-1"><span class="gb-body-title">名称 &lt;测试&gt;<\/span><span class="gb-first-heading">1 范围<\/span><\/h2>/);
   assert.equal((html.match(/<h2/g)||[]).length,1);
@@ -314,4 +314,12 @@ test('索引分区中的稳定链接保持CLI与Web相同，缺少闭合明确�
     assert.match(html,/href="#gb-term-term">1\.1<\/a>/);
   }
   assert.throws(()=>parse(':::gb-index-section lang=zh\n:::gb-index A\n词 | 1.1\n:::'),e=>e.status===400);
+});
+
+test('最终正文标题与首章的语义分离，保留分组和安全转义',async()=>{
+ const {render}=await import('../src/render.mjs');
+ const {html}=await render('---\n中文名称: 标准名称\n---\n\n## 范围\n\n:::gb-important\n提示内容。\n:::',{type:'gb'});
+ const chapter=/<h2[^>]*class="[^"]*body-start[^>]*>([\s\S]*?)<\/h2>/.exec(html)?.[1];
+ assert.equal(chapter,'<span class="gb-first-heading">1　范围</span>');
+ assert.match(html,/<div class="gb-body-heading"><span class="gb-body-title">标准名称<\/span><span class="gb-important">/);
 });
