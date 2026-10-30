@@ -14,6 +14,7 @@ try {
  const offline=await import(pathToFileURL(build.directory+'/runtime.mjs'));
  await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
  const base='http://127.0.0.1:'+app.server.address().port;
+ assert.equal((await nativeFetch(base+'/src/gb-sections.mjs')).status,200,'editor shared section module is served');
  await browser.start();
  for(const [runtime,type] of [['node','gb'],['static','gb'],['node','general'],['node','paper'],['node','skill']]) {
   const md=await readFile(new URL('../web/examples/'+type+'.md',import.meta.url),'utf8');
@@ -25,7 +26,13 @@ try {
    assert.equal(response.status,200);
    html=(await response.json()).html;
   }
+  html=html.replace('<head>','<head><script>addEventListener("message",e=>{if(e.data?.type==="md2pdf-outline")window.__testOutline=e.data.headings;});</script>');
   await browser.printHtml(html,{waitPaged:true,webSafe:true});
+  if(type==='gb') {
+   const outline=await browser.send('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:'new Promise(resolve=>setTimeout(()=>resolve(window.__testOutline?.map(h=>h.text)),100))'});
+   assert.ok(outline.result.value?.includes('目次'),runtime+' contents in preview outline');
+   assert.ok(outline.result.value?.includes('参考文献'),runtime+' bibliography in preview outline');
+  }
   const lines=parseMarkdownHeadings(md).filter(h=>h.level>=2&&h.level<=6).map(h=>h.line);
   const result=await browser.send('Runtime.evaluate',{returnByValue:true,expression:`(()=>{
    return ${JSON.stringify(lines)}.map(line=>{
@@ -38,6 +45,25 @@ try {
   for(const item of result.result.value) assert.equal(item.actual,item.line,runtime+'/'+type+' line '+item.line);
   console.log(runtime+'/'+type+': '+lines.length+' heading location messages select their exact source headings');
  }
+ await browser.send('Network.setBlockedURLs',{urls:[]});
+ await browser.send('Page.navigate',{url:base+'/'});
+ for(let i=0;i<100;i++) {
+  const state=await browser.send('Runtime.evaluate',{returnByValue:true,expression:'location.href'});
+  if(state.result?.value===base+'/') break;
+  await new Promise(resolve=>setTimeout(resolve,50));
+ }
+ const editor=await browser.send('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:`(async()=>{
+  const {analyzeMarkdown,provideCompletions}=await import('/editor-analysis.mjs');
+  const text='## 数据 {role=appendix}';
+  const result=analyzeMarkdown(text,{templateType:'gb'});
+  const prefix='## 数据 {na';
+  return {diagnostics:result.diagnostics,options:provideCompletions({text:prefix,pos:prefix.length,templateType:'gb'},result).options.map(o=>o.label)};
+ })()`});
+ assert.equal(editor.exceptionDetails,undefined,JSON.stringify(editor.exceptionDetails));
+ assert.ok(editor.result.value.diagnostics.some(d=>d.code==='gb-appendix-nature'&&d.line===1));
+ assert.ok(editor.result.value.options.includes('nature=normative'));
+ console.log('Node editor browser module: missing-nature diagnostic and heading completion load successfully');
+
 } finally {
  globalThis.fetch=nativeFetch;
  await browser.stop();await app.close();await rm(tmp,{recursive:true,force:true});

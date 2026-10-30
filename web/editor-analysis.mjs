@@ -1,3 +1,4 @@
+import { gbHeading, gbSectionDiagnostics, GB_SECTION_ROLES } from '../src/gb-sections.mjs';
 import { GB_BLOCKS, GB_NOTE_FORMS } from '../src/gb-blocks.mjs';
 import { FRONTMATTER_FIELDS, ARRAY_FIELDS, canonicalFrontmatterField, TEXT_FIELDS, TEXT_METADATA_FIELDS, BOOL_FIELDS, NUMBER_FIELDS, FEATURES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from '../src/frontmatter-fields.mjs';
 /**
@@ -374,6 +375,7 @@ export function analyzeMarkdown(source, options = {}) {
   const fm = frontmatterRange(lines);
   let fence = null;
   let equationIndex = 0;
+  const gbHeadings = [];
 
   for (let i = 0; i < lines.length; i += 1) {
     const row = lines[i];
@@ -395,6 +397,10 @@ export function analyzeMarkdown(source, options = {}) {
       let id = null;
       const mark = /\{#([^{}\n]*)\}/.exec(maskInlineCode(content));
       if (mark) { id = mark[1].trim(); text = content.slice(0, mark.index).trim(); }
+      if (result.templateType==='gb') {
+        gbHeadings.push({text:content,level:h[1].length,line:row.line});
+        try { const section=gbHeading(text,h[1].length); text=section.text; id=section.id || id; } catch {}
+      }
       result.headings.push({
         line: row.line,
         offset: row.start,
@@ -430,11 +436,11 @@ export function analyzeMarkdown(source, options = {}) {
       });
     }
 
-    ID_MARK_RE.lastIndex = 0;
-    while ((m = ID_MARK_RE.exec(scan)) !== null) {
+    const marks = result.templateType==='gb' && h ? [...scan.matchAll(/#(sec:[\w.-]+)(?=\s|})/g)].map(m=>({0:m[0],1:m[1],index:m.index})) : [...scan.matchAll(/\{#([^{}\n]*)\}/g)];
+    for (const m of marks) {
       const id = m[1].trim();
       if (!id) continue;
-      const kind = id.indexOf('fig:') === 0 ? 'figure' : id.indexOf('tab:') === 0 ? 'table' : (result.templateType === 'gb' && h && h[1].length >= 2 && /^sec:[\w.-]+$/.test(id) && /\{#sec:[\w.-]+\}\s*$/.test(h[2] || '')) ? 'section' : 'anchor';
+      const kind = id.indexOf('fig:') === 0 ? 'figure' : id.indexOf('tab:') === 0 ? 'table' : (result.templateType === 'gb' && h && h[1].length >= 2 && /^sec:[\w.-]+$/.test(id) && result.headings.at(-1)?.id===id) ? 'section' : 'anchor';
       const target = {
         id: id, kind: kind, line: row.line, offset: row.start + m.index,
         title: titleFromLine(raw, m[0]) || id,
@@ -466,6 +472,7 @@ export function analyzeMarkdown(source, options = {}) {
     }
   }
 
+  if (result.templateType==='gb') for (const diag of gbSectionDiagnostics(gbHeadings)) addDiagnostic(result,diag);
   reportDiagnostics(result);
   reportHeadingNumbers(result);
   return finalizeCounts(result);
@@ -565,8 +572,8 @@ export const SNIPPETS = {
   },
   'gb-appendix': {
     title: 'GB · 附录',
-    text: '## 附录 {{letter}}（规范性）{{title}}\n\n{{content}}\n',
-    defaults: { letter: 'A', title: '附录标题', content: '附录内容' },
+    text: '## {{title}} {role=appendix nature=normative}\n\n{{content}}\n',
+    defaults: { title: '附录标题', content: '附录内容' },
   },
   skill: {
     title: '技能文档 · 章节骨架',
@@ -701,6 +708,13 @@ export function provideCompletions(context, analysis) {
   const fields = frontmatterCompletions(text, pos, context.frontmatterValues);
   if (fields) return fields;
   if (context.templateType === 'gb') {
+    const heading = /(?:^|\n) {0,3}(#{2,6}) [^\n{}]*\{([^{}]*)$/.exec(before);
+    if (heading && !isSuppressedContext(text,pos)) {
+      const typed=heading[2].split(/\s+/).at(-1);
+      const choices=[...Object.entries(GB_SECTION_ROLES).map(([role,name])=>({label:'role='+role,detail:name})),{label:'nature=normative',detail:'规范性附录'},{label:'nature=informative',detail:'资料性附录'},{label:'#sec:section',detail:'稳定章节标识，请改为唯一名称'}];
+      const used=heading[2].slice(0,-typed.length || undefined).trim().split(/\s+/).map(t=>t.split('=')[0]);
+      return {from:pos-typed.length,options:choices.filter(c=>(heading[1].length===2 || c.label.startsWith('#sec:')) && c.label.startsWith(typed) && !used.includes(c.label.split('=')[0])).map(c=>({...c,apply:c.label}))};
+    }
     const match = /(?:^|\n)( {0,3}):::(gb-[a-z-]*)?$/.exec(before);
     if (match && !isSuppressedContext(text, pos)) {
       const typed = match[2] || '';

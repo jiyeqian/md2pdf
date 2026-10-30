@@ -32,7 +32,9 @@ toc: 2
 
 <!-- gb-check: 全面范例；假设标准，技术数据仅用于版式演示；GB/T 1.1—2020 9.7/9.8/9.9、10及附录E/F -->
 
-## 前言
+## 目次 {role=toc}
+
+## 前言 {role=preface}
 
 本文件按照 GB/T 1.1—2020《标准化工作导则　第1部分：标准化文件的结构和起草规则》的规定起草。
 
@@ -58,7 +60,7 @@ toc: 2
 
 [^@purpose]: 本文件为假设标准，不作为真实产品的合格判定依据。
 
-## 引言
+## 引言 {role=introduction}
 
 仿生机械手在非结构化环境中的稳定抓取，需要同时考虑接触力、关节位姿、目标物表面状态和故障恢复过程。对试验条件、量的符号和结果记录作出一致规定，有助于比较不同控制方案。
 
@@ -451,7 +453,7 @@ flowchart LR
 
 使用说明应给出系统工作条件、允许的目标物范围、接口配置、安全状态及必要的维护要求。包装标志应符合 GB/T 191 的规定。
 
-## 附录 A（规范性）试验报告 {#sec:appendix-report}
+## 试验报告 {role=appendix nature=normative #sec:appendix-report}
 
 ### 报告内容 {#sec:report-content}
 
@@ -476,7 +478,7 @@ flowchart LR
 | 试验条件 | 环境温度、相对湿度、供电状态 |
 | 记录关联 | 试验批次、记录编号、异常编号 |
 
-## 附录 B（资料性）数据整理示例 {#sec:appendix-data}
+## 数据整理示例 {#sec:appendix-data nature=informative role=appendix}
 
 ### 采样结果的整理 {#sec:sample-processing}
 
@@ -500,7 +502,9 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 | 第一组 | 9.1 | 10.2 | 9.65 |
 | 第二组 | 9.2 | 10.4 | 9.80 |
 
-## 索引
+## 参考文献 {role=bibliography}
+
+## 索引 {role=index}
 
 <!-- gb-check: 10.3.6/E.11；索引位于参考文献之后，分组、关键词与位置 -->
 

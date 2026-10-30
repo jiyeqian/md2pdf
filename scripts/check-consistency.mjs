@@ -106,6 +106,23 @@ try {
     sameHtml(await readFile(output,'utf8'),core.pagedHtml,type+': custom font CLI');
   }
   console.log('✓ 四模板 fonts 映射、CLI HTML、Node 与静态预览及字体检查规则一致');
+  {
+    const md='---\n标准号: GB/T 39999—2026\n中文名称: 章节角色验收\ntoc: 2\n---\n## 目录 {role=toc}\n\n## 前言 {role=preface}\n\n## 范围\n\n引用[^r]，见 \\ref{sec:appendix}。\n\n## 方法 {nature=normative #sec:appendix role=appendix}\n\n### 子条\n\n## 参考文献 {role=bibliography}\n\n[^r]: 参考条目\n';
+    const body={md,opts:{type:'gb'}},core=await render(md,{type:'gb',pagedHtml:true},{webSafe:true});
+    const response=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    assert.equal(response.status,200);
+    const online=await response.json(),offline=await(await browser.appFetch('/api/render',{body:JSON.stringify(body)})).json();
+    sameHtml(online.html,offline.html,'GB sections Node/static');
+    sameHtml((await browserRender(md,{type:'gb',pagedHtml:true},{webSafe:true})).pagedHtml,core.pagedHtml,'GB sections browser core');
+    const input=path.join(tmp,'gb-sections.md'),output=path.join(tmp,'gb-sections.html');
+    await writeFile(input,md);
+    execFileSync(process.execPath,['src/md2pdf.mjs',input,'--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});
+    sameHtml(await readFile(output,'utf8'),core.pagedHtml,'GB sections CLI');
+    assert.match(core.html,/A\.1　子条/);
+    assert.equal((core.html.match(/class="references"/g)||[]).length,1);
+    assert.ok(core.warnings.some(w=>w.includes('自定义名称')));
+    console.log('✓ GB章节角色、自动附录、显式目次及文献：CLI、Node、静态一致');
+  }
   for (const depth of [0,1,2,3]) {
     const md=`---\n标准号: GB/T 39999—2026\n中文名称: 目录命名验收\ntitle: 旧标题\nversion: v2\ntoc: ${depth}\n---\n## 范围\n\n### 次级条\n\n#### 三级条\n\n##### 四级条\n`;
     const body={md,opts:{}};

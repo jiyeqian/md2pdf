@@ -3,7 +3,7 @@ export function prepareGbBodyLayout(standard) {
   // Paged.js counters can be decremented while splitting nested lists. Freeze source labels first.
   const alpha=n=>{let value='';do{n--;value=String.fromCharCode(97+n%26)+value;n=Math.floor(n/26);}while(n>0);return value;};
   for(const list of document.querySelectorAll('main ol, main ul')){
-    if(list.matches('.references,.footnotes,.gb-index-entries')||list.closest('.gb-index'))continue;
+    if(list.matches('.references,.footnotes,.gb-index-entries')||list.closest('.gb-index,.toc'))continue;
     let level=1,parent=list.parentElement?.closest('ol,ul');
     while(parent){level++;parent=parent.parentElement?.closest('ol,ul');}
     let number=Number(list.getAttribute('start'))||1;

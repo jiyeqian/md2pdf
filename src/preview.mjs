@@ -243,7 +243,7 @@ function runtimeScript(type) {
     '  });',
     "  var outlineHeadings = [], sidebarOpen = false;",
     "  function sendOutline() {",
-    "    outlineHeadings = Array.from(activeNodes('h1,h2,h3,h4,h5,h6')).filter(function (node) { return !node.closest('.toc') && !node.hasAttribute('data-split-from'); });",
+    "    outlineHeadings = Array.from(activeNodes('h1,h2,h3,h4,h5,h6')).filter(function (node) { return (!node.closest('.toc') || node.classList.contains('toc-title')) && !node.hasAttribute('data-split-from'); });",
     "    parent.postMessage({type:'md2pdf-outline',headings:outlineHeadings.map(function (node) { return {level:Number(node.tagName.slice(1)),text:node.textContent.trim()}; })}, '*');",
     "    updateOutlineCurrent();",
     "  }",

@@ -1,3 +1,4 @@
+import { gbHeading, gbSectionDiagnostics } from './gb-sections.mjs';
 import { prepareGbContent, transformGbContent } from './gb-content.mjs';
 import { documentFonts } from './fonts.mjs';
 import { GB_FONT_CHECKS, requireGbFonts } from './gb-fonts.mjs';
@@ -219,15 +220,27 @@ function numberFloats(html, gb = false) {
 
 function prepareGbHeadingTargets(html) {
   const seen = new Set();
+  let appendix = 0;
   return html.replace(/<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g, (whole,level,attrs,inner) => {
-    const label = /\s*\{#(sec:[\w.-]+)\}\s*$/.exec(inner);
-    if (!label) return whole;
-    const key = label[1];
-    if (seen.has(key)) throw Object.assign(new Error('稳定标识重复：' + key), {status:400});
-    seen.add(key);
-    const id = 'gb-' + key.replace(':','-');
-    attrs = attrs.replace(/\s+id="[^"]*"/, '');
-    return '<h'+level+attrs+' id="'+id+'" data-gb-stable-key="'+key+'">'+inner.slice(0,label.index)+'</h'+level+'>';
+    let section;
+    try { section = gbHeading(stripTags(inner), +level); }
+    catch (error) { error.status = 400; throw error; }
+    const {id:key,role,nature} = section;
+    const suffix = /\s*\{[^{}]*\}\s*$/.exec(inner);
+    if (suffix) inner = inner.slice(0,suffix.index);
+    if (role==='appendix') {
+      appendix++;
+      if (appendix>26) throw Object.assign(new Error('附录数量超过 A–Z'), {status:400});
+      inner='附录 '+String.fromCharCode(64+appendix)+(nature ? '（'+(nature==='normative'?'规范性':'资料性')+'）' : '　')+inner;
+    } else if (+level===2 && /^附录\s*[A-Z]/i.test(section.text)) appendix++;
+    if (role) attrs += ' data-gb-role="'+role+'"';
+    if (nature) attrs += ' data-gb-nature="'+nature+'"';
+    if (key) {
+      if (seen.has(key)) throw Object.assign(new Error('稳定标识重复：' + key), {status:400});
+      seen.add(key);
+      attrs = attrs.replace(/\s+id="[^"]*"/, '') + ' id="gb-'+key.replace(':','-')+'" data-gb-stable-key="'+key+'"';
+    }
+    return '<h'+level+attrs+'>'+inner+'</h'+level+'>';
   });
 }
 
@@ -267,10 +280,11 @@ function numberHeadings(html, mode, scheme) {
     const text = stripTags(inner);
     const clean = inner.replace(HEADING_NUM_RE, '');
     // 跳过：不编号、且不占号（如 GB 的前言/引言/目次/参考文献）
-    if (skipFn && skipFn(text)) {
+    const role = /data-gb-role="([^"]+)"/.exec(attrs)?.[1];
+    if ((isGb && role && role !== 'appendix') || (skipFn && skipFn(text))) {
       if (!isGb) return '<h' + level + attrs + '>' + clean + '</h' + level + '>';
       // 前言/引言属「前置部分」（罗马页码、各自起新页）；参考文献只在版式上独立起页
-      const cls = /^(前言|引言)\s*$/.test(text.trim()) ? 'front' : 'back';
+      const cls = (role ? ['preface','introduction','toc'].includes(role) : /^(前言|引言)\s*$/.test(text.trim())) ? 'front' : 'back';
       return '<h' + level + addClass(attrs, 'unnumbered ' + cls) + '>' + clean + '</h' + level + '>';
     }
     counters[lvl]++;
@@ -458,7 +472,7 @@ function renderFootnotes(footnotes, title, marked, gb = false) {
     return '<li id="fn-' + num + '"><a href="#fnref-' + num + '" class="fnref-back">[' + num + ']</a>' + (gb ? '　' : ' ') + content + '</li>';
   }).join('\n');
   const list = '<ol class="references">\n' + items + '\n</ol>';
-  return (title ? '<h2>' + title + '</h2>\n' : '') + list;
+  return (title ? '<h2'+(gb ? ' data-gb-role="bibliography"' : '')+'>' + title + '</h2>\n' : '') + list;
 }
 
 /* ---------------- Chrome ---------------- */
@@ -665,6 +679,10 @@ export async function render(src, options = {}, context = {}) {
   if (profile.gbDoc) {
     // Code examples are literal, including references to identifiers not in the document.
     html = html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/g, code => code.replace(/\u0002REF(\d+)\u0002/g, (_,i)=>esc('\\ref{' + refStore[+i] + '}')));
+    const headings=[...html.matchAll(/<h([2-6])[^>]*>([\s\S]*?)<\/h\1>/g)].map(m=>({level:+m[1],text:stripTags(m[2])}));
+    const issues=gbSectionDiagnostics(headings);
+    if (issues.some(d=>d.code==='gb-section-duplicate')) throw Object.assign(new Error(issues.find(d=>d.code==='gb-section-duplicate').message),{status:400});
+    warnings.push(...issues.map(d=>d.message));
     html = prepareGbHeadingTargets(html);
   }
 
@@ -693,9 +711,14 @@ export async function render(src, options = {}, context = {}) {
   // bibliographyTitle 默认「参考文献」；显式空串时只去掉标题，条目与链接保留；无引用则不生成。
   const bibTitle = eff.bibliographyTitle !== undefined ? eff.bibliographyTitle : '参考文献';
   const referencesHtml = renderFootnotes(orderedFootnotes, bibTitle, marked, profile.gbDoc);
-  const indexHeading = /<h2[^>]*>\s*索引\s*<\/h2>/;
-  if (profile.gbDoc && indexHeading.test(html)) html = html.replace(indexHeading, heading => referencesHtml + heading);
-  else html += referencesHtml;
+  const explicitBibliography = /(<h2[^>]*data-gb-role="bibliography"[^>]*>[\s\S]*?<\/h2>)/;
+  const indexHeading = /<h2(?=[^>]*(?:data-gb-role="index"|>\s*索引\s*<))[^>]*>[\s\S]*?<\/h2>/;
+  const hasBibliography = profile.gbDoc && explicitBibliography.test(html);
+  if (hasBibliography) html = html.replace(explicitBibliography, heading => heading + renderFootnotes(orderedFootnotes, '', marked, true));
+  if (!hasBibliography) {
+    if (profile.gbDoc && indexHeading.test(html)) html = html.replace(indexHeading, heading => referencesHtml + heading);
+    else html += referencesHtml;
+  }
   html = html.replace(/<h2(?=[\s>])/g, '<h2 data-chapter');
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
@@ -744,14 +767,14 @@ export async function render(src, options = {}, context = {}) {
     const front = /\bclass="[^"]*\bfront\b/.test(attrs);
     const existing = /\sid="([^"]+)"/.exec(attrs);
     const id = existing ? existing[1] : `sec-${secIds.length + 1}`;
-    secIds.push({ id, text: stripTags(inner), front, level: +level });
+    secIds.push({ id, text: stripTags(inner), front, level: +level, role:/data-gb-role="([^"]+)"/.exec(attrs)?.[1] });
     return existing ? m : `<h${level}${attrs} id="${id}">${inner}</h${level}>`;
   });
   let toc = '';
   if (useToc && secIds.length) {
     const levels = [...new Set(secIds.map(s => s.level))].sort((a, b) => a - b);
     const included = levels.slice(0, eff.tocDepth || 1);
-    const items = secIds.filter(s => included.includes(s.level));
+    const items = secIds.filter(s => included.includes(s.level) && s.role!=='toc');
     const tocItem = s => profile.gbDoc
       ? `<li class="toc-level-${included.indexOf(s.level)}${s.float ? ' toc-float' : ''}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
       : `<li class="toc-level-${included.indexOf(s.level)}${s.float ? ' toc-float' : ''}"><a href="#${s.id}"><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`;
@@ -759,12 +782,23 @@ export async function render(src, options = {}, context = {}) {
       const entries = [...html.matchAll(kind === 'fig' ? /<figure class="fig" id="([^"]+)"[^>]*>[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/g : /<table class="tbl" id="([^"]+)"[^>]*>\s*<caption>([\s\S]*?)<\/caption>/g)];
       return entries.length ? '<ol class="gb-float-toc">' + entries.map(m => tocItem({id:m[1],text:stripTags(m[2]),level:2,float:true})).join('') + '</ol>' : '';
     }).join('') : '';
-    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目  录'}</div><ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';
+    const tocHeading = profile.gbDoc ? secIds.find(s=>s.role==='toc') : null;
+    toc = `<div class="toc">${profile.gbDoc ? '<h2 class="toc-title" data-gb-role="toc" id="'+(tocHeading?.id || 'gb-toc')+'">'+esc(tocHeading?.text || profile.tocTitle || '目次')+'</h2>' : '<div class="toc-title">'+(profile.tocTitle || '目  录')+'</div>'}<ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';
   }
 
   if (profile.gbDoc) html = applyGbEquations(transformGbContent(html, title));
   if (gbNotes) html = gbNotes.finalize(html);
   html = sectionize(html);
+  if (profile.gbDoc && /data-gb-role="toc"/.test(html)) {
+    const contentsSection = /<section>\s*<h2[^>]*data-gb-role="toc"[^>]*>[\s\S]*?<\/h2>([\s\S]*?)<\/section>/;
+    const contents = contentsSection.exec(html);
+    // Keep the usual first contents outside main: nested named pages create an empty front sheet.
+    if (contents && !html.slice(0,contents.index).trim()) html = html.replace(contentsSection, (_,rest)=>rest);
+    else {
+      html = html.replace(contentsSection, (_,rest)=>toc ? '<section class="gb-toc-section">'+toc+rest+'</section>' : rest);
+      toc = '';
+    }
+  }
   if (profile.gbDoc && !(fm.gb_source_cover === true || fm.gb_source_cover === 'true') && /class="[^"]*body-start/.test(html)) {
     html = html.replace(/<\/section>\s*$/, '<div class="gb-end-line" aria-label="文件终结线"></div></section>');
   }

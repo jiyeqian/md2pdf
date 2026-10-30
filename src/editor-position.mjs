@@ -109,9 +109,10 @@ export function attachSourcePositions(html, md) {
   if (typeof html !== 'string') throw new TypeError('attachSourcePositions 需要 HTML 字符串');
   if (typeof md !== 'string') throw new TypeError('attachSourcePositions 需要 Markdown 字符串');
   if (!/<h[2-6][\s>]/.test(html)) return html;
+  const gb = html.includes('md2pdf-gb-') || /data-gb-(?:role|stable-key)=/.test(html);
   const targets = parseMarkdownHeadings(md)
     .filter(h => h.level >= 2 && h.level <= 6)
-    .map(h => ({ line: h.line, level: h.level, stable: /\s*\{#(sec:[\w.-]+)\}\s*$/.exec(h.text)?.[1], norm: normalize(markdownHeadingText(h.text)) }));
+    .map(h => ({ line: h.line, level: h.level, stable: (gb ? /#(sec:[\w.-]+)(?=\s|})/ : /\s*\{#(sec:[\w.-]+)\}\s*$/).exec(h.text)?.[1], norm: normalize(markdownHeadingText(gb ? h.text.replace(/\s*\{[^{}]*(?:role=|nature=|#sec:)[^{}]*\}\s*$/, '') : h.text)) }));
   if (!targets.length) return html;
   const stableTargets = new Map();
   for (const [index, target] of targets.entries()) {
@@ -122,7 +123,7 @@ export function attachSourcePositions(html, md) {
     if (/(?:^|\s)data-md2pdf-source-line\s*=/.test(attrs)) return match; // 幂等：已标注不再重复
     const lvl = Number(level);
     // GB's first h2 also contains the document name and optional warning.
-    const headingInner = /<span class="gb-first-heading">([\s\S]*?)<\/span>/.exec(inner)?.[1] ?? inner;
+    const headingInner = /<span class="gb-first-heading">([\s\S]*?)<\/span>/.exec(inner)?.[1] ?? (/data-gb-role="appendix"/.test(attrs) ? /<span class="gb-appendix-title">([\s\S]*?)<\/span>/.exec(inner)?.[1] : null) ?? inner;
     const rawNorm = normalize(headingInner);
     const strippedNorm = rawNorm.replace(RENDER_NUMBER_PREFIX, '');
     const stable = /data-gb-stable-key="(sec:[\w.-]+)"/.exec(attrs)?.[1];

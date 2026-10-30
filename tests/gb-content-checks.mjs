@@ -13,10 +13,10 @@ test('正文首页名称与首章在同一个 h2 中，title 按纯文本转义'
   assert.match(html,/<h2 data-chapter class="body-start" id="sec-1"><span class="gb-body-title">名称 &lt;测试&gt;<\/span><span class="gb-first-heading">1 范围<\/span><\/h2>/);
   assert.equal((html.match(/<h2/g)||[]).length,1);
 });
-test('附录仅在明确声明性质时拆为编号、性质和标题',()=>{
+test('附录拆为编号和标题，仅显式性质生成性质行',()=>{
   const html=transformGbContent('<h2 class="appendix">附录 A （规范性） 检查项目</h2>','');
   assert.match(html,/<span class="gb-appendix-number">附录 A<\/span><span class="gb-appendix-kind">（规范性）<\/span><span class="gb-appendix-title">检查项目<\/span>/);
-  assert.equal(transformGbContent('<h2 class="appendix">附录 B 未知性质</h2>',''),'<h2 class="appendix">附录 B 未知性质</h2>');
+  assert.match(transformGbContent('<h2 class="appendix">附录 B 未知性质</h2>',''),/<span class="gb-appendix-number">附录 B<\/span><span class="gb-appendix-title">未知性质<\/span>/);
 });
 test('普通注示例文字与 fenced 源码不猜测为语义块',()=>{
   assert.equal(parse('注：这是正文。\n\n示例：也是正文。'),marked.parse('注：这是正文。\n\n示例：也是正文。'));

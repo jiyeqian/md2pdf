@@ -259,3 +259,9 @@ npm run check:consistency
 ## 2026-10-27 图 E.5 封面墨迹校准
 
 国家标准封面以实际字形边缘定位；名称区采用共同零原点，避免 DOM 与 PDF 流式绘制位置取整不同。显式提供一个发布机构时不再补入默认第二机构。三端共用 `prepareGbLayout`，无独立业务副本。完整 23 项尺寸台账和两例六份 PDF 的测量数据见[校准记录](gb-cover-e5-calibration.md)。运行 `npm run test:gb-cover`、`npm run test:gb-ef`、`npm run check:consistency`；人工打开图例与实际范例封面核对，静态系统打印和专用字确认单独验收。模板卡片首屏截图随本轮更新。服务须在 f96a 工作树重启后验收；未合并 main。
+
+## 2026-10-31 GB 章节角色
+
+GB 二级标题支持 `{role=toc|preface|introduction|appendix|bibliography|index nature=normative|informative #sec:名称}` 的可选组合，顺序不限。nature 只作用于附录；缺少性质仅专业助手/CLI 提示，不阻止导出。自动附录编号传递至图表、章条、索引；旧标题仍兼容。显式目次、文献标题是自动条目的插入点，无显式标题保留自动插入；重复单例角色报错。GB 目次使用语义标题，进入预览 outline 与 PDF 书签，但不进入自身的打印条目。其他模板保留原行为。
+
+验收：重启当前工作树服务，打开国家标准范例，检查编辑器/预览大纲中的目次和参考文献、附录 A/B 与子编号；互换附录检查稳定引用；删除 nature 在专业助手查看提示；CLI、服务端、静态页面使用同一输入比较。真实 Chrome/PDF 检查不替代手机及部署缓存验收。

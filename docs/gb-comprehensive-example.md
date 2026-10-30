@@ -157,3 +157,7 @@ GB补全最多渲染10项，其他模板5项；菜单限制为可用屏幕高度
 自动检查：`npm run test:gb-body`、`npm run test:gb-ef`、`npm run test:gb-cover`、`npm run check:consistency`。本轮Node PDF生成运行 `node tests/gb-body-acceptance.mjs --node-only`，墨迹测量运行 `tests/gb-body-ink.py /private/tmp/md2pdf-gb-comprehensive --runtime node`；本轮新增检查：`node tests/gb-completion-browser-checks.mjs`（真实编辑器补全）与 `PYTHON=/Users/jiyeqian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 node tests/gb-table-rules-checks.mjs`（真实PDF线宽）。完整结果归档于 `docs/gb-comprehensive-measurements.json`。其他模板以前一提交导出源码作基线，逐页比较实际 PDF 的 90 dpi 光栅，记录见 `docs/gb-other-templates-regression.json`。
 
 WebApp 需从本工作树重启；确认端口空闲后执行 `PORT=8766 npm start`，访问 `http://127.0.0.1:8766/`，从国家标准模板创建并导出。静态版需重新构建、部署和更新缓存。本次不替代手机、Pages 线上部署或实体打印验收。
+
+## 章节角色验收
+
+全面范例显式声明目次、前言、引言、参考文献及索引；两份附录分别声明规范性、资料性，并采用不同属性顺序验证等效解析。附录标题不再手写 A/B，子条款、图表与稳定索引随附录顺序更新。可在目次和参考文献标题处查看自动内容，在专业助手中核查删除 nature 后的提示；提示不阻止 PDF 下载。

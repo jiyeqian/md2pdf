@@ -52,7 +52,7 @@ try{
    const style=selector=>{const e=document.querySelector('.pagedjs_pages '+selector),s=getComputedStyle(e);return {font:s.fontFamily,size:s.fontSize,line:s.lineHeight,border:s.borderBottomWidth,spacing:s.letterSpacing,margin:s.marginBottom};};
    const typography={header:style('.gb-fixed-header'),term:style('.gb-term-name'),body:style('.gb-term-definition p'),reference:style('.fnref-back'),front:style('h2.front'),references:style('h2.gb-references-title')};
    const scope=document.querySelector('.pagedjs_pages');
-   const extras={figureContents:scope.querySelectorAll('.toc-float').length,nestedContents:scope.querySelectorAll('.toc-level-1').length,indexLinks:scope.querySelectorAll('.gb-index-locations a').length,unresolved:scope.querySelectorAll('[data-gb-index-unresolved]').length,source:[...scope.querySelectorAll('.gb-note')].find(n=>n.textContent.includes('[来源：'))?.textContent,visibleCitations:[...scope.querySelectorAll('.fnref-back')].every(e=>getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'),vectorRules:scope.querySelectorAll('[data-gb-table-rules]').length};
+   const extras={contentsHeadings:scope.querySelectorAll('h2.toc-title').length,tocMarkers:[...scope.querySelectorAll('.toc li')].some(n=>getComputedStyle(n,'::before').display!=='none' && !['none','normal','""'].includes(getComputedStyle(n,'::before').content)),bibliographyHeadings:scope.querySelectorAll('h2[data-gb-role="bibliography"]').length,figureContents:scope.querySelectorAll('.toc-float').length,nestedContents:scope.querySelectorAll('.toc-level-1').length,indexLinks:scope.querySelectorAll('.gb-index-locations a').length,unresolved:scope.querySelectorAll('[data-gb-index-unresolved]').length,source:[...scope.querySelectorAll('.gb-note')].find(n=>n.textContent.includes('[来源：'))?.textContent,visibleCitations:[...scope.querySelectorAll('.fnref-back')].every(e=>getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'),vectorRules:scope.querySelectorAll('[data-gb-table-rules]').length};
    extras.indexSections=[...scope.querySelectorAll('.gb-index-section')].map(e=>({lang:e.dataset.gbIndexLang,columns:getComputedStyle(e.querySelector('.gb-index-columns')).columnCount}));
    extras.tocRowHeights=[...scope.querySelectorAll('.toc li')].filter(e=>e.textContent.trim()).map(e=>e.getBoundingClientRect().height/(e.closest('.pagedjs_page').querySelector('.pagedjs_pagebox').getBoundingClientRect().width/(210*96/25.4)));
    extras.tocMargins=[...scope.querySelectorAll('.toc li')].map(e=>({top:parseFloat(getComputedStyle(e).marginTop),bottom:parseFloat(getComputedStyle(e).marginBottom)}));
@@ -70,6 +70,9 @@ try{
   })()`});
   assert.equal(result.exceptionDetails,undefined,JSON.stringify(result.exceptionDetails));const state=result.result.value;
   await writeFile(out+'/'+runtime+'-state.json',JSON.stringify(state,null,2));
+  assert.equal(state.extras.tocMarkers,false,'contents never use body list markers');
+  assert.equal(state.extras.contentsHeadings,1,'semantic contents heading appears once');
+  assert.equal(state.extras.bibliographyHeadings,1,'explicit bibliography heading appears once');
   assert.ok(state.extras.figureContents>=2&&state.extras.nestedContents>0,'multilevel contents and float list');
   assert.ok(state.extras.indexLinks>=10&&state.extras.unresolved===0,'all index locations resolve');
   assert.ok(state.extras.source?.includes('[来源：GB/T 20000.1—2014，5.3]'),'bracketed terminology source');
