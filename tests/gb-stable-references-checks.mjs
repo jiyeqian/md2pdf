@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {render} from '../src/render.mjs';
 import {analyzeMarkdown,provideCompletions} from '../web/editor-analysis.mjs';
-const make=md=>render(md,{type:'gb',pagedHtml:true},{webSafe:true});
+const make=md=>render(md.includes('role=toc') ? md : '## 目次 {role=toc}\n\n'+md,{type:'gb',pagedHtml:true},{webSafe:true});
 const fig=key=>`图：${key} {#fig:${key}}\n\n\`\`\`mermaid\nflowchart LR\n A-->B\n\`\`\`\n`;
 const table=key=>`表：${key} {#tab:${key}}\n\n| 值 |\n|---|\n| 1 |\n`;
-const index='## 索引\n\n:::gb-index A\n章条 | @sec:details\n图示 | @fig:alpha\n表格 | @tab:alpha\n:::';
+const index='## 索引 {role=index}\n\n:::gb-index A\n章条 | @sec:details\n图示 | @fig:alpha\n表格 | @tab:alpha\n:::';
 function entry(html,name) {
  const match=new RegExp('<span class="gb-index-term">'+name+'</span><span class="gb-index-dots"></span><span class="gb-index-locations"><a href="#([^"]+)">([^<]+)</a>').exec(html);
  assert.ok(match,'index entry: '+name);
@@ -32,7 +32,7 @@ test('moving chapter, figures and tables updates numbers and keeps semantic targ
 });
 
 test('appendix heading and table references show appendix numbers',async()=>{
- const md='## 范围\n\n内容。\n\n## 附录 A（资料性）补充 {#sec:appendix}\n\n### 项目 {#sec:item}\n\n'+table('appendix')+'\n## 索引\n\n:::gb-index A\n附录 | @sec:appendix\n条款 | @sec:item\n表格 | @tab:appendix\n:::';
+ const md='## 范围\n\n内容。\n\n## 补充 {role=appendix nature=informative #sec:appendix}\n\n### 项目 {#sec:item}\n\n'+table('appendix')+'\n## 索引 {role=index}\n\n:::gb-index A\n附录 | @sec:appendix\n条款 | @sec:item\n表格 | @tab:appendix\n:::';
  const {html}=await make(md);
  assert.equal(entry(html,'附录').number,'附录A');
  assert.equal(entry(html,'条款').number,'A.1');
@@ -46,7 +46,7 @@ test('duplicate and missing stable references fail explicitly',async()=>{
   '## 范围\n\n'+table('same')+'\n'+table('same'),
   '## 范围\n\n见 \\ref{sec:missing}。',
   '## 范围\n\n见 \\ref{fig:missing}。',
-  '## 范围\n\n## 索引\n\n:::gb-index A\n丢失 | @tab:missing\n:::',
+  '## 范围\n\n## 索引 {role=index}\n\n:::gb-index A\n丢失 | @tab:missing\n:::',
  ]) await assert.rejects(()=>make(md),e=>e.status===400 && /稳定标识/.test(e.message));
 });
 
@@ -63,7 +63,7 @@ test('section completions and diagnostics are enabled only for the GB editor',()
 
 test('the comprehensive example uses stable targets for every index entry',async()=>{
  const md=await readFile(new URL('../web/examples/gb.md',import.meta.url),'utf8');
- const entries=md.slice(md.indexOf('## 索引')).split('\n').filter(l=>l.includes(' | '));
+ const entries=md.slice(md.indexOf('## 索引 {role=index}')).split('\n').filter(l=>l.includes(' | '));
  assert.ok(entries.length>10);
  for(const line of entries) assert.ok(line.split(' | ')[1].split('，').every(s=>/^@[\w:.-]+$/.test(s)),line);
  await assert.doesNotReject(()=>make(md));

@@ -52,7 +52,6 @@ export const PROFILES = {
     skillMeta: false,
     // 启用封面 + 页眉 + GB 专用编号
     gbDoc: true,
-    tocTitle: '目次',
     defaults: {
       theme: 'gb',
       numberScheme: 'gb',

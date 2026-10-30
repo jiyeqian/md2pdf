@@ -1,3 +1,4 @@
+import * as YAML from '../vendor/yaml/yaml.mjs';
 import { gbHeading, gbSectionDiagnostics, GB_SECTION_ROLES } from '../src/gb-sections.mjs';
 import { GB_BLOCKS, GB_NOTE_FORMS } from '../src/gb-blocks.mjs';
 import { FRONTMATTER_FIELDS, ARRAY_FIELDS, canonicalFrontmatterField, TEXT_FIELDS, TEXT_METADATA_FIELDS, BOOL_FIELDS, NUMBER_FIELDS, FEATURES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from '../src/frontmatter-fields.mjs';
@@ -398,7 +399,7 @@ export function analyzeMarkdown(source, options = {}) {
       const mark = /\{#([^{}\n]*)\}/.exec(maskInlineCode(content));
       if (mark) { id = mark[1].trim(); text = content.slice(0, mark.index).trim(); }
       if (result.templateType==='gb') {
-        gbHeadings.push({text:content,level:h[1].length,line:row.line});
+        gbHeadings.push({text:content.replace(TRAILING_HASHES,'').trim(),level:h[1].length,line:row.line});
         try { const section=gbHeading(text,h[1].length); text=section.text; id=section.id || id; } catch {}
       }
       result.headings.push({
@@ -472,7 +473,22 @@ export function analyzeMarkdown(source, options = {}) {
     }
   }
 
-  if (result.templateType==='gb') for (const diag of gbSectionDiagnostics(gbHeadings)) addDiagnostic(result,diag);
+  if (result.templateType==='gb') {
+    let tocEnabled=true, tocLine=1;
+    try {
+      if(fm) {
+        const metadata=YAML.parseDocument(lines.slice(fm.from+1,fm.to).map(r=>r.text).join('\n'),{uniqueKeys:true}).toJS({maxAliasCount:100}) || {};
+        const setting=metadata.toc;
+        if(setting!==undefined) tocEnabled=!['false','0','no','off'].includes(String(setting).trim().toLowerCase());
+        if(Array.isArray(metadata.disable)&&metadata.disable.includes('toc')) tocEnabled=false;
+        if(Array.isArray(metadata.enable)&&metadata.enable.includes('toc')) tocEnabled=true;
+        tocLine=lines.slice(fm.from+1,fm.to).find(r=>/^(toc|enable|disable)\s*:/.test(r.text))?.line || 1;
+      }
+    } catch { tocEnabled=false; } // Configuration errors are handled by the configuration validator.
+    if(options.toc!==undefined) tocEnabled=!!options.toc;
+    const referenceLine=result.occurrences.find(o=>o.kind==='footnote-ref'&&!o.id.startsWith('@'))?.line;
+    for (const diag of gbSectionDiagnostics(gbHeadings,{tocEnabled,tocLine,referenceLine})) addDiagnostic(result,diag);
+  }
   reportDiagnostics(result);
   reportHeadingNumbers(result);
   return finalizeCounts(result);

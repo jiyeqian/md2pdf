@@ -13,10 +13,11 @@ test('正文首页名称与首章在同一个 h2 中，title 按纯文本转义'
   assert.match(html,/<h2 data-chapter class="body-start" id="sec-1"><span class="gb-body-title">名称 &lt;测试&gt;<\/span><span class="gb-first-heading">1 范围<\/span><\/h2>/);
   assert.equal((html.match(/<h2/g)||[]).length,1);
 });
-test('附录拆为编号和标题，仅显式性质生成性质行',()=>{
-  const html=transformGbContent('<h2 class="appendix">附录 A （规范性） 检查项目</h2>','');
+test('附录仅从显式角色生成标题，不再解析手写字母',async()=>{
+  const {render}=await import('../src/render.mjs');
+  const {html}=await render('## 范围\n\n## 检查项目 {role=appendix nature=normative}\n\n## 未知性质 {role=appendix}',{type:'gb'});
   assert.match(html,/<span class="gb-appendix-number">附录 A<\/span><span class="gb-appendix-kind">（规范性）<\/span><span class="gb-appendix-title">检查项目<\/span>/);
-  assert.match(transformGbContent('<h2 class="appendix">附录 B 未知性质</h2>',''),/<span class="gb-appendix-number">附录 B<\/span><span class="gb-appendix-title">未知性质<\/span>/);
+  assert.match(html,/<span class="gb-appendix-number">附录 B<\/span><span class="gb-appendix-title">未知性质<\/span>/);
 });
 test('普通注示例文字与 fenced 源码不猜测为语义块',()=>{
   assert.equal(parse('注：这是正文。\n\n示例：也是正文。'),marked.parse('注：这是正文。\n\n示例：也是正文。'));
@@ -172,15 +173,14 @@ test('普通索引样式段落不猜测为索引，显式索引缺项报输入�
     assert.throws(()=>parse(source),error=>error.status===400);
   }
 });
-test('小写附录字母规范为大写，规范性质和附录标题保持',()=>{
-  const html=transformGbContent('<h2 class="appendix">附录 b （资料性） 测试项目</h2>','');
-  assert.match(html,/<span class="gb-appendix-number">附录 B<\/span>/);
-  assert.match(html,/<span class="gb-appendix-kind">（资料性）<\/span><span class="gb-appendix-title">测试项目<\/span>/);
+test('没有角色的附录字样不触发标题重写',()=>{
+  const source='<h2>附录 b （资料性） 测试项目</h2>';
+  assert.equal(transformGbContent(source,''),source);
 });
 
 test('附录图表范围在文后要素开始时结束', async () => {
   const {render}=await import('../src/render.mjs');
-  const source='# 标准\n\n## 范围\n\n![正文图](a.png)\n\n## 附录 **a**（资料性）说明\n\n![附录图](b.png)\n\n表：附录表\n\n| 甲 |\n|---|\n| 乙 |\n\n## 参考文献\n\n![文后图](c.png)\n\n表：文后表\n\n| 甲 |\n|---|\n| 乙 |';
+  const source='# 标准\n\n## 范围\n\n![正文图](a.png)\n\n## 说明 {role=appendix nature=informative}\n\n![附录图](b.png)\n\n表：附录表\n\n| 甲 |\n|---|\n| 乙 |\n\n## 参考文献 {role=bibliography}\n\n![文后图](c.png)\n\n表：文后表\n\n| 甲 |\n|---|\n| 乙 |';
   const {html}=await render(source,{type:'gb'});
   assert.match(html,/<figcaption>图 A\.1　附录图/);
   assert.match(html,/<figcaption>图 2　文后图/);
@@ -226,7 +226,7 @@ test('索引仅链接已存在且无歧义的标题和图表编号',()=>{
 
 test('CLI 与 webSafe 对 GB 来源和索引生成相同链接',async()=>{
   const {render}=await import('../src/render.mjs');
-  const source='# 标准\n\n## 范围\n\n### 内容\n\n:::gb-note\n[来源：GB/T 1—2020，5.3]\n:::\n\n## 索引\n\n:::gb-index\n术语 | 1.1，9.9\n:::';
+  const source='# 标准\n\n## 范围\n\n### 内容\n\n:::gb-note\n[来源：GB/T 1—2020，5.3]\n:::\n\n## 索引 {role=index}\n\n:::gb-index\n术语 | 1.1，9.9\n:::';
   for(const context of [{},{webSafe:true}]) {
     const {html}=await render(source,{type:'gb'},context);
     assert.match(html, /\[来源：GB\/T 1—2020，5\.3\]/);
@@ -272,7 +272,7 @@ test('示例布局在CLI与Web安全渲染一致，并返回相同的参数错�
 test('自动术语根据章与分类编号，稳定索引随插入更新，旧编号兼容',async()=>{
   const {render}=await import('../src/render.mjs');
   const term=(key)=>`:::gb-term${key?' id='+key:''}\n术语\nterm\n\n定义\n:::\n\n`;
-  const source='# 标准\n\n## 范围\n\n正文\n\n## 术语和定义\n\n'+term('first')+term('second')+'## 索引\n\n:::gb-index\n第二项 | @second\n:::';
+  const source='# 标准\n\n## 范围\n\n正文\n\n## 术语和定义\n\n'+term('first')+term('second')+'## 索引 {role=index}\n\n:::gb-index\n第二项 | @second\n:::';
   for(const context of [{},{webSafe:true}]) {
     const html=(await render(source,{type:'gb'},context)).html;
     assert.match(html, /id="gb-term-first"><div class="gb-term-number">2\.1/);
@@ -307,7 +307,7 @@ test('中英索引分区采用对应栏数，旧中文分组保持单栏',()=>{
 
 test('索引分区中的稳定链接保持CLI与Web相同，缺少闭合明确报错',async()=>{
   const {render}=await import('../src/render.mjs');
-  const source='# 标准\n\n## 术语和定义\n\n:::gb-term id=term\n词\nterm\n\n定义\n:::\n\n## 索引\n\n:::gb-index-section lang=zh\n\n:::gb-index C\n词 | @term\n:::\n\n:::';
+  const source='# 标准\n\n## 术语和定义\n\n:::gb-term id=term\n词\nterm\n\n定义\n:::\n\n## 索引 {role=index}\n\n:::gb-index-section lang=zh\n\n:::gb-index C\n词 | @term\n:::\n\n:::';
   for(const context of [{},{webSafe:true}]) {
     const {html}=await render(source,{type:'gb'},context);
     assert.match(html,/data-gb-index-columns="2"/);

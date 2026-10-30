@@ -55,7 +55,7 @@ test('链接目标和图片说明里的脚注语法不能注入 HTML 属性',()=
   }
 });
 test('gb 页底脚注和既有参考文献分别渲染',async()=>{
-  const source='# 标准名称\n\n## 范围\n\n正文[^@page]和参考文献[^ref]。\n\n[^@page]: 页底说明\n[^ref]: 文献条目';
+  const source='# 标准名称\n\n## 范围\n\n正文[^@page]和参考文献[^ref]。\n\n## 参考文献 {role=bibliography}\n\n[^@page]: 页底说明\n[^ref]: 文献条目';
   for(const webSafe of [false,true]) {
     const {html}=await render(source,{type:'gb'},{webSafe});
     assert.match(html,/<span class="gb-footnote gb-footnote-1"/);

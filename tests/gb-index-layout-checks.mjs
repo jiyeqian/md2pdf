@@ -8,7 +8,7 @@ const temp=await mkdtemp('/private/tmp/gb-index-layout-'),chrome=new Chrome(find
 const row=(i,long=false)=>`${long?'用于验证跨栏换行且包含较长中文关键词的索引条目':'测试词条'}${String(i).padStart(3,'0')} | @sample，1`;
 const wrap=(lang,body)=>`:::gb-index-section lang=${lang}\n\n${body}\n\n:::`;
 const group=(letter,rows)=>`:::gb-index ${letter}\n${rows.join('\n')}\n:::`;
-const doc=body=>`# 索引校准\n\n## 范围\n\n正文。\n\n## 术语和定义\n\n:::gb-term id=sample\n测试术语\nsample\n\n定义。\n:::\n\n## 索引\n\n${body}`;
+const doc=body=>`# 索引校准\n\n## 范围\n\n正文。\n\n## 术语和定义\n\n:::gb-term id=sample\n测试术语\nsample\n\n定义。\n:::\n\n## 索引 {role=index}\n\n${body}`;
 try {
  await chrome.start();
  for(const [name,count] of [['short',12],['long',150],['legacy',14]]) {

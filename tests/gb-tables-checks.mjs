@@ -66,13 +66,13 @@ test('GB 校准注释仅在代码围栏外移除，CLI 和 webSafe 一致', asyn
   assert.match(other.html, /gb-check:location/);
 });
 
-test('GB 自动参考文献置于索引之前，其他模板保持既有追加顺序', async () => {
+test('GB 文献填入显式章节，其他模板保持既有追加顺序', async () => {
   const {render}=await import('../src/render.mjs');
-  const md='---\ntitle: 次序\n---\n\n## 范围\n正文[^ref]。\n\n## 索引\n\n:::gb-index G\n关键词 | 1\n:::\n\n[^ref]: 参考文件';
+  const md='---\ntitle: 次序\n---\n\n## 范围\n正文[^ref]。\n\n## 参考文献 {role=bibliography}\n\n## 索引 {role=index}\n\n:::gb-index G\n关键词 | 1\n:::\n\n[^ref]: 参考文件';
   const gb=await render(md,{type:'gb'});
   const main=/<main>([\s\S]*?)<\/main>/.exec(gb.html)[1];
   assert.ok(main.indexOf('gb-references-title')<main.indexOf('gb-index-title'));
-  const normal=await render(md,{type:'general'});
+  const normal=await render(md.replace('## 参考文献 {role=bibliography}\n\n',''),{type:'general'});
   const body=/<main>([\s\S]*?)<\/main>/.exec(normal.html)[1];
   assert.ok(body.indexOf('索引')<body.indexOf('参考文献'));
 });

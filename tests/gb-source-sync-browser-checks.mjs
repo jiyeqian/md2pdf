@@ -57,11 +57,14 @@ try {
   const text='## 数据 {role=appendix}';
   const result=analyzeMarkdown(text,{templateType:'gb'});
   const prefix='## 数据 {na';
-  return {diagnostics:result.diagnostics,options:provideCompletions({text:prefix,pos:prefix.length,templateType:'gb'},result).options.map(o=>o.label)};
+  const missing=analyzeMarkdown('---\\ntoc: 3\\n---\\n\\n## 范围\\n\\n文献[^ref]。\\n\\n[^ref]: 来源',{templateType:'gb'});
+  return {missing:missing.diagnostics,diagnostics:result.diagnostics,options:provideCompletions({text:prefix,pos:prefix.length,templateType:'gb'},result).options.map(o=>o.label)};
  })()`});
  assert.equal(editor.exceptionDetails,undefined,JSON.stringify(editor.exceptionDetails));
  assert.ok(editor.result.value.diagnostics.some(d=>d.code==='gb-appendix-nature'&&d.line===1));
  assert.ok(editor.result.value.options.includes('nature=normative'));
+ assert.ok(editor.result.value.missing.some(d=>d.code==='gb-missing-toc'&&d.line===2));
+ assert.ok(editor.result.value.missing.some(d=>d.code==='gb-missing-bibliography'&&d.line===7));
  console.log('Node editor browser module: missing-nature diagnostic and heading completion load successfully');
 
 } finally {

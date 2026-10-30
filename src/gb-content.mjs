@@ -168,11 +168,7 @@ function renderNote(argumentsText, text, marked, depth) {
 }
 
 export function transformGbContent(html, title) {
-  html = html.replace(/<h2([^>]*class="[^"]*\bback\b[^"]*"[^>]*)>(参考文献)<\/h2>/g,
-    (_, attrs, text) => '<h2' + attrs.replace('class="', 'class="gb-references-title ') + '>' + text + '</h2>');
-  html = html.replace(/<h2([^>]*class="[^"]*\bback\b[^"]*"[^>]*)>(索引)<\/h2>/g,
-    (_, attrs, text) => '<h2' + attrs.replace('class="', 'class="gb-index-title ') + '>' + text + '</h2>');
-  html = html.replace(/<h2([^>]*data-gb-role="(bibliography|index)"[^>]*)>([\s\S]*?)<\/h2>/g, (_,attrs,role,text)=>'<h2'+(attrs.includes('gb-'+(role==='index'?'index':'references')+'-title') ? attrs : attrs.replace('class="','class="gb-'+(role==='index'?'index':'references')+'-title '))+'>'+text+'</h2>');
+  html = html.replace(/<h2([^>]*data-gb-role="(bibliography|index)"[^>]*)>([\s\S]*?)<\/h2>/g, (_,attrs,role,text)=>'<h2'+attrs.replace('class="','class="gb-'+(role==='index'?'index':'references')+'-title ')+'>'+text+'</h2>');
   html = numberGbTerms(html);
   html = markIntroParagraphs(html);
   html = numberExamples(html);
@@ -180,13 +176,6 @@ export function transformGbContent(html, title) {
 
   html = html.replace(/<h2([^>]*\bclass="[^"]*\bbody-start\b[^"]*"[^>]*)>([\s\S]*?)<\/h2>/, (_, attrs, inner) =>
     '<h2' + attrs + '>' + (title ? '<span class="gb-body-title">' + escape(title) + '</span>' : '') + '<span class="gb-first-heading">' + inner + '</span></h2>');
-  html = html.replace(/<h2([^>]*\bclass="[^"]*\bappendix\b[^"]*"[^>]*)>([\s\S]*?)<\/h2>/g, (whole, attrs, inner) => {
-    // Appendix metadata is explicit in the heading; do not invent its normative status.
-    const text = inner.replace(/<[^>]*>/g, '').trim();
-    const match = /^附录\s*([A-Z])\s*(?:[（(](规范性|资料性)[）)]\s*)?(.+)$/is.exec(text);
-    if (!match) return whole;
-    return '<h2' + attrs + '><span class="gb-appendix-number">附录 ' + match[1].toUpperCase() + '</span>' + (match[2] ? '<span class="gb-appendix-kind">（' + match[2] + '）</span>' : '') + '<span class="gb-appendix-title">' + match[3] + '</span></h2>';
-  });
   html = attachFloatNotes(fillEmptyTableCells(placeImportant(html)));
   for (const node of elements(html)) {
     const scope = /data-gb-note-scope="(table|figure)"/.exec(node.token)?.[1];

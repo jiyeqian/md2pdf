@@ -124,7 +124,7 @@ try {
     console.log('✓ GB章节角色、自动附录、显式目次及文献：CLI、Node、静态一致');
   }
   for (const depth of [0,1,2,3]) {
-    const md=`---\n标准号: GB/T 39999—2026\n中文名称: 目录命名验收\ntitle: 旧标题\nversion: v2\ntoc: ${depth}\n---\n## 范围\n\n### 次级条\n\n#### 三级条\n\n##### 四级条\n`;
+    const md=`---\n标准号: GB/T 39999—2026\n中文名称: 目录命名验收\ntitle: 旧标题\nversion: v2\ntoc: ${depth}\n---\n## 目次 {role=toc}\n\n## 范围\n\n### 次级条\n\n#### 三级条\n\n##### 四级条\n`;
     const body={md,opts:{}};
     const response=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     assert.equal(response.status,200);
@@ -146,7 +146,7 @@ try {
   }
   console.log('✓ GB目录0–3级、CLI/Node/静态内容及中文名称下载命名一致');
   {
-    const md='---\n标准号: GB/T 39999—2026\n中文名称: 显式三级目录\ntoc: 1\n---\n## 范围\n\n### 次级\n\n#### 三级\n';
+    const md='---\n标准号: GB/T 39999—2026\n中文名称: 显式三级目录\ntoc: 1\n---\n## 目次 {role=toc}\n\n## 范围\n\n### 次级\n\n#### 三级\n';
     const opts={toc:true,tocDepth:3},body={md,opts};
     const response=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     assert.equal(response.status,200);

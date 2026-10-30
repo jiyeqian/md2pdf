@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { browserYaml } from './browser-yaml.mjs';
 // 只生成独立静态目录；不改写 CLI、WebApp 源文件或其资源。
 import { readFile, writeFile, mkdir, cp, readdir, rm, rename } from 'node:fs/promises';
 import path from 'node:path';
@@ -47,11 +48,7 @@ for (const file of modules) {
 await writeFile(path.join(out, 'vendor/highlight/highlight.mjs'), await readFile(path.join(root, 'vendor/highlight/highlight.cjs'), 'utf8') + '\nexport default hljs;\n');
 // YAML 包已内嵌浏览器的 Uint8Array/atob 分支；只替换 Node 的警告和环境接口。
 const yamlFile = path.join(out, 'vendor/yaml/yaml.mjs');
-let yaml = await readFile(yamlFile, 'utf8');
-yaml = yaml.replace(/^import \{ createRequire \} from "node:module"; const require = createRequire\(import.meta.url\);/m,
-  `const require = name => { if (name === 'process') return { env:{}, emitWarning:message => console.warn(message) }; if (name === 'buffer') return {}; throw new Error('不支持的浏览器模块：' + name); };`);
-if (/from ["']node:/.test(yaml)) throw new Error('YAML 浏览器适配失败');
-await writeFile(yamlFile, yaml);
+await writeFile(yamlFile, browserYaml(await readFile(yamlFile, 'utf8')));
 const textAssets = {};
 for (const file of ['assets/base.css','assets/shell.html','assets/gb-cover-banner.svg','assets/gb-issuer-outlines.json', ...(await readdir(path.join(root, 'assets/themes'))).filter(f => f.endsWith('.css')).map(f => 'assets/themes/' + f)]) {
   textAssets['/md2pdf/' + file] = await readFile(path.join(root, file), 'utf8');

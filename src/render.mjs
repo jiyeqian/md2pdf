@@ -1,4 +1,4 @@
-import { gbHeading, gbSectionDiagnostics } from './gb-sections.mjs';
+import { gbSectionCatalog, gbSectionDiagnostics } from './gb-sections.mjs';
 import { prepareGbContent, transformGbContent } from './gb-content.mjs';
 import { documentFonts } from './fonts.mjs';
 import { GB_FONT_CHECKS, requireGbFonts } from './gb-fonts.mjs';
@@ -163,9 +163,8 @@ function numberFloats(html, gb = false) {
   const sequence = new Map();
   const floatNumber = (kind, offset, source, fallback) => {
     if (!gb) return fallback;
-    const heading = [...source.slice(0, offset).matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/g)].at(-1);
-    const appendix = heading && /^附录\s*([A-Z])/i.exec(stripTags(heading[1]));
-    const prefix = appendix?.[1].toUpperCase() || '';
+    const heading = [...source.slice(0, offset).matchAll(/<h2([^>]*)>[\s\S]*?<\/h2>/g)].at(-1);
+    const prefix = /data-gb-appendix="([A-Z])"/.exec(heading?.[1] || '')?.[1] || '';
     const key = kind + prefix, n = (sequence.get(key) || 0) + 1;
     sequence.set(key, n);
     return prefix ? prefix + '.' + n : n;
@@ -218,23 +217,19 @@ function numberFloats(html, gb = false) {
   return { html, refs };
 }
 
-function prepareGbHeadingTargets(html) {
+function prepareGbHeadingTargets(html, sections) {
   const seen = new Set();
-  let appendix = 0;
+  let index = 0;
   return html.replace(/<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g, (whole,level,attrs,inner) => {
-    let section;
-    try { section = gbHeading(stripTags(inner), +level); }
-    catch (error) { error.status = 400; throw error; }
-    const {id:key,role,nature} = section;
+    const section = sections[index++];
+    if(section.error) throw Object.assign(new Error(section.error),{status:400});
+    const {id:key,role,nature,number,appendix} = section;
     const suffix = /\s*\{[^{}]*\}\s*$/.exec(inner);
     if (suffix) inner = inner.slice(0,suffix.index);
-    if (role==='appendix') {
-      appendix++;
-      if (appendix>26) throw Object.assign(new Error('附录数量超过 A–Z'), {status:400});
-      inner='附录 '+String.fromCharCode(64+appendix)+(nature ? '（'+(nature==='normative'?'规范性':'资料性')+'）' : '　')+inner;
-    } else if (+level===2 && /^附录\s*[A-Z]/i.test(section.text)) appendix++;
     if (role) attrs += ' data-gb-role="'+role+'"';
     if (nature) attrs += ' data-gb-nature="'+nature+'"';
+    if (appendix) attrs += ' data-gb-appendix="'+appendix+'"';
+    if (number) attrs += ' data-gb-number="'+number+'"';
     if (key) {
       if (seen.has(key)) throw Object.assign(new Error('稳定标识重复：' + key), {status:400});
       seen.add(key);
@@ -248,7 +243,7 @@ function collectGbHeadingReferences(html, refs) {
   for (const match of html.matchAll(/<h[2-6]([^>]*)>([\s\S]*?)<\/h[2-6]>/g)) {
     const key = /data-gb-stable-key="([^"]+)"/.exec(match[1])?.[1];
     const id = /\bid="([^"]+)"/.exec(match[1])?.[1];
-    const number = /^(附录\s*[A-Z]|(?:[A-Z]\.)?\d+(?:\.\d+)*)(?=\s|[、：:（(]|$)/i.exec(stripTags(match[2]))?.[1];
+    const number = /data-gb-number="([^"]+)"/.exec(match[1])?.[1];
     if (key && id && number) refs.set(key, {id,num:number.replace(/\s/g,'')});
   }
 }
@@ -259,45 +254,41 @@ function collectGbHeadingReferences(html, refs) {
 const HEADING_NUM_RE = /^\s*(?:\d+(?:\.\d+)*[、．.)]\s?|[一二三四五六七八九十百]+[、．.]|第[一二三四五六七八九十百\d]+[章节篇]|\([一二三四五六七八九十\d]+\)|[IVX]+[.、])\s*/;
 
 // 章节编号：mode 为 auto（默认，识别到已有编号则不动）/ force（强制编号）/ none（不动）
-function numberHeadings(html, mode, scheme) {
+function numberHeadings(html, mode, scheme, gb = false) {
   if (mode === 'none') return html;
   const re = /<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g;
+  if (gb) {
+    let bodyStart=false;
+    return html.replace(re,(_,level,attrs,inner)=>{
+      const role=/data-gb-role="([^"]+)"/.exec(attrs)?.[1];
+      const number=/data-gb-number="([^"]+)"/.exec(attrs)?.[1];
+      const clean=inner.replace(HEADING_NUM_RE,'');
+      if(role==='appendix') {
+        const letter=/data-gb-appendix="([A-Z])"/.exec(attrs)?.[1];
+        const nature=/data-gb-nature="(normative|informative)"/.exec(attrs)?.[1];
+        return '<h'+level+addClass(attrs,'appendix')+'><span class="gb-appendix-number">附录 '+letter+'</span>'+(nature?'<span class="gb-appendix-kind">（'+(nature==='normative'?'规范性':'资料性')+'）</span>':'')+'<span class="gb-appendix-title">'+clean+'</span></h'+level+'>';
+      }
+      if(role) return '<h'+level+addClass(attrs,'unnumbered '+(['preface','introduction','toc'].includes(role)?'front':'back'))+'>'+clean+'</h'+level+'>';
+      if(+level===2 && !bodyStart) { attrs=addClass(attrs,'body-start'); bodyStart=true; }
+      return '<h'+level+attrs+'>'+ (number ? number+'　' : '')+clean+'</h'+level+'>';
+    });
+  }
   const all = [...html.matchAll(re)];
   if (!all.length) return html;
   if (mode !== 'force' && all.some(m => HEADING_NUM_RE.test(stripTags(m[3])))) return html;
   const raw = resolveNumberScheme(scheme || 'arabic');
-  // scheme 既可为函数，也可为 { skip, fmt } 对象（GB 需要 skip 与有状态 fmt）
-  const skipFn = typeof raw === 'function' ? null : raw.skip;
   const fmt = typeof raw === 'function' ? raw : raw.fmt;
-  // 对象型 scheme（gb）额外产出语义 class，供主题做版式（命名页 / 前置部分）。
-  // 其他 scheme 输出与旧版逐字节一致，避免回归。
-  const isGb = typeof raw !== 'function';
+  const fullWidthSpace = typeof raw !== 'function';
   const counters = [0, 0, 0, 0, 0];
-  const state = {};   // 单次渲染的可变状态（如 GB 的当前附录字母）
   let markedBodyStart = false;
   return html.replace(re, (m, level, attrs, inner) => {
     const lvl = parseInt(level, 10) - 2;
-    const text = stripTags(inner);
     const clean = inner.replace(HEADING_NUM_RE, '');
-    // 跳过：不编号、且不占号（如 GB 的前言/引言/目次/参考文献）
-    const role = /data-gb-role="([^"]+)"/.exec(attrs)?.[1];
-    if ((isGb && role && role !== 'appendix') || (skipFn && skipFn(text))) {
-      if (!isGb) return '<h' + level + attrs + '>' + clean + '</h' + level + '>';
-      // 前言/引言属「前置部分」（罗马页码、各自起新页）；参考文献只在版式上独立起页
-      const cls = (role ? ['preface','introduction','toc'].includes(role) : /^(前言|引言)\s*$/.test(text.trim())) ? 'front' : 'back';
-      return '<h' + level + addClass(attrs, 'unnumbered ' + cls) + '>' + clean + '</h' + level + '>';
-    }
     counters[lvl]++;
     for (let k = lvl + 1; k < 5; k++) counters[k] = 0;
-    const num = fmt({ counters, lvl, text, state });
-    let extra = '';
-    if (isGb) {
-      if (num == null && /^附录/.test(text.trim())) extra = 'appendix';
-      // 正文（阿拉伯页码）从第一个带号的章开始，页码计数器在此归零
-      else if (num != null && !markedBodyStart && lvl === 0) { extra = 'body-start'; markedBodyStart = true; }
-    }
-    const outAttrs = extra ? addClass(attrs, extra) : attrs;
-    return '<h' + level + outAttrs + '>' + (num == null ? clean : (isGb ? num.replace(/ $/, '　') : num) + clean) + '</h' + level + '>';
+    const num = fmt({ counters, lvl, text:stripTags(inner) });
+    if(fullWidthSpace && !markedBodyStart && lvl===0) { attrs=addClass(attrs,'body-start'); markedBodyStart=true; }
+    return '<h' + level + attrs + '>' + (fullWidthSpace ? num.replace(/ $/, '　') : num) + clean + '</h' + level + '>';
   });
 }
 
@@ -680,10 +671,11 @@ export async function render(src, options = {}, context = {}) {
     // Code examples are literal, including references to identifiers not in the document.
     html = html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/g, code => code.replace(/\u0002REF(\d+)\u0002/g, (_,i)=>esc('\\ref{' + refStore[+i] + '}')));
     const headings=[...html.matchAll(/<h([2-6])[^>]*>([\s\S]*?)<\/h\1>/g)].map(m=>({level:+m[1],text:stripTags(m[2])}));
-    const issues=gbSectionDiagnostics(headings);
+    const sections=gbSectionCatalog(headings);
+    const issues=gbSectionDiagnostics(headings,{tocEnabled:useToc,referenceLine:orderedFootnotes.length ? 1 : undefined},sections);
     if (issues.some(d=>d.code==='gb-section-duplicate')) throw Object.assign(new Error(issues.find(d=>d.code==='gb-section-duplicate').message),{status:400});
     warnings.push(...issues.map(d=>d.message));
-    html = prepareGbHeadingTargets(html);
+    html = prepareGbHeadingTargets(html,sections);
   }
 
   // 图/表自动编号与题注（收集标签）
@@ -707,22 +699,16 @@ export async function render(src, options = {}, context = {}) {
   // 代码高亮：对带语言标记的代码块做 highlight.js 着色
   html = highlightCode(html, hljs);
 
-  // 脚注/参考文献：先追加到正文末尾，再编号，使参考文献章节纳入编号体系。
+  // GB fills its declared bibliography; other templates retain their generated trailing section.
   // bibliographyTitle 默认「参考文献」；显式空串时只去掉标题，条目与链接保留；无引用则不生成。
   const bibTitle = eff.bibliographyTitle !== undefined ? eff.bibliographyTitle : '参考文献';
-  const referencesHtml = renderFootnotes(orderedFootnotes, bibTitle, marked, profile.gbDoc);
   const explicitBibliography = /(<h2[^>]*data-gb-role="bibliography"[^>]*>[\s\S]*?<\/h2>)/;
-  const indexHeading = /<h2(?=[^>]*(?:data-gb-role="index"|>\s*索引\s*<))[^>]*>[\s\S]*?<\/h2>/;
-  const hasBibliography = profile.gbDoc && explicitBibliography.test(html);
-  if (hasBibliography) html = html.replace(explicitBibliography, heading => heading + renderFootnotes(orderedFootnotes, '', marked, true));
-  if (!hasBibliography) {
-    if (profile.gbDoc && indexHeading.test(html)) html = html.replace(indexHeading, heading => referencesHtml + heading);
-    else html += referencesHtml;
-  }
+  if (profile.gbDoc) html = html.replace(explicitBibliography, heading => heading + renderFootnotes(orderedFootnotes, '', marked, true));
+  else html += renderFootnotes(orderedFootnotes, bibTitle, marked, false);
   html = html.replace(/<h2(?=[\s>])/g, '<h2 data-chapter');
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
-  html = numberHeadings(html, effNumbering, effScheme);
+  html = numberHeadings(html, effNumbering, effScheme, profile.gbDoc);
 
   if (profile.gbDoc) { collectGbHeadingReferences(html, floats.refs); html = restoreReferences(html); }
 
@@ -771,7 +757,8 @@ export async function render(src, options = {}, context = {}) {
     return existing ? m : `<h${level}${attrs} id="${id}">${inner}</h${level}>`;
   });
   let toc = '';
-  if (useToc && secIds.length) {
+  const tocHeading = profile.gbDoc ? secIds.find(s=>s.role==='toc') : null;
+  if (useToc && secIds.length && (!profile.gbDoc || tocHeading)) {
     const levels = [...new Set(secIds.map(s => s.level))].sort((a, b) => a - b);
     const included = levels.slice(0, eff.tocDepth || 1);
     const items = secIds.filter(s => included.includes(s.level) && s.role!=='toc');
@@ -782,8 +769,7 @@ export async function render(src, options = {}, context = {}) {
       const entries = [...html.matchAll(kind === 'fig' ? /<figure class="fig" id="([^"]+)"[^>]*>[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/g : /<table class="tbl" id="([^"]+)"[^>]*>\s*<caption>([\s\S]*?)<\/caption>/g)];
       return entries.length ? '<ol class="gb-float-toc">' + entries.map(m => tocItem({id:m[1],text:stripTags(m[2]),level:2,float:true})).join('') + '</ol>' : '';
     }).join('') : '';
-    const tocHeading = profile.gbDoc ? secIds.find(s=>s.role==='toc') : null;
-    toc = `<div class="toc">${profile.gbDoc ? '<h2 class="toc-title" data-gb-role="toc" id="'+(tocHeading?.id || 'gb-toc')+'">'+esc(tocHeading?.text || profile.tocTitle || '目次')+'</h2>' : '<div class="toc-title">'+(profile.tocTitle || '目  录')+'</div>'}<ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';
+    toc = `<div class="toc">${profile.gbDoc ? '<h2 class="toc-title" data-gb-role="toc" id="'+tocHeading.id+'">'+esc(tocHeading.text)+'</h2>' : '<div class="toc-title">'+(profile.tocTitle || '目  录')+'</div>'}<ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';
   }
 
   if (profile.gbDoc) html = applyGbEquations(transformGbContent(html, title));

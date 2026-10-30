@@ -12,11 +12,13 @@
   - 国家标准化管理委员会
 ---
 
-## 前言
+## 目次 {role=toc}
+
+## 前言 {role=preface}
 
 FOREWORD_MARK 本文件按照 GB/T 1.1—2020 的规定起草，覆盖国家标准各项排版要素。
 
-## 引言
+## 引言 {role=introduction}
 
 INTRO_MARK 本样例用于检查目录、正文、图表和附录的排版结果。
 
@@ -189,7 +191,7 @@ FIGUREFOOTMARK 图脚注内容。
 TABLE_NOTE_MARK 表内说明。
 :::
 
-## 附录 A（规范性）检查方法
+## 检查方法 {role=appendix nature=normative}
 
 ### 试验步骤
 
@@ -205,11 +207,11 @@ APPENDIX_MARK 依次检查排版和内容。
 TABLEFOOTMARK 表脚注内容。
 :::
 
-## 参考文献
+## 参考文献 {role=bibliography}
 
 [1] GB/T 1.1—2020 标准化工作导则 第1部分：标准化文件的结构和起草规则
 
-## 索引
+## 索引 {role=index}
 
 :::gb-index A
 INDEX_MARK 检查方法 | A.1
