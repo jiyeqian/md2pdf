@@ -373,3 +373,8 @@ main section .gb-index-section .gb-index ul.gb-index-entries > li { line-height:
 /* Keep references on the final keyword baseline; leader widths are finalized after pagination. */
 main section .gb-index-section .gb-index ul.gb-index-entries > li { position: relative; align-items: last baseline; }
 .gb-index-section .gb-index-locations { margin-left: auto; padding-left: .35em; }
+
+/* Explicit note labels: an absent label reserves no label column. */
+main .gb-unlabelled > p { display: block; padding-left: 0; text-indent: 0; }
+[data-gb-label-weight="normal"] > p:first-child > .gb-label, [data-gb-label-weight="normal"] > .gb-label { font-family: var(--font-body); font-weight: 400; }
+figure > .gb-unit { text-align: right; }

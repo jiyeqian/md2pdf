@@ -722,15 +722,15 @@ test('pagebreak insertion preserves selections, isolates the marker and reuses e
 test('GB 指令补全只在有效 GB 模板的块起始位置出现', () => {
   const complete = (text, templateType = 'gb', pos = text.length) => provideCompletions({ text, pos, templateType }, analyzeMarkdown(text));
   const all = complete(':::');
-  assert.equal(all.options.length, 17);
+  assert.equal(all.options.length, 21);
   assert.ok(all.options.every(option => option.label.startsWith('gb-') && option.detail));
-  assert.deepEqual(complete(':::gb-figure-f').options.map(option => option.label), ['gb-figure-footnote']);
+  assert.deepEqual(complete(':::gb-figure-f').options, []);
   assert.equal(complete(':::', 'general'), null);
   assert.equal(complete('正文 :::'), null);
   assert.equal(complete('```\n:::'), null);
   assert.equal(complete('---\ntitle: x\n:::'), null);
   assert.equal(complete('`:::gb-'), null);
-  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 17);
+  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 21);
 });
 
 test('GB 指令补全插入有效参数与成对结构，并复用已有关闭行', () => {
@@ -742,7 +742,7 @@ test('GB 指令补全插入有效参数与成对结构，并复用已有关闭�
   };
   assert.match(apply(':::', 'gb-term').text, /^:::gb-term\n.+\nterm name\n\n.+\n:::$/);
   assert.match(apply(':::', 'gb-index').text, /^:::gb-index A\n.+ \| 3\.1\n:::$/);
-  assert.match(apply(':::', 'gb-table-footnote').text, /^:::gb-table-footnote a）\n/);
+  assert.match(apply(':::', 'gb-note scope=table label="a）" label-weight=normal').text, /^:::gb-note scope=table label=\"a）\" label-weight=normal\n/);
   const closed = apply(':::gb-\n:::', 'gb-note', 6);
   assert.equal(closed.text, ':::gb-note\n注的内容\n:::');
   assert.equal(closed.option.selectionOffset, 'gb-note\n'.length);

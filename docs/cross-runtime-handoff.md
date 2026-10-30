@@ -1,5 +1,13 @@
 # CLI 与 WebApp 一致性及本次交接
 
+## 2026-10-30 GB 统一说明指令
+
+GB说明统一为 `gb-note`：`scope=table/figure` 指定归属，`kind=unit/source` 指定用途，`label` 显式标签，`label-weight=normal` 使用非黑体标签。省略标签不生成“注：”；参数可换序、带引号；重复、未知和冲突参数报错。图表说明放在对象后，单位放在对象前；没有相邻对象报错。其余八个指令保留，重要提示沿用标准专用位置。旧指令不兼容，项目内Markdown、编辑器补全及测试均迁移。
+
+验收工作树为 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`。在此运行 `PORT=8766 npm start`，打开 `http://127.0.0.1:8766/`；已有服务需重启。静态版需重建、重新部署并更新缓存。加载国家标准模板，核对来源、表单位、注及非黑体脚注标签；输入 `:::` 核对新指令补全；交换参数位置应得到相同结果，输入旧指令或重复参数应收到错误。下载与CLI使用同一范例，检查表格续页、标签续行及字体提示。字体不足的替代版式不能证明GB标准字体环境验收，系统打印、手机及线上部署需人工确认。
+
+验证：新语法、编辑器补全、内容处理、表格、范例同步、页脚注及公式共124项检查通过，`npm run check:consistency`通过。`node tests/gb-directives-browser-checks.mjs`经真实Node接口生成19页PDF，40条长表记录无遗漏、无重复，单位和来源归属正确，非黑体标签采用正文字体；已抽查表注页。产物 `output/pdf/gb-directives-node-fallback.pdf`。首次`gb-body-layout-checks.mjs`因本机缺方正书宋及小标宋未通过字体门槛；字体恢复可加载后重新检查通过（11个页码及7个标题），`node tests/gb-body-acceptance.mjs --node-only`完整验收通过。最终标准字体产物为`output/pdf/gb-comprehensive-node.pdf`。
+
 ## 2026-10-30 GB 字体诊断与配置说明
 
 GB 分页前检查字体；缺失时预览继续使用替代字体分页，顶部提示版式可能变化，状态栏持续显示可点击的缺失字体提示，链接到字体配置说明。CLI 保留明确诊断；Node PDF 返回安全的字体名称和503状态，静态打印在打开系统打印前检查字体。两种 WebApp 下载失败均使用现有对话框样式并链接字体说明。文档源为 docs/gb-fonts.md，对应发布页面为 web/gb-fonts.html；修改时两者同步。

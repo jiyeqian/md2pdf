@@ -24,7 +24,7 @@ test('普通注示例文字与 fenced 源码不猜测为语义块',()=>{
   assert.equal(parse(source),marked.parse(source));
 });
 test('注和示例角色具有独立标签，保留 Markdown 强调与多段内容',()=>{
-  const html=parse(':::gb-note 注1：\n**内容**\n\n第二段\n:::\n\n:::gb-example\n示例内容\n:::');
+  const html=parse(':::gb-note label=\"注1：\"\n**内容**\n\n第二段\n:::\n\n:::gb-example\n示例内容\n:::');
   assert.match(html,/<div class="gb-note"><p><span class="gb-label">注1：<\/span><span class="gb-note-text"><strong>内容<\/strong><\/span><\/p>/);
   assert.match(html,/<p>第二段<\/p>/);
   assert.match(html,/<div class="gb-example gb-example-block"[^>]*><p><span class="gb-label">示例：<\/span><span class="gb-example-text">示例内容/);
@@ -34,20 +34,21 @@ test('术语使用显式编号和中英文名，定义可包含独立注块',()=
   assert.match(html,/<div class="gb-term-number">3.1<\/div>/);
   assert.match(html,/<div class="gb-term-name">机械手　manipulator<\/div>/);
   assert.match(html,/<div class="gb-term-definition"><p>用于操作的装置。<\/p>/);
-  assert.match(html,/<div class="gb-note">/);
+  assert.match(html,/<div class="gb-note gb-unlabelled">/);
 });
 test('未关闭及编号无效的术语块保留原始正文，不丢失内容',()=>{
-  for(const source of [':::gb-note\n未关闭',':::gb-term invalid\n术语\n:::']) assert.equal(parse(source),marked.parse(source));
+  assert.throws(()=>parse(':::gb-note\n未关闭'),/块未闭合/);
+  const source=':::gb-term invalid\n术语\n:::'; assert.equal(parse(source),marked.parse(source));
 });
 test('来源、单位陈述、分图题和表注提供固定语义角色',()=>{
-  for(const [role,label] of [['source','来源：'],['unit',''],['subfigure','a）子图'],['table-note','注：']]) {
-    const html=parse(`:::gb-${role}${role==='subfigure'?' '+label:''}\n内容\n:::`);
+  for(const [directive,role,label] of [['gb-note kind=source','source','来源：'],['gb-note scope=table kind=unit','unit',''],['gb-subfigure a）子图','subfigure','a）子图'],['gb-note scope=table label="注："','table-note','注：']]) {
+    const html=parse(`:::${directive}\n内容\n:::`);
     assert.ok(html.includes(`class="gb-${role}"`));
     if(label) assert.ok(html.includes(label));
   }
 });
 test('语义块中 raw HTML 和标签按文本转义，危险链接不形成可执行协议',()=>{
-  const html=parse(':::gb-note <img src=x onerror=alert(1)>\n<script>alert(1)</script>\n\n[链接](javascript:alert%281%29)\n:::');
+  const html=parse(':::gb-note label=\"<img src=x onerror=alert(1)>\"\n<script>alert(1)</script>\n\n[链接](javascript:alert%281%29)\n:::');
   assert.ok(!html.includes('<script>'));
   assert.ok(!html.includes('<img src=x'));
   assert.ok(!html.includes('href="javascript:'));
@@ -57,18 +58,18 @@ test('语义块中 raw HTML 和标签按文本转义，危险链接不形成可�
 test('占位符不与用户原文冲突',()=>{
   const html=parse('MD2PDFGBBLOCK0END\n\n:::gb-note\n内容\n:::');
   assert.match(html,/<p>MD2PDFGBBLOCK0END<\/p>/);
-  assert.match(html,/<div class="gb-note">/);
+  assert.match(html,/<div class="gb-note gb-unlabelled">/);
 });
 
 test('图表注及图表脚注有独立角色，首段标签与正文可悬挂对齐',()=>{
-  for(const [role,label] of [['figure-note','注1：'],['table-note','注2：'],['figure-footnote','a）'],['table-footnote','b）']]) {
-    const html=parse(`:::gb-${role} ${label}\n**第一段**\n\n第二段\n:::`);
-    assert.match(html,new RegExp(`<div class="gb-${role}"><p><span class="gb-label">${label.replace('）','\\）')}</span><span class="gb-note-text"><strong>第一段</strong></span></p>`));
+  for(const [scope,label,weight] of [['figure','注1：','bold'],['table','注2：','bold'],['figure','a）','normal'],['table','b）','normal']]) {
+    const html=parse(`:::gb-note scope=${scope} label="${label}" label-weight=${weight}\n**第一段**\n\n第二段\n:::`);
+    assert.match(html,new RegExp(`<div class="gb-${scope}-note"[^>]*><p><span class="gb-label">${label}</span><span class="gb-note-text"><strong>第一段</strong></span></p>`));
     assert.ok(html.includes('<p>第二段</p>'));
   }
 });
 test('多条表注和脚注归入前一张表的tfoot，不跨越正文或另一表',()=>{
-  const source='| 甲 | 乙 |\n|---|---|\n| 1 | 2 |\n\n:::gb-table-note 注1：\n第一表注\n:::\n\n:::gb-table-footnote a）\n第一表脚注\n:::\n\n正文阻隔。\n\n:::gb-table-note\n游离表注\n:::\n\n| 丙 |\n|---|\n| 3 |\n\n:::gb-table-note\n第二表注\n:::';
+  const source='| 甲 | 乙 |\n|---|---|\n| 1 | 2 |\n\n:::gb-note scope=table label=\"注1：\"\n第一表注\n:::\n\n:::gb-note scope=table label=\"a）\" label-weight=normal\n第一表脚注\n:::\n\n正文阻隔。\n\n:::gb-note label=\"注：\"\n游离表注\n:::\n\n| 丙 |\n|---|\n| 3 |\n\n:::gb-note scope=table label=\"注：\"\n第二表注\n:::';
   const html=transformGbContent(parse(source),'');
   const tables=[...html.matchAll(/<table>[\s\S]*?<\/table>/g)].map(match=>match[0]);
   assert.equal(tables.length,2);
@@ -94,7 +95,7 @@ test('仅为空白的表格单元格添加一字线，保留显式内容及合�
 });
 test('纵向合并单元格参与表注跨列计算，保留既有表体',()=>{
   const table='<table><tbody><tr><td rowspan="2">甲</td><td>乙</td><td>丙</td></tr><tr><td colspan="2">丁</td></tr></tbody></table>';
-  const out=transformGbContent(table+parse(':::gb-table-note\n表注\n:::'),'');
+  const out=transformGbContent(table+parse(':::gb-note scope=table label=\"注：\"\n表注\n:::'),'');
   assert.match(out,/<td rowspan="2">甲<\/td>/);
   assert.match(out,/<tfoot><tr class="gb-table-notes"><td colspan="3">/);
 });
@@ -105,7 +106,7 @@ test('公式显式块具有独立语义，代码围栏保持原样',()=>{
 });
 test('图注及图脚注依原顺序移入图题之前，多图不互串',()=>{
   const figure=name=>`<figure class="fig"><img src="x"><figcaption>${name}</figcaption></figure>`;
-  const html=figure('图1')+parse(':::gb-figure-note\n第一图注\n:::\n\n:::gb-figure-footnote a）\n第一图脚注\n:::')+figure('图2')+parse(':::gb-figure-note\n第二图注\n:::');
+  const html=figure('图1')+parse(':::gb-note scope=figure label=\"注：\"\n第一图注\n:::\n\n:::gb-note scope=figure label=\"a）\" label-weight=normal\n第一图脚注\n:::')+figure('图2')+parse(':::gb-note scope=figure label=\"注：\"\n第二图注\n:::');
   const out=transformGbContent(html,'');
   const figures=[...out.matchAll(/<figure[\s\S]*?<\/figure>/g)].map(match=>match[0]);
   assert.equal(figures.length,2);
@@ -115,7 +116,7 @@ test('图注及图脚注依原顺序移入图题之前，多图不互串',()=>{
   assert.ok(figures[1].includes('第二图注'));
 });
 test('已有tfoot保留，并在其中追加注释行',()=>{
-  const html='<table><tbody><tr><td>内容</td></tr></tbody><tfoot><tr><td>既有内容</td></tr></tfoot></table>'+parse(':::gb-table-note\n表注\n:::');
+  const html='<table><tbody><tr><td>内容</td></tr></tbody><tfoot><tr><td>既有内容</td></tr></tfoot></table>'+parse(':::gb-note scope=table label=\"注：\"\n表注\n:::');
   const out=transformGbContent(html,'');
   assert.equal((out.match(/<tfoot>/g)||[]).length,1);
   assert.match(out,/<td>既有内容<\/td><\/tr><tr class="gb-table-notes">/);
@@ -144,7 +145,7 @@ test('图注移动后再定脚注号，按图注在前、图题在后的最终�
   const parser=new Marked({gfm:true});
   parser.use({extensions:[notes.extension]});
   const caption=parser.parseInline('图1 图题[^@caption]');
-  const block=prepareGbContent(':::gb-figure-note\n图注[^@note]\n:::');
+  const block=prepareGbContent(':::gb-note scope=figure label=\"注：\"\n图注[^@note]\n:::');
   const html='<figure class="fig"><img src="x"><figcaption>'+caption+'</figcaption></figure>'+block.restore(parser.parse(block.body),parser);
   const out=notes.finalize(transformGbContent(html,''));
   assert.match(out,/id="gb-footnote-1"[^>]*><span class="gb-footnote-label">1\)<\/span><span class="gb-footnote-content">图注脚注/);
@@ -187,7 +188,7 @@ test('附录图表范围在文后要素开始时结束', async () => {
 });
 
 test('表格单位只附到紧邻的表题，不跨过前表或正文', () => {
-  const input='<table><caption>表1</caption><tbody><tr><td>甲</td></tr></tbody></table><p>正文</p><table><caption>表2</caption><tbody><tr><td>乙</td></tr></tbody></table><div class="gb-unit"><p>单位为毫米</p></div>';
+  const input='<table><caption>表1</caption><tbody><tr><td>甲</td></tr></tbody></table><p>正文</p><div class="gb-unit" data-gb-note-scope="table" data-gb-note-kind="unit"><p>单位为毫米</p></div><table><caption>表2</caption><tbody><tr><td>乙</td></tr></tbody></table>';
   const out=transformGbContent(input,'');
   assert.match(out,/<caption>表1<\/caption>/);
   assert.match(out,/<caption>表2<span class="gb-table-unit">单位为毫米<\/span><\/caption>/);
@@ -196,14 +197,14 @@ test('表格单位只附到紧邻的表题，不跨过前表或正文', () => {
 
 test('来源规范化括号及标签，并保留安全的行内 Markdown',()=>{
   for(const value of ['GB/T 20000.1—2014，5.3','来源: GB/T 20000.1—2014，5.3','[来源：GB/T 20000.1—2014，5.3]','［GB/T 20000.1—2014，5.3］']) {
-    assert.match(parse(`:::gb-source\n${value}\n:::`), /<p>\[<span class="gb-label">来源：<\/span>GB\/T 20000\.1—2014，5\.3\]<\/p>/);
+    assert.match(parse(`:::gb-note kind=source\n${value}\n:::`), /<p>\[<span class="gb-label">来源：<\/span>GB\/T 20000\.1—2014，5\.3\]<\/p>/);
   }
-  const html=parse(':::gb-source 来源：\n[来源：**GB/T 1**，有修改 [链接](https://example.com) <script> [坏](javascript:alert)]\n:::');
+  const html=parse(':::gb-note kind=source\n[来源：**GB/T 1**，有修改 [链接](https://example.com) <script> [坏](javascript:alert)]\n:::');
   assert.match(html, /<strong>GB\/T 1<\/strong>/);
   assert.match(html, /href="https:\/\/example.com"/);
   assert.ok(!html.includes('<script>'));
   assert.ok(!html.includes('href="javascript:'));
-  assert.throws(()=>parse(':::gb-source\n第一段\n\n第二段\n:::'), error=>error.status===400);
+  assert.throws(()=>parse(':::gb-note kind=source\n第一段\n\n第二段\n:::'), error=>error.status===400);
 });
 
 test('索引仅链接已存在且无歧义的标题和图表编号',()=>{
@@ -222,7 +223,7 @@ test('索引仅链接已存在且无歧义的标题和图表编号',()=>{
 
 test('CLI 与 webSafe 对 GB 来源和索引生成相同链接',async()=>{
   const {render}=await import('../src/render.mjs');
-  const source='# 标准\n\n## 范围\n\n### 内容\n\n:::gb-source\n[来源：GB/T 1—2020，5.3]\n:::\n\n## 索引\n\n:::gb-index\n术语 | 1.1，9.9\n:::';
+  const source='# 标准\n\n## 范围\n\n### 内容\n\n:::gb-note kind=source\n[来源：GB/T 1—2020，5.3]\n:::\n\n## 索引\n\n:::gb-index\n术语 | 1.1，9.9\n:::';
   for(const context of [{},{webSafe:true}]) {
     const {html}=await render(source,{type:'gb'},context);
     assert.match(html, /\[<span class="gb-label">来源：<\/span>GB\/T 1—2020，5\.3\]/);

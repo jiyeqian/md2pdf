@@ -10,7 +10,7 @@ try{
   ['wide formula','$$'+Array(500).fill('x').join('+')+'$$','正文元素超出版心'],
   ['huge merged group',':::gb-table\nhead:\n| 对象 | 内容 |\nbody:\n| {rowspan=2} 系统 | '+('合并行组。'.repeat(1500))+' |\n| 次行 |\n:::','合并行组超过'],
   ['huge row','| 项目 | 内容 |\n| --- | --- |\n| 一 | '+('长单元格。'.repeat(1600))+' |','表格单行超过'],
-  ['huge table note','| 项目 | 内容 |\n| --- | --- |\n| 一 | 二 |\n\n:::gb-table-note\n'+('长表注。'.repeat(1800))+'\n:::','表格单行超过'],
+  ['huge table note','| 项目 | 内容 |\n| --- | --- |\n| 一 | 二 |\n\n:::gb-note scope=table label=\"注：\"\n'+('长表注。'.repeat(1800))+'\n:::','表格单行超过'],
   ['huge footnote','内容[^@a]\n\n[^@a]: '+('长脚注。'.repeat(2000)),'条文脚注超过'],
   ['huge equation',':::gb-equation\n$$F=x$$\n\n式中：\n$F$ | '+('长释义。'.repeat(2200))+'\n:::','公式及释义超过'],
  ];

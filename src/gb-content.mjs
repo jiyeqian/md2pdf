@@ -1,5 +1,5 @@
 import { renderGbTable } from './gb-tables.mjs';
-import { GB_BLOCKS } from './gb-blocks.mjs';
+import { GB_BLOCKS, parseGbParameters } from './gb-blocks.mjs';
 const escape = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const OPEN = new RegExp('^ {0,3}:::gb-(' + GB_BLOCKS.map(block => block.name).join('|') + ')(?:[ \t]+(.*))?[ \t]*$');
 const CLOSE = /^ {0,3}:::[ \t]*$/;
@@ -22,6 +22,9 @@ export function prepareGbContent(source, depth = 0) {
       continue;
     }
     if (!fence && /^\s*<!--\s*gb-check:.*?-->\s*$/.test(lines[i])) continue;
+    if (!fence && /^ {0,3}:::gb-[\w-]+(?:\s|$)/.test(lines[i]) && !OPEN.test(lines[i])) {
+      const error = new Error('未知或已移除的GB指令：' + lines[i].trim() + '；请使用新版 gb-note 参数语法'); error.status = 400; throw error;
+    }
     const open = !fence && OPEN.exec(lines[i]);
     if (!open) { out.push(lines[i]); continue; }
     let depth = 1, end = i + 1, innerFence = null;
@@ -37,7 +40,7 @@ export function prepareGbContent(source, depth = 0) {
       else if (CLOSE.test(lines[end]) && --depth === 0) break;
     }
     if (depth) {
-      if (['table','index-section'].includes(open[1])) { const error = new Error('gb-' + open[1] + '：块未闭合'); error.status = 400; throw error; }
+      if (['table','index-section','note'].includes(open[1])) { const error = new Error('gb-' + open[1] + '：块未闭合'); error.status = 400; throw error; }
       out.push(lines[i]); continue;
     }
     if (open[1] === 'term' && !/^(?:(\d+(?:\.\d+)+)(?:\s+|$))?(?:id=([A-Za-z][\w:-]*))?$/.test((open[2] || '').trim())) {
@@ -75,10 +78,11 @@ function markdown(text, marked, depth = 0) {
 }
 
 function renderBlock({ role, label, text }, marked, depth) {
+  if (role === 'note') return renderNote(label, text, marked, depth);
   if (role === 'table') return renderGbTable(text, label, marked);
   if (role === 'index-section') {
-    const args = /^(?:lang=(zh|en))(?:\s+columns=([12]))?$/.exec(label);
-    if (!args || (args[1] === 'en' && args[2] === '2')) {
+    const params = parseGbParameters(label, ['lang','columns']);
+    if (!['zh','en'].includes(params.lang) || (params.columns && !['1','2'].includes(params.columns)) || (params.lang === 'en' && params.columns === '2')) {
       const error = new Error('gb-index-section 使用 lang=zh（默认双栏，可选columns=1）或 lang=en（单栏）'); error.status = 400; throw error;
     }
     const content = markdown(text, marked, depth);
@@ -86,7 +90,7 @@ function renderBlock({ role, label, text }, marked, depth) {
     if (!roots.length || roots.some(n=>n.tag !== 'div' || !classes(n).includes('gb-index'))) {
       const error = new Error('gb-index-section 内仅支持 gb-index 字母分组'); error.status = 400; throw error;
     }
-    const lang=args[1], columns=args[2] || (lang === 'zh' ? '2' : '1');
+    const lang=params.lang, columns=params.columns || (lang === 'zh' ? '2' : '1');
     return '<div class="gb-index-section gb-index-'+lang+'" data-gb-index-lang="'+lang+'"><div class="gb-index-section-title">'+(lang==='zh'?'汉语拼音索引':'英文对应词索引')+'</div><div class="gb-index-columns" data-gb-index-columns="'+columns+'">'+content+'</div></div>';
   }
   if (role === 'index') {
@@ -103,21 +107,6 @@ function renderBlock({ role, label, text }, marked, depth) {
       + '<ul class="gb-index-entries">' + entries.map(([term,locations]) => '<li><span class="gb-index-term">' + escape(term)
         + '</span><span class="gb-index-dots"></span><span class="gb-index-locations">' + escape(locations) + '</span></li>').join('') + '</ul></div>';
   }
-  if (role === 'source') {
-    let value = text.trim();
-    if (label && !/^来源\s*[:：]?$/.test(label)) value = label + ' ' + value;
-    // Strip only literal outer delimiters and the leading label; Markdown remains intact.
-    for (let i = 0; i < 2; i++) {
-      value = value.replace(/^\s*(?:\[([\s\S]*)\]|［([\s\S]*)］)\s*$/, (_, ascii, full) => ascii ?? full).trim();
-      value = value.replace(/^来源\s*[:：]\s*/, '').trim();
-    }
-    const content = markdown(value, marked, depth);
-    const paragraph = /^<p>([\s\S]*?)<\/p>\s*$/.exec(content);
-    if (!value || !paragraph || /<\/?(?:p|div|ul|ol|pre|table|blockquote)\b/.test(paragraph[1])) {
-      const error = new Error('gb-source 只支持单个来源段落'); error.status = 400; throw error;
-    }
-    return '<div class="gb-source"><p>[<span class="gb-label">来源：</span>' + paragraph[1] + ']</p></div>';
-  }
   if (role === 'term') {
     const rows = text.trim().split('\n');
     const gap = rows.findIndex(line => !line.trim());
@@ -126,10 +115,6 @@ function renderBlock({ role, label, text }, marked, depth) {
     const args = /^(?:(\d+(?:\.\d+)+)(?:\s+|$))?(?:id=([A-Za-z][\w:-]*))?$/.exec(label);
     const number = args?.[1] || '', key = args?.[2] || '';
     return '<div class="gb-term"' + (number || key ? ' id="gb-term-' + escape(key || number) + '"' : '') + (key ? ' data-gb-term-key="' + escape(key) + '"' : '') + (number ? '' : ' data-gb-term-auto="true"') + '><div class="gb-term-number">' + number + '</div><div class="gb-term-name">' + names + '</div><div class="gb-term-definition">' + markdown(definition, marked, depth) + '</div></div>';
-  }
-  if (['figure-footnote', 'table-footnote'].includes(role) && !label) {
-    const error = new Error('图、表脚注必须显式填写脚注标记（例如 a））');
-    error.status = 400; throw error;
   }
   let exampleLayout = 'block';
   if (role === 'example') {
@@ -142,7 +127,7 @@ function renderBlock({ role, label, text }, marked, depth) {
       label = label.replace(layout[0], '').trim();
     }
   }
-  const defaults = { note: '注：', example: '示例：', source: '来源：', 'table-note': '注：', 'figure-note': '注：' };
+  const defaults = { example: '示例：' };
   const title = label || defaults[role] || '';
   const content = markdown(text, marked, depth);
   if (role === 'example' && exampleLayout === 'inline' &&
@@ -160,11 +145,42 @@ function renderBlock({ role, label, text }, marked, depth) {
   }
   // The label stays on the first line where possible, including multi-paragraph notes.
   const lead = title ? '<span class="gb-label">' + escape(title) + '</span>' : '';
-  const hanging = ['note', 'table-note', 'figure-note', 'figure-footnote', 'table-footnote'].includes(role);
   const body = lead && content.startsWith('<p>')
-    ? content.replace(/^<p>([\s\S]*?)<\/p>/, (_, first) => '<p>' + lead + (hanging ? '<span class="gb-note-text">' + first + '</span>' : role === 'example' && exampleLayout === 'block' ? '<span class="gb-example-text">' + first + '</span>' : first) + '</p>')
+    ? content.replace(/^<p>([\s\S]*?)<\/p>/, (_, first) => '<p>' + lead + (role === 'example' && exampleLayout === 'block' ? '<span class="gb-example-text">' + first + '</span>' : first) + '</p>')
     : lead + content;
   return '<div class="gb-' + role + (role === 'example' ? ' gb-example-' + exampleLayout : '') + '"' + (role === 'example' && !label ? ' data-gb-example-auto="true"' : '') + '>' + body + '</div>';
+}
+
+function renderNote(argumentsText, text, marked, depth) {
+  const args = parseGbParameters(argumentsText, ['scope','kind','label','label-weight']);
+  const fail = message => { const error = new Error('gb-note：' + message); error.status = 400; throw error; };
+  if (args.scope !== undefined && !['table','figure'].includes(args.scope)) fail('scope 仅支持 table 或 figure');
+  if (args.kind !== undefined && !['unit','source'].includes(args.kind)) fail('kind 仅支持 unit 或 source');
+  if (args['label-weight'] !== undefined && !['bold','normal'].includes(args['label-weight'])) fail('label-weight 仅支持 bold 或 normal');
+  if (args['label-weight'] && !args.label) fail('label-weight 需要非空 label');
+  if (args.kind && (args.label !== undefined || args['label-weight'])) fail('kind=unit/source 不支持自定义 label 或 label-weight');
+  if (args.kind === 'unit' && !args.scope) fail('单位说明需要 scope=table 或 scope=figure');
+  const attributes = (args.scope ? ' data-gb-note-scope="' + args.scope + '"' : '') + (args.kind ? ' data-gb-note-kind="' + args.kind + '"' : '') + (args['label-weight'] === 'normal' ? ' data-gb-label-weight="normal"' : '');
+  if (args.kind === 'source') {
+    let value = text.trim();
+    for (let i=0; i<2; i++) {
+      value = value.replace(/^\s*(?:\[([\s\S]*)\]|［([\s\S]*)］)\s*$/, (_,ascii,full)=>ascii ?? full).trim();
+      value = value.replace(/^来源\s*[:：]\s*/, '').trim();
+    }
+    const content = markdown(value, marked, depth);
+    const paragraph = /^<p>([\s\S]*?)<\/p>\s*$/.exec(content);
+    if (!value || !paragraph || /<\/?(?:p|div|ul|ol|pre|table|blockquote)\b/.test(paragraph[1])) fail('来源只支持单个来源段落');
+    return '<div class="gb-source"' + attributes + '><p>[<span class="gb-label">来源：</span>' + paragraph[1] + ']</p></div>';
+  }
+  const content = markdown(text, marked, depth);
+  if (args.kind === 'unit') {
+    if (!/^<p>[^]*<\/p>\s*$/.test(content) || (content.match(/<p>/g)||[]).length !== 1 || /<(?:div|ul|ol|table|pre|blockquote|h[1-6])\b/.test(content)) fail('单位只支持单个段落');
+    return '<div class="gb-unit"' + attributes + '>' + content + '</div>';
+  }
+  const role = args.scope ? args.scope + '-note' : 'note';
+  const lead = args.label ? '<span class="gb-label">' + escape(args.label) + '</span>' : '';
+  const body = lead && content.startsWith('<p>') ? content.replace(/^<p>([\s\S]*?)<\/p>/, (_,first)=>'<p>'+lead+'<span class="gb-note-text">'+first+'</span></p>') : lead + content;
+  return '<div class="gb-' + role + (lead ? '' : ' gb-unlabelled') + '"' + attributes + '>' + body + '</div>';
 }
 
 export function transformGbContent(html, title) {
@@ -176,7 +192,7 @@ export function transformGbContent(html, title) {
   html = markIntroParagraphs(html);
   html = numberExamples(html);
   html = linkIndexLocations(html);
-  html = attachTableUnits(html);
+  html = attachFloatUnits(html);
 
   html = html.replace(/<h2([^>]*\bclass="[^"]*\bbody-start\b[^"]*"[^>]*)>([\s\S]*?)<\/h2>/, (_, attrs, inner) =>
     '<h2' + attrs + '>' + (title ? '<span class="gb-body-title">' + escape(title) + '</span>' : '') + '<span class="gb-first-heading">' + inner + '</span></h2>');
@@ -187,7 +203,15 @@ export function transformGbContent(html, title) {
     if (!match) return whole;
     return '<h2' + attrs + '><span class="gb-appendix-number">附录 ' + match[1].toUpperCase() + '</span><span class="gb-appendix-kind">（' + match[2] + '）</span><span class="gb-appendix-title">' + match[3] + '</span></h2>';
   });
-  return attachFloatNotes(fillEmptyTableCells(placeImportant(html)));
+  html = attachFloatNotes(fillEmptyTableCells(placeImportant(html)));
+  for (const node of elements(html)) {
+    const scope = /data-gb-note-scope="(table|figure)"/.exec(node.token)?.[1];
+    if (!scope) continue;
+    let parent = node.parent;
+    while (parent?.tag && parent.tag !== scope) parent = parent.parent;
+    if (!parent?.tag) { const error = new Error('gb-note scope=' + scope + '：未找到相邻的对应图表（单位放在图表前，其他说明放在图表后）'); error.status = 400; throw error; }
+  }
+  return html;
 }
 
 
@@ -223,7 +247,7 @@ function classes(node) {
   return /\bclass="([^"]*)"/.exec(node.token)?.[1].split(/\s+/) || [];
 }
 function noteRole(node, allowed) {
-  return node.tag === 'div' && classes(node).some(name => allowed.has(name));
+  return node.tag === 'div' && !classes(node).includes('gb-unit') && (classes(node).some(name => allowed.has(name)) || (allowed === TABLE_NOTES && /data-gb-note-scope="table"/.test(node.token)) || (allowed === FIGURE_NOTES && /data-gb-note-scope="figure"/.test(node.token)));
 }
 // Headings are already numbered; terms consume the next slot below their containing heading.
 function numberGbTerms(html) {
@@ -353,16 +377,19 @@ function linkIndexLocations(html) {
   for (const edit of edits.sort((a,b) => b.start-a.start)) html = html.slice(0,edit.start) + edit.text + html.slice(edit.end);
   return html;
 }
-function attachTableUnits(html) {
+function attachFloatUnits(html) {
   const edits=[];
-  for(const table of elements(html).filter(n=>n.tag==='table')){
-    const caption=table.children.find(n=>n.tag==='caption');
-    const siblings=table.parent.children,unit=siblings[siblings.indexOf(table)+1];
-    if(!caption||!unit||!classes(unit).includes('gb-unit')||unit.end===undefined)continue;
+  for (const unit of elements(html).filter(n=>classes(n).includes('gb-unit'))) {
+    const scope = /data-gb-note-scope="(table|figure)"/.exec(unit.token)?.[1];
+    const siblings=unit.parent.children, object=siblings[siblings.indexOf(unit)+1];
+    if (!scope || !object || object.tag !== scope || !/^\s*$/.test(html.slice(unit.end, object.start))) continue;
     const content=/^\s*<p>([\s\S]*?)<\/p>\s*$/.exec(html.slice(unit.openEnd,unit.closeStart));
-    if(!content)continue;
-    edits.push({start:caption.closeStart,end:caption.closeStart,text:'<span class="gb-table-unit">'+content[1]+'</span>'});
+    if (!content) continue;
+    const caption=object.children.find(n=>n.tag==='caption');
+    if (scope === 'table' && !caption) continue;
     edits.push({start:unit.start,end:unit.end,text:''});
+    const position=scope==='table' ? caption.closeStart : object.openEnd;
+    edits.push({start:position,end:position,text:scope==='table' ? '<span class="gb-table-unit">'+content[1]+'</span>' : html.slice(unit.start,unit.end)});
   }
   for(const e of edits.sort((a,b)=>b.start-a.start))html=html.slice(0,e.start)+e.text+html.slice(e.end);
   return html;

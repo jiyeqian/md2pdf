@@ -1,4 +1,4 @@
-import { GB_BLOCKS } from '../src/gb-blocks.mjs';
+import { GB_BLOCKS, GB_NOTE_FORMS } from '../src/gb-blocks.mjs';
 import { FRONTMATTER_FIELDS, ARRAY_FIELDS, canonicalFrontmatterField, TEXT_FIELDS, TEXT_METADATA_FIELDS, BOOL_FIELDS, NUMBER_FIELDS, FEATURES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from '../src/frontmatter-fields.mjs';
 /**
  * md2pdf 专业辅助 · 纯解析模块
@@ -706,7 +706,7 @@ export function provideCompletions(context, analysis) {
       const suffix = /^[a-z-]*/.exec(text.slice(pos))[0];
       const afterLine = text.slice(pos + suffix.length);
       const existing = existingGbBlock(afterLine);
-      const options = GB_BLOCKS.flatMap(block => block.name === 'example' ? [block, {...block, argument:'layout=inline', description:'示例：标签同行', completionLabel:'gb-example layout=inline'}] : block.name === 'index-section' ? [block, {...block, argument:'lang=en', description:'英文索引分区（单栏）', completionLabel:'gb-index-section lang=en'}] : [block]).filter(block => ('gb-' + block.name).startsWith(typed)).map(block => {
+      const options = GB_BLOCKS.flatMap(block => block.name === 'note' ? [block, ...GB_NOTE_FORMS.map(form => ({...block,...form,completionLabel:'gb-note '+form.argument}))] : block.name === 'example' ? [block, {...block, argument:'layout=inline', description:'示例：标签同行', completionLabel:'gb-example layout=inline'}] : block.name === 'index-section' ? [block, {...block, argument:'lang=en', description:'英文索引分区（单栏）', completionLabel:'gb-index-section lang=en'}] : [block]).filter(block => ('gb-' + block.name).startsWith(typed)).map(block => {
         const opening = 'gb-' + block.name + (block.argument ? ' ' + block.argument : '');
         const apply = existing?.hasContent ? opening : opening + '\n' + block.body + (existing ? '' : '\n:::');
         return { label: block.completionLabel || 'gb-' + block.name, detail: block.description, type: 'text', apply, selectionOffset: existing?.hasContent ? opening.length : opening.length + 1 };

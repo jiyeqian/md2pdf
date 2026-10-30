@@ -96,11 +96,11 @@ grasping success rate
 
 在规定试验条件下，成功抓取并保持目标物达到规定时间的次数与总抓取尝试次数之比。
 
-:::gb-note 注1：
+:::gb-note label="注1："
 成功抓取还包括在规定的保持阶段，目标物没有发生超出允许值的滑移、翻转或脱离。统计时应记录接近、接触、提升和保持各阶段的状态；当试验装置在阶段切换时产生短暂信号波动，应依据事先约定的判据区分测量噪声与实际失效，不应在结果出现后临时调整判定口径。
 :::
 
-:::gb-note 注2：
+:::gb-note label="注2："
 不同目标物类别应分别统计，合并统计时应同时给出各类别的试验次数，以免由样本构成改变比较结果。
 :::
 :::
@@ -128,7 +128,7 @@ standard
 
 通过标准化活动，按照规定的程序经协商一致制定，为各种活动或其结果提供规则、指南或特性，供共同使用和重复使用的文件。
 
-:::gb-source
+:::gb-note kind=source
 [来源：GB/T 20000.1—2014，5.3]
 :::
 :::
@@ -237,6 +237,10 @@ $s_F$ | 接触力归一化基准量。
 
 位移标定记录见表 \ref{tab:calibration}，同一数值列中的整数、小数和空单元格分别展示对齐及缺值表达。
 
+:::gb-note scope=table kind=unit
+单位为毫米
+:::
+
 表：位移标定记录 {#tab:calibration}
 
 | 测点 | 设定值 | 实测值 |
@@ -246,11 +250,7 @@ $s_F$ | 接触力归一化基准量。
 | 行程末端 | 123.45 | 123.40 |
 | 未布置测点 | | |
 
-:::gb-unit
-单位为毫米
-:::
-
-:::gb-table-note
+:::gb-note scope=table label="注："
 空白测点不构成有效的标定数据；一字线表示该测点没有对应记录。
 :::
 
@@ -275,11 +275,11 @@ body:
 | {colspan=2} 通信接口 | 25 ± 2 | | 记录序列号连续 |
 :::
 
-:::gb-table-note 注1：
+:::gb-note scope=table label="注1："
 高低温条件仅用于区分不同检测状态，实际产品的环境适用范围应以产品文件为准。
 :::
 
-:::gb-table-footnote a）
+:::gb-note scope=table label="a）" label-weight=normal
 传感器安装位置应在试验记录中说明，回行文字与本条脚注的内容起点对齐。
 :::
 
@@ -324,11 +324,11 @@ flowchart LR
  F --> B
 ```
 
-:::gb-figure-note
+:::gb-note scope=figure label="注："
 异常保持状态不表示试验完成；未满足恢复条件时应继续保持安全状态。
 :::
 
-:::gb-figure-footnote a）
+:::gb-note scope=figure label="a）" label-weight=normal
 图示只表达状态转换关系，实际控制器还应记录各状态的进入与退出时刻。
 :::
 
@@ -341,11 +341,11 @@ flowchart LR
  D --> E[报告归档]
 ```
 
-:::gb-figure-note 注1：
+:::gb-note scope=figure label="注1："
 无效样本应保留标识，不应直接删除原始记录。
 :::
 
-:::gb-figure-note 注2：
+:::gb-note scope=figure label="注2："
 数据处理过程应能回溯到原始采样时间和设备编号。
 :::
 
@@ -354,6 +354,10 @@ flowchart LR
 试验结果宜按表 \ref{tab:records} 的顺序逐项记录。该表节选连续 40 条示意记录，用于核对跨页时的续表、表头、单位和表注；正式试验仍应满足每组不少于 100 次的要求。
 
 <!-- gb-check: 9.8.3；40条记录逐条出现一次，续表重复表编号、表头、单位，表注在末段 -->
+
+:::gb-note scope=table kind=unit
+单位为毫秒
+:::
 
 表：连续抓取试验记录 {#tab:records}
 
@@ -400,11 +404,7 @@ flowchart LR
 | R039 | 正常抓取 | 9.5 | — |
 | R040 | 异常恢复 | 9.6 | 160 |
 
-:::gb-unit
-单位为毫秒
-:::
-
-:::gb-table-note
+:::gb-note scope=table label="注："
 记录中的数值为排版演示数据，不能据此评价实际系统性能。
 :::
 
@@ -435,11 +435,11 @@ flowchart LR
 2. 按公式（1）和公式（2）核算必要数据；
 3. 对不满足要求的项目给出原因和处置记录。
 
-:::gb-note 注1：
+:::gb-note label="注1："
 计算结果的修约不应改变对边界值的判定，原始数据应保留足够的有效位数。
 :::
 
-:::gb-note 注2：
+:::gb-note label="注2："
 当计算方法或者基准量发生改变时，应同时说明对既有结论的影响，不能只替换最终数值。
 :::
 
@@ -563,9 +563,6 @@ traceability information for acquisition clock deviations and abnormal clock sou
 :::
 
 :::
-
-
-
 
 [^gb11]: GB/T 1.1—2020　标准化工作导则　第1部分：标准化文件的结构和起草规则
 [^gb48316]: GB/T 48316—2026　人形机器人　仿真测试平台技术规范

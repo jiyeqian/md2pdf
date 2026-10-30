@@ -43,13 +43,13 @@ verification term
 在规定条件下用于验证排版的术语定义。
 :::
 
-:::gb-source
+:::gb-note kind=source
 GB/T 1.1—2020，3.1
 :::
 
 ## 技术要求
 
-:::gb-note 注1：
+:::gb-note label="注1："
 NOTE_MARK 这是条文中的注。
 :::
 
@@ -57,12 +57,12 @@ NOTE_MARK 这是条文中的注。
 EXAMPLE_MARK 这是示例内容。
 :::
 
-:::gb-unit
-单位为毫米
-:::
-
 :::gb-subfigure
 SUBFIGURE_MARK 分图说明
+:::
+
+:::gb-note scope=figure kind=unit
+单位为毫米
 :::
 
 图：检查流程 {#fig:flow}
@@ -72,11 +72,11 @@ flowchart LR
   A[输入] --> B[验收]
 ```
 
-:::gb-figure-note
+:::gb-note scope=figure label="注："
 FIGURENOTEMARK 图中附加说明。
 :::
 
-:::gb-figure-footnote a）
+:::gb-note scope=figure label="a）" label-weight=normal
 FIGUREFOOTMARK 图脚注内容。
 :::
 
@@ -185,7 +185,7 @@ FIGUREFOOTMARK 图脚注内容。
 | GBROW_099 | 第 99 项内容用于验证长表跨页和续表表头 | 合格 |
 | GBROW_100 | 第 100 项内容用于验证长表跨页和续表表头 | 合格 |
 
-:::gb-table-note 注1：
+:::gb-note scope=table label="注1："
 TABLE_NOTE_MARK 表内说明。
 :::
 
@@ -201,7 +201,7 @@ APPENDIX_MARK 依次检查排版和内容。
 | --- | --- |
 | 附录项目 | 合格 |
 
-:::gb-table-footnote a）
+:::gb-note scope=table label="a）" label-weight=normal
 TABLEFOOTMARK 表脚注内容。
 :::
 
