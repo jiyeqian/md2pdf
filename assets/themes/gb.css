@@ -197,17 +197,17 @@ ol li, ul li { padding-left: 0; }
 
 /* 10.2：段首空两字；列表文字用悬挂缩进，标记不占正文列。 */
 main p { text-indent: 2em; }
-main section :is(ol, ul):not(.references):not(.footnotes):not(.toc ol):not(.toc ul) { list-style: none; padding-left: 4em; }
-main section li > :is(ol, ul):not(.references):not(.footnotes):not(.toc ol):not(.toc ul) { padding-left: 2em; }
-main section :is(ol, ul):not(.references):not(.footnotes):not(.toc ol):not(.toc ul) > li { padding-left: 0; }
-main section :is(ol, ul):not(.references):not(.footnotes):not(.toc ol):not(.toc ul) > li::before {
+main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) { list-style: none; padding-left: 4em; }
+main section li > :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) { padding-left: 2em; }
+main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li { padding-left: 0; }
+main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li::before {
   display: block; position: absolute; left: -2em; top: 0; width: 2em; height: auto;
   font: 10.5pt/1.62 var(--font-body); border: none; border-radius: 0; text-align: left; counter-increment: none;
 }
-main section ul:not(.references):not(.footnotes):not(.toc ol):not(.toc ul) > li::before { content: "——"; }
-main section ol:not(.references):not(.footnotes):not(.toc ol):not(.toc ul) > li::before { content: counter(gb-item, lower-alpha) ")"; }
-main section li > ul:not(.references):not(.footnotes):not(.toc ol):not(.toc ul) > li::before { content: "•"; }
-main section li > ol:not(.references):not(.footnotes):not(.toc ol):not(.toc ul) > li::before { content: counter(gb-item) ")"; }
+main section ul:not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li::before { content: "——"; }
+main section ol:not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li::before { content: counter(gb-item, lower-alpha) ")"; }
+main section li > ul:not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li::before { content: "•"; }
+main section li > ol:not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li::before { content: counter(gb-item) ")"; }
 main li > p { text-indent: 0; }
 main .references > li { text-indent: 2em; }
 .gb-term-number, .gb-term-name, .gb-term-definition { margin: 0; }
@@ -298,7 +298,7 @@ tbody td[rowspan] { vertical-align: middle; }
 h2.gb-index-title { letter-spacing: 2em; text-indent: 2em; }
 
 /* 分页前已按原始层级和顺序生成标记，避免跨页 CSS counter 负数或重排。 */
-main section :is(ol, ul):not(.references):not(.footnotes):not(.toc ol):not(.toc ul) > li[data-gb-marker]::before { content: attr(data-gb-marker); }
+main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li[data-gb-marker]::before { content: attr(data-gb-marker); }
 main section :is(ol, ul) > li[data-gb-marker][data-split-from]::before { content: none; }
 
 /* GB/T 1.1 章等项目上下留白；总行步进对照2026样本约18.34pt。 */
@@ -307,7 +307,7 @@ main section :is(ol, ul) > li[data-gb-marker][data-split-from]::before { content
 .toc li.toc-level-0:not(.toc-float) { line-height: 1.25; margin: 0; padding: .25em 0; }
 .toc li a::after { font: inherit; }
 .toc .gb-float-toc { margin-top: 1.75em; }
-main section :is(ol, ul):not(.references):not(.footnotes):not(.toc ol):not(.toc ul) { margin-top: 0; margin-bottom: 0; }
+main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) { margin-top: 0; margin-bottom: 0; }
 .gb-note, .gb-example { margin-top: 0; margin-bottom: 0; }
 .gb-index-letter { font: 10.5pt/1.62 var(--font-head); }
 .gb-index-dots { border: 0; height: auto; align-self: baseline; overflow: hidden; white-space: nowrap; }
