@@ -330,9 +330,10 @@ function numberExamples(html) {
 // Resolve only explicit, unambiguous locations backed by an existing element ID.
 function linkIndexLocations(html) {
   const all = elements(html), targets = new Map(), labels = new Map(), edits = [];
-  const key = value => value.replace(/\s+/g, '').toUpperCase();
+  const key = value => value.startsWith('@') ? value.trim() : value.replace(/\s+/g, '').toUpperCase();
   const add = (name, id) => {
     const k = key(name), existing = targets.get(k);
+    if (name.startsWith('@') && existing !== undefined && existing !== id) throw Object.assign(new Error('稳定标识重复：' + name), {status:400});
     targets.set(k, existing === undefined ? id : existing === id ? id : null);
   };
   for (const node of all) {
@@ -358,7 +359,12 @@ function linkIndexLocations(html) {
     const number = node.tag === 'figure' ? /^图\s*([A-Z]\.\d+|\d+)(?=\s|[：:、]|$)/i.exec(text)
       : node.tag === 'table' ? /^表\s*([A-Z]\.\d+|\d+)(?=\s|[：:、]|$)/i.exec(text)
       : /^(附录\s*[A-Z]|(?:[A-Z]\.)?\d+(?:\.\d+)*)(?=\s|[、：:（(]|$)/i.exec(text);
-    if (number) add((node.tag === 'figure' ? '图' : node.tag === 'table' ? '表' : '') + number[1], id);
+    if (number) {
+      const display = (node.tag === 'figure' ? '图' : node.tag === 'table' ? '表' : '') + number[1].replace(/\s/g,'');
+      add(display, id);
+      const stable = /data-gb-stable-key="([^"]+)"/.exec(node.token)?.[1];
+      if (stable) { add('@'+stable,id); labels.set(key('@'+stable),display); }
+    }
   }
   for (const node of all) {
     if (node.tag !== 'span' || !classes(node).includes('gb-index-locations') || node.closeStart === undefined) continue;
@@ -368,7 +374,10 @@ function linkIndexLocations(html) {
       const location = part.trim();
       if (!/^(?:@[A-Za-z][\w:-]*|附录\s*[A-Z]|[图表]\s*(?:[A-Z]\.)?\d+|(?:[A-Z]\.)?\d+(?:\.\d+)*)$/i.test(location)) return part;
       const id = targets.get(key(location));
-      if (!id) { unresolved = true; return part; }
+      if (!id) {
+        if (location.startsWith('@')) throw Object.assign(new Error('索引的稳定标识不存在或重复：' + location), {status:400});
+        unresolved = true; return part;
+      }
       return part.replace(location, '<a href="#' + id + '">' + (labels.get(key(location)) || location) + '</a>');
     }).join('');
     if (linked !== value) edits.push({start:node.openEnd,end:node.closeStart,text:linked});

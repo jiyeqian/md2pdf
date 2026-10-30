@@ -196,8 +196,9 @@ function numberFloats(html, gb = false) {
     }
     figN++;
     const display = floatNumber('fig', offset, source, figN);
+    if (gb && label && refs.has(label)) throw Object.assign(new Error('稳定标识重复：' + label), {status:400});
     if (label) refs.set(label, { num: display, id: 'fig-' + figN });
-    return '<figure class="fig" id="fig-' + figN + '">' + body +
+    return '<figure class="fig" id="fig-' + figN + '"' + (gb && label ? ' data-gb-stable-key="' + label + '"' : '') + '>' + body +
       '<figcaption>图 ' + display + (gb ? '　' : '：') + caption + '</figcaption></figure>';
   });
 
@@ -207,11 +208,35 @@ function numberFloats(html, gb = false) {
     if (labM) { label = labM[1]; cap = cap.replace(labM[0], ' ').trim(); }
     tabN++;
     const display = floatNumber('tab', offset, source, tabN);
+    if (gb && label && refs.has(label)) throw Object.assign(new Error('稳定标识重复：' + label), {status:400});
     if (label) refs.set(label, { num: display, id: 'tab-' + tabN });
-    return '<table class="tbl" id="tab-' + tabN + '">\n<caption>表 ' + display + (gb ? '　' : '：') + cap + '</caption>';
+    return '<table class="tbl" id="tab-' + tabN + '"' + (gb && label ? ' data-gb-stable-key="' + label + '"' : '') + '>\n<caption>表 ' + display + (gb ? '　' : '：') + cap + '</caption>';
   });
 
   return { html, refs };
+}
+
+function prepareGbHeadingTargets(html) {
+  const seen = new Set();
+  return html.replace(/<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g, (whole,level,attrs,inner) => {
+    const label = /\s*\{#(sec:[\w.-]+)\}\s*$/.exec(inner);
+    if (!label) return whole;
+    const key = label[1];
+    if (seen.has(key)) throw Object.assign(new Error('稳定标识重复：' + key), {status:400});
+    seen.add(key);
+    const id = 'gb-' + key.replace(':','-');
+    attrs = attrs.replace(/\s+id="[^"]*"/, '');
+    return '<h'+level+attrs+' id="'+id+'" data-gb-stable-key="'+key+'">'+inner.slice(0,label.index)+'</h'+level+'>';
+  });
+}
+
+function collectGbHeadingReferences(html, refs) {
+  for (const match of html.matchAll(/<h[2-6]([^>]*)>([\s\S]*?)<\/h[2-6]>/g)) {
+    const key = /data-gb-stable-key="([^"]+)"/.exec(match[1])?.[1];
+    const id = /\bid="([^"]+)"/.exec(match[1])?.[1];
+    const number = /^(附录\s*[A-Z]|(?:[A-Z]\.)?\d+(?:\.\d+)*)(?=\s|[、：:（(]|$)/i.exec(stripTags(match[2]))?.[1];
+    if (key && id && number) refs.set(key, {id,num:number.replace(/\s/g,'')});
+  }
 }
 
 /* ---------------- 章节编号 ---------------- */
@@ -636,6 +661,12 @@ export async function render(src, options = {}, context = {}) {
 
   if (context.webSafe) html = html.replace(/\u0003FOOTNOTE(\d+)\u0003/g, (m, i) => fnMarkup[+i] ?? m);
 
+  if (profile.gbDoc) {
+    // Code examples are literal, including references to identifiers not in the document.
+    html = html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/g, code => code.replace(/\u0002REF(\d+)\u0002/g, (_,i)=>esc('\\ref{' + refStore[+i] + '}')));
+    html = prepareGbHeadingTargets(html);
+  }
+
   // 图/表自动编号与题注（收集标签）
   const floats = eff.floatNumbering === false
     ? { html, refs: new Map() }
@@ -644,11 +675,12 @@ export async function render(src, options = {}, context = {}) {
   // The editor accepts ordinary Mermaid fences without requiring a CLI figure caption.
   if (context.webSafe) html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>');
 
-  // 还原 \ref{} 为对应编号
-  html = html.replace(/\u0002REF(\d+)\u0002/g, (m, i) => {
-    const info = floats.refs.get(refStore[+i]);
+  const restoreReferences = html => html.replace(/\u0002REF(\d+)\u0002/g, (m, i) => {
+    const key = refStore[+i], info = floats.refs.get(key);
+    if (!info && profile.gbDoc && /^(?:fig|tab|sec):/.test(key)) throw Object.assign(new Error('引用的稳定标识不存在或未编号：' + key), {status:400});
     return info ? '<a href="#' + info.id + '" class="ref">' + info.num + '</a>' : '?';
   });
+  if (!profile.gbDoc) html = restoreReferences(html);
 
   // 还原数学公式（原样交回 MathJax 渲染）
   html = html.replace(/\u0001MATH(\d+)\u0001/g, (m, i) => context.webSafe ? esc(mathStore[+i] ?? m) : (mathStore[+i] ?? m));
@@ -667,6 +699,8 @@ export async function render(src, options = {}, context = {}) {
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
   html = numberHeadings(html, effNumbering, effScheme);
+
+  if (profile.gbDoc) { collectGbHeadingReferences(html, floats.refs); html = restoreReferences(html); }
 
   // 标题：显式 title（含显式空串）优先，空串即隐藏文档标题、不再回退 H1/文件名；否则取首个 H1 → GB 中文名称 → 文件名/网页提示。
   const h1 = /<h1(?:\s[^>]*)?>([\s\S]*?)<\/h1>/.exec(html);
@@ -721,7 +755,7 @@ export async function render(src, options = {}, context = {}) {
       ? `<li class="toc-level-${included.indexOf(s.level)}${s.float ? ' toc-float' : ''}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
       : `<li class="toc-level-${included.indexOf(s.level)}${s.float ? ' toc-float' : ''}"><a href="#${s.id}"><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`;
     const floatLists = profile.gbDoc ? ['fig', 'tab'].map(kind => {
-      const entries = [...html.matchAll(kind === 'fig' ? /<figure class="fig" id="([^"]+)">[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/g : /<table class="tbl" id="([^"]+)">\s*<caption>([\s\S]*?)<\/caption>/g)];
+      const entries = [...html.matchAll(kind === 'fig' ? /<figure class="fig" id="([^"]+)"[^>]*>[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/g : /<table class="tbl" id="([^"]+)"[^>]*>\s*<caption>([\s\S]*?)<\/caption>/g)];
       return entries.length ? '<ol class="gb-float-toc">' + entries.map(m => tocItem({id:m[1],text:stripTags(m[2]),level:2,float:true})).join('') + '</ol>' : '';
     }).join('') : '';
     toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目  录'}</div><ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';

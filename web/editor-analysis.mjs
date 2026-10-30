@@ -234,13 +234,13 @@ function isSupportedFootnoteId(id) { return typeof id === 'string' && id.length 
 /** 该引用出现（\ref / \eqref）能否被渲染器解析到目标。 */
 function isResolvableRef(occ, target) {
   if (occ.kind === 'eqref') return target.kind === 'equation' && isSupportedEquationId(occ.id);
-  return (target.kind === 'figure' || target.kind === 'table') && isSupportedFloatId(occ.id);
+  return ((target.kind === 'figure' || target.kind === 'table') && isSupportedFloatId(occ.id)) || (target.kind === 'section' && /^sec:[\w.-]+$/.test(occ.id));
 }
 
 /** 补全候选：eqref 仅公式；ref 仅渲染器支持的图 / 表。 */
 function isCompletionTarget(target, mode) {
   if (mode === 'eqref') return target.kind === 'equation' && isSupportedEquationId(target.id);
-  return (target.kind === 'figure' || target.kind === 'table') && isSupportedFloatId(target.id);
+  return ((target.kind === 'figure' || target.kind === 'table') && isSupportedFloatId(target.id)) || (target.kind === 'section' && /^sec:[\w.-]+$/.test(target.id));
 }
 
 function reportDiagnostics(result) {
@@ -365,8 +365,9 @@ function finalizeCounts(result) {
  * @param {string} source
  * @returns {object} 解析结果
  */
-export function analyzeMarkdown(source) {
+export function analyzeMarkdown(source, options = {}) {
   const result = emptyResult();
+  if (options.templateType === 'gb') result.templateType = 'gb';
   if (typeof source !== 'string' || source === '') return result;
 
   const lines = splitLines(source);
@@ -433,7 +434,7 @@ export function analyzeMarkdown(source) {
     while ((m = ID_MARK_RE.exec(scan)) !== null) {
       const id = m[1].trim();
       if (!id) continue;
-      const kind = id.indexOf('fig:') === 0 ? 'figure' : id.indexOf('tab:') === 0 ? 'table' : 'anchor';
+      const kind = id.indexOf('fig:') === 0 ? 'figure' : id.indexOf('tab:') === 0 ? 'table' : (result.templateType === 'gb' && h && h[1].length >= 2 && /^sec:[\w.-]+$/.test(id) && /\{#sec:[\w.-]+\}\s*$/.test(h[2] || '')) ? 'section' : 'anchor';
       const target = {
         id: id, kind: kind, line: row.line, offset: row.start + m.index,
         title: titleFromLine(raw, m[0]) || id,

@@ -64,13 +64,13 @@ toc: 2
 
 本文件将一般技术要求、检测方法和判定规则结合编排，图、表和数学公式分别表达控制流程、试验数据以及量之间的关系。有关结构和表述形式的依据见参考文献[^gb11]，有关仿真测试与术语组织的参考见参考文献[^gb48316]和参考文献[^gb21922]。
 
-## 范围
+## 范围 {#sec:scope}
 
 本文件规定了仿生机械手抓取控制系统的技术要求、试验方法、检验规则以及标志和使用说明，描述了相应的结果记录方法。
 
 本文件适用于工业、物流与服务机器人领域的仿生机械手抓取控制系统，不适用于直接作用于人体的医疗操作装置。
 
-## 规范性引用文件
+## 规范性引用文件 {#sec:normative-references}
 
 下列文件中的内容通过文中的规范性引用而构成本文件必不可少的条款。其中，注日期的引用文件，仅该日期对应的版本适用于本文件；不注日期的引用文件，其最新版本（包括所有的修改单）适用于本文件。
 
@@ -82,13 +82,13 @@ GB/T 12643—2013　机器人与机器人装备　词汇
 
 GB/T 20000.1—2014　标准化工作指南　第1部分：标准化和相关活动的通用术语
 
-## 术语和定义
+## 术语和定义 {#sec:terms}
 
 GB/T 12643—2013、GB/T 20000.1—2014 界定的以及下列术语和定义适用于本文件。为区分性能量与基础概念，术语按类别编排；各类别中的英文对应词、定义、来源及附注均属于相应术语条目。
 
 <!-- gb-check: F.1/10.3.5；中英文术语五号黑体，间空一字，长定义及条目注 -->
 
-### 控制与性能术语
+### 控制与性能术语 {#sec:control-terms}
 
 :::gb-term id=grasp
 抓取成功率
@@ -120,7 +120,7 @@ fault recovery time
 从检测到可恢复异常的时刻起，到系统重新进入可接受正常指令的工作状态所经历的时间。
 :::
 
-### 基础概念
+### 基础概念 {#sec:basic-concepts}
 
 :::gb-term id=standard
 标准
@@ -133,7 +133,7 @@ standard
 :::
 :::
 
-## 符号和缩略语
+## 符号和缩略语 {#sec:symbols}
 
 下列符号和缩略语适用于本文件。
 
@@ -145,11 +145,11 @@ standard
 - API：应用程序接口（application programming interface）；
 - RMS：均方根（root mean square）。
 
-## 技术要求
+## 技术要求 {#sec:requirements}
 
 技术要求包括一般要求、安全状态、控制性能和检测条件。各项要求应结合规定的试验环境、量值溯源和记录方法进行验证；对于具有不同末端执行器或控制模式的系统，应在试验开始前明确适用条件，并使后续检验与报告采用相同的配置。
 
-### 一般要求
+### 一般要求 {#sec:general-requirements}
 
 机械手应在 −10 ℃～40 ℃ 的环境温度下正常工作，设计的试验配置应涵盖低温、常温和高温状态。目标物、传感器量程及控制参数应在试验开始前记录。
 
@@ -159,7 +159,7 @@ standard
 - 传感器完成校准，时间戳采用统一的时间基准，记录中保留采样周期及校准有效期；
 - 工作空间内没有未经识别的障碍物，急停装置能够独立终止危险运动。
 
-### 安全状态与异常恢复
+### 安全状态与异常恢复 {#sec:safety-recovery}
 
 <!-- gb-check: 7.5、10.2.2；一层a)b)c)，二层1)2)，长列项回行和嵌套间隔号 -->
 
@@ -173,13 +173,13 @@ standard
    - 先以受限速度接近目标位姿，确认接触力没有超过允许值；
    - 再逐步恢复额定控制参数，并记录最终恢复时刻。
 
-### 控制性能
+### 控制性能 {#sec:control-performance}
 
-#### 抓取成功率
+#### 抓取成功率 {#sec:grasp-success}
 
 抓取成功率应不低于 98%。每组试验应完成不少于 100 次抓取，目标物的类型、质量和表面状态应保持可追溯。
 
-#### 单指响应延迟
+#### 单指响应延迟 {#sec:finger-latency}
 
 单指响应延迟应不大于 12 ms。期望力位关系按公式（1）确定。
 
@@ -198,7 +198,7 @@ $\dot{x}_d$ | 期望速度，单位为米每秒（m/s）；
 $\dot{x}$ | 实测速度，单位为米每秒（m/s）。
 :::
 
-#### 综合误差
+#### 综合误差 {#sec:overall-error}
 
 综合误差按公式（2）计算。较长公式在加号之后回行，两行合为一个公式，不将其细分为带字母的子编号。
 
@@ -223,7 +223,7 @@ $F_i$ | 第 $i$ 个采样点的实测接触力；
 $s_F$ | 接触力归一化基准量。
 :::
 
-### 性能指标与标定
+### 性能指标与标定 {#sec:calibration}
 
 系统性能应符合表 \ref{tab:perf} 的规定。数值相同量纲的比较应使用一致的单位，不在记录中省略有意义的有效数字。
 
@@ -254,7 +254,7 @@ $s_F$ | 接触力归一化基准量。
 空白测点不构成有效的标定数据；一字线表示该测点没有对应记录。
 :::
 
-### 检测条件组合
+### 检测条件组合 {#sec:test-conditions}
 
 <!-- gb-check: 9.8、10.4.2；多级表头、横纵合并、列宽、空格、整行表注和表脚注 -->
 
@@ -283,25 +283,25 @@ body:
 传感器安装位置应在试验记录中说明，回行文字与本条脚注的内容起点对齐。
 :::
 
-### 数据有效性
+### 数据有效性 {#sec:data-validity}
 
-#### 时间序列的判定
+#### 时间序列的判定 {#sec:time-sequence}
 
-##### 完整记录
+##### 完整记录 {#sec:complete-records}
 
 每组有效记录应包含连续时间戳、控制指令与反馈值。出现字段缺失时，应记录缺失区间和原因，避免只保留可通过判定的采样点。
 
-##### 中断记录
+##### 中断记录 {#sec:interrupted-records}
 
 试验发生中断时应标识中断前后的状态，不应将两个不连续片段直接拼接为连续记录。
 
-#### 异常数据的处理
+#### 异常数据的处理 {#sec:abnormal-data}
 
 异常数据应保留原值及处理依据，处理前后的数据应能够相互追溯。
 
-## 试验方法
+## 试验方法 {#sec:test-methods}
 
-### 试验准备
+### 试验准备 {#sec:test-preparation}
 
 试验前应确认量值溯源、试验装置连接和急停功能，采集装置的时钟应与控制器时钟同步[^@clock]。试验报告宜记录接口协议的英文名称，如 timestamp、sampling period 和 application programming interface，避免同一字段存在不同解释。
 
@@ -309,7 +309,7 @@ body:
 
 记录中应保留采集装置时钟偏差与异常切换过程的追溯信息，以便复核时间同步结果。
 
-### 控制流程
+### 控制流程 {#sec:control-flow}
 
 控制流程见图 \ref{fig:flow}，数据处理的层次关系见图 \ref{fig:data}。图中的箭头分别表示状态转换或数据传递方向，流程图的图形表达可参阅参考文献[^gb1526]。
 
@@ -349,7 +349,7 @@ flowchart LR
 数据处理过程应能回溯到原始采样时间和设备编号。
 :::
 
-### 结果记录
+### 结果记录 {#sec:results}
 
 试验结果宜按表 \ref{tab:records} 的顺序逐项记录。该表节选连续 40 条示意记录，用于核对跨页时的续表、表头、单位和表注；正式试验仍应满足每组不少于 100 次的要求。
 
@@ -425,9 +425,9 @@ flowchart LR
 补充说明与列表共同属于本示例，标签独立成行。
 :::
 
-## 检验规则
+## 检验规则 {#sec:inspection}
 
-### 判定
+### 判定 {#sec:assessment}
 
 检验应按照下列顺序进行：
 
@@ -443,17 +443,17 @@ flowchart LR
 当计算方法或者基准量发生改变时，应同时说明对既有结论的影响，不能只替换最终数值。
 :::
 
-### 复核
+### 复核 {#sec:review}
 
 复核人员应能够从记录编号定位到试验条件、原始数据和计算过程。需要补充试验时，应说明补充试验与原试验的关系。
 
-## 标志和使用说明
+## 标志和使用说明 {#sec:marking}
 
 使用说明应给出系统工作条件、允许的目标物范围、接口配置、安全状态及必要的维护要求。包装标志应符合 GB/T 191 的规定。
 
-## 附录 A（规范性）试验报告
+## 附录 A（规范性）试验报告 {#sec:appendix-report}
 
-### 报告内容
+### 报告内容 {#sec:report-content}
 
 试验报告应包括下列内容：
 
@@ -462,7 +462,7 @@ flowchart LR
 3. 图表、原始记录及异常处置；
 4. 结论与复核信息。
 
-### 报告字段
+### 报告字段 {#sec:report-fields}
 
 报告字段应能够追溯原始记录[^@report]。
 
@@ -476,9 +476,9 @@ flowchart LR
 | 试验条件 | 环境温度、相对湿度、供电状态 |
 | 记录关联 | 试验批次、记录编号、异常编号 |
 
-## 附录 B（资料性）数据整理示例
+## 附录 B（资料性）数据整理示例 {#sec:appendix-data}
 
-### 采样结果的整理
+### 采样结果的整理 {#sec:sample-processing}
 
 单组有效采样值的算术平均值可按公式（B.1）计算。附录公式采用附录字母和独立序号，不接续正文公式编号。
 
@@ -491,9 +491,9 @@ $n$ | 有效采样数；
 $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 :::
 
-### 数据示例
+### 数据示例 {#sec:sample-data}
 
-表：响应时间整理示例
+表：响应时间整理示例 {#tab:response-summary}
 
 | 组别 | 最小值/ms | 最大值/ms | 平均值/ms |
 | --- | --- | --- | --- |
@@ -507,32 +507,32 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 :::gb-index-section lang=zh
 
 :::gb-index C
-采集装置时钟偏差与异常切换过程的追溯信息 | 6.1
+采集装置时钟偏差与异常切换过程的追溯信息 | @sec:test-preparation
 :::
 
 :::gb-index G
-刚度系数 | 4，5.3.2
+刚度系数 | @sec:symbols，@sec:finger-latency
 :::
 
 :::gb-index K
-控制流程 | 图1，图2
-控制器检测 | 表3
+控制流程 | @fig:flow，@fig:data
+控制器检测 | @tab:complex
 :::
 
 :::gb-index S
-试验报告 | 附录A，A.2
-试验步骤 | A.1
-数据整理 | B.1，表B.1
+试验报告 | @sec:appendix-report，@sec:report-fields
+试验步骤 | @sec:report-content
+数据整理 | @sec:sample-processing，@tab:response-summary
 :::
 
 :::gb-index Y
-异常恢复流程 | 图1
-异常恢复时间 | @recovery，5.2
-原始记录 | 表4，6.3
+异常恢复流程 | @fig:flow
+异常恢复时间 | @recovery，@sec:safety-recovery
+原始记录 | @tab:records，@sec:results
 :::
 
 :::gb-index Z
-抓取成功率 | @grasp，5.3.1
+抓取成功率 | @grasp，@sec:grasp-success
 :::
 
 :::
@@ -540,16 +540,16 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 :::gb-index-section lang=en
 
 :::gb-index C
-control flow | 图1，图2
-controller verification | 表3
+control flow | @fig:flow，@fig:data
+controller verification | @tab:complex
 :::
 
 :::gb-index F
-fault recovery time | @recovery，5.2
+fault recovery time | @recovery，@sec:safety-recovery
 :::
 
 :::gb-index G
-grasping success rate | @grasp，5.3.1
+grasping success rate | @grasp，@sec:grasp-success
 :::
 
 :::gb-index I
@@ -557,9 +557,9 @@ impedance control | @impedance
 :::
 
 :::gb-index T
-test report | 附录A，A.2
-timestamp traceability | 6.1，B.1
-traceability information for acquisition clock deviations and abnormal clock source switching | 6.1
+test report | @sec:appendix-report，@sec:report-fields
+timestamp traceability | @sec:test-preparation，@sec:sample-processing
+traceability information for acquisition clock deviations and abnormal clock source switching | @sec:test-preparation
 :::
 
 :::
