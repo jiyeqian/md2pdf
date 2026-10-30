@@ -1,1 +1,59 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>字体配置说明</title><style>body{max-width:48rem;margin:3rem auto;padding:0 1.25rem;font:16px/1.8 system-ui;color:#26374d}h1{font-size:1.6rem}h2{font-size:1.2rem;margin-top:2rem}</style><main><h1>字体配置说明</h1><h2>用户指定的字体</h2><p>适用于全部模板的 `fonts` 配置。安装提示中列出的字体，或在文档中修正字体名称。支持家族名及内部完整名／PostScript 名；少数字体需要内部名称才能被浏览器识别。此处不提供字体下载，字体文件不会随文档传给服务器或其他设备。</p><p>缺字体仍可预览；WebApp 下载须确认风险后继续，取消则停止。CLI 默认停止，可用 `--allow-font-fallback` 明确允许回退。回退不改变文档配置。</p><h2>GB 模板所需的专用字体</h2><p>- 方正书宋_GBK：默认正文及页码等专用区域。<br>- 方正黑体_GBK：默认标题及标准号等专用区域。<br>- 方正小标宋_GBK：封面标题及英文名称。<br>- Times New Roman：普通、粗体，用于西文及符号。</p><p>请使用合法授权的字体；项目不提供这些字体文件。缺字体时仍可用替代字体预览，但分页和版式可能不同；下载 PDF 时会提示缺失字体；可选择继续下载，但替代字体可能改变分页和版式。正式用途建议安装全部字体后再导出。</p><h2>在浏览器设备安装</h2><p>适用于服务器版的预览，以及静态版的预览和下载。</p><p>1. 安装提示缺失的字体。macOS：双击字体文件，在“字体册”中安装；Windows：右键字体文件，选择安装。<br>2. 完全退出并重新打开浏览器，再打开文档。<br>3. 确认预览正常，再下载 PDF。静态版在打印窗口选择“另存为 PDF”。</p><h2>在服务器安装</h2><p>服务器版的 PDF 由服务器生成，本机字体不会自动传给服务器。</p><p>1. 联系部署者，将授权字体安装到运行服务的系统中；容器部署须安装在容器内。<br>2. Linux 部署者可用 `fc-cache -f` 更新缓存，并用 `fc-match &#x27;FZXBSK--GBK1-0&#x27;` 核对实际匹配字体，不能是替代字体。<br>3. 确认服务账户能够读取字体，重启 md2pdf 服务和其 Chrome 进程，再下载。</p><p>仅有同名字体不能保证相同效果，还需核对字体版本、字形覆盖及浏览器／打印环境。</p><p>托管静态网页的服务器安装字体，对用户浏览器无效。仍提示缺失时，核对字体是否启用、字体内部名称与 GBK 版本是否正确，并重新启动浏览器或服务。</p></main></html>
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>字体配置说明</title><style>body{max-width:48rem;margin:3rem auto;padding:0 1.25rem;font:16px/1.8 system-ui;color:#26374d}h1{font-size:1.6rem}h2{font-size:1.2rem;margin-top:2rem}pre{overflow-x:auto;padding:12px;background:#f3f6fa;border-radius:8px}code{font-family:ui-monospace,monospace;font-size:.9em}a{color:#42648b}</style><main><h1>字体配置说明</h1>
+<h2>用户指定的字体</h2>
+<p>适用于全部模板的 <code>fonts</code> 配置。安装提示中列出的字体，或在文档中修正字体名称。建议优先填写 <strong>PostScript Name（PostScript 名称）</strong>，不要根据字体文件名或中文展示名猜测。家族名、完整名也可使用，但以浏览器实际加载结果为准。此处不提供字体下载，字体文件不会随文档传给服务器或其他设备。</p>
+<p>缺字体仍可预览；WebApp 下载须确认风险后继续，取消则停止。CLI 默认停止，可用 <code>--allow-font-fallback</code> 明确允许回退。回退不改变文档配置。</p>
+<h2>macOS：在字体册查看名称</h2>
+<ol>
+<li>打开“字体册”，展开字体家族，选中具体字面（如常规体或粗体）。</li>
+<li>点击工具栏“信息”按钮。</li>
+<li>复制 <strong>PostScript 名称 / PostScript Name</strong>，填入 <code>fonts</code>。</li>
+</ol>
+<p>例如，方正楷体 GBK 的 PostScript 名称为 <code>FZKTK--GBK1-0</code>：</p>
+<pre><code class="language-yaml">fonts:
+  heading: &quot;FZKTK--GBK1-0&quot;
+</code></pre>
+<p>不同字面可能有不同名称，必须选择实际需要的字面。<a href="https://support.apple.com/en-ca/guide/font-book/fntbk1001/mac">Apple 字体册操作说明</a>。</p>
+<h2>Linux：使用 Fontconfig</h2>
+<p>需要 <code>fc-scan</code>／<code>fc-list</code>（Fontconfig 工具）。读取指定字体文件，路径替换为实际文件：</p>
+<pre><code class="language-bash">fc-scan --format &#39;%{postscriptname}\n&#39; &quot;/路径/字体.otf&quot;
+</code></pre>
+<p>列出已安装字体的家族名及 PostScript 名称，找到目标行后复制第二列：</p>
+<pre><code class="language-bash">fc-list --format &#39;%{family}\t%{postscriptname}\n&#39;
+</code></pre>
+<p>不要把 <code>fc-match</code> 返回的替代字体当作目标字体；仅查询到名称也不代表字体已安装并可被浏览器使用。<a href="https://fontconfig.pages.freedesktop.org/fontconfig/fontconfig-user.html">Fontconfig 名称字段说明</a>。</p>
+<h2>Windows：从字体文件读取名称</h2>
+<p>以下方法需要 Python 和 FontTools；在 PowerShell 中执行。先安装工具：</p>
+<pre><code class="language-powershell">py -m pip install fonttools
+</code></pre>
+<p>读取 <code>.ttf</code>／<code>.otf</code> 文件，路径替换为自己的字体文件：</p>
+<pre><code class="language-powershell">py -c &quot;from fontTools.ttLib import TTFont; print(TTFont(r&#39;C:\路径\字体.otf&#39;)[&#39;name&#39;].getDebugName(6))&quot;
+</code></pre>
+<p>若是 <code>.ttc</code> 字体集合，列出集合中各字面的名称，选择所需字面：</p>
+<pre><code class="language-powershell">py -c &quot;from fontTools.ttLib import TTCollection; [print(f[&#39;name&#39;].getDebugName(6)) for f in TTCollection(r&#39;C:\路径\字体.ttc&#39;).fonts]&quot;
+</code></pre>
+<p><code>6</code> 是字体名称表中的 PostScript 名称字段；若结果为 <code>None</code>，不要将它作为字体名，应向字体提供者核对。<a href="https://learn.microsoft.com/en-us/typography/opentype/spec/name">名称字段规范</a>、<a href="https://fonttools.readthedocs.io/en/latest/ttLib/tables/_n_a_m_e.html">FontTools 读取说明</a>。</p>
+<h2>GB 模板所需的专用字体</h2>
+<ul>
+<li>方正书宋_GBK：默认正文及页码等专用区域。</li>
+<li>方正黑体_GBK：默认标题及标准号等专用区域。</li>
+<li>方正小标宋_GBK：封面标题及英文名称。</li>
+<li>Times New Roman：普通、粗体，用于西文及符号。</li>
+</ul>
+<p>请使用合法授权的字体；项目不提供这些字体文件。缺字体时仍可用替代字体预览，但分页和版式可能不同；下载 PDF 时会提示缺失字体；可选择继续下载，但替代字体可能改变分页和版式。正式用途建议安装全部字体后再导出。</p>
+<h2>在浏览器设备安装</h2>
+<p>适用于服务器版的预览，以及静态版的预览和下载。</p>
+<ol>
+<li>安装提示缺失的字体。macOS：双击字体文件，在“字体册”中安装；Windows：右键字体文件，选择安装。</li>
+<li>完全退出并重新打开浏览器，再打开文档。</li>
+<li>确认预览正常，再下载 PDF。静态版在打印窗口选择“另存为 PDF”。</li>
+</ol>
+<h2>在服务器安装</h2>
+<p>服务器版的 PDF 由服务器生成，本机字体不会自动传给服务器。</p>
+<ol>
+<li>联系部署者，将授权字体安装到运行服务的系统中；容器部署须安装在容器内。</li>
+<li>Linux 部署者可用 <code>fc-cache -f</code> 更新缓存，并用 <code>fc-match &#39;FZXBSK--GBK1-0&#39;</code> 核对实际匹配字体，不能是替代字体。</li>
+<li>确认服务账户能够读取字体，重启 md2pdf 服务和其 Chrome 进程，再下载。</li>
+</ol>
+<p>仅有同名字体不能保证相同效果，还需核对字体版本、字形覆盖及浏览器／打印环境。</p>
+<p>托管静态网页的服务器安装字体，对用户浏览器无效。仍提示缺失时，核对字体是否启用、字体内部名称与 GBK 版本是否正确，并重新启动浏览器或服务。</p>
+</main></html>

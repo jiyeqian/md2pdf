@@ -2,9 +2,62 @@
 
 ## 用户指定的字体
 
-适用于全部模板的 `fonts` 配置。安装提示中列出的字体，或在文档中修正字体名称。支持家族名及内部完整名／PostScript 名；少数字体需要内部名称才能被浏览器识别。此处不提供字体下载，字体文件不会随文档传给服务器或其他设备。
+适用于全部模板的 `fonts` 配置。安装提示中列出的字体，或在文档中修正字体名称。建议优先填写 **PostScript Name（PostScript 名称）**，不要根据字体文件名或中文展示名猜测。家族名、完整名也可使用，但以浏览器实际加载结果为准。此处不提供字体下载，字体文件不会随文档传给服务器或其他设备。
 
 缺字体仍可预览；WebApp 下载须确认风险后继续，取消则停止。CLI 默认停止，可用 `--allow-font-fallback` 明确允许回退。回退不改变文档配置。
+
+## macOS：在字体册查看名称
+
+1. 打开“字体册”，展开字体家族，选中具体字面（如常规体或粗体）。
+2. 点击工具栏“信息”按钮。
+3. 复制 **PostScript 名称 / PostScript Name**，填入 `fonts`。
+
+例如，方正楷体 GBK 的 PostScript 名称为 `FZKTK--GBK1-0`：
+
+```yaml
+fonts:
+  heading: "FZKTK--GBK1-0"
+```
+
+不同字面可能有不同名称，必须选择实际需要的字面。[Apple 字体册操作说明](https://support.apple.com/en-ca/guide/font-book/fntbk1001/mac)。
+
+## Linux：使用 Fontconfig
+
+需要 `fc-scan`／`fc-list`（Fontconfig 工具）。读取指定字体文件，路径替换为实际文件：
+
+```bash
+fc-scan --format '%{postscriptname}\n' "/路径/字体.otf"
+```
+
+列出已安装字体的家族名及 PostScript 名称，找到目标行后复制第二列：
+
+```bash
+fc-list --format '%{family}\t%{postscriptname}\n'
+```
+
+不要把 `fc-match` 返回的替代字体当作目标字体；仅查询到名称也不代表字体已安装并可被浏览器使用。[Fontconfig 名称字段说明](https://fontconfig.pages.freedesktop.org/fontconfig/fontconfig-user.html)。
+
+## Windows：从字体文件读取名称
+
+以下方法需要 Python 和 FontTools；在 PowerShell 中执行。先安装工具：
+
+```powershell
+py -m pip install fonttools
+```
+
+读取 `.ttf`／`.otf` 文件，路径替换为自己的字体文件：
+
+```powershell
+py -c "from fontTools.ttLib import TTFont; print(TTFont(r'C:\路径\字体.otf')['name'].getDebugName(6))"
+```
+
+若是 `.ttc` 字体集合，列出集合中各字面的名称，选择所需字面：
+
+```powershell
+py -c "from fontTools.ttLib import TTCollection; [print(f['name'].getDebugName(6)) for f in TTCollection(r'C:\路径\字体.ttc').fonts]"
+```
+
+`6` 是字体名称表中的 PostScript 名称字段；若结果为 `None`，不要将它作为字体名，应向字体提供者核对。[名称字段规范](https://learn.microsoft.com/en-us/typography/opentype/spec/name)、[FontTools 读取说明](https://fonttools.readthedocs.io/en/latest/ttLib/tables/_n_a_m_e.html)。
 
 ## GB 模板所需的专用字体
 
