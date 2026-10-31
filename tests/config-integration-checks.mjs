@@ -13,7 +13,7 @@ const root = new URL('..', import.meta.url).pathname;
 
 // Independent acceptance: tests use public CLI and renderer, not config internals.
 test('explicit clearing and inherited frontmatter work through the public renderer', async () => {
-  const md = '---\nfooter-center: "内部资料"\ndisable: [lead]\n---\n# 标题\n\n正文[^a]。\n\n## 参考资料 {role=bibliography}\n\n[^a]: 文献\n\n:::colophon\nleft: ""\n:::\n';
+  const md = '---\nfooter-center: "内部资料"\ndisable: [lead]\n---\n# 标题\n\n正文[^a]。\n\n## 参考资料 {role=bibliography}\n\n[^a]: 文献\n\n:::colophon\n"" | |\n:::\n';
   const cli = await render(md, parseArgs(['doc.md']), { filename: 'doc.md' });
   const web = await render(md, {}, { filename: 'doc.md', webSafe: true });
   for (const res of [cli, web]) {

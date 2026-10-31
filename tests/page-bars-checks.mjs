@@ -37,7 +37,7 @@ test('empty header has no native template; custom header matches paged preview',
   assert.ok(!off.html.includes('<div class="colophon">'));
 });
 test('colophon three slots clear independently and GB keeps fixed layout', async () => {
-  const result = await render('# 标题\n\n:::colophon\nleft: ""\ncenter: 居中\nright: ""\n:::');
+  const result = await render('# 标题\n\n:::colophon\n"" | 居中 | ""\n:::');
   assert.match(result.html, /<div class="colophon"><span><\/span><span>居中<\/span><span><\/span><\/div>/);
   await assert.rejects(render('---\ntype: gb\nheader-left: "覆盖"\n---\n# 标题'), /固定版式/);
 });
@@ -51,7 +51,7 @@ test('frontmatter version defaults the center colophon consistently for CLI and 
   assert.equal(cli.html.match(center)[1], 'v2.3&lt;&amp;');
   assert.equal(web.html.match(center)[1], cli.html.match(center)[1]);
   for (const value of ['', '自定义']) {
-    const r=await render('---\nversion: "1.2"\n---\n# 标题\n\n:::colophon\ncenter: '+JSON.stringify(value)+'\n:::');
+    const r=await render('---\nversion: "1.2"\n---\n# 标题\n\n:::colophon\n| '+JSON.stringify(value)+' |\n:::');
     assert.equal(r.html.match(center)[1],value);
   }
   const off = await render('---\nversion: "1.2"\ndisable: [colophon]\n---\n# 标题');
