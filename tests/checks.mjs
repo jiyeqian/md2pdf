@@ -171,10 +171,10 @@ fs.mkdirSync(gbDir, { recursive: true });
 fs.writeFileSync(path.join(gbDir, 'gb.md'), [
   '---', '标准号: GB/T 99999—2026', 'title: 测试标准', '发布日期: 2026-01-01', '实施日期: 2026-07-01',
   '标准状态: 现行', '中国标准分类号: J 28', '全部代替标准: GB/T 99999-2015', '归口单位: 全国×××标准化技术委员会', '采标国际标准: ISO 99999:2025', '采标英文名称: Test adopted standard', '---', '',
-  '## 前言', '', '前言内容。', '',
+  '## 目次 {role=toc}', '', '## 前言 {role=preface}', '', '前言内容。', '',
   '## 范围', '', '本文件规定了……', '',
-  '## 附录 A（规范性）测试方法', '', '### 测试条件', '', '环境温度 25 ℃。', '',
-  '## 参考文献', '', '结束。', ''
+  '## 测试方法 {role=appendix nature=normative}', '', '### 测试条件', '', '环境温度 25 ℃。', '',
+  '## 参考文献 {role=bibliography}', '', '结束。', ''
 ].join('\n'));
 const rGb = run([path.join(gbDir, 'gb.md'), '--html-only', '-o', path.join(gbDir, 'out.html')]);
 const gbHtml = readIf(path.join(gbDir, 'out.html'));
@@ -184,7 +184,7 @@ ok('gb：前言不编号，范围从 1 起',
   /<h2[^>]*>前言<\/h2>/.test(gbHtml) && /<span class="gb-first-heading">1　范围<\/span>/.test(gbHtml));
 ok('gb：附录用字母（附录 A 下为 A.1）',
   /<h3[^>]*>A\.1　/.test(gbHtml) && /<h2[^>]*>参考文献<\/h2>/.test(gbHtml));
-ok('gb：目次标题为「目次」', /<div class="toc-title">目次<\/div>/.test(gbHtml));
+ok('gb：目次标题为「目次」', /<h2\b[^>]*class="toc-title"[^>]*>目次<\/h2>/.test(gbHtml));
 
 // Paged.js（P3.1，GB 专用分页）：接管分页后才有奇偶页眉 / 分节页码 / 目次真实页码
 ok('Paged：gb 渲染注入 Paged.js（仅 gb）', /pagedjs\/paged\.polyfill\.min\.js/.test(gbHtml), 'status=' + rGb.status);
