@@ -22,7 +22,10 @@ test('summaries and keyword lists work in every template without becoming number
   const r=await render(summary+'\n## 范围\n\n正文',{type});
   assert.match(r.html,/class="abstract"/);assert.match(r.html,/<strong>问题<\/strong>/);
   assert.match(r.html,/矢量图形；版面校准/);
-  assert.doesNotMatch(r.html,/<h2[^>]*>[^<]*摘要/);
+  assert.match(r.html,/<h2 class="paper-label summary-heading">摘要<\/h2>/);
+  assert.match(r.html,/<h2 class="paper-label summary-heading">关键词<\/h2>/);
+  const toc=(r.html.match(/<div class="toc">([\s\S]*?)<\/ol>/)||[])[1]||'';
+  assert.doesNotMatch(toc,/摘要|关键词/);
  }
  await assert.rejects(render('## 关键词 {role=keywords}\n\n甲；乙',{type:'general'}),/非编号列表/);
 });
@@ -75,4 +78,20 @@ test('reusing parsed frontmatter does not accumulate missing bibliography warnin
   assert.equal(r.warnings.filter(w=>w.includes('role=bibliography')).length,1);
  }
  assert.deepEqual(parsed.warnings||[],[]);
+});
+
+test('summary navigation does not consume a later ordinary heading with the same name',async()=>{
+ const {attachSourcePositions}=await import('../src/editor-position.mjs');
+ const md='## 摘要 {role=abstract}\n\n摘要内容。\n\n## 摘要\n\n普通章节。';
+ const r=await render(md,{type:'paper'}),html=attachSourcePositions(r.html,md);
+ assert.match(html,/<div class="abstract" data-document-role="abstract" data-md2pdf-source-line="1">/);
+ assert.match(html,/<h2[^>]*data-md2pdf-source-line="5"[^>]*>1 摘要<\/h2>/);
+ assert.doesNotMatch(html,/<h2 class="paper-label summary-heading"[^>]*data-md2pdf-source-line/);
+});
+
+test('summary navigation stays unnumbered and outside printed contents',async()=>{
+ const r=await render(summary+'\n## 正文\n\n文字[^r]。\n\n## 参考资料 {role=bibliography}\n\n[^r]: 来源',{type:'paper',toc:true});
+ const toc=/<div class="toc">([\s\S]*?)<\/ol>/.exec(r.html)?.[1];
+ assert.ok(toc);assert.match(toc,/1 正文/);assert.match(toc,/参考资料/);assert.doesNotMatch(toc,/摘要|关键词/);
+ assert.equal((r.html.match(/<h2 class="paper-label summary-heading">/g)||[]).length,2);
 });

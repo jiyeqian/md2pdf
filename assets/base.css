@@ -316,3 +316,11 @@ section { break-inside: auto; }
 .summary-content > p { margin: .4em 0 0; text-indent: 0; }
 .summary-content > p:first-child { display: inline; }
 .abstract .paper-label, .keywords .paper-label { font-weight: 600; margin-right: 8px; }
+
+/* Summary labels are headings for navigation, while retaining their original inline layout. */
+h2.summary-heading {
+  display: inline; position: static; font: inherit; font-weight: 600; color: var(--accent);
+  margin: 0 8px 0 0; padding: 0; border: 0; letter-spacing: inherit; text-indent: 0; text-align: inherit;
+  break-before: auto; break-after: auto; break-inside: auto;
+}
+h2.summary-heading::before { content: none; display: none; }

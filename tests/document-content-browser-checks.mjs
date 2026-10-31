@@ -20,7 +20,9 @@ try{
   assert.equal(state.exceptionDetails,undefined);const s=state.result.value;
   assert.ok(!s.error);assert.ok(s.abstract.includes('第二段内容'));assert.ok(s.keywords.includes('矢量图形；版面校准'));
   assert.equal(s.kicker,'技术研究报告');assert.deepEqual(s.cols,['编制：张三','v2','']);assert.equal(s.refs,1);
-  assert.ok(!s.headings.some(t=>t.includes('摘要')||t.includes('关键词')));
+  assert.equal(s.headings.filter(t=>t==='摘要').length,1);
+  assert.equal(s.headings.filter(t=>t==='关键词').length,1);
+  assert.ok(!s.headings.some(t=>/^[0-9一二三四五六七八九十]+[、.　 ]*(摘要|关键词)$/.test(t)));
   if(type==='paper')assert.ok(s.headings.includes('参考资料'));
   await writeFile('output/pdf/content-'+type+'-'+runtime+'.pdf',pdf);
   console.log(runtime+'/'+type+': summaries, keywords, explicit references and partial colophon override verified');

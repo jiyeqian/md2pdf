@@ -16,7 +16,7 @@ try {
  const base='http://127.0.0.1:'+app.server.address().port;
  assert.equal((await nativeFetch(base+'/src/gb-sections.mjs')).status,200,'editor shared section module is served');
  await browser.start();
- for(const [runtime,type] of [['node','gb'],['static','gb'],['node','general'],['node','paper'],['node','skill']]) {
+ for(const [runtime,type] of [['node','gb'],['static','gb'],['node','general'],['node','paper'],['static','paper'],['node','skill']]) {
   const md=await readFile(new URL('../web/examples/'+type+'.md',import.meta.url),'utf8');
   const body={md,opts:{type}};
   let html;
@@ -34,6 +34,17 @@ try {
    assert.ok(outline.result.value?.includes('参考文献'),runtime+' bibliography in preview outline');
    assert.ok(outline.result.value?.includes('1　范围'),runtime+' first chapter outline excludes document title');
    assert.ok(!outline.result.value.some(t=>t.includes('仿生机械手抓取控制系统技术要求')&&t.includes('1　范围')),runtime+' document title not included in chapter outline');
+  }
+  if(type==='paper') {
+   const outline=await browser.send('Runtime.evaluate',{awaitPromise:true,returnByValue:true,expression:'new Promise(resolve=>setTimeout(()=>resolve(window.__testOutline),100))'});
+   const entries=outline.result.value;
+   for(const label of ['摘要','关键词']) {
+    assert.equal(entries.filter(h=>h.text===label&&h.level===2).length,1,runtime+' unnumbered summary navigation');
+    const index=entries.findIndex(h=>h.text===label);
+    const jump=await browser.send('Runtime.evaluate',{returnByValue:true,expression:`(()=>{dispatchEvent(new MessageEvent('message',{source:parent,data:{type:'md2pdf-outline-locate',index:${index}}}));const target=document.querySelector('.md2pdf-preview-target');return {role:target?.dataset.documentRole,line:Number(target?.dataset.md2pdfSourceLine)};})()`});
+    assert.equal(jump.result.value.role,label==='摘要'?'abstract':'keywords');
+    assert.ok(jump.result.value.line>0,runtime+' outline selects source-linked summary block');
+   }
   }
   const lines=parseMarkdownHeadings(md).filter(h=>h.level>=2&&h.level<=6).map(h=>h.line);
   const result=await browser.send('Runtime.evaluate',{returnByValue:true,expression:`(()=>{

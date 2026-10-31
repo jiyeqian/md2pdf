@@ -62,3 +62,9 @@ export function prepareContentHeadings(html,gb=false) {
  for(const e of edits.sort((a,b)=>b.start-a.start))html=html.slice(0,e.start)+e.text+html.slice(e.end);
  return {html,roles};
 }
+
+// Add navigation semantics after chapter numbering, contents and section grouping are complete.
+export function finalizeContentNavigation(html) {
+ return html.replace(/(<div class="(?:abstract|keywords)" data-document-role="(?:abstract|keywords)">)<span class="paper-label">([\s\S]*?)<\/span><div class="summary-content">/g,
+  (_,block,title)=>block+'<h2 class="paper-label summary-heading">'+title+'</h2><div class="summary-content">');
+}

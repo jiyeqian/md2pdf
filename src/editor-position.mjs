@@ -126,6 +126,7 @@ export function attachSourcePositions(html, md) {
   }
   let pointer = 0;
   return html.replace(HEADING_RE, (match, level, attrs, inner) => {
+    if (/\bclass="[^"]*\bsummary-heading\b/.test(attrs)) return match; // The containing summary already owns the source position.
     if (/(?:^|\s)data-md2pdf-source-line\s*=/.test(attrs)) return match; // 幂等：已标注不再重复
     const lvl = Number(level);
     // GB's first h2 also contains the document name and optional warning.
