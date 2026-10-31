@@ -1,3 +1,4 @@
+import {gbHeading,GB_SECTION_ROLES} from './gb-sections.mjs';
 // 预览位置关联（按章节粗定位）
 //
 // attachSourcePositions(html, md)：在「已渲染的预览 HTML」上，为与 Markdown 标题
@@ -108,17 +109,16 @@ export function parseMarkdownHeadings(md) {
 export function attachSourcePositions(html, md) {
   if (typeof html !== 'string') throw new TypeError('attachSourcePositions 需要 HTML 字符串');
   if (typeof md !== 'string') throw new TypeError('attachSourcePositions 需要 Markdown 字符串');
-  const sourceHeadings=parseMarkdownHeadings(md);
+  const sourceHeadings=parseMarkdownHeadings(md).map(h=>{try{return {...h,section:gbHeading(h.text,h.level,{...GB_SECTION_ROLES,abstract:'摘要',keywords:'关键词'})};}catch{return h;}});
   html=html.replace(/<div class="(abstract|keywords)" data-document-role="\1"([^>]*)>/g,(tag,role,attrs)=>{
     if(/data-md2pdf-source-line=/.test(attrs))return tag;
-    const heading=sourceHeadings.find(h=>new RegExp('\\brole='+role+'\\b').test(h.text));
+    const heading=sourceHeadings.find(h=>h.section?.role===role);
     return heading?tag.slice(0,-1)+' data-md2pdf-source-line="'+heading.line+'">':tag;
   });
   if (!/<h[2-6][\s>]/.test(html)) return html;
-  const gb = html.includes('md2pdf-gb-') || /data-gb-(?:role|stable-key)=/.test(html);
   const targets = sourceHeadings
-    .filter(h => h.level >= 2 && h.level <= 6 && !/\brole=(abstract|keywords)\b/.test(h.text))
-    .map(h => ({ line: h.line, level: h.level, stable: (gb ? /#(sec:[\w.-]+)(?=\s|})/ : /\s*\{#(sec:[\w.-]+)\}\s*$/).exec(h.text)?.[1], norm: normalize(markdownHeadingText(gb || /\brole=bibliography\b/.test(h.text) ? h.text.replace(/\s*\{[^{}]*(?:role=|nature=|#sec:)[^{}]*\}\s*$/, '') : h.text)) }));
+    .filter(h => h.level >= 2 && h.level <= 6 && !['abstract','keywords'].includes(h.section?.role))
+    .map(h => ({ line:h.line,level:h.level,stable:h.section?.id,norm:normalize(markdownHeadingText(h.section?.text??h.text)) }));
   if (!targets.length) return html;
   const stableTargets = new Map();
   for (const [index, target] of targets.entries()) {

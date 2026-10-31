@@ -124,7 +124,7 @@ try {
   }
   console.log('✓ 四模板 fonts 映射、CLI HTML、Node 与静态预览及字体检查规则一致');
   {
-    const md='---\n标准号: GB/T 39999—2026\n中文名称: 章节角色验收\ntoc: 2\n---\n## 目录 {role=toc}\n\n## 前言 {role=preface}\n\n## 范围\n\n引用[^r]，见 \\ref{sec:appendix}。\n\n## 方法 {nature=normative #sec:appendix role=appendix}\n\n### 子条\n\n## 参考文献 {role=bibliography}\n\n[^r]: 参考条目\n';
+    const md='---\n标准号: GB/T 39999—2026\n中文名称: 章节角色验收\ntoc: 2\n---\n## 目录 {role=toc}\n\n## 前言 {role=preface}\n\n## 范围\n\n引用[^r]，见 \\ref{sec:appendix}。\n\n## 方法 {subtitle="（规范性）" #sec:appendix role=appendix}\n\n### 子条\n\n## 参考文献 {role=bibliography}\n\n[^r]: 参考条目\n';
     const body={md,opts:{type:'gb'}},core=await render(md,{type:'gb',pagedHtml:true},{webSafe:true});
     const response=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     assert.equal(response.status,200);
@@ -189,6 +189,27 @@ try {
     sameHtml(await readFile(output,'utf8'),core.pagedHtml,'index '+sort+' CLI');
   }
   console.log('✓ GB索引 auto/input/pinyin/alphabetical、强制分组及排序键：CLI、Node、静态一致');
+  for(const type of ['general','paper','skill','gb']) {
+    const md='# 文字一致性\n\n## 正文 {subtitle="试验 结果"}\n\n正文。\n\n## 关键词 {role=keywords}\n\n甲 / 乙；H_{2}O\n\n'+(type==='gb'?'## 方法 {role=appendix subtitle="（资料性）"}\n\n内容。\n\n':'')+':::colophon\n"**编制**：甲" | | ""\n:::';
+    const opts={type,toc:false},body={md,opts};
+    const core=await render(md,{...opts,pagedHtml:true},{webSafe:true});
+    assert.match(core.html,/class="heading-subtitle">试验 结果/);assert.match(core.html,/甲 \/ 乙；H<sub/);
+    sameHtml((await browserRender(md,{...opts,pagedHtml:true},{webSafe:true})).pagedHtml,core.pagedHtml,type+': literal content core');
+    const nodeResponse=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});assert.equal(nodeResponse.status,200);
+    const online=await nodeResponse.json(),offline=await(await browser.appFetch('/api/render',{body:JSON.stringify(body)})).json();sameHtml(offline.html,online.html,type+': literal content preview');
+    const input=path.join(tmp,'literal-'+type+'.md'),output=path.join(tmp,'literal-'+type+'.html');await writeFile(input,md);
+    execFileSync(process.execPath,['src/md2pdf.mjs',input,'--type',type,'--no-toc','--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});
+    sameHtml(await readFile(output,'utf8'),core.pagedHtml,type+': literal content CLI');
+  }
+  console.log('✓ 通用副标题、普通段落关键词、三格落款：四模板 CLI、Node、静态一致');
+  for(const md of ['# 旧属性\n\n## 标题 {nature=normative}','# 旧关键词\n\n## 关键词 {role=keywords}\n\n- 甲\n- 乙','# 旧落款\n\n:::colophon\nleft: 甲\nright: 乙\n:::']) {
+    const body={md,opts:{type:'general'}};
+    const online=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),offline=await browser.appFetch('/api/render',{body:JSON.stringify(body)});
+    assert.equal(online.status,400);assert.equal(offline.status,400);assert.deepEqual(await offline.json(),await online.json());
+    const input=path.join(tmp,'retired-content.md');await writeFile(input,md);
+    assert.throws(()=>execFileSync(process.execPath,['src/md2pdf.mjs',input,'--type','general','--html-only','-o',path.join(tmp,'retired.html')],{cwd:root,stdio:'pipe'}),e=>e.status!==0);
+  }
+  console.log('✓ 已移除 nature、列表关键词、旧落款语法：CLI、Node、静态均拒绝');
   const invalid={md:'---\nfont-size: bad\n---\n# Invalid',opts:{}};
   const online=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(invalid)});
   const offline=await browser.appFetch('/api/render',{body:JSON.stringify(invalid)});

@@ -163,7 +163,7 @@ test('目录采用文档字号比例，CLI 与 Web 共用缩放规则', async ()
 
 test('CLI and Web render list keywords identically, hide empty lists, and leave tags as metadata', async () => {
   const {parseArgs} = await import('../src/options.mjs');
-  const md = '---\ntags: ["标签"]\n---\n# 标题\n\n## 关键词 {role=keywords}\n\n- 甲<&\n- 乙\n';
+  const md = '---\ntags: ["标签"]\n---\n# 标题\n\n## 关键词 {role=keywords}\n\n甲<&；乙\n';
   const cli = await render(md, parseArgs([]), {generatedAt:AT});
   const online = await web(md);
   for (const result of [cli, online]) {

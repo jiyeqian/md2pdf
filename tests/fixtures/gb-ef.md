@@ -191,7 +191,7 @@ FIGUREFOOTMARK 图脚注内容。
 TABLE_NOTE_MARK 表内说明。
 :::
 
-## 检查方法 {role=appendix nature=normative}
+## 检查方法 {role=appendix subtitle="（规范性）"}
 
 ### 试验步骤
 

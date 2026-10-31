@@ -1,7 +1,7 @@
 import {CONTENT_ROLES} from '../src/document-content.mjs';
 const CONTENT_COMPLETION_BODIES = {
   kicker: '技术报告',
-  colophon: 'left: "编制：方鸿渐"\ncenter: "审核：褚慎明、韩学愈、李广智"\nright: "校对：范进、孔乙己、李梅亭"',
+  colophon: '"编制：方鸿渐" | "审核：褚慎明、韩学愈、李广智" | "校对：范进、孔乙己、李梅亭"',
 };
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { gbHeading, gbSectionDiagnostics, GB_SECTION_ROLES } from '../src/gb-sections.mjs';
@@ -405,16 +405,16 @@ export function analyzeMarkdown(source, options = {}) {
     if (h) {
       const content = h[2] || '';
       let text = content.replace(TRAILING_HASHES, '').trim();
-      let id = null;
+      let id = null, headingRole;
       const mark = /\{#([^{}\n]*)\}/.exec(maskInlineCode(content));
       if (mark) { id = mark[1].trim(); text = content.slice(0, mark.index).trim(); }
-      if(result.templateType!=='gb' && /\brole=(abstract|keywords|bibliography)\b/.test(content)) {
-        try {const section=gbHeading(text,h[1].length,CONTENT_ROLES);text=section.text;id=section.id || id;}
+      if(result.templateType!=='gb' && (/\brole=(abstract|keywords|bibliography)\b/.test(content)||/\b(?:subtitle|nature)=/.test(content))) {
+        try {const section=gbHeading(text,h[1].length,CONTENT_ROLES);text=section.text;id=section.id || id;headingRole=section.role;}
         catch(error){addDiagnostic(result,{severity:'warning',code:'content-role-invalid',line:row.line,message:error.message});}
       }
       if (result.templateType==='gb') {
-        if(!/\brole=(abstract|keywords)\b/.test(content))gbHeadings.push({text:content.replace(TRAILING_HASHES,'').trim(),level:h[1].length,line:row.line});
-        try { const section=gbHeading(text,h[1].length,{...GB_SECTION_ROLES,...CONTENT_ROLES}); text=section.text; id=section.id || id; } catch {}
+        try { const section=gbHeading(text,h[1].length,{...GB_SECTION_ROLES,...CONTENT_ROLES}); text=section.text; id=section.id || id;headingRole=section.role; } catch {}
+        if(!['abstract','keywords'].includes(headingRole))gbHeadings.push({text:content.replace(TRAILING_HASHES,'').trim(),level:h[1].length,line:row.line});
       }
       result.headings.push({
         line: row.line,
@@ -422,6 +422,7 @@ export function analyzeMarkdown(source, options = {}) {
         level: h[1].length,
         text: text,
         id: id,
+        role: headingRole,
         manual: manualNumber(text),
       });
     }
@@ -455,7 +456,7 @@ export function analyzeMarkdown(source, options = {}) {
     for (const m of marks) {
       const id = m[1].trim();
       if (!id) continue;
-      const kind = id.indexOf('fig:') === 0 ? 'figure' : id.indexOf('tab:') === 0 ? 'table' : (result.templateType === 'gb' && h && h[1].length >= 2 && /^sec:[\w.-]+$/.test(id) && !/\brole=(abstract|keywords)\b/.test(h[2]||'') && result.headings.at(-1)?.id===id) ? 'section' : 'anchor';
+      const kind = id.indexOf('fig:') === 0 ? 'figure' : id.indexOf('tab:') === 0 ? 'table' : (result.templateType === 'gb' && h && h[1].length >= 2 && /^sec:[\w.-]+$/.test(id) && !['abstract','keywords'].includes(result.headings.at(-1)?.role) && result.headings.at(-1)?.id===id) ? 'section' : 'anchor';
       const target = {
         id: id, kind: kind, line: row.line, offset: row.start + m.index,
         title: titleFromLine(raw, m[0]) || id,
@@ -607,7 +608,7 @@ export const SNIPPETS = {
   },
   'gb-appendix': {
     title: 'GB · 附录',
-    text: '## {{title}} {role=appendix nature=normative}\n\n{{content}}\n',
+    text: '## {{title}} {role=appendix subtitle="（规范性）"}\n\n{{content}}\n',
     defaults: { title: '附录标题', content: '附录内容' },
   },
   skill: {
@@ -761,10 +762,10 @@ export function provideCompletions(context, analysis) {
   {
     const heading = /(?:^|\n) {0,3}(#{2,6}) [^\n{}]*\{([^{}]*)$/.exec(before);
     if (heading && !isSuppressedContext(text,pos)) {
-      const typed=heading[2].split(/\s+/).at(-1);
-      const choices=[...Object.entries(context.templateType==='gb'?{...GB_SECTION_ROLES,...CONTENT_ROLES}:CONTENT_ROLES).map(([role,name])=>({label:'role='+role,detail:name})),{label:'nature=normative',detail:'规范性附录'},{label:'nature=informative',detail:'资料性附录'},{label:'#sec:section',detail:'稳定章节标识，请改为唯一名称'}];
+      const typed=/(?:^|\s)([^\s]*$)/.exec(heading[2])?.[1]||'';
+      const choices=[...Object.entries(context.templateType==='gb'?{...GB_SECTION_ROLES,...CONTENT_ROLES}:CONTENT_ROLES).map(([role,name])=>({label:'role='+role,detail:name})),{label:'subtitle=""',detail:'副标题：原样显示文字'},{label:'subtitle="（规范性）"',detail:'规范性附录副标题'},{label:'subtitle="（资料性）"',detail:'资料性附录副标题'},{label:'#sec:section',detail:'稳定章节标识，请改为唯一名称'}];
       const used=heading[2].slice(0,-typed.length || undefined).trim().split(/\s+/).map(t=>t.split('=')[0]);
-      const options=choices.filter(c=>(context.templateType==='gb'||!c.label.startsWith('nature=')&&!c.label.startsWith('#sec:'))&&(heading[1].length===2 || c.label.startsWith('#sec:')) && c.label.startsWith(typed) && !used.includes(c.label.split('=')[0])).map(c=>({...c,apply:c.label}));
+      const options=choices.filter(c=>(context.templateType==='gb'||!c.detail.includes('附录副标题')&&!c.label.startsWith('#sec:'))&&(heading[1].length===2 || c.label.startsWith('#sec:') || c.label.startsWith('subtitle=')) && c.label.startsWith(typed) && !used.includes(c.label.split('=')[0])).map(c=>({...c,apply:c.label}));
       return options.length?{from:pos-typed.length,options}:null;
     }
   }

@@ -346,7 +346,7 @@ flowchart LR
 ```
 
 :::gb-note scope=figure label="注1："
-无效样本应保留标识，不应直接删除原始记录。
+无效样本应保留标识[^@invalid-sample]，不应直接删除原始记录。
 :::
 
 :::gb-note scope=figure label="注2："
@@ -455,7 +455,7 @@ flowchart LR
 
 使用说明应给出系统工作条件、允许的目标物范围、接口配置、安全状态及必要的维护要求。包装标志应符合 GB/T 191 的规定。
 
-## 试验报告 {role=appendix nature=normative #sec:appendix-report}
+## 试验报告 {role=appendix subtitle="（规范性）" #sec:appendix-report}
 
 ### 报告内容 {#sec:report-content}
 
@@ -480,7 +480,7 @@ flowchart LR
 | 试验条件 | 环境温度、相对湿度、供电状态 |
 | 记录关联 | 试验批次、记录编号、异常编号 |
 
-## 数据整理示例 {#sec:appendix-data nature=informative role=appendix}
+## 数据整理示例 {#sec:appendix-data subtitle="（资料性）" role=appendix}
 
 ### 采样结果的整理 {#sec:sample-processing}
 
@@ -560,3 +560,5 @@ test report | @sec:appendix-report，@sec:report-fields
 [^@sensor-location]: 传感器安装位置应在试验记录中说明，回行文字与本条脚注的内容起点对齐。
 [^@temperature-range]: 温度是检测时的设定值，应记录稳定后的实测值及其测量不确定度。
 [^@record-time]: 响应时间从有效指令输入时刻起算，同一续表沿用相同定义。
+
+[^@invalid-sample]: 标识应包含无效原因、判定时间和处理人员。

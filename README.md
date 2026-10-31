@@ -85,3 +85,4 @@ md2pdf webapp
 - [国家标准模板说明](docs/gb-template.md)
 - [模板与示例库](examples/README.md)
 - [开发与发布说明](docs/development.md)
+- [排版设计原则](docs/design-principles.md)

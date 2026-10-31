@@ -155,7 +155,7 @@ const ppDir = path.join(os.tmpdir(), 'md2pdf-ci-paper');
 fs.mkdirSync(ppDir, { recursive: true });
 fs.writeFileSync(path.join(ppDir, 'paper.md'), [
   '---', 'title: 抓取控制研究', 'author: 张三，李四', 'affiliation: 清华大学',
-  '---', '', '## 摘要 {role=abstract}', '', '本文提出一种方法。', '', '## 关键词 {role=keywords}', '', '- 深度学习', '- 抓取控制', '',
+  '---', '', '## 摘要 {role=abstract}', '', '本文提出一种方法。', '', '## 关键词 {role=keywords}', '', '深度学习；抓取控制', '',
   '## 引言', '', '正文。', ''
 ].join('\n'));
 const rPaper = run([path.join(ppDir, 'paper.md'), '--html-only', '-o', path.join(ppDir, 'out.html')]);
@@ -173,7 +173,7 @@ fs.writeFileSync(path.join(gbDir, 'gb.md'), [
   '标准状态: 现行', '中国标准分类号: J 28', '全部代替标准: GB/T 99999-2015', '归口单位: 全国×××标准化技术委员会', '采标国际标准: ISO 99999:2025', '采标英文名称: Test adopted standard', '---', '',
   '## 目次 {role=toc}', '', '## 前言 {role=preface}', '', '前言内容。', '',
   '## 范围', '', '本文件规定了……', '',
-  '## 测试方法 {role=appendix nature=normative}', '', '### 测试条件', '', '环境温度 25 ℃。', '',
+  '## 测试方法 {role=appendix subtitle="（规范性）"}', '', '### 测试条件', '', '环境温度 25 ℃。', '',
   '## 参考文献 {role=bibliography}', '', '结束。', ''
 ].join('\n'));
 const rGb = run([path.join(gbDir, 'gb.md'), '--html-only', '-o', path.join(gbDir, 'out.html')]);

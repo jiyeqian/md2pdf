@@ -58,6 +58,7 @@ try{
    extras.tocMargins=[...scope.querySelectorAll('.toc li')].map(e=>({top:parseFloat(getComputedStyle(e).marginTop),bottom:parseFloat(getComputedStyle(e).marginBottom)}));
    extras.tocGroups=[...scope.querySelectorAll('.toc>ol')].map(ol=>{const page=ol.closest('.pagedjs_page');const rows=[...ol.querySelectorAll('.toc-text')];return {page:pages.indexOf(page)+1,kind:rows[0]?.textContent.startsWith('图')?'figure':rows[0]?.textContent.startsWith('表')?'table':'body',rows:rows.map(e=>({text:e.textContent,box:box(e,page)}))};});
    extras.floatTables=[...scope.querySelectorAll('table')].map(t=>({title:t.caption?.textContent||'',notes:t.querySelectorAll('.gb-table-notes').length,feet:[...t.querySelectorAll('.gb-table-footnote')].map(e=>({label:e.querySelector('.gb-label')?.textContent,text:e.textContent})),calls:[...t.querySelectorAll('.gb-float-footnote-call')].map(e=>e.textContent)}));
+   extras.figureFootnotes=[...scope.querySelectorAll('figure.fig')].map(f=>({caption:f.querySelector('figcaption')?.textContent,labels:[...f.querySelectorAll('.gb-figure-footnote .gb-label')].map(e=>e.textContent),bodyNotes:f.querySelectorAll('.gb-footnote').length,order:[...f.querySelectorAll('.gb-figure-note,.gb-figure-footnote,figcaption')].map(e=>e.className||e.tagName)}));
    extras.manualLabels=[...scope.querySelectorAll('.gb-figure-note .gb-label .md-superscript')].map(e=>e.textContent);
    extras.scripts={sup:scope.querySelectorAll('.md-superscript').length,sub:scope.querySelectorAll('.md-subscript').length};
    extras.footnotes=[...scope.querySelectorAll('.pagedjs_footnote_area .gb-footnote')].map(e=>({number:parseInt(e.querySelector('.gb-footnote-label').textContent,10),page:pages.indexOf(e.closest('.pagedjs_page'))}));
@@ -92,6 +93,9 @@ try{
   assert.ok(recordNotes.length>1&&recordNotes.every(t=>t.calls.includes('a')),'continued headers retain their original footnote a');
   assert.equal(recordNotes.flatMap(t=>t.feet).length,1,'continued table footnote text appears once');
   assert.equal(recordNotes.at(-1).feet.length,1,'continued table footnote stays on the final fragment');
+  const autoFigure=state.extras.figureFootnotes.find(f=>f.caption?.includes('试验数据处理关系'));
+  assert.deepEqual(autoFigure.labels,['a'],'second figure owns its automatic a footnote');assert.equal(autoFigure.bodyNotes,0,'figure note is not a page footnote');
+  assert.ok(autoFigure.order.lastIndexOf('gb-figure-note')<autoFigure.order.indexOf('gb-figure-footnote')&&autoFigure.order.indexOf('gb-figure-footnote')<autoFigure.order.indexOf('FIGCAPTION'),'automatic figure footnote follows ordinary notes and precedes caption');
   assert.ok(state.extras.manualLabels.includes('a')&&state.extras.scripts.sup>0&&state.extras.scripts.sub>=2,'manual image label and inline scripts');
   assert.ok(state.extras.depth4&&state.extras.depth3Term,'four-level clauses and three-level terms');
   const footnotes=state.extras.footnotes;
