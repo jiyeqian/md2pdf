@@ -88,10 +88,10 @@ GB/T 1.1 表内说明应显式用 `scope=table layout=boxed`，所有底部框�
 
 `position=top` 的表说明放在表题文字之后、表格之前，并随续表重复；图说明放在图像之前。底部图说明放在图题之前。同一位置按书写顺序排列。`align` 默认 left，`weight` 默认 bold；单位仍可用顶部右对齐说明表达。
 
-标签支持 `^a^` 上标、`l~1~` 下标，其他文本安全转义，不接受任意 HTML 或链接。图片内部已有固定字母时，按图片顺序在普通图注后写：
+标签支持 `^{a}` 上标、`l_{1}` 下标，其他文本安全转义，不接受任意 HTML 或链接。图片内部已有固定字母时，按图片顺序在普通图注后写：
 
 ```markdown
-:::gb-note scope=figure label="^a^" weight=normal
+:::gb-note scope=figure label="^{a}" weight=normal
 断裂槽应滚压成型。
 :::
 ```

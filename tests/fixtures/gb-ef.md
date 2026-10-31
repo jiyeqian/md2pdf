@@ -78,7 +78,7 @@ flowchart LR
 FIGURENOTEMARK 图中附加说明。
 :::
 
-:::gb-note scope=figure label="^a^" weight=normal
+:::gb-note scope=figure label="^{a}" weight=normal
 FIGUREFOOTMARK 图脚注内容。
 :::
 

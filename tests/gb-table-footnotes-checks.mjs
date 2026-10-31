@@ -35,7 +35,7 @@ test('plain table notes preserve data structure, boxed notes explicitly add a fo
  for(const args of ['layout=bad','layout=boxed','scope=figure layout=boxed','scope=table position=top layout=boxed'])await assert.rejects(render(':::gb-note '+args+'\n说明\n:::',options),e=>e.status===400);
 });
 test('manual image markers render upper-case/lower-case script labels literally, no numbering inference',async()=>{
- const md='图：状态 {#fig:state}\n\n![状态](data:image/png;base64,AAAA)\n\n:::gb-note scope=figure label="注："\n普通图注\n:::\n\n:::gb-note scope=figure label="^b^" weight=normal\n固定标记说明\n:::';
+ const md='图：状态 {#fig:state}\n\n![状态](data:image/png;base64,AAAA)\n\n:::gb-note scope=figure label="注："\n普通图注\n:::\n\n:::gb-note scope=figure label="^{b}" weight=normal\n固定标记说明\n:::';
  const {html}=await render(md,options);assert.match(html,/<span class="gb-label"><sup class="md-superscript">b<\/sup><\/span>/);
  assert.ok(html.indexOf('普通图注')<html.indexOf('固定标记说明'));assert.doesNotMatch(html,/gb-figure-footnote-\d/);
 });
@@ -45,7 +45,7 @@ test('complex table spans and Markdown footnotes coexist',async()=>{
  assert.match(html,/rowspan="2"/);assert.match(html,/colspan="2"/);
 });
 test('boxed and superscript labels complete without adding a directive or refs parameter',()=>{
- for(const [text,label] of [[':::gb-note scope=table layout=','layout=boxed'],[':::gb-note scope=figure label','label="^a^"']]) {
+ for(const [text,label] of [[':::gb-note scope=table layout=','layout=boxed'],[':::gb-note scope=figure label','label="^{a}"']]) {
   const r=provideCompletions({text,pos:text.length,templateType:'gb'},analyzeMarkdown(text));assert.ok(r.options.some(o=>o.label===label));
  }
  const text='[^@a]: 表脚注\n\n| 项目[^@';const r=provideCompletions({text,pos:text.length,templateType:'gb'},analyzeMarkdown(text));assert.equal(r.options[0].apply,'@a]');

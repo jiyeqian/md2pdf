@@ -17,7 +17,7 @@ export const GB_NOTE_FORMS = [
   { argument: 'scope=table layout=boxed label="注："', description: '表注（放在表后）' },
   { argument: 'scope=figure label="注："', description: '图注（放在图后）' },
   { argument: 'scope=table layout=plain label="注："', description: '表下方独立说明（框外）' },
-  { argument: 'scope=figure label="^a^" weight=normal', description: '图片固定标记脚注（上标标签）' },
+  { argument: 'scope=figure label="^{a}" weight=normal', description: '图片固定标记脚注（上标标签）' },
   { argument: 'scope=table position=top align=right', description: '表上方右对齐说明（写在表后）', body: '单位为毫米' },
   { argument: 'scope=figure position=top align=right', description: '图上方右对齐说明（写在图后）', body: '单位为毫米' },
   { argument: 'weight=normal', description: '来源文字（原样显示）', body: '[来源：GB/T 20000.1—2014，5.3]' },
