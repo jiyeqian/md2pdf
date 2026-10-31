@@ -37,6 +37,10 @@
 
   tag_push:
     - name: 同步版本标签到 GitHub
+      lock:
+        key: github-md2pdf-sync
+        wait: true
+        timeout: 600
       stages:
         - name: 推送本次版本标签
           image: tencentcom/git-sync
@@ -69,6 +73,10 @@
 main:
   push:
     - name: 同步到 GitHub
+      lock:
+        key: github-md2pdf-sync
+        wait: true
+        timeout: 600
       stages:
         - name: 推送 main
           image: tencentcom/git-sync
