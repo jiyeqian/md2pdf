@@ -106,6 +106,8 @@
   var ICONS = {
     pageBreak: [{ d: 'M4 2h12v5H4zM4 13h12v5H4zM2 10h3m3 0h2m3 0h2m3 0h1' }],
     taskList: [{ d: 'M8 5h10M8 11h10M8 17h10M2 5l1.5 1.5L6 3M2 11h3v3H2zM2 17h3v3H2z' }],
+    headingUp: [{ d: 'M2 4v12M9 4v12M2 10h7M13 8l3-4 3 4M16 4v12' }],
+    headingDown: [{ d: 'M2 4v12M9 4v12M2 10h7M13 12l3 4 3-4M16 4v12' }],
     indentMore: [{ d: 'M8 4h9M8 10h9M8 16h9M2 7l3 3-3 3' }],
     indentLess: [{ d: 'M8 4h9M8 10h9M8 16h9M5 7l-3 3 3 3' }],
     open: [{ d: 'M3 6h5l2 2h7v7H3z' }, { d: 'M3 6V4h5l2 2h5v2' }],
@@ -280,7 +282,9 @@
     ] },
     { label: '缩进', items: [
       { icon: 'indentLess', label: '左缩进', command: 'indentLess' },
-      { icon: 'indentMore', label: '右缩进', command: 'indentMore' }
+      { icon: 'indentMore', label: '右缩进', command: 'indentMore' },
+      { icon: 'headingUp', label: '标题升级', insert: 'heading-up' },
+      { icon: 'headingDown', label: '标题降级', insert: 'heading-down' }
     ] },
     { label: '行内元素', items: [
       { icon: 'link', label: '链接', action: 'link', insert: 'link' },

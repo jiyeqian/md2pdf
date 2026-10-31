@@ -76,7 +76,7 @@ try {
   assert.equal(await evaluate('mdEditor.getValue()'),'- [ ] One\n- [ ] Two');
   await evaluate(`mdEditor.setValue(''); document.querySelector('#md-wt-basic-format').click(); document.querySelector('#md-wt-basic-menu [aria-label="任务列表"]').click()`);
   assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#md-wt-basic-menu .md-wt-menu-row[aria-label=列表] button'),e=>e.getAttribute('aria-label'))`),['无序列表','有序列表','任务列表','插入分页符']);
-  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#md-wt-basic-menu .md-wt-menu-row[aria-label=缩进] button'),e=>e.getAttribute('aria-label'))`),['左缩进','右缩进']);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#md-wt-basic-menu .md-wt-menu-row[aria-label=缩进] button'),e=>e.getAttribute('aria-label'))`),['左缩进','右缩进','标题升级','标题降级']);
   assert.equal(await evaluate('mdEditor.getValue()'),'- [ ] ');
   assert.deepEqual(await evaluate('mdEditor.getSelection()'),{from:6,to:6,text:''});
   await evaluate(`mdEditor.setValue('abcdef');mdEditor.setSelection(1,3);document.querySelector('#md-wt-basic-format').click();document.querySelector('#md-wt-basic-menu [aria-label="插入分页符"]').click()`);
@@ -85,6 +85,15 @@ try {
   assert.equal(await evaluate(`document.querySelector('#md-wt-basic-menu').hidden`),true);
   await evaluate(`mdEditor.runCommand('undo')`);
   assert.equal(await evaluate('mdEditor.getValue()'),'abcdef','pagebreak insertion is one undo step');
+  const headingSource='# First\nbody\n## Second {#id}\n###### Limit\n```md\n## Code\n```';
+  await evaluate(`mdEditor.setValue(${JSON.stringify(headingSource)});mdEditor.setSelection(0,mdEditor.getValue().length);document.querySelector('#md-wt-basic-format').click();document.querySelector('#md-wt-basic-menu [aria-label="标题降级"]').click()`);
+  const headingExpected='## First\nbody\n### Second {#id}\n###### Limit\n```md\n## Code\n```';
+  assert.equal(await evaluate('mdEditor.getValue()'),headingExpected);
+  assert.deepEqual(await evaluate('mdEditor.getSelection()'),{from:0,to:headingExpected.length,text:headingExpected});
+  await evaluate(`mdEditor.runCommand('undo')`);
+  assert.equal(await evaluate('mdEditor.getValue()'),headingSource,'batch heading shift undoes in one step');
+  await evaluate(`mdEditor.setSelection(0,mdEditor.getValue().length);document.querySelector('#md-wt-basic-format').click();document.querySelector('#md-wt-basic-menu [aria-label="标题升级"]').click()`);
+  assert.equal(await evaluate('mdEditor.getValue()'),'# First\nbody\n# Second {#id}\n##### Limit\n```md\n## Code\n```');
   await evaluate(`document.querySelector('.md-wt-toolbar [aria-label="查找与替换"]').click()`);
   await wait('document.querySelector(".cm-search input[type=checkbox]")');
   const feedback = await evaluate(`Array.from(document.querySelectorAll('.cm-search input,.cm-search button,.topbar-actions a, .md-wt-toolbar button, .preview-toolbar summary')).filter(e=>!e.disabled).map(e=>{e.focus();const style=getComputedStyle(e);return {label:e.getAttribute('aria-label')||e.name||e.textContent,outline:style.outlineStyle,shadow:style.boxShadow}})`);

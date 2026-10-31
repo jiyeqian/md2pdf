@@ -799,3 +799,34 @@ test('fonts and common content completion use the requested editable defaults',a
   const root=complete(':::',templateType).options.find(o=>o.label===name);assert.equal(root.apply,o.apply);
  }
 });
+
+test('heading level shifts affect selected real headings, preserve selection and clamp at Markdown limits', () => {
+  const source=fs.readFileSync(new URL('../web/editor-pro.js',import.meta.url),'utf8');
+  const start=source.indexOf('function shiftHeadingLevels(');
+  const fn=source.slice(start,source.indexOf('\nfunction ',start+1));
+  function harness(input,from=0,to=input.length){
+    let value=input,edits=0;
+    const sandbox={selection:{from,to},analyzeAndCache:analyzeMarkdown,
+      coreHelpers:()=>({offsetToLine:(text,pos)=>text.slice(0,pos).split('\n').length,lineToOffset:(text,line)=>text.split('\n').slice(0,line-1).reduce((n,s)=>n+s.length+1,0)}),
+      getApi:()=>({getValue:()=>value,replaceRanges(changes){for(const change of changes.slice().reverse())value=value.slice(0,change.from)+change.insert+value.slice(change.to);edits++;}}),
+      selectRange(from,to){sandbox.selection={from,to};},
+    };
+    const context=vm.createContext(sandbox);vm.runInContext(fn,context);
+    return {shift(delta){sandbox.delta=delta;vm.runInContext('shiftHeadingLevels(selection,delta)',context);},get value(){return value;},get selection(){return sandbox.selection;},get edits(){return edits;}};
+  }
+  const input='---\ntitle: "# metadata"\ndescription: |\n  ## YAML\n---\n# First\nplain text\n  ## Emoji 😀 {#id}\n```md\n## code\n```\n~~~\n### code\n~~~\n    # indented code\n\\# escaped\n###### Last\n### Closed ###';
+  const env=harness(input);env.shift(1);
+  const expected=input.replace('# First','## First').replace('  ## Emoji','  ### Emoji').replace('### Closed ###','#### Closed ###');
+  assert.equal(env.value,expected);assert.deepEqual(env.selection,{from:0,to:expected.length});assert.equal(env.edits,1);
+  const levels=harness('# A\n## B\n### C\n#### D\n##### E\n###### F');
+  for(let i=0;i<8;i++)levels.shift(1);
+  assert.deepEqual(analyzeMarkdown(levels.value).headings.map(h=>h.level),[6,6,6,6,6,6]);
+  for(let i=0;i<8;i++)levels.shift(-1);
+  assert.deepEqual(analyzeMarkdown(levels.value).headings.map(h=>h.level),[1,1,1,1,1,1]);
+  const boundary=harness('# A');boundary.shift(-1);assert.equal(boundary.value,'# A');assert.equal(boundary.edits,0);
+  const endAtNextLine=harness('# A\n## B\n### C',0,4);endAtNextLine.shift(1);
+  assert.equal(endAtNextLine.value,'## A\n## B\n### C');assert.deepEqual(endAtNextLine.selection,{from:0,to:5});
+  const cursor=harness('# A\n## B',6,6);cursor.shift(-1);
+  assert.equal(cursor.value,'# A\n# B');assert.deepEqual(cursor.selection,{from:5,to:5});
+  const plain=harness('ordinary text');plain.shift(1);assert.equal(plain.edits,0);
+});

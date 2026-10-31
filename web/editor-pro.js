@@ -314,6 +314,40 @@ function insertSkill(sel) {
   else selectRange(sel.from, sel.from);
 }
 
+function shiftHeadingLevels(sel, delta) {
+  const editor = getApi();
+  const H = coreHelpers();
+  if (!H) return;
+  const value = editor.getValue();
+  const analysis = analyzeAndCache(value);
+  if (!analysis) return;
+  const startLine = H.offsetToLine(value, sel.from);
+  let endLine = H.offsetToLine(value, sel.to);
+  if (sel.to > sel.from && sel.to === H.lineToOffset(value, endLine)) endLine--;
+  const changes = [];
+  for (const heading of analysis.headings) {
+    if (heading.line < startLine || heading.line > endLine) continue;
+    const level = Math.max(1, Math.min(6, heading.level + delta));
+    if (level === heading.level) continue;
+    const indent = /^ {0,3}/.exec(value.slice(heading.offset))[0].length;
+    const from = heading.offset + indent;
+    changes.push({ from, to: from + heading.level, insert: '#'.repeat(level) });
+  }
+  if (!changes.length) return;
+  const mapPosition = position => {
+    let offset = 0;
+    for (const change of changes) {
+      if (position <= change.from) break;
+      if (position < change.to) return change.from + offset + Math.min(position - change.from, change.insert.length);
+      offset += change.insert.length - (change.to - change.from);
+    }
+    return position + offset;
+  };
+  // One transaction preserves undo and adjusts only heading prefixes.
+  editor.replaceRanges(changes);
+  selectRange(mapPosition(sel.from), mapPosition(sel.to));
+}
+
 function insertPagebreak(sel) {
   const editor = getApi();
   const text = editor.getValue();
@@ -348,6 +382,8 @@ function insert(name) {
       case 'ol': transformLines(sel, 'ol'); break;
       case 'task-list': transformLines(sel, 'task-list'); break;
       case 'pagebreak': insertPagebreak(sel); break;
+      case 'heading-up': shiftHeadingLevels(sel, -1); break;
+      case 'heading-down': shiftHeadingLevels(sel, 1); break;
       case 'ref': insertReference('ref'); break;
       case 'eqref': insertReference('eqref'); break;
       case 'noteref': insertReference('noteref'); break;
