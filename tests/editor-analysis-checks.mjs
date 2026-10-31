@@ -781,3 +781,21 @@ test('新索引补全优先提供中英分区并保留旧分组入口',()=>{
   assert.match(result.options[1].apply,/^gb-index-section lang=en\n/);
   assert.ok(result.options[0].apply.endsWith(':::\n:::'));
 });
+
+test('fonts and common content completion use the requested editable defaults',async()=>{
+ const complete=(text,templateType='general',pos=text.length)=>provideCompletions({text,pos,templateType},analyzeMarkdown(text));
+ const text='---\nfon\n---';
+ const option=complete(text,'general',text.indexOf('fon')+3).options.find(o=>o.label==='fonts');
+ assert.equal(option.apply,'fonts:\n  heading: "PostScript Name or Full Name"\n  body: ""\n  western: ""\n  code: ""');
+ const {parseFrontmatter}=await import('../src/config.mjs');assert.doesNotThrow(()=>parseFrontmatter('---\n'+option.apply+'\n---'));
+ const existing='---\nfon\n  body: Arial\n---';
+ assert.equal(complete(existing,'general',existing.indexOf('fon')+3).options.find(o=>o.label==='fonts').apply,'fonts:');
+ const {prepareDocumentContent}=await import('../src/document-content.mjs');
+ const defaults={kicker:'技术报告',colophon:'left: "编制：方鸿渐"\ncenter: "审核：褚慎明、韩学愈、李广智"\nright: "校对：范进、孔乙己、李梅亭"'};
+ for(const templateType of ['general','paper','skill','gb'])for(const [name,body]of Object.entries(defaults)) {
+  const prefix=':::'+name.slice(0,2),o=complete(prefix,templateType).options.find(o=>o.label===name);
+  assert.equal(o.apply,name+'\n'+body+'\n:::');
+  assert.doesNotThrow(()=>prepareDocumentContent(':::'+o.apply));
+  const root=complete(':::',templateType).options.find(o=>o.label===name);assert.equal(root.apply,o.apply);
+ }
+});

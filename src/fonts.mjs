@@ -9,7 +9,7 @@ export function normalizeFonts(value) {
   for (const key of Object.keys(value)) if (!FONT_ROLES.includes(key)) throw new Error('fonts 的未知字段：' + key + '（可用：' + FONT_ROLES.join('、') + '）');
   const out = {};
   for (const role of FONT_ROLES) if (Object.hasOwn(value,role)) {
-    if (!isFontFamilyName(value[role])) throw new Error('fonts.' + role + ' 必须是单个非空的已安装字体名称（不接受列表、通用字体类别、路径或 CSS）');
+    if (value[role] !== '' && !isFontFamilyName(value[role])) throw new Error('fonts.' + role + ' 必须是空字符串或单个已安装字体名称（不接受列表、通用字体类别、路径或 CSS）');
     out[role] = value[role];
   }
   return out;
@@ -20,6 +20,7 @@ export function documentFonts(value, gb = false) {
   const checks = [], faces = [];
   const alias = role => '"MD2PDF User ' + role + '"';
   for (const [role, family] of Object.entries(fonts)) {
+    if (family === '') continue; // Explicitly reset this role to the template/system fallback stack.
     const range = role === 'western' ? ' unicode-range: U+0030-0039, U+0041-005A, U+0061-007A, U+00C0-024F, U+1E00-1EFF;' : '';
     // local() matches full/PostScript names; common regular-face names also
     // allow family names such as Menlo without enumerating installed fonts.

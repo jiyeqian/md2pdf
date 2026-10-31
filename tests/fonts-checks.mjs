@@ -9,7 +9,7 @@ import {requireGbFonts,gbFontDiagnostic} from '../src/gb-fonts.mjs';
 
 test('fonts is a bounded mapping of four single safe family names',()=>{
  assert.deepEqual(normalizeFonts({body:'Noto Serif CJK SC',western:'Times New Roman',code:'Menlo',heading:'方正黑体_GBK'}),{body:'Noto Serif CJK SC',heading:'方正黑体_GBK',western:'Times New Roman',code:'Menlo'});
- for(const value of [null,[],['Arial'],'Arial',new Date(),{url:'Arial'},{body:[]},{body:''},{body:'Arial, serif'},{body:'serif'},{body:'../font.ttf'},{body:'https://font.test/a'},{body:'x"; color:red'},{body:'</style><script>'},{body:'a\nb'},{body:'x'.repeat(101)}]) assert.throws(()=>normalizeFonts(value));
+ for(const value of [null,[],['Arial'],'Arial',new Date(),{url:'Arial'},{body:[]},{body:' '},{body:'Arial, serif'},{body:'serif'},{body:'../font.ttf'},{body:'https://font.test/a'},{body:'x"; color:red'},{body:'</style><script>'},{body:'a\nb'},{body:'x'.repeat(101)}]) assert.throws(()=>normalizeFonts(value));
  assert.deepEqual(normalizeFonts({}),{});
 });
 
@@ -61,4 +61,19 @@ test('custom missing font diagnostics reuse safe confirmation flow without expos
  await assert.rejects(check([['12pt "MD2PDF User body"',null,'Absent User Font','custom']]),/Absent User Font/);
  assert.deepEqual(gbFontDiagnostic(window.__md2pdfFontError),{code:'FONT_MISSING',fonts:['Absent User Font']});
  assert.equal(gbFontDiagnostic({code:'FONT_MISSING',fonts:['/private/font.ttf']}),null);
+});
+
+test('empty font roles reset inherited names and create no local font checks',async()=>{
+ const empty={body:'',heading:'',western:'',code:''};
+ assert.deepEqual(normalizeFonts(empty),empty);assert.deepEqual(documentFonts(empty),{css:'',checks:[]});
+ const parsed=parseFrontmatter('---\nfonts:\n  heading: ""\n  body: ""\n  western: ""\n  code: ""\n---\n# 文档');
+ assert.deepEqual(parsed.config.fonts,empty);assert.deepEqual(parsed.warnings||[],[]);
+ assert.equal(resolveDocumentOptions({},parsed.fm,{name:'general',defaults:{fonts:{body:'Arial'}}}).fonts.body,'');
+ assert.equal(parseArgs(['--font-body=']).fonts.body,'');
+ const mixed=documentFonts({heading:'Arial',body:'',western:'',code:''});
+ assert.equal(mixed.checks.length,1);assert.equal(mixed.checks[0][2],'Arial');assert.ok(!mixed.css.includes('local("")'));
+ for(const type of ['general','paper','skill','gb']){
+  const r=await render('---\nfonts: {heading: "", body: "", western: "", code: ""}\n---\n# 文档\n\n## 正文',{type});
+  assert.ok(!r.warnings.some(w=>w.includes('fonts')));assert.ok(!r.html.includes('MD2PDF User'));
+ }
 });

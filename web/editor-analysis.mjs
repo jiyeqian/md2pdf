@@ -1,4 +1,8 @@
 import {CONTENT_ROLES} from '../src/document-content.mjs';
+const CONTENT_COMPLETION_BODIES = {
+  kicker: '技术报告',
+  colophon: 'left: "编制：方鸿渐"\ncenter: "审核：褚慎明、韩学愈、李广智"\nright: "校对：范进、孔乙己、李梅亭"',
+};
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { gbHeading, gbSectionDiagnostics, GB_SECTION_ROLES } from '../src/gb-sections.mjs';
 import { GB_BLOCKS, GB_NOTE_FORMS } from '../src/gb-blocks.mjs';
@@ -748,7 +752,7 @@ export function provideCompletions(context, analysis) {
     const typed=commonBlock[1]||'',suffix=/^[a-z]*/.exec(text.slice(pos))[0];
     const existing=existingGbBlock(text.slice(pos+suffix.length));
     return {from:pos-typed.length,to:pos+suffix.length,options:['kicker','colophon'].filter(n=>n.startsWith(typed)).map(n=>{
-      const body=n==='kicker'?'技术研究报告':'编制：张三';
+      const body=CONTENT_COMPLETION_BODIES[n];
       return {label:n,detail:n==='kicker'?'报头短文字':'文末落款',apply:existing?.hasContent?n:n+'\n'+body+(existing?'':'\n:::'),selectionOffset:n.length+1};
     })};
   }
@@ -765,7 +769,7 @@ export function provideCompletions(context, analysis) {
         return { label: block.completionLabel || 'gb-' + block.name, detail: block.description, type: 'text', apply, selectionOffset: existing?.hasContent ? opening.length : opening.length + 1 };
       });
       if(!typed) for(const name of ['kicker','colophon']) {
-        const body=name==='kicker'?'技术研究报告':'编制：张三';
+        const body=CONTENT_COMPLETION_BODIES[name];
         options.push({label:name,detail:name==='kicker'?'报头短文字':'文末落款',apply:existing?.hasContent?name:name+'\n'+body+(existing?'':'\n:::'),selectionOffset:name.length+1});
       }
       return { from: pos - typed.length, to: pos + suffix.length, options };
@@ -883,6 +887,12 @@ function frontmatterCompletions(text, pos, catalog = {}) {
   const fields = FRONTMATTER_FIELDS.filter(field => field.toLowerCase().includes(typed));
   fields.sort((a, b) => score(a) - score(b));
   return { from: lineStart, to: pos + suffix.length, options: fields.map(field => {
+    if(field==='fonts') {
+      const following=lines.slice(lineIndex+1,end).find(line=>line.trim()&&!line.trim().startsWith('#'));
+      if(/^\s+\S/.test(following||''))return {label:field,type:'property',apply:'fonts:',selectionOffset:6};
+      const apply='fonts:\n  heading: "PostScript Name or Full Name"\n  body: ""\n  western: ""\n  code: ""';
+      return {label:field,type:'property',apply,selectionOffset:apply.indexOf('PostScript Name or Full Name')+'PostScript Name or Full Name'.length};
+    }
     const quoted = TEXT_FIELDS.includes(canonicalFrontmatterField(field)) || TEXT_METADATA_FIELDS.has(field);
     const apply = field + ': ' + (ARRAY_FIELDS.has(field) ? '\n  - ' : quoted ? '""' : '');
     return { label: field, type: 'property', apply, selectionOffset: apply.length - (quoted ? 1 : 0), startCompletion: valuesFor(field).length > 0 || field === 'enable' || field === 'disable' };

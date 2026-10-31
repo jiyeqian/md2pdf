@@ -105,6 +105,20 @@ try {
     execFileSync(process.execPath,['src/md2pdf.mjs',input,'--type',type,'--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});
     sameHtml(await readFile(output,'utf8'),core.pagedHtml,type+': custom font CLI');
   }
+  for(const type of ['general','paper','gb','skill']) {
+    const md='---\nfonts: {heading: "", body: "", western: "", code: ""}\n---\n# 空字体一致性\n\n## 正文\n\n文字 ABC。',opts={type,pagedHtml:true};
+    const core=await render(md,opts,{webSafe:true}),local=await browserRender(md,opts,{webSafe:true});
+    sameHtml(local.pagedHtml,core.pagedHtml,type+': empty font core');
+    const body={md,opts:{type}},response=await nativeFetch(base+'/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    assert.equal(response.status,200);
+    const online=await response.json(),offline=await(await browser.appFetch('/api/preview',{body:JSON.stringify(body)})).json();
+    sameHtml(offline.html,online.html,type+': empty font preview');
+    assert.deepEqual(online.effective.fonts,{body:'',heading:'',western:'',code:''});
+    assert.ok(!core.html.includes('MD2PDF User'));
+    const input=path.join(tmp,'fonts-empty-'+type+'.md'),output=path.join(tmp,'fonts-empty-'+type+'.html');await writeFile(input,md);
+    execFileSync(process.execPath,['src/md2pdf.mjs',input,'--type',type,'--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});
+    sameHtml(await readFile(output,'utf8'),core.pagedHtml,type+': empty font CLI');
+  }
   console.log('✓ 四模板 fonts 映射、CLI HTML、Node 与静态预览及字体检查规则一致');
   {
     const md='---\n标准号: GB/T 39999—2026\n中文名称: 章节角色验收\ntoc: 2\n---\n## 目录 {role=toc}\n\n## 前言 {role=preface}\n\n## 范围\n\n引用[^r]，见 \\ref{sec:appendix}。\n\n## 方法 {nature=normative #sec:appendix role=appendix}\n\n### 子条\n\n## 参考文献 {role=bibliography}\n\n[^r]: 参考条目\n';

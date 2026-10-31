@@ -67,7 +67,7 @@ test('common role and content block completion is shared, without retired frontm
   assert.ok(!analyzeMarkdown(summary,{templateType}).diagnostics.some(d=>d.code==='gb-section-invalid'));
   assert.ok(provideCompletions({text,pos:text.length,templateType},analyzeMarkdown(text)).options.some(o=>o.label==='role=bibliography'));
   const block=':::col';const result=provideCompletions({text:block,pos:block.length,templateType},analyzeMarkdown(block));
-  assert.ok(result.options.some(o=>o.label==='colophon'&&o.apply==='colophon\n编制：张三\n:::'));
+  assert.ok(result.options.some(o=>o.label==='colophon'&&o.apply==='colophon\nleft: "编制：方鸿渐"\ncenter: "审核：褚慎明、韩学愈、李广智"\nright: "校对：范进、孔乙己、李梅亭"\n:::'));
  }
 });
 
