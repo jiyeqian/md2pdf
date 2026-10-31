@@ -396,5 +396,5 @@ main h2.toc-title { margin: 0 0 12mm; text-align: center; font: 16pt/1 var(--fon
 .gb-table-group { margin: 0; }
 /* Keep a table title and unit with its header instead of a title-only fragment. */
 table caption { break-after: avoid; break-inside: avoid; }
-.gb-table-group > .gb-table-note[data-gb-note-layout="plain"] { border: 0; padding: 0; }
+.gb-table-group > .gb-table-note[data-gb-note-position="bottom"] { border: 0; padding: 0; }
 .gb-label:has(.md-superscript, .md-subscript) { min-width: 1em; }

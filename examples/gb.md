@@ -254,7 +254,7 @@ $s_F$ | 接触力归一化基准量。
 单位为毫米
 :::
 
-:::gb-note scope=table layout=boxed label="注："
+:::gb-note scope=table position=bottom-boxed label="注："
 空白测点不构成有效的标定数据；一字线表示该测点没有对应记录。
 :::
 
@@ -279,11 +279,11 @@ body:
 | {colspan=2} 通信接口 | 25 ± 2 | | 记录序列号连续 |
 :::
 
-:::gb-note scope=table layout=boxed label="注1："
+:::gb-note scope=table position=bottom-boxed label="注1："
 高低温条件仅用于区分不同检测状态，实际产品的环境适用范围应以产品文件为准。
 :::
 
-:::gb-note scope=table layout=boxed label="注2："
+:::gb-note scope=table position=bottom-boxed label="注2："
 同一检测对象的合并单元格表示这些项目采用相同的安装配置。
 :::
 
@@ -408,7 +408,7 @@ flowchart LR
 单位为毫秒
 :::
 
-:::gb-note scope=table layout=boxed label="注："
+:::gb-note scope=table position=bottom-boxed label="注："
 记录中的数值为排版演示数据，不能据此评价实际系统性能。
 :::
 

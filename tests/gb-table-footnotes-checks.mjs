@@ -4,7 +4,7 @@ import {render} from '../src/render.mjs';
 import {provideCompletions,analyzeMarkdown} from '../web/editor-analysis.mjs';
 const options={type:'gb',toc:false};
 const table=(id,ref,body='1')=>`表：${id} {#tab:${id}}\n\n| 内径${ref} | 外径 |\n|---|---|\n| ${body} | 2 |`;
-const box=(label='注1：')=>`:::gb-note scope=table layout=boxed label="${label}"\n检测条件说明。\n:::`;
+const box=(label='注1：')=>`:::gb-note scope=table position=bottom-boxed label="${label}"\n检测条件说明。\n:::`;
 const tables=html=>[...html.matchAll(/<table[^>]*>[\s\S]*?<\/table>/g)].map(m=>m[0]);
 test('table notes and footnotes are separate full-width rows, with stable links and repeats',async()=>{
  const md='# 标准\n\n## 范围\n\n'+table('one','[^@diameter]','1[^@value]，复引[^@diameter]')+'\n\n'+box()+'\n\n'+box('注2：')+'\n\n[^@diameter]: 内径测量。\n[^@value]: 数值测量。';
@@ -32,7 +32,7 @@ test('plain table notes preserve data structure, boxed notes explicitly add a fo
  assert.ok(!tables(html)[0].includes('tfoot'));assert.match(html,/<div class="gb-table-group">/);
  assert.ok(html.indexOf('</table>')<html.indexOf('独立说明'));
  const result=await render(table('one','')+'\n\n'+box(),options);assert.match(tables(result.html)[0],/<tfoot>/);
- for(const args of ['layout=bad','layout=boxed','scope=figure layout=boxed','scope=table position=top layout=boxed'])await assert.rejects(render(':::gb-note '+args+'\n说明\n:::',options),e=>e.status===400);
+ for(const args of ['layout=bad','scope=table layout=plain','scope=table layout=boxed','position=bottom-boxed','scope=figure position=bottom-boxed','scope=table position=top position=bottom-boxed'])await assert.rejects(render(':::gb-note '+args+'\n说明\n:::',options),e=>e.status===400);
 });
 test('manual image markers render upper-case/lower-case script labels literally, no numbering inference',async()=>{
  const md='图：状态 {#fig:state}\n\n![状态](data:image/png;base64,AAAA)\n\n:::gb-note scope=figure label="注："\n普通图注\n:::\n\n:::gb-note scope=figure label="^{b}" weight=normal\n固定标记说明\n:::';
@@ -45,7 +45,7 @@ test('complex table spans and Markdown footnotes coexist',async()=>{
  assert.match(html,/rowspan="2"/);assert.match(html,/colspan="2"/);
 });
 test('boxed and superscript labels complete without adding a directive or refs parameter',()=>{
- for(const [text,label] of [[':::gb-note scope=table layout=','layout=boxed'],[':::gb-note scope=figure label','label="^{a}"']]) {
+ for(const [text,label] of [[':::gb-note scope=table position=','position=bottom-boxed'],[':::gb-note scope=figure label','label="^{a}"']]) {
   const r=provideCompletions({text,pos:text.length,templateType:'gb'},analyzeMarkdown(text));assert.ok(r.options.some(o=>o.label===label));
  }
  const text='[^@a]: 表脚注\n\n| 项目[^@';const r=provideCompletions({text,pos:text.length,templateType:'gb'},analyzeMarkdown(text));assert.equal(r.options[0].apply,'@a]');
@@ -54,4 +54,14 @@ test('boxed and superscript labels complete without adding a directive or refs p
 test('automatic notes in explicitly owned plain explanations still belong to the table',async()=>{
  const {html}=await render(table('one','')+'\n\n:::gb-note scope=table\n补充[^@x]\n:::\n\n[^@x]: 说明中的表脚注',options);
  assert.match(tables(html)[0],/gb-table-footnote-1-a/);assert.doesNotMatch(html,/class="gb-footnote gb-footnote/);
+});
+
+test('position alone controls placement; parameters may be reordered and completion handles hyphens',async()=>{
+ const base=table('one','')+'\n\n';
+ const renderNote=async(args)=>(await render(base+':::gb-note '+args+' label="注："\n说明\n:::',options)).html;
+ assert.deepEqual(tables(await renderNote('scope=table')),tables(await renderNote('position=bottom scope=table')));
+ assert.deepEqual(tables(await renderNote('scope=table position=bottom-boxed')),tables(await renderNote('position=bottom-boxed scope=table')));
+ assert.doesNotMatch(await renderNote('scope=table position=bottom-boxed'),/data-gb-note-layout/);
+ const text=':::gb-note scope=table position=bottom-b';
+ const result=provideCompletions({text,pos:text.length,templateType:'gb'},analyzeMarkdown(text));assert.deepEqual(result.options.map(o=>o.label),['position=bottom-boxed']);
 });

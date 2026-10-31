@@ -71,7 +71,7 @@ test('图表注及图表脚注有独立角色，首段标签与正文可悬挂�
   }
 });
 test('多条表注和脚注归入前一张表的tfoot，不跨越正文或另一表',()=>{
-  const source='| 甲 | 乙 |\n|---|---|\n| 1 | 2 |\n\n:::gb-note scope=table layout=boxed label=\"注1：\"\n第一表注\n:::\n\n:::gb-note scope=table layout=boxed label=\"a）\" weight=normal\n第一表脚注\n:::\n\n正文阻隔。\n\n:::gb-note label=\"注：\"\n游离表注\n:::\n\n| 丙 |\n|---|\n| 3 |\n\n:::gb-note scope=table layout=boxed label=\"注：\"\n第二表注\n:::';
+  const source='| 甲 | 乙 |\n|---|---|\n| 1 | 2 |\n\n:::gb-note scope=table position=bottom-boxed label=\"注1：\"\n第一表注\n:::\n\n:::gb-note scope=table position=bottom-boxed label=\"a）\" weight=normal\n第一表脚注\n:::\n\n正文阻隔。\n\n:::gb-note label=\"注：\"\n游离表注\n:::\n\n| 丙 |\n|---|\n| 3 |\n\n:::gb-note scope=table position=bottom-boxed label=\"注：\"\n第二表注\n:::';
   const html=transformGbContent(parse(source),'');
   const tables=[...html.matchAll(/<table>[\s\S]*?<\/table>/g)].map(match=>match[0]);
   assert.equal(tables.length,2);
@@ -97,7 +97,7 @@ test('仅为空白的表格单元格添加一字线，保留显式内容及合�
 });
 test('纵向合并单元格参与表注跨列计算，保留既有表体',()=>{
   const table='<table><tbody><tr><td rowspan="2">甲</td><td>乙</td><td>丙</td></tr><tr><td colspan="2">丁</td></tr></tbody></table>';
-  const out=transformGbContent(table+parse(':::gb-note scope=table layout=boxed label=\"注：\"\n表注\n:::'),'');
+  const out=transformGbContent(table+parse(':::gb-note scope=table position=bottom-boxed label=\"注：\"\n表注\n:::'),'');
   assert.match(out,/<td rowspan="2">甲<\/td>/);
   assert.match(out,/<tfoot><tr class="gb-table-notes"><td colspan="3">/);
 });
@@ -118,7 +118,7 @@ test('图注及图脚注依原顺序移入图题之前，多图不互串',()=>{
   assert.ok(figures[1].includes('第二图注'));
 });
 test('已有tfoot保留，并在其中追加注释行',()=>{
-  const html='<table><tbody><tr><td>内容</td></tr></tbody><tfoot><tr><td>既有内容</td></tr></tfoot></table>'+parse(':::gb-note scope=table layout=boxed label=\"注：\"\n表注\n:::');
+  const html='<table><tbody><tr><td>内容</td></tr></tbody><tfoot><tr><td>既有内容</td></tr></tfoot></table>'+parse(':::gb-note scope=table position=bottom-boxed label=\"注：\"\n表注\n:::');
   const out=transformGbContent(html,'');
   assert.equal((out.match(/<tfoot>/g)||[]).length,1);
   assert.match(out,/<td>既有内容<\/td><\/tr><tr class="gb-table-notes">/);

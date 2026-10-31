@@ -1,5 +1,13 @@
 # CLI 与 WebApp 一致性及本次交接
 
+## 2026-10-31 gb-note 仅使用 position
+
+当前工作树 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`，分支 `codex/template`。删除 gb-note 的 layout 参数及相关内部属性，不保留兼容回退。position 取值为 top、bottom（默认）、bottom-boxed；后者仅用于 scope=table 的底部框内说明。旧 layout 参数报未知参数。完整范例、CLI副本、回归夹具、文档及补全已同步迁移；说明参数仍可任意换序。表注与自动表脚注继续分区，自动脚注不需要设置 position。
+
+150项针对性检查通过，包括默认 bottom、参数换序、bottom-boxed 的限制、旧 layout 拒绝、补全连字符以及既有脚注／标签／定位回归；`npm run check:consistency` 四模板及 CLI／Node／静态一致性通过，真实编辑器补全通过。GB Node 全面范例 PDF 验收通过，仍为20页；本轮未重跑GB CLI／静态完整 PDF，未验收手机、Safari或线上部署。
+
+验收文件 `output/pdf/gb-comprehensive-node.pdf`：物理第11页检查表注与表脚注两区，第13～14页检查续表与末段脚注。网页需从本工作树重启 `PORT=8766 npm start`，访问 `http://127.0.0.1:8766/` 后重新加载GB范例；在 `:::gb-note scope=table position=` 后选择 bottom-boxed。静态部署需重建并更新缓存。本次仅提交，不合并、不推送、不打标签。
+
 ## 2026-10-31 上下标统一为花括号语法
 
 当前工作树 `/Users/jiyeqian/.codex/worktrees/f96a/md2pdf`，分支 `codex/template`。四模板统一采用 `^{上标}`、`_{下标}`，允许内部空格；代码和数学公式保持独立。旧 `^上标^`、`~下标~` 不再转换，删除线仍用 `~~…~~`。GB 标签同样写 `label="^{a}" weight=normal`，相关范例、CLI副本、回归夹具、文档和参数补全均已迁移。字面开头可写 `\^{a}`、`\_{1}`；内部花括号用反斜杠转义，空内容、未闭合和跨行写法不转换。不改字号、基线、表注／脚注编号及位置。

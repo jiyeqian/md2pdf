@@ -143,17 +143,16 @@ function renderBlock({ role, label, text }, marked, depth) {
 }
 
 function renderNote(argumentsText, text, marked, depth) {
-  const args = parseGbParameters(argumentsText, ['scope','position','align','label','weight','layout']);
+  const args = parseGbParameters(argumentsText, ['scope','position','align','label','weight']);
   const fail = message => { const error = new Error('gb-note：' + message); error.status = 400; throw error; };
   if (args.scope !== undefined && !['table','figure'].includes(args.scope)) fail('scope 仅支持 table 或 figure');
-  if (args.position !== undefined && !['top','bottom'].includes(args.position)) fail('position 仅支持 top 或 bottom');
+  if (args.position !== undefined && !['top','bottom','bottom-boxed'].includes(args.position)) fail('position 仅支持 top、bottom 或 bottom-boxed');
   if (args.align !== undefined && !['left','center','right'].includes(args.align)) fail('align 仅支持 left、center 或 right');
   if (args.weight !== undefined && !['bold','normal'].includes(args.weight)) fail('weight 仅支持 bold 或 normal');
-  if (args.layout !== undefined && !['plain','boxed'].includes(args.layout)) fail('layout 仅支持 plain 或 boxed');
-  if (args.layout === 'boxed' && (args.scope !== 'table' || args.position === 'top')) fail('layout=boxed 仅用于表格底部说明');
-  const position = args.position || 'bottom', align = args.align || 'left', layout = args.layout || 'plain';
+  if (args.position === 'bottom-boxed' && args.scope !== 'table') fail('position=bottom-boxed 仅用于表格底部说明');
+  const position = args.position || 'bottom', align = args.align || 'left';
   const lead = args.label ? '<span class="gb-label">' + renderScriptLabel(args.label) + '</span>' : '';
-  const attributes = (args.scope ? ' data-gb-note-scope="' + args.scope + '"' : '') + ' data-gb-note-layout="' + layout + '" data-gb-note-position="' + position + '" data-gb-note-align="' + align + '"' + (lead && args.weight === 'normal' ? ' data-gb-note-weight="normal"' : '');
+  const attributes = (args.scope ? ' data-gb-note-scope="' + args.scope + '"' : '') + ' data-gb-note-position="' + position + '" data-gb-note-align="' + align + '"' + (lead && args.weight === 'normal' ? ' data-gb-note-weight="normal"' : '');
   const content = markdown(text, marked, depth);
   const role = args.scope ? args.scope + '-note' : 'note';
   const body = lead && content.startsWith('<p>') ? content.replace(/^<p>([\s\S]*?)<\/p>/, (_,first)=>'<p>'+lead+'<span class="gb-note-text">'+first+'</span></p>') : lead + content;
@@ -409,7 +408,7 @@ function attachFloatNotes(html) {
     if (!notes.length) continue;
     const top = [], bottom = [], plain = [];
     for (const note of notes) {
-      const target=/data-gb-note-position="top"/.test(note.token)?top:node.tag==='table'&&/data-gb-note-layout="plain"/.test(note.token)?plain:bottom;
+      const target=/data-gb-note-position="top"/.test(note.token)?top:node.tag==='table'&&/data-gb-note-position="bottom"/.test(note.token)?plain:bottom;
       target.push(html.slice(note.start,note.end));
     }
     const insertions = [];

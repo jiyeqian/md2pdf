@@ -788,11 +788,11 @@ export function provideCompletions(context, analysis) {
     }
     const noteParams=/^ {0,3}:::gb-note\s+(.*)$/.exec(line);
     if(noteParams) {
-      const last=/(?:^|\s)([a-z-]*(?:=[a-z]*)?)$/.exec(noteParams[1]);
+      const last=/(?:^|\s)([a-z-]*(?:=[a-z-]*)?)$/.exec(noteParams[1]);
       if(last) {
         const typed=last[1],used=[...noteParams[1].slice(0,-typed.length||undefined).matchAll(/(?:^|\s)([a-z-]+)=/g)].map(m=>m[1]);
-        const choices=['scope=table','scope=figure','position=top','position=bottom','align=left','align=center','align=right','layout=plain','layout=boxed','label="注："','label="^{a}"','weight=normal','weight=bold'];
-        const options=choices.filter(value=>value.startsWith(typed)&&!used.includes(value.split('=')[0])&&(value!=='layout=boxed'||(/\bscope=table\b/.test(noteParams[1])&&!/\bposition=top\b/.test(noteParams[1])))).map(value=>({label:value,apply:value,detail:value==='label="^{a}"'?'固定字母的上标标签':value==='layout=boxed'?'表格框内说明区':value==='layout=plain'?'普通独立说明':''}));
+        const choices=['scope=table','scope=figure','position=top','position=bottom','position=bottom-boxed','align=left','align=center','align=right','label="注："','label="^{a}"','weight=normal','weight=bold'];
+        const options=choices.filter(value=>value.startsWith(typed)&&!used.includes(value.split('=')[0])&&(value!=='position=bottom-boxed'||/\bscope=table\b/.test(noteParams[1]))).map(value=>({label:value,apply:value,detail:value==='label="^{a}"'?'固定字母的上标标签':value==='position=bottom-boxed'?'表格框内说明区':value==='position=bottom'?'普通独立说明':''}));
         if(options.length)return {from:pos-typed.length,to:pos+/^[a-z=-]*/.exec(text.slice(pos))[0].length,options};
       }
     }

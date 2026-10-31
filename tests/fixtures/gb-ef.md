@@ -187,7 +187,7 @@ FIGUREFOOTMARK 图脚注内容。
 | GBROW_099 | 第 99 项内容用于验证长表跨页和续表表头 | 合格 |
 | GBROW_100 | 第 100 项内容用于验证长表跨页和续表表头 | 合格 |
 
-:::gb-note scope=table layout=boxed label="注1："
+:::gb-note scope=table position=bottom-boxed label="注1："
 TABLE_NOTE_MARK 表内说明。
 :::
 

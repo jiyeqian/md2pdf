@@ -71,20 +71,20 @@ GB的草稿显示名、Markdown与PDF下载名优先取frontmatter的 `中文名
 单位为毫米
 :::
 
-:::gb-note scope=table layout=boxed label="注："
+:::gb-note scope=table position=bottom-boxed label="注："
 表的补充说明。
 :::
 
 [^@value]: 数值应在规定条件下测量。
 
-:::gb-note scope=table layout=boxed
+:::gb-note scope=table position=bottom-boxed
 [来源：GB/T XXXXX—2026，表2]
 :::
 ```
 
-所有指定 `scope` 的说明都紧跟对应对象，可连续写多条；不跨正文寻找对象。`scope` 声明归属，`position=top/bottom` 声明位置，`layout=plain/boxed` 声明版式。未设置 `position` 默认 bottom；未设置 `layout` 默认 plain，不增加数据表的行列。表格框外说明与表格放在同一容器，仍属于该表；没有 `scope` 则保留原位置或嵌套归属，`position` 不移动普通说明。
+所有指定 `scope` 的说明都紧跟对应对象，可连续写多条；不跨正文寻找对象。`scope` 声明归属，`position` 统一声明位置：top 为上方，bottom 为下方独立说明（默认，不增加数据表行列），bottom-boxed 为表底框内说明。表格框外说明与表格放在同一容器，仍属于该表；没有 `scope` 则保留原位置或嵌套归属，`position` 不移动普通说明。
 
-GB/T 1.1 表内说明应显式用 `scope=table layout=boxed`，所有底部框内段落／注合并为一个跨全表宽度的说明行区。自动表脚注再形成单独的底部跨列行区，始终在普通表注之后，两区以横线区分。`layout=boxed` 仅用于表格底部；图说明及顶部说明使用 plain。
+GB/T 1.1 表内说明应显式用 `scope=table position=bottom-boxed`，所有底部框内段落／注合并为一个跨全表宽度的说明行区。自动表脚注再形成单独的底部跨列行区，始终在普通表注之后，两区以横线区分。`position=bottom-boxed` 仅用于表格底部；图说明使用 top 或 bottom。`gb-note` 不再接受 layout 参数，旧写法报错。
 
 `position=top` 的表说明放在表题文字之后、表格之前，并随续表重复；图说明放在图像之前。底部图说明放在图题之前。同一位置按书写顺序排列。`align` 默认 left，`weight` 默认 bold；单位仍可用顶部右对齐说明表达。
 
@@ -194,7 +194,7 @@ flowchart LR
 | --- | --- |
 | 100 | 125 |
 
-:::gb-note scope=table layout=boxed label="注："
+:::gb-note scope=table position=bottom-boxed label="注："
 检测条件应记录。
 :::
 
