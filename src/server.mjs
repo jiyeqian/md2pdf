@@ -1,3 +1,4 @@
+import { browserYaml } from './browser-yaml.mjs';
 import http from 'node:http';
 import { versionInfo } from './version.mjs';
 import { analyticsConfig } from './analytics-config.mjs';
@@ -122,6 +123,9 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   staticRoutes.set('/src/frontmatter-fields.mjs', ['src/frontmatter-fields.mjs', 'text/javascript']);
   staticRoutes.set('/src/profiles.mjs', ['src/profiles.mjs', 'text/javascript']);
   staticRoutes.set('/src/gb-blocks.mjs', ['src/gb-blocks.mjs', 'text/javascript']);
+  staticRoutes.set('/vendor/yaml/yaml.mjs', ['vendor/yaml/yaml.mjs', 'text/javascript']);
+  staticRoutes.set('/src/document-content.mjs', ['src/document-content.mjs', 'text/javascript']);
+  staticRoutes.set('/src/gb-sections.mjs', ['src/gb-sections.mjs', 'text/javascript']);
   staticRoutes.set('/version.mjs', ['web/version.mjs', 'text/javascript']);
   for (const file of ['analytics.mjs', 'analytics-schema.mjs', 'analytics-bootstrap.mjs', 'analytics.css', 'privacy.html', 'gb-fonts.html']) {
     staticRoutes.set('/' + file, ['web/' + file, file.endsWith('.css') ? 'text/css' : file.endsWith('.html') ? 'text/html' : 'text/javascript']);
@@ -177,7 +181,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         const [file, type] = staticRoutes.get(staticPath);
         const target = path.join(ROOT, file);
         if (!existsSync(target)) { json(404, { error: '页面不存在' }); return; }
-        res.writeHead(200, { 'Content-Type': type.startsWith('image/') ? type : `${type}; charset=utf-8` }); res.end(await readFile(target)); return;
+        res.writeHead(200, { 'Content-Type': type.startsWith('image/') ? type : `${type}; charset=utf-8` }); res.end(file === 'vendor/yaml/yaml.mjs' ? browserYaml(await readFile(target,'utf8')) : await readFile(target)); return;
       }
       // UI 页面由前端工作流后续补齐：仅在文件已存在时提供，缺失时按 404 处理而非 500。
       if (req.method === 'GET' && (req.url === '/examples' || req.url === '/examples/')) {

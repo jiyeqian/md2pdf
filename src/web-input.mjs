@@ -149,7 +149,7 @@ export function resolveWebInput(body, { autoPreview = false } = {}) {
   const { fm, positions, warnings = [] } = parsedFrontmatterResult;
   const explicitType = opts.type ?? fm.type;
   if (explicitType !== undefined && explicitType !== '' && !PROFILE_NAMES.includes(explicitType)) throw error(400, `未知文档类型：${explicitType}（可用：${PROFILE_NAMES.join(', ')}）`);
-  const type = detectProfile({ basename:'', fm, explicit:explicitType || undefined }).name;
+  const type = detectProfile({ body:parsedFrontmatterResult.body, basename:'', fm, explicit:explicitType || undefined }).name;
   const resetOptions = [];
   if (autoPreview && !opts.type) {
     const controls = policyForType(type).controls;

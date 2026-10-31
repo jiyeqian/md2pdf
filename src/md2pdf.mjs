@@ -8,7 +8,6 @@
  *   -o, --output <path>   输出路径（多文件时为输出目录）
  *       --theme <name>    elegant（默认）| minimal
  *       --title <text>    覆盖标题（默认取 frontmatter.title，其次正文首个 H1，其次文件名）
- *       --kicker <text>   报头小标题（如"专利实务 · 技能文档"）
  *       --enable <names>  开启功能（逗号分隔）
  *       --disable <names> 关闭功能（如 meta,lead）
  *   -t, --toc             生成目录（取自 H2）
@@ -20,8 +19,6 @@
  *       --footer-left  <text>   页脚左文字（默认空）
  *       --footer-right <text>   页脚右文字（默认空）
  *       --footer-center <text> 页脚中间文字（默认页码）
- *       --colophon <text> 文末左侧落款（默认仓库口号，右侧为生成时间）
- *       --bibliography-title <text> 参考文献章节标题
  *       --keep-html       保留中间 HTML，便于调样式
  *       --open            完成后打开 PDF
  *   -h, --help
@@ -41,6 +38,7 @@ import { PROFILE_NAMES } from './profiles.mjs';
 import { SCHEME_NAMES } from './numbering.mjs';
 import { parseArgs, expandArgs } from './options.mjs';
 import { render } from './render.mjs';
+import { withGbFontFallback } from './gb-fonts.mjs';
 import { Chrome, findChrome } from './chrome.mjs';
 import { VERSION } from './version.mjs';
 
@@ -57,7 +55,11 @@ md2pdf ${VERSION} — Markdown 转 PDF
       --type <名称>          模板类型：${PROFILE_NAMES.join('、')}；默认自动识别
       --theme <名称>         主题：elegant、minimal；默认 elegant
       --title <文字>         文档标题
-      --kicker <文字>        报头小标题
+      --font-body <name>     正文字体（本机已安装的字体名称）
+      --font-heading <name>  各级标题字体
+      --font-western <name>  正文和标题中的西文字母、数字字体
+      --font-code <name>     行内代码与代码块字体
+      --allow-font-fallback  缺字体时明确允许使用替代字体导出
       --font-size <pt>       正文字号，默认 10.5
       --line-height <倍数>   正文行距，默认 1.9
       --margin <mm>          页边距，支持“上下,左右”
@@ -68,9 +70,6 @@ md2pdf ${VERSION} — Markdown 转 PDF
       --toc-depth <层级>     目录深度：1、2、3；默认 1（frontmatter toc: 0 隐藏，1–3 指定层级）
       --header-{left,center,right} <文字>
       --footer-{left,center,right} <文字>
-      --colophon-{left,center,right} <文字>
-      --bibliography-title <文字>
-                             参考文献标题，默认“参考文献”
       --enable/disable <功能列表>
                              启用/禁用功能
                              启用/禁用多项功能，以英文逗号分隔，候选功能：
@@ -104,6 +103,10 @@ md2pdf ${VERSION} — Markdown 转 PDF
 
 async function renderOne(mdPath, opts, chrome, tmpRoot) {
   const res = await render(await readFile(mdPath, 'utf8'), opts, { filename: mdPath });
+  if (opts.allowFontFallback) {
+    res.html = withGbFontFallback(res.html);
+    if (res.pagedHtml) res.pagedHtml = withGbFontFallback(res.pagedHtml);
+  }
   for (const warning of res.warnings) console.warn('md2pdf: ' + warning);
   if (opts.htmlOnly) return { ...res, html: res.pagedHtml ?? res.html };
   const tmpDir = await mkdtemp(path.join(tmpRoot, 'doc-'));

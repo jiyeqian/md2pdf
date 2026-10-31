@@ -1,3 +1,5 @@
+import { installInlineScripts } from './inline-scripts.mjs';
+import { elements, tableColumns } from './gb-content.mjs';
 import { Marked } from '../vendor/marked.esm.js';
 
 const inputError = message => Object.assign(new Error(message), {status:400});
@@ -10,6 +12,7 @@ const contentParser = new Marked({ gfm:true, renderer: {
   },
   image(token) { return escape(token.text); },
 } });
+installInlineScripts(contentParser);
 contentParser.use({extensions:[{
   name:'gbFootnoteMath',level:'inline',
   start(source) { return source.indexOf('$'); },
@@ -43,7 +46,6 @@ export function prepareGbFootnotes(source) {
   const numbers = new Map(), occurrences = [];
   let marker = 'MD2PDFGBNOTESLOT';
   while (source.includes(marker)) marker += 'X';
-  const slotPattern = new RegExp('<span data-md2pdf-gb-note-slot="' + marker + '(\\d+)END"></span>', 'g');
   return {
     body:output.join('\n'),
     get css() {
@@ -52,16 +54,56 @@ export function prepareGbFootnotes(source) {
     finalize(html) {
       if (!html.includes('data-md2pdf-gb-note-slot="' + marker)) return html;
       numbers.clear();
-      return html.replace(slotPattern, (slot, index) => {
-        const id = occurrences[Number(index)];
-        if (id === undefined) return slot;
-        const repeated = numbers.has(id);
-        if (!repeated) numbers.set(id, numbers.size + 1);
-        const number = numbers.get(id);
-        return repeated
-          ? '<sup class="gb-footnote-repeat"><a href="#gb-footnote-' + number + '">' + number + ')</a></sup>'
-          : '<span class="gb-footnote gb-footnote-' + number + '" id="gb-footnote-' + number + '" data-note="' + number + ')">' + '<span class="gb-footnote-label">' + number + ')</span><span class="gb-footnote-content">' + contentParser.parseInline(definitions.get(id)) + '</span></span>';
-      });
+      const all=elements(html), owners=new Map(), scoped=new Map(), edits=[];
+      let scopeNumber=0;
+      for(const node of all) {
+        const slot=/data-md2pdf-gb-note-slot="([^"]+)"/.exec(node.token)?.[1];
+        if(!slot?.startsWith(marker))continue;
+        const index=Number(slot.slice(marker.length,-3)), id=occurrences[index];
+        if(id===undefined)continue;
+        let owner=node.parent;
+        while(owner?.tag && !['table','figure'].includes(owner.tag)) {
+          if(/class="[^"]*\bgb-table-group\b/.test(owner.token)){owner=owner.children.find(n=>n.tag==='table');break;}
+          owner=owner.parent;
+        }
+        if(!owner?.tag)owner=null;
+        const key=owner?owner.start:'body';
+        if(owners.has(id)&&owners.get(id)!==key)throw inputError('国家标准脚注跨正文或不同图表重复使用：'+id+'；请使用不同标识');
+        owners.set(id,key);
+        if(!owner) {
+          const repeated=numbers.has(id);
+          if(!repeated)numbers.set(id,numbers.size+1);
+          const number=numbers.get(id);
+          const text=repeated
+            ? '<sup class="gb-footnote-repeat"><a href="#gb-footnote-'+number+'">'+number+')</a></sup>'
+            : '<span class="gb-footnote gb-footnote-'+number+'" id="gb-footnote-'+number+'" data-note="'+number+')"><span class="gb-footnote-label">'+number+')</span><span class="gb-footnote-content">'+contentParser.parseInline(definitions.get(id))+'</span></span>';
+          edits.push({start:node.start,end:node.end,text});
+        } else {
+          if(!scoped.has(key))scoped.set(key,{owner,number:++scopeNumber,notes:new Map()});
+          const scope=scoped.get(key);
+          if(!scope.notes.has(id)) {
+            if(scope.notes.size===26)throw inputError('单个图表脚注超过26条，请拆分图表');
+            scope.notes.set(id,String.fromCharCode(97+scope.notes.size));
+          }
+          const letter=scope.notes.get(id),target='gb-'+owner.tag+'-footnote-'+scope.number+'-'+letter;
+          edits.push({start:node.start,end:node.end,text:'<sup class="gb-float-footnote-call"><a href="#'+target+'">'+letter+'</a></sup>'});
+        }
+      }
+      for(const scope of scoped.values()) {
+        const {owner,number,notes}=scope;
+        const text=[...notes].map(([id,letter])=>'<div class="gb-'+owner.tag+'-footnote" id="gb-'+owner.tag+'-footnote-'+number+'-'+letter+'"><p><span class="gb-label"><sup>'+letter+'</sup></span><span class="gb-note-text">'+contentParser.parseInline(definitions.get(id))+'</span></p></div>').join('\n');
+        if(owner.tag==='table') {
+          const rows=all.filter(n=>n.tag==='tr'&&n.start>owner.start&&n.end<owner.end&&(()=>{let p=n.parent;while(p?.tag!=='table'&&p?.tag)p=p.parent;return p===owner;})());
+          const foot=owner.children.find(n=>n.tag==='tfoot');
+          const row='<tr class="gb-table-footnotes"><td colspan="'+tableColumns(rows)+'">'+text+'</td></tr>';
+          edits.push({start:foot?.closeStart??owner.closeStart,end:foot?.closeStart??owner.closeStart,text:foot?row:'<tfoot>'+row+'</tfoot>'});
+        } else {
+          const at=owner.children.find(n=>n.tag==='figcaption')?.start??owner.closeStart;
+          edits.push({start:at,end:at,text});
+        }
+      }
+      for(const edit of edits.sort((a,b)=>b.start-a.start))html=html.slice(0,edit.start)+edit.text+html.slice(edit.end);
+      return html;
     },
     extension: {
       name:'gbPageFootnote',level:'inline',

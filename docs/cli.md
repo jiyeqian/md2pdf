@@ -22,6 +22,8 @@ md2pdf 文件.md --theme minimal --toc   # 选择主题并添加目录页
 | `--numbering <mode>` | 章节编号：`auto`、`force`、`none` |
 | `--chapter-start <mode>` | `continuous`（默认）、`page`、`odd-page`；以 `##` 为章 |
 | `--number-scheme <name>` | 编号格式：`arabic`、`gb`、`cjk`、`chapter` |
+| `--font-body <name>`、`--font-heading <name>`、`--font-western <name>`、`--font-code <name>` | 按用途设置单个已安装字体，参见[字体配置](fonts.md) |
+| `--allow-font-fallback` | 缺字体时显式允许回退，否则停止导出 |
 | `--font-size <pt>` | 正文字号，默认 10.5 pt |
 | `--margin <mm>` | 页边距，默认 20 mm；可用 `20,18` 分别设置上下、左右 |
 | `--enable <features>` / `--disable <features>` | 按逗号分隔启用或关闭排版功能 |

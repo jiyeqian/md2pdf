@@ -34,6 +34,18 @@ export function installPagedLayout(contentHeight, chapterStart, relaxFirstChapte
   // A split table is reconstructed from ancestors without its earlier thead.
   // Insert the header while laying out each continuation, so it reserves space.
   class TableHeaders extends Paged.Handler {
+    afterPageLayout(rendered, page, token, chunker) {
+      if(!gb||!token?.node)return;
+      for(const table of rendered.querySelectorAll('table')) {
+        if(!table.caption||table.querySelector('tbody tr, tfoot tr'))continue;
+        const original=[...chunker.source.querySelectorAll('table')].find(t=>t.dataset.ref===table.dataset.ref);
+        if(!original?.querySelector('tbody tr'))continue;
+        // A growing page-footnote area can eject the header after the caption.
+        // Restart at the table on the next page, rather than leaving a title alone.
+        token.node=original;token.offset=0;
+        table.remove();
+      }
+    }
     renderNode(node, source) {
       const element = node.nodeType === 1 ? node : node.parentElement;
       if (!element) return;
@@ -43,15 +55,17 @@ export function installPagedLayout(contentHeight, chapterStart, relaxFirstChapte
       // tbody/tfoot continuations need a copy before their first data row.
       if (!sourceElement?.closest('tbody, tfoot')) return;
       const original = sourceElement.closest('table');
-      if (!table || !original || table.tHead || !original.tHead || element.closest('thead')) return;
+      if (!table || !original || !original.tHead || element.closest('thead')) return;
       if(gb&&!table.querySelector(':scope > colgroup')){
         const columns=original.querySelector(':scope > colgroup');
         if(columns)table.insertBefore(columns.cloneNode(true),table.firstChild);
       }
-      const header = original.tHead.cloneNode(true);
-      header.setAttribute('data-repeated-header', '');
-      header.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-      table.insertBefore(header, table.firstChild);
+      if(!table.tHead) {
+        const header = original.tHead.cloneNode(true);
+        header.setAttribute('data-repeated-header', '');
+        header.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+        table.insertBefore(header, table.firstChild);
+      }
       if (gb && original.caption && !table.caption) {
         const caption = original.caption.cloneNode(true);
         caption.removeAttribute('id');
@@ -59,7 +73,7 @@ export function installPagedLayout(contentHeight, chapterStart, relaxFirstChapte
         const continued = document.createElement('span');
         continued.className = 'gb-continuation';
         continued.textContent = '（续）';
-        caption.insertBefore(continued, caption.querySelector('.gb-table-unit'));
+        caption.insertBefore(continued, caption.querySelector('.gb-table-top'));
         table.insertBefore(caption, table.firstChild);
       }
     }

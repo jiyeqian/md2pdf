@@ -114,11 +114,11 @@ main > section { page: gb-body; }
 main > section:has(> h2.front) { page: gb-front; break-before: page; }
 main > section:first-child:has(> h2.front) { break-before: auto; }
 main > section:has(> h2.appendix), main > section:has(> h2.back) { break-before: page; }
-main > section:has(> h2.body-start) { counter-reset: page 1; break-before: right; }
+main > section:has(> .gb-body-heading) { counter-reset: page 1; break-before: right; }
 /* 目录之后直接进入正文时，在 main 之前完成奇数页对齐。 */
-.toc:has(+ main > section:first-child > h2.body-start) { break-after: right; }
-.toc + main:has(> section:first-child > h2.body-start) { page: gb-body; }
-.toc + main > section:first-child:has(> h2.body-start) { break-before: auto; }
+.toc:has(+ main > section:first-child > .gb-body-heading) { break-after: right; }
+.toc + main:has(> section:first-child > .gb-body-heading) { page: gb-body; }
+.toc + main > section:first-child:has(> .gb-body-heading) { break-before: auto; }
 
 /* F.1：章条和正文均五号，字号相同而字体不同。 */
 h2, h3, h4, h5, h6 { font: 10.5pt/1.62 var(--font-head); border: none; padding: 0; text-align: left; letter-spacing: 0; }
@@ -162,8 +162,7 @@ ol li, ul li { padding-left: 0; }
 .footnotes li, .gb-note, .gb-example, .gb-table-note { font: 9pt/1.62 var(--font-body); }
 .gb-label { font-family: var(--font-head); font-weight: 400; }
 .gb-term-number, .gb-term-name { font: 10.5pt/1.62 var(--font-head); }
-.gb-term-definition, .gb-source { font: 10.5pt/1.62 var(--font-body); }
-.gb-unit { font: 9pt/1.62 var(--font-body); text-align: right; }
+.gb-term-definition { font: 10.5pt/1.62 var(--font-body); }
 .gb-subfigure { font: 9pt/1.62 var(--font-head); }
 .gb-continuation { font: 10.5pt/1.62 var(--font-body); }
 .gb-figure-text, figure.fig svg text { font-family: var(--font-body) !important; font-size: 7.5pt !important; }
@@ -178,7 +177,6 @@ ol li, ul li { padding-left: 0; }
   transform: rotate(180deg); font: 14pt/1 var(--font-head); white-space: nowrap; }
 /* 终结线与前一内容同页；不可单独排到下一面。 */
 .gb-end-line { width: 25%; margin: 1.62em auto 0; border: none; border-top: 1pt solid #000; break-before: avoid; break-inside: avoid; }
-.gb-source .gb-label { font-family: var(--font-body); }
 .gb-table-note { border: 1pt solid #000; padding: .5em; }
 
 /* 条文脚注采用独立的 [^@id] 语法，文献引用仍走原有 [^id]。 */
@@ -196,21 +194,20 @@ ol li, ul li { padding-left: 0; }
 @page :blank { @top-left { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-right { content: none; } }
 .pagedjs_blank_page .pagedjs_margin-content { visibility: hidden !important; }
 .toc .gb-float-toc { margin-top: 1.62em; }
-.gb-source .gb-label { font-family: var(--font-body); }
 
 /* 10.2：段首空两字；列表文字用悬挂缩进，标记不占正文列。 */
 main p { text-indent: 2em; }
-main section :is(ol, ul):not(.references):not(.footnotes) { list-style: none; padding-left: 4em; }
-main section li > :is(ol, ul):not(.references):not(.footnotes) { padding-left: 2em; }
-main section :is(ol, ul):not(.references):not(.footnotes) > li { padding-left: 0; }
-main section :is(ol, ul):not(.references):not(.footnotes) > li::before {
+main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) { list-style: none; padding-left: 4em; }
+main section li > :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) { padding-left: 2em; }
+main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li { padding-left: 0; }
+main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li::before {
   display: block; position: absolute; left: -2em; top: 0; width: 2em; height: auto;
   font: 10.5pt/1.62 var(--font-body); border: none; border-radius: 0; text-align: left; counter-increment: none;
 }
-main section ul:not(.references):not(.footnotes) > li::before { content: "——"; }
-main section ol:not(.references):not(.footnotes) > li::before { content: counter(gb-item, lower-alpha) ")"; }
-main section li > ul:not(.references):not(.footnotes) > li::before { content: "•"; }
-main section li > ol:not(.references):not(.footnotes) > li::before { content: counter(gb-item) ")"; }
+main section ul:not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li::before { content: "——"; }
+main section ol:not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li::before { content: counter(gb-item, lower-alpha) ")"; }
+main section li > ul:not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li::before { content: "•"; }
+main section li > ol:not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li::before { content: counter(gb-item) ")"; }
 main li > p { text-indent: 0; }
 main .references > li { text-indent: 2em; }
 .gb-term-number, .gb-term-name, .gb-term-definition { margin: 0; }
@@ -224,9 +221,7 @@ main .gb-note p, main .gb-table-note p { text-indent: 0; padding-left: 2em; disp
 .gb-note-text { flex: 1; min-width: 0; }
 .gb-example > p:first-child > .gb-label { display: block; text-indent: 2em; }
 main .gb-example > p:first-child { text-indent: 0; }
-main .gb-unit p, main .gb-subfigure p, main figcaption p { text-indent: 0; }
-main .gb-unit p { text-align: right; }
-main .gb-source p { font: 10.5pt/1.62 var(--font-body); }
+main .gb-subfigure p, main figcaption p { text-indent: 0; }
 
 .gb-important, .gb-important-paragraph { display: block; font: 10.5pt/1.62 var(--font-head); }
 .gb-important-paragraph { text-indent: 2em; text-align: justify; }
@@ -271,7 +266,7 @@ main .gb-figure-note p, main .gb-figure-footnote p, main .gb-table-footnote p {
 .gb-figure-note .gb-note-text, .gb-figure-footnote .gb-note-text,
 .gb-table-footnote .gb-note-text { flex: 1; min-width: 0; }
 figure.fig { break-inside: avoid; }
-.gb-table-notes { break-inside: avoid; }
+.gb-table-notes, .gb-table-footnotes { break-inside: avoid; }
 /* 数字列按原数值的小数点/个位对齐，不补零或改写数值。 */
 .gb-number-cell { text-align: center; }
 .gb-decimal {
@@ -295,14 +290,15 @@ main p, main li { margin-top: 0; margin-bottom: 0; }
 thead th { text-align: center; }
 thead th, tbody td, tbody td:first-child, tfoot td { padding: .25em .5em; }
 table > tbody:has(td[rowspan]) { break-inside: avoid; }
-.gb-table-unit { display: block; text-align: right; font: 9pt/1.62 var(--font-body); }
+.gb-table-top { display: block; font: 9pt/1.62 var(--font-body); }
+.gb-table-top > .gb-table-note { border: 0; padding: 0; }
 
 tbody td[rowspan] { vertical-align: middle; }
 
 h2.gb-index-title { letter-spacing: 2em; text-indent: 2em; }
 
 /* 分页前已按原始层级和顺序生成标记，避免跨页 CSS counter 负数或重排。 */
-main section :is(ol, ul):not(.references):not(.footnotes) > li[data-gb-marker]::before { content: attr(data-gb-marker); }
+main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li[data-gb-marker]::before { content: attr(data-gb-marker); }
 main section :is(ol, ul) > li[data-gb-marker][data-split-from]::before { content: none; }
 
 /* GB/T 1.1 章等项目上下留白；总行步进对照2026样本约18.34pt。 */
@@ -311,7 +307,7 @@ main section :is(ol, ul) > li[data-gb-marker][data-split-from]::before { content
 .toc li.toc-level-0:not(.toc-float) { line-height: 1.25; margin: 0; padding: .25em 0; }
 .toc li a::after { font: inherit; }
 .toc .gb-float-toc { margin-top: 1.75em; }
-main section :is(ol, ul):not(.references):not(.footnotes) { margin-top: 0; margin-bottom: 0; }
+main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) { margin-top: 0; margin-bottom: 0; }
 .gb-note, .gb-example { margin-top: 0; margin-bottom: 0; }
 .gb-index-letter { font: 10.5pt/1.62 var(--font-head); }
 .gb-index-dots { border: 0; height: auto; align-self: baseline; overflow: hidden; white-space: nowrap; }
@@ -373,3 +369,32 @@ main section .gb-index-section .gb-index ul.gb-index-entries > li { line-height:
 /* Keep references on the final keyword baseline; leader widths are finalized after pagination. */
 main section .gb-index-section .gb-index ul.gb-index-entries > li { position: relative; align-items: last baseline; }
 .gb-index-section .gb-index-locations { margin-left: auto; padding-left: .35em; }
+
+/* Explicit note labels: an absent label reserves no label column. */
+main .gb-unlabelled > p { display: block; padding-left: 0; text-indent: 0; }
+[data-gb-note-weight="normal"] > p:first-child > .gb-label, [data-gb-note-weight="normal"] > .gb-label { font-family: var(--font-body); font-weight: 400; }
+
+[data-gb-note-align="left"], main [data-gb-note-align="left"] > p { text-align: left; }
+[data-gb-note-align="center"], main [data-gb-note-align="center"] > p { text-align: center; }
+[data-gb-note-align="right"], main [data-gb-note-align="right"] > p { text-align: right; }
+main :is([data-gb-note-align="center"], [data-gb-note-align="right"]) > p { padding-left: 0; text-indent: 0; }
+[data-gb-note-align="center"] > p { justify-content: center; }
+[data-gb-note-align="right"] > p { justify-content: flex-end; }
+:is([data-gb-note-align="center"], [data-gb-note-align="right"]) > p > .gb-note-text { flex: 0 1 auto; }
+
+/* Explicit contents use the same front-matter page as generated contents. */
+main > section.gb-toc-section { page: gb-front; counter-reset: page 1; break-before: right; break-after: page; }
+.gb-toc-section > .toc { counter-reset: none; break-before: auto; break-after: auto; }
+main h2.toc-title { margin: 0 0 12mm; text-align: center; font: 16pt/1 var(--font-head); }
+
+.gb-body-heading { display: flow-root; break-inside: avoid; font: 10.5pt/1.62 var(--font-head); margin: 0 0 1.62em; }
+.gb-body-heading > h2.body-start { margin: 0; }
+
+.gb-float-footnote-call { font-size: .75em; line-height: 0; }
+.gb-float-footnote-call a { color: inherit; border: 0; text-decoration: none; }
+.gb-table-footnote .gb-label, .gb-figure-footnote .gb-label { font-family: var(--font-body); font-weight: 400; }
+.gb-table-group { margin: 0; }
+/* Keep a table title and unit with its header instead of a title-only fragment. */
+table caption { break-after: avoid; break-inside: avoid; }
+.gb-table-group > .gb-table-note[data-gb-note-position="bottom"] { border: 0; padding: 0; }
+.gb-label:has(.md-superscript, .md-subscript) { min-width: 1em; }

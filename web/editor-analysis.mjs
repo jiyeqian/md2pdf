@@ -1,4 +1,11 @@
-import { GB_BLOCKS } from '../src/gb-blocks.mjs';
+import {CONTENT_ROLES} from '../src/document-content.mjs';
+const CONTENT_COMPLETION_BODIES = {
+  kicker: '技术报告',
+  colophon: 'left: "编制：方鸿渐"\ncenter: "审核：褚慎明、韩学愈、李广智"\nright: "校对：范进、孔乙己、李梅亭"',
+};
+import * as YAML from '../vendor/yaml/yaml.mjs';
+import { gbHeading, gbSectionDiagnostics, GB_SECTION_ROLES } from '../src/gb-sections.mjs';
+import { GB_BLOCKS, GB_NOTE_FORMS } from '../src/gb-blocks.mjs';
 import { FRONTMATTER_FIELDS, ARRAY_FIELDS, canonicalFrontmatterField, TEXT_FIELDS, TEXT_METADATA_FIELDS, BOOL_FIELDS, NUMBER_FIELDS, FEATURES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from '../src/frontmatter-fields.mjs';
 /**
  * md2pdf 专业辅助 · 纯解析模块
@@ -234,13 +241,13 @@ function isSupportedFootnoteId(id) { return typeof id === 'string' && id.length 
 /** 该引用出现（\ref / \eqref）能否被渲染器解析到目标。 */
 function isResolvableRef(occ, target) {
   if (occ.kind === 'eqref') return target.kind === 'equation' && isSupportedEquationId(occ.id);
-  return (target.kind === 'figure' || target.kind === 'table') && isSupportedFloatId(occ.id);
+  return ((target.kind === 'figure' || target.kind === 'table') && isSupportedFloatId(occ.id)) || (target.kind === 'section' && /^sec:[\w.-]+$/.test(occ.id));
 }
 
 /** 补全候选：eqref 仅公式；ref 仅渲染器支持的图 / 表。 */
 function isCompletionTarget(target, mode) {
   if (mode === 'eqref') return target.kind === 'equation' && isSupportedEquationId(target.id);
-  return (target.kind === 'figure' || target.kind === 'table') && isSupportedFloatId(target.id);
+  return ((target.kind === 'figure' || target.kind === 'table') && isSupportedFloatId(target.id)) || (target.kind === 'section' && /^sec:[\w.-]+$/.test(target.id));
 }
 
 function reportDiagnostics(result) {
@@ -365,14 +372,16 @@ function finalizeCounts(result) {
  * @param {string} source
  * @returns {object} 解析结果
  */
-export function analyzeMarkdown(source) {
+export function analyzeMarkdown(source, options = {}) {
   const result = emptyResult();
+  if (options.templateType === 'gb') result.templateType = 'gb';
   if (typeof source !== 'string' || source === '') return result;
 
   const lines = splitLines(source);
   const fm = frontmatterRange(lines);
   let fence = null;
   let equationIndex = 0;
+  const gbHeadings = [];
 
   for (let i = 0; i < lines.length; i += 1) {
     const row = lines[i];
@@ -387,6 +396,11 @@ export function analyzeMarkdown(source) {
     // 行内代码替换为等长空格：只用于扫描，偏移与 raw 一致；正文展示仍用 raw。
     const scan = maskInlineCode(raw);
 
+    if (result.templateType==='gb') {
+      const term=/^ {0,3}:::gb-term(?:\s+\d+(?:\.\d+)+)?\s+id=([A-Za-z][\w:-]*)\s*$/.exec(raw);
+      if(term)pushTarget(result,{id:term[1],kind:'term',line:row.line,offset:row.start,title:lines.slice(i+1).find(r=>r.text.trim())?.text.trim()||term[1]});
+    }
+
     const h = HEADING_RE.exec(raw);
     if (h) {
       const content = h[2] || '';
@@ -394,6 +408,14 @@ export function analyzeMarkdown(source) {
       let id = null;
       const mark = /\{#([^{}\n]*)\}/.exec(maskInlineCode(content));
       if (mark) { id = mark[1].trim(); text = content.slice(0, mark.index).trim(); }
+      if(result.templateType!=='gb' && /\brole=(abstract|keywords|bibliography)\b/.test(content)) {
+        try {const section=gbHeading(text,h[1].length,CONTENT_ROLES);text=section.text;id=section.id || id;}
+        catch(error){addDiagnostic(result,{severity:'warning',code:'content-role-invalid',line:row.line,message:error.message});}
+      }
+      if (result.templateType==='gb') {
+        if(!/\brole=(abstract|keywords)\b/.test(content))gbHeadings.push({text:content.replace(TRAILING_HASHES,'').trim(),level:h[1].length,line:row.line});
+        try { const section=gbHeading(text,h[1].length,{...GB_SECTION_ROLES,...CONTENT_ROLES}); text=section.text; id=section.id || id; } catch {}
+      }
       result.headings.push({
         line: row.line,
         offset: row.start,
@@ -429,11 +451,11 @@ export function analyzeMarkdown(source) {
       });
     }
 
-    ID_MARK_RE.lastIndex = 0;
-    while ((m = ID_MARK_RE.exec(scan)) !== null) {
+    const marks = result.templateType==='gb' && h ? [...scan.matchAll(/#(sec:[\w.-]+)(?=\s|})/g)].map(m=>({0:m[0],1:m[1],index:m.index})) : [...scan.matchAll(/\{#([^{}\n]*)\}/g)];
+    for (const m of marks) {
       const id = m[1].trim();
       if (!id) continue;
-      const kind = id.indexOf('fig:') === 0 ? 'figure' : id.indexOf('tab:') === 0 ? 'table' : 'anchor';
+      const kind = id.indexOf('fig:') === 0 ? 'figure' : id.indexOf('tab:') === 0 ? 'table' : (result.templateType === 'gb' && h && h[1].length >= 2 && /^sec:[\w.-]+$/.test(id) && !/\brole=(abstract|keywords)\b/.test(h[2]||'') && result.headings.at(-1)?.id===id) ? 'section' : 'anchor';
       const target = {
         id: id, kind: kind, line: row.line, offset: row.start + m.index,
         title: titleFromLine(raw, m[0]) || id,
@@ -465,6 +487,27 @@ export function analyzeMarkdown(source) {
     }
   }
 
+  if (result.templateType==='gb') {
+    let tocEnabled=true, tocLine=1;
+    try {
+      if(fm) {
+        const metadata=YAML.parseDocument(lines.slice(fm.from+1,fm.to).map(r=>r.text).join('\n'),{uniqueKeys:true}).toJS({maxAliasCount:100}) || {};
+        const setting=metadata.toc;
+        if(setting!==undefined) tocEnabled=!['false','0','no','off'].includes(String(setting).trim().toLowerCase());
+        if(Array.isArray(metadata.disable)&&metadata.disable.includes('toc')) tocEnabled=false;
+        if(Array.isArray(metadata.enable)&&metadata.enable.includes('toc')) tocEnabled=true;
+        tocLine=lines.slice(fm.from+1,fm.to).find(r=>/^(toc|enable|disable)\s*:/.test(r.text))?.line || 1;
+      }
+    } catch { tocEnabled=false; } // Configuration errors are handled by the configuration validator.
+    if(options.toc!==undefined) tocEnabled=!!options.toc;
+    const referenceLine=result.occurrences.find(o=>o.kind==='footnote-ref'&&!o.id.startsWith('@'))?.line;
+    for (const diag of gbSectionDiagnostics(gbHeadings,{tocEnabled,tocLine,referenceLine})) addDiagnostic(result,diag);
+  }
+  if(result.templateType!=='gb') {
+    const refs=result.occurrences.find(o=>o.kind==='footnote-ref');
+    const hasBibliography=lines.some(r=>/^ {0,3}## .+\{[^{}]*\brole=bibliography\b[^{}]*\}\s*$/.test(r.text) && result.headings.some(h=>h.line===r.line));
+    if(refs&&!hasBibliography)addDiagnostic(result,{severity:'warning',code:'missing-bibliography',line:refs.line,message:'存在文献引用，但未声明 role=bibliography；文献列表未生成。'});
+  }
   reportDiagnostics(result);
   reportHeadingNumbers(result);
   return finalizeCounts(result);
@@ -564,8 +607,8 @@ export const SNIPPETS = {
   },
   'gb-appendix': {
     title: 'GB · 附录',
-    text: '## 附录 {{letter}}（规范性）{{title}}\n\n{{content}}\n',
-    defaults: { letter: 'A', title: '附录标题', content: '附录内容' },
+    text: '## {{title}} {role=appendix nature=normative}\n\n{{content}}\n',
+    defaults: { title: '附录标题', content: '附录内容' },
   },
   skill: {
     title: '技能文档 · 章节骨架',
@@ -682,6 +725,22 @@ function existingGbBlock(afterLine) {
   return null;
 }
 
+function inGbIndex(before) {
+  const stack=[],lines=splitLines(before),fm=frontmatterRange(lines);let fence=null;
+  for(const [i,row] of lines.slice(0,-1).entries()) {
+    if(fm&&i<=fm.to)continue;
+    const line=row.text;
+    const transition=fenceTransition(line,fence);
+    if(transition==='open'){fence=fenceInfo(line);continue;}
+    if(transition==='close'){fence=null;continue;}
+    if(fence)continue;
+    const open=/^ {0,3}:::(gb-[a-z-]+|kicker|colophon)(?:\s|$)/.exec(line);
+    if(open)stack.push(open[1]);
+    else if(/^ {0,3}:::\s*$/.test(line))stack.pop();
+  }
+  return stack.at(-1)==='gb-index';
+}
+
 /**
  * 补全提供器：脚注定义 ID、\ref{}（图/表）与 \eqref{}（公式）目标。
  * 候选只包含渲染器能真正解析的交叉引用目标，锚点与非法 ID 不会出现。
@@ -699,6 +758,55 @@ export function provideCompletions(context, analysis) {
   const before = text.slice(0, pos);
   const fields = frontmatterCompletions(text, pos, context.frontmatterValues);
   if (fields) return fields;
+  {
+    const heading = /(?:^|\n) {0,3}(#{2,6}) [^\n{}]*\{([^{}]*)$/.exec(before);
+    if (heading && !isSuppressedContext(text,pos)) {
+      const typed=heading[2].split(/\s+/).at(-1);
+      const choices=[...Object.entries(context.templateType==='gb'?{...GB_SECTION_ROLES,...CONTENT_ROLES}:CONTENT_ROLES).map(([role,name])=>({label:'role='+role,detail:name})),{label:'nature=normative',detail:'规范性附录'},{label:'nature=informative',detail:'资料性附录'},{label:'#sec:section',detail:'稳定章节标识，请改为唯一名称'}];
+      const used=heading[2].slice(0,-typed.length || undefined).trim().split(/\s+/).map(t=>t.split('=')[0]);
+      const options=choices.filter(c=>(context.templateType==='gb'||!c.label.startsWith('nature=')&&!c.label.startsWith('#sec:'))&&(heading[1].length===2 || c.label.startsWith('#sec:')) && c.label.startsWith(typed) && !used.includes(c.label.split('=')[0])).map(c=>({...c,apply:c.label}));
+      return options.length?{from:pos-typed.length,options}:null;
+    }
+  }
+  const commonBlock=/(?:^|\n) {0,3}:::(k[a-z]*|c[a-z]*)?$/.exec(before);
+  if(commonBlock&&(context.templateType!=='gb'||commonBlock[1])&&!isSuppressedContext(text,pos)){
+    const typed=commonBlock[1]||'',suffix=/^[a-z]*/.exec(text.slice(pos))[0];
+    const existing=existingGbBlock(text.slice(pos+suffix.length));
+    return {from:pos-typed.length,to:pos+suffix.length,options:['kicker','colophon'].filter(n=>n.startsWith(typed)).map(n=>{
+      const body=CONTENT_COMPLETION_BODIES[n];
+      return {label:n,detail:n==='kicker'?'报头短文字':'文末落款',apply:existing?.hasContent?n:n+'\n'+body+(existing?'':'\n:::'),selectionOffset:n.length+1};
+    })};
+  }
+  if (context.templateType === 'gb' && !isSuppressedContext(text,pos)) {
+    const line=before.slice(before.lastIndexOf('\n')+1);
+    const params=/^ {0,3}:::gb-index-section\s+(.*)$/.exec(line);
+    if(params) {
+      const typed=params[1].split(/\s+/).at(-1),used=params[1].slice(0,-typed.length||undefined).trim().split(/\s+/).map(p=>p.split('=')[0]);
+      const choices=[['lang=zh','中文双栏'],['lang=en','英文单栏'],['sort=auto','自动排序（默认）'],['sort=input','保留输入顺序'],['sort=pinyin','拼音排序'],['sort=alphabetical','英文字母排序'],['columns=1','单栏'],['columns=2','双栏（仅中文）']];
+      const options=choices.filter(([value])=>value.startsWith(typed)&&!used.includes(value.split('=')[0])).map(([value,detail])=>({label:value,apply:value,detail}));
+      return options.length?{from:pos-typed.length,to:pos+(/^[\w=-]*/.exec(text.slice(pos))[0].length),options}:null;
+    }
+    const noteParams=/^ {0,3}:::gb-note\s+(.*)$/.exec(line);
+    if(noteParams) {
+      const last=/(?:^|\s)([a-z-]*(?:=[a-z-]*)?)$/.exec(noteParams[1]);
+      if(last) {
+        const typed=last[1],used=[...noteParams[1].slice(0,-typed.length||undefined).matchAll(/(?:^|\s)([a-z-]+)=/g)].map(m=>m[1]);
+        const choices=['scope=table','scope=figure','position=top','position=bottom','position=bottom-boxed','align=left','align=center','align=right','label="注："','label="^{a}"','weight=normal','weight=bold'];
+        const options=choices.filter(value=>value.startsWith(typed)&&!used.includes(value.split('=')[0])&&(value!=='position=bottom-boxed'||/\bscope=table\b/.test(noteParams[1]))).map(value=>({label:value,apply:value,detail:value==='label="^{a}"'?'固定字母的上标标签':value==='position=bottom-boxed'?'表格框内说明区':value==='position=bottom'?'普通独立说明':''}));
+        if(options.length)return {from:pos-typed.length,to:pos+/^[a-z=-]*/.exec(text.slice(pos))[0].length,options};
+      }
+    }
+    if(inGbIndex(before)) {
+      // The first target follows |; subsequent targets follow a reference separator.
+      const ref=/^([^|]*\|)(?:[^\n]*[,，、;；/]\s*)?\s*@([\w.:-]*)$/.exec(line);
+      if(ref) {
+        const typed=ref[2],options=analysis.targets.filter(t=>isCompletionTarget(t,'ref')||t.kind==='term').filter(t=>t.id.startsWith(typed)).map(t=>({label:'@'+t.id,apply:t.id,type:t.kind,detail:({section:'章条',figure:'图',table:'表',term:'术语'}[t.kind]||'')+'：'+(t.title||t.id)}));
+        return {from:pos-typed.length,to:pos+/^[\w.:-]*/.exec(text.slice(pos))[0].length,options};
+      }
+      const key=/^[^|]*\{(sort[-\w=]*)$/.exec(line);
+      if(key)return {from:pos-key[1].length,options:[{label:'sort-key',apply:'sort-key=""}',detail:'指定拼音或字母排序键（不显示）',selectionOffset:10}]};
+    }
+  }
   if (context.templateType === 'gb') {
     const match = /(?:^|\n)( {0,3}):::(gb-[a-z-]*)?$/.exec(before);
     if (match && !isSuppressedContext(text, pos)) {
@@ -706,11 +814,15 @@ export function provideCompletions(context, analysis) {
       const suffix = /^[a-z-]*/.exec(text.slice(pos))[0];
       const afterLine = text.slice(pos + suffix.length);
       const existing = existingGbBlock(afterLine);
-      const options = GB_BLOCKS.flatMap(block => block.name === 'example' ? [block, {...block, argument:'layout=inline', description:'示例：标签同行', completionLabel:'gb-example layout=inline'}] : block.name === 'index-section' ? [block, {...block, argument:'lang=en', description:'英文索引分区（单栏）', completionLabel:'gb-index-section lang=en'}] : [block]).filter(block => ('gb-' + block.name).startsWith(typed)).map(block => {
+      const options = GB_BLOCKS.flatMap(block => block.name === 'note' ? [block, ...GB_NOTE_FORMS.map(form => ({...block,...form,completionLabel:'gb-note '+form.argument}))] : block.name === 'example' ? [block, {...block, argument:'layout=inline', description:'示例：标签同行', completionLabel:'gb-example layout=inline'}] : block.name === 'index-section' ? [block, {...block, argument:'lang=en', description:'英文索引分区（单栏）', completionLabel:'gb-index-section lang=en'}] : [block]).filter(block => ('gb-' + block.name).startsWith(typed)).map(block => {
         const opening = 'gb-' + block.name + (block.argument ? ' ' + block.argument : '');
         const apply = existing?.hasContent ? opening : opening + '\n' + block.body + (existing ? '' : '\n:::');
         return { label: block.completionLabel || 'gb-' + block.name, detail: block.description, type: 'text', apply, selectionOffset: existing?.hasContent ? opening.length : opening.length + 1 };
       });
+      if(!typed) for(const name of ['kicker','colophon']) {
+        const body=CONTENT_COMPLETION_BODIES[name];
+        options.push({label:name,detail:name==='kicker'?'报头短文字':'文末落款',apply:existing?.hasContent?name:name+'\n'+body+(existing?'':'\n:::'),selectionOffset:name.length+1});
+      }
       return { from: pos - typed.length, to: pos + suffix.length, options };
     }
   }
@@ -826,6 +938,12 @@ function frontmatterCompletions(text, pos, catalog = {}) {
   const fields = FRONTMATTER_FIELDS.filter(field => field.toLowerCase().includes(typed));
   fields.sort((a, b) => score(a) - score(b));
   return { from: lineStart, to: pos + suffix.length, options: fields.map(field => {
+    if(field==='fonts') {
+      const following=lines.slice(lineIndex+1,end).find(line=>line.trim()&&!line.trim().startsWith('#'));
+      if(/^\s+\S/.test(following||''))return {label:field,type:'property',apply:'fonts:',selectionOffset:6};
+      const apply='fonts:\n  heading: "PostScript Name or Full Name"\n  body: ""\n  western: ""\n  code: ""';
+      return {label:field,type:'property',apply,selectionOffset:apply.indexOf('PostScript Name or Full Name')+'PostScript Name or Full Name'.length};
+    }
     const quoted = TEXT_FIELDS.includes(canonicalFrontmatterField(field)) || TEXT_METADATA_FIELDS.has(field);
     const apply = field + ': ' + (ARRAY_FIELDS.has(field) ? '\n  - ' : quoted ? '""' : '');
     return { label: field, type: 'property', apply, selectionOffset: apply.length - (quoted ? 1 : 0), startCompletion: valuesFor(field).length > 0 || field === 'enable' || field === 'disable' };

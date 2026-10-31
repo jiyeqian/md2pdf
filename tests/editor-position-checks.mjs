@@ -173,3 +173,30 @@ test('editor-workspace.css：三栏/分隔条/断点/专注状态齐备且括号
   const close = (wsCss.match(/\}/g) || []).length;
   assert.equal(open, close, 'CSS 花括号不平衡');
 });
+
+test('GB comprehensive example maps every source heading with stable identifiers', async () => {
+  const md=await readFile(new URL('../web/examples/gb.md',import.meta.url),'utf8');
+  const result=await render(md,{type:'gb',pagedHtml:true});
+  const {mdHeads,rendered}=linesOf(md,result.pagedHtml);
+  for(const source of mdHeads.filter(h=>h.level>=2&&h.level<=6)) {
+    const matches=rendered.filter(h=>h.line===source.line);
+    assert.equal(matches.length,1,'missing/duplicate mapping: '+source.text);
+    assert.equal(matches[0].level,source.level);
+  }
+});
+
+test('GB stable mapping does not guess duplicate, missing or mismatched keys',()=>{
+  const html='<h2 data-gb-stable-key="sec:one">1 重命名后的标题</h2>';
+  assert.equal(renderedHeadings(attachSourcePositions(html,'## 原始标题 {#sec:one}'))[0].line,1);
+  for(const md of ['## 原始标题 {#sec:two}','### 原始标题 {#sec:one}','## 一 {#sec:one}\n## 二 {#sec:one}']) {
+    assert.equal(renderedHeadings(attachSourcePositions(html,md))[0].line,null);
+  }
+});
+
+test('GB first heading excludes document title when matching unlabelled Markdown',async()=>{
+  const md='---\n中文名称: 测试标准\n---\n\n## 范围\n\n正文\n\n## 其他\n\n内容';
+  const result=await render(md,{type:'gb',pagedHtml:true});
+  const headings=renderedHeadings(attachSourcePositions(result.pagedHtml,md));
+  assert.equal(headings.find(h=>h.text.includes('范围')).line,5);
+  assert.equal(headings.find(h=>h.text.includes('其他')).line,9);
+});

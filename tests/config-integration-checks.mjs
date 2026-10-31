@@ -13,9 +13,9 @@ const root = new URL('..', import.meta.url).pathname;
 
 // Independent acceptance: tests use public CLI and renderer, not config internals.
 test('explicit clearing and inherited frontmatter work through the public renderer', async () => {
-  const md = '---\ncolophon: "文档落款"\nfooter-center: "内部资料"\nbibliography-title: "参考资料"\ndisable: [lead]\n---\n# 标题\n\n正文[^a]。\n\n[^a]: 文献\n';
-  const cli = await render(md, parseArgs(['doc.md', '--colophon', '']), { filename: 'doc.md' });
-  const web = await render(md, { colophon: '' }, { filename: 'doc.md', webSafe: true });
+  const md = '---\nfooter-center: "内部资料"\ndisable: [lead]\n---\n# 标题\n\n正文[^a]。\n\n## 参考资料 {role=bibliography}\n\n[^a]: 文献\n\n:::colophon\nleft: ""\n:::\n';
+  const cli = await render(md, parseArgs(['doc.md']), { filename: 'doc.md' });
+  const web = await render(md, {}, { filename: 'doc.md', webSafe: true });
   for (const res of [cli, web]) {
     assert.ok(!res.html.includes('文档落款'));
     assert.ok((res.html + (res.printOptions?.footerTemplate || '') + (res.pagedHtml || '')).includes('内部资料'));
@@ -97,7 +97,7 @@ test('CLI help only advertises current switch and bibliography interfaces', asyn
   const { stdout } = await exec(process.execPath, ['src/md2pdf.mjs', '--help'], {cwd:root});
   assert.ok(!stdout.includes('--no-'));
   assert.ok(!stdout.includes('--bibliography ['));
-  for (const option of ['--enable', '--disable', '--footer-{left,center,right}', '--bibliography-title', 'md2pdf skill install --help']) assert.ok(stdout.includes(option));
+  for (const option of ['--enable', '--disable', '--footer-{left,center,right}', 'md2pdf skill install --help']) assert.ok(stdout.includes(option));
 });
 
 test('CLI short version alias matches the full version option', async () => {

@@ -11,18 +11,17 @@ test('three bars default on, lead off; text and switches resolve independently',
   assert.equal(defaults.colophonEnabled, true);
   assert.equal(defaults.lead, false);
   const fm = parseFrontmatter('---\nheader-left: "资料"\ndisable: [header, colophon]\n---\n正文').fm;
-  const result = resolveDocumentOptions(parseArgs(['--enable', 'header', '--colophon-left', '落款']), fm);
+  const result = resolveDocumentOptions(parseArgs(['--enable', 'header']), fm);
   assert.equal(result.header, true);
   assert.equal(result.headerLeft, '资料');
   assert.equal(result.colophonEnabled, false);
-  assert.equal(result.colophonLeft, '落款');
 });
 test('same-layer switch and legacy text conflicts fail', () => {
   assert.throws(() => parseArgs(['--enable', 'colophon', '--disable', 'colophon']), /冲突/);
-  assert.throws(() => parseArgs(['--colophon', '甲', '--colophon-left', '乙']), /冲突/);
-  assert.throws(() => parseFrontmatter('---\ncolophon: "甲"\ncolophon-left: "乙"\n---\n正文'), /冲突/);
+  assert.throws(() => parseArgs(['--colophon', '甲', '--colophon-left', '乙']), /未知选项/);
+  assert.throws(() => parseFrontmatter('---\ncolophon: "甲"\ncolophon-left: "乙"\n---\n正文'), /已移至/);
   assert.throws(() => parseArgs(['--header-right']), /缺少/);
-  assert.equal(parseArgs(['--colophon=false']).colophonLeft, 'false');
+  assert.throws(()=>parseArgs(['--colophon=false']),/未知选项/);
 });
 test('empty header has no native template; custom header matches paged preview', async () => {
   const empty = await render('# 标题\n\n普通段落。', {});
@@ -38,7 +37,7 @@ test('empty header has no native template; custom header matches paged preview',
   assert.ok(!off.html.includes('<div class="colophon">'));
 });
 test('colophon three slots clear independently and GB keeps fixed layout', async () => {
-  const result = await render('# 标题', {colophonLeft:'',colophonCenter:'居中',colophonRight:''});
+  const result = await render('# 标题\n\n:::colophon\nleft: ""\ncenter: 居中\nright: ""\n:::');
   assert.match(result.html, /<div class="colophon"><span><\/span><span>居中<\/span><span><\/span><\/div>/);
   await assert.rejects(render('---\ntype: gb\nheader-left: "覆盖"\n---\n# 标题'), /固定版式/);
 });
@@ -52,13 +51,9 @@ test('frontmatter version defaults the center colophon consistently for CLI and 
   assert.equal(cli.html.match(center)[1], 'v2.3&lt;&amp;');
   assert.equal(web.html.match(center)[1], cli.html.match(center)[1]);
   for (const value of ['', '自定义']) {
-    const fm = parseFrontmatter('---\nversion: "1.2"\ncolophon-center: ' + JSON.stringify(value) + '\n---').fm;
-    assert.equal(resolveDocumentOptions({}, fm).colophonCenter, value);
-    assert.equal(resolveDocumentOptions({colophonCenter:value}, {version:'1.2'}).colophonCenter, value);
+    const r=await render('---\nversion: "1.2"\n---\n# 标题\n\n:::colophon\ncenter: '+JSON.stringify(value)+'\n:::');
+    assert.equal(r.html.match(center)[1],value);
   }
-  assert.equal(resolveDocumentOptions({}, {version:1.2}).colophonCenter, '1.2');
-  assert.equal(resolveDocumentOptions({}, {version:{invalid:true}}).colophonCenter, undefined);
-  assert.equal(resolveDocumentOptions({}, {version:'1.2'}, {name:'gb',gbDoc:true,defaults:{}}).colophonCenter, '');
   const off = await render('---\nversion: "1.2"\ndisable: [colophon]\n---\n# 标题');
   assert.ok(!off.html.includes('<div class="colophon">'));
 });

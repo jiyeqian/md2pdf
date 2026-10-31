@@ -1,21 +1,12 @@
-/**
- * profiles —— 文档类型预设（按用途定制转 PDF 的地基）
- *
- * 当前阶段（P0）只落地骨架：内置 general 与 skill，并支持显式 --type 覆盖。
- * 后续（P1+）再逐步增加：jekyll / paper / gb / docs … 以及各自 defaults、编号方案、预处理。
- *
- * 识别原则（已确认）：
- *   1. 显式 --type 优先；
- *   2. 否则自动探测（文件名 + frontmatter 键特征）；
- *   3. 不支持在 frontmatter 里声明类型（避免历史遗留文档需要回填字段）。
- */
+import {hasPaperAbstract} from './document-content.mjs';
+/** Template selection: explicit selection, then GB/skill metadata, then author plus explicit abstract. */
 
 export const PROFILES = {
   general: {
     name: 'general',
     // fallback：不主动命中任何文档
     detect: () => false,
-    // 无默认报头小标题（沿用 fm.kicker / fm.category）
+    // 无默认报头小标题（沿用 category 或 Markdown kicker 块）
     kicker: null,
     // 元信息条不按技能文档样式渲染
     skillMeta: false,
@@ -35,11 +26,11 @@ export const PROFILES = {
 
   paper: {
     name: 'paper',
-    // 论文 md：frontmatter 含 abstract 或 keywords
-    detect: ({ fm }) => !!(fm.abstract || fm.keywords?.length),
+    // Explicit abstract plus author metadata; keywords are shared by all templates.
+    detect: ({ fm, body }) => !!(fm.author?.trim?.() || fm.authors?.some(a=>a?.name?.trim?.())) && hasPaperAbstract(body),
     kicker: null,
     skillMeta: false,
-    // 报头三件套：作者行 + 「摘要」块 + 「关键词」行
+    // 作者及单位报头；摘要、关键词来自 Markdown 内容角色
     paperHeader: true,
     defaults: {},
   },
@@ -52,7 +43,6 @@ export const PROFILES = {
     skillMeta: false,
     // 启用封面 + 页眉 + GB 专用编号
     gbDoc: true,
-    tocTitle: '目次',
     defaults: {
       theme: 'gb',
       numberScheme: 'gb',
@@ -76,7 +66,7 @@ export const PROFILE_NAMES = Object.keys(PROFILES);
  * @returns {object} profile
  * @throws  显式指定未知类型时抛错（与 --theme 的处理风格一致）
  */
-export function detectProfile({ basename, fm, explicit }) {
+export function detectProfile({ basename, fm, explicit, body = '' }) {
   if (explicit) {
     const p = PROFILES[explicit];
     if (!p) {
@@ -84,8 +74,8 @@ export function detectProfile({ basename, fm, explicit }) {
     }
     return p;
   }
-  for (const p of Object.values(PROFILES)) {
-    if (p.detect && p.detect({ basename, fm })) return p;
+  for (const p of ['gb','skill','paper'].map(name=>PROFILES[name])) {
+    if (p.detect && p.detect({ basename, fm, body })) return p;
   }
   return PROFILES.general;
 }

@@ -74,14 +74,22 @@ function getApi() {
   return api;
 }
 
+function analysisTemplate(value) { return formTypeValue() || window.mdEffectiveTemplateType || inferType(value, ''); }
+
 function analyzeValue(value) {
-  try { return analyzeMarkdown(value == null ? '' : String(value)); }
+  try {
+    const text = value == null ? '' : String(value);
+    return analyzeMarkdown(text, { templateType: analysisTemplate(text) });
+  }
   catch (err) { return null; }
 }
 
+let latestAnalysisTemplate = '';
 function analyzeAndCache(value) {
   const source = value == null ? '' : String(value);
-  if (source !== latestAnalysisSource) {
+  const template = analysisTemplate(source);
+  if (source !== latestAnalysisSource || template !== latestAnalysisTemplate) {
+    latestAnalysisTemplate = template;
     latestAnalysis = analyzeValue(source);
     latestAnalysisSource = source;
   }

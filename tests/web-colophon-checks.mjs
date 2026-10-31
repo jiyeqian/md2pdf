@@ -41,7 +41,7 @@ test('CLI 与 Web 默认一致：都输出官方仓库口号 + 时间（不再�
 });
 
 test('显式 colophon：只覆盖左侧并转义，右侧时间保留', async () => {
-  const res = await render(BODY, { colophon: 'A & <B>"' }, { webSafe: true, generatedAt: AT });
+  const res = await render(BODY+'\n\n:::colophon\nA & <B>"\n:::', {}, { webSafe: true, generatedAt: AT });
   const s = spans(res.html);
   assert.ok(!colophon(res.html).includes('md2pdf-open-repo'));
   assert.equal(s[0], 'A &amp; &lt;B&gt;&quot;');
@@ -49,7 +49,7 @@ test('显式 colophon：只覆盖左侧并转义，右侧时间保留', async ()
 });
 
 test('显式空 colophon：只清空左侧，右侧时间保留', async () => {
-  const res = await render(BODY, { colophon: '' }, { webSafe: true, generatedAt: AT });
+  const res = await render(BODY+'\n\n:::colophon\n\n:::', {}, { webSafe: true, generatedAt: AT });
   const s = spans(res.html);
   assert.equal(s[0], '');
   assert.equal(s[2], stamp(AT));

@@ -204,7 +204,7 @@ test('脚注定义与 BibTeX 条目被收集，正文引用不重复入库', () 
   assert.equal(r.footnotes.length, 1);
   assert.equal(r.footnotes[0].id, 'r1');
   assert.match(r.footnotes[0].body, /^@article\{/);
-  assert.deepEqual(codes(r), []);
+  assert.deepEqual(codes(r), ['missing-bibliography']);
 });
 
 test('手写章节号提示：不一致给出应有序号，缺失给出缺失提示', () => {
@@ -318,7 +318,7 @@ test('脚注 / 表格片段自洽：ID 一致且回灌解析器无缺失诊断',
   const r1 = analyzeMarkdown(fn.text);
   assert.equal(r1.footnotes.length, 1);
   assert.equal(r1.footnotes[0].id, fn.id);
-  assert.deepEqual(codes(r1), []);
+  assert.deepEqual(codes(r1), ['missing-bibliography']);
 
   const tb = renderSnippet('table', { title: '指标' });
   const r2 = analyzeMarkdown(tb.text);
@@ -650,7 +650,7 @@ test('frontmatter value recommendations are scoped, canonical and use parser def
     assert.equal(candidate.apply, field + ': ""');
     assert.equal(candidate.selectionOffset, candidate.apply.length - 1);
   }
-  for (const field of ['keywords', 'tags']) {
+  for (const field of ['tags']) {
     const candidate = complete(field).options.find(o => o.label === field);
     assert.equal(candidate.apply, field + ': \n  - ');
     assert.equal(candidate.selectionOffset, candidate.apply.length);
@@ -722,15 +722,15 @@ test('pagebreak insertion preserves selections, isolates the marker and reuses e
 test('GB 指令补全只在有效 GB 模板的块起始位置出现', () => {
   const complete = (text, templateType = 'gb', pos = text.length) => provideCompletions({ text, pos, templateType }, analyzeMarkdown(text));
   const all = complete(':::');
-  assert.equal(all.options.length, 17);
-  assert.ok(all.options.every(option => option.label.startsWith('gb-') && option.detail));
-  assert.deepEqual(complete(':::gb-figure-f').options.map(option => option.label), ['gb-figure-footnote']);
-  assert.equal(complete(':::', 'general'), null);
+  assert.equal(all.options.length, 23);
+  assert.ok(all.options.every(option => (option.label.startsWith('gb-')||['kicker','colophon'].includes(option.label)) && option.detail));
+  assert.deepEqual(complete(':::gb-figure-f').options, []);
+  assert.deepEqual(complete(':::', 'general').options.map(o=>o.label),['kicker','colophon']);
   assert.equal(complete('正文 :::'), null);
   assert.equal(complete('```\n:::'), null);
   assert.equal(complete('---\ntitle: x\n:::'), null);
   assert.equal(complete('`:::gb-'), null);
-  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 17);
+  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 23);
 });
 
 test('GB 指令补全插入有效参数与成对结构，并复用已有关闭行', () => {
@@ -741,8 +741,8 @@ test('GB 指令补全插入有效参数与成对结构，并复用已有关闭�
     return { text: text.slice(0, result.from) + option.apply + text.slice(result.to), option };
   };
   assert.match(apply(':::', 'gb-term').text, /^:::gb-term\n.+\nterm name\n\n.+\n:::$/);
-  assert.match(apply(':::', 'gb-index').text, /^:::gb-index A\n.+ \| 3\.1\n:::$/);
-  assert.match(apply(':::', 'gb-table-footnote').text, /^:::gb-table-footnote a）\n/);
+  assert.match(apply(':::', 'gb-index').text, /^:::gb-index\n.+ \| @sec:section\n:::$/);
+  assert.match(apply(':::', 'gb-note scope=table position=bottom label="注："').text, /^:::gb-note scope=table position=bottom label=\"注：\"\n/);
   const closed = apply(':::gb-\n:::', 'gb-note', 6);
   assert.equal(closed.text, ':::gb-note\n注的内容\n:::');
   assert.equal(closed.option.selectionOffset, 'gb-note\n'.length);
@@ -780,4 +780,22 @@ test('新索引补全优先提供中英分区并保留旧分组入口',()=>{
   assert.match(result.options[0].apply,/^gb-index-section lang=zh\n/);
   assert.match(result.options[1].apply,/^gb-index-section lang=en\n/);
   assert.ok(result.options[0].apply.endsWith(':::\n:::'));
+});
+
+test('fonts and common content completion use the requested editable defaults',async()=>{
+ const complete=(text,templateType='general',pos=text.length)=>provideCompletions({text,pos,templateType},analyzeMarkdown(text));
+ const text='---\nfon\n---';
+ const option=complete(text,'general',text.indexOf('fon')+3).options.find(o=>o.label==='fonts');
+ assert.equal(option.apply,'fonts:\n  heading: "PostScript Name or Full Name"\n  body: ""\n  western: ""\n  code: ""');
+ const {parseFrontmatter}=await import('../src/config.mjs');assert.doesNotThrow(()=>parseFrontmatter('---\n'+option.apply+'\n---'));
+ const existing='---\nfon\n  body: Arial\n---';
+ assert.equal(complete(existing,'general',existing.indexOf('fon')+3).options.find(o=>o.label==='fonts').apply,'fonts:');
+ const {prepareDocumentContent}=await import('../src/document-content.mjs');
+ const defaults={kicker:'技术报告',colophon:'left: "编制：方鸿渐"\ncenter: "审核：褚慎明、韩学愈、李广智"\nright: "校对：范进、孔乙己、李梅亭"'};
+ for(const templateType of ['general','paper','skill','gb'])for(const [name,body]of Object.entries(defaults)) {
+  const prefix=':::'+name.slice(0,2),o=complete(prefix,templateType).options.find(o=>o.label===name);
+  assert.equal(o.apply,name+'\n'+body+'\n:::');
+  assert.doesNotThrow(()=>prepareDocumentContent(':::'+o.apply));
+  const root=complete(':::',templateType).options.find(o=>o.label===name);assert.equal(root.apply,o.apply);
+ }
 });

@@ -9,20 +9,11 @@ const AT = new Date('2026-10-12T13:45:06+08:00');
 const web = (md, opts = {}, ctx = {}) => render(md, opts, { webSafe: true, generatedAt: AT, ...ctx });
 const tocBlock = html => /<div class="toc">([\s\S]*?)<\/ol><\/div>/.exec(html)?.[1] || '';
 
-test('优先级 explicit > FM > profile.defaults > 全局默认', async () => {
-  const fm = '---\ntitle: FM标题\nkicker: FM副题\n---\n# 正文标题\n';
-  const a = await web(fm);
-  assert.equal(a.title, 'FM标题');
-  assert.match(a.html, /<div class="kicker">FM副题<\/div>/);
-
-  const b = await web(fm, { title: 'CLI标题', kicker: 'CLI副题' });
-  assert.equal(b.title, 'CLI标题');
-  assert.match(b.html, /<div class="kicker">CLI副题<\/div>/);
-
-  // 显式空串清空并阻止低层回退
-  const c = await web(fm, { title: '', kicker: '' });
-  assert.equal(c.title, '');
-  assert.match(c.html, /<div class="kicker"><\/div>/);
+test('标题覆盖保持独立，kicker 由 Markdown 覆盖默认值',async()=>{
+ const md='---\ntitle: FM标题\ncategory: 默认副题\n---\n# 正文标题\n\n:::kicker\n显式副题\n:::';
+ assert.equal((await web(md)).title,'FM标题');
+ const r=await web(md,{title:'CLI标题'});assert.equal(r.title,'CLI标题');assert.match(r.html,/<div class="kicker">显式副题<\/div>/);
+ assert.equal((await web(md,{title:''})).title,'');
 });
 
 test('title 显式空串隐藏文档标题：不回退 H1 或文件名', async () => {
@@ -63,19 +54,11 @@ test('Chrome 打印路径页脚与 Paged 路径一致', async () => {
   assert.match(e.printOptions.footerTemplate, /text-align:center;"><\/span>/);
 });
 
-test('参考文献标题可自定义；空串只去标题、保留条目与链接；无引用不生成', async () => {
-  const md = '# 标题\n\n引用[^a]。\n\n[^a]: @article{k, title={T}, author={A}, journal={J}, year={2020}}\n';
-  const def = await web(md);
-  assert.match(def.html, /<h2[^>]*>[^<]*参考文献<\/h2>/);
-  const custom = await web(md, { bibliographyTitle: '引用文献' });
-  assert.match(custom.html, /<h2[^>]*>[^<]*引用文献<\/h2>/);
-  const none = await web(md, { bibliographyTitle: '' });
-  assert.ok(!none.html.includes('参考文献<\/h2>'));
-  assert.match(none.html, /class="references"/);
-  assert.match(none.html, /href="#fn-1"/);
-  const emptyDoc = await web('# 标题\n\n无参考文献。');
-  assert.ok(!emptyDoc.html.includes('<ol class="references">'));
-  assert.ok(!/参考文献<\/h2>/.test(emptyDoc.html));
+test('参考文献标题由显式章节定义，缺少角色不再生成',async()=>{
+ const md='# 标题\n\n引用[^a]。\n\n## 引用文献 {role=bibliography}\n\n[^a]: 参考内容';
+ const r=await web(md);assert.match(r.html,/<h2[^>]*>[^<]*引用文献<\/h2>/);assert.match(r.html,/<ol class="references">/);
+ const missing=await web(md.replace('## 引用文献 {role=bibliography}',''));
+ assert.doesNotMatch(missing.html,/<ol class="references">/);assert.ok(missing.warnings.some(w=>w.includes('role=bibliography')));
 });
 
 test('FM enable/disable 控制功能开关（列表、可重复）', async () => {
@@ -180,15 +163,15 @@ test('目录采用文档字号比例，CLI 与 Web 共用缩放规则', async ()
 
 test('CLI and Web render list keywords identically, hide empty lists, and leave tags as metadata', async () => {
   const {parseArgs} = await import('../src/options.mjs');
-  const md = '---\nkeywords: ["甲<&", "乙"]\ntags: ["标签"]\n---\n# 标题\n';
+  const md = '---\ntags: ["标签"]\n---\n# 标题\n\n## 关键词 {role=keywords}\n\n- 甲<&\n- 乙\n';
   const cli = await render(md, parseArgs([]), {generatedAt:AT});
   const online = await web(md);
   for (const result of [cli, online]) {
-    assert.equal(result.type, 'paper');
+    assert.equal(result.type, 'general');
     assert.ok(result.html.includes('甲&lt;&amp;；乙'));
     assert.ok(!result.html.includes('标签'));
   }
-  const empty = await web('---\nkeywords: []\ntags: ["标签"]\n---\n# 标题');
+  const empty = await web('---\ntags: ["标签"]\n---\n# 标题\n\n## 关键词 {role=keywords}');
   assert.equal(empty.type, 'general');
   assert.ok(!empty.html.includes('<div class="keywords">'));
 });

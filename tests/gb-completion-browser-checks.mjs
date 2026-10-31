@@ -35,6 +35,22 @@ try {
  const indexMenu=await evaluate(`document.querySelector('.cm-tooltip-autocomplete')?.textContent||''`);
  assert.ok(indexMenu.includes('中文索引分区')&&indexMenu.includes('英文索引分区'));
  assert.ok(await evaluate("MDEditorVendor.completionKeymap.find(k=>k.key==='Enter').run(gbView)"));
- assert.match(await evaluate('mdEditor.getValue()'),/^:::gb-index-section lang=zh\n:::gb-index A[\s\S]*:::\n:::$/);
- console.log('PASS: real editor GB completion menu, insertion and template isolation');
+ assert.match(await evaluate('mdEditor.getValue()'),/^:::gb-index-section lang=zh\n:::gb-index[\s\S]*:::\n:::$/);
+ const indexSource='## 范围 {#sec:scope}\n\n图：流程 {#fig:flow}\n\n表：数据 {#tab:data}\n\n:::gb-term id=grasp\n抓取\ngrasp\n\n定义\n:::\n\n:::gb-index\n词条 | ';
+ for(const type of ['gb','paper']) {
+  await evaluate(`mdEditor.setValue(${JSON.stringify(indexSource)});gbView.dispatch({selection:{anchor:gbView.state.doc.length}});mdEditor.setCompletions(c=>gbAnalysis.provideCompletions({...c,templateType:${JSON.stringify(type)}},gbAnalysis.analyzeMarkdown(c.text,{templateType:${JSON.stringify(type)}})));gbView.focus();gbView.dispatch({changes:{from:gbView.state.doc.length,insert:'@'},selection:{anchor:gbView.state.doc.length+1},userEvent:'input.type'});`);
+  await new Promise(r=>setTimeout(r,500));
+  const menu=await evaluate(`document.querySelector('.cm-tooltip-autocomplete')?.textContent||''`);
+  if(type==='gb') {
+   for(const id of ['@sec:scope','@fig:flow','@tab:data','@grasp'])assert.ok(menu.includes(id),'automatic @ completion '+id);
+   assert.ok(await evaluate("MDEditorVendor.completionKeymap.find(k=>k.key==='Enter').run(gbView)"));
+   assert.ok((await evaluate('mdEditor.getValue()')).endsWith('@sec:scope'),'inserts one @ and stable id');
+  }else assert.equal(menu,'','paper does not activate index @ completion');
+ }
+ for(const [input,wanted] of [[':::gb-note scope=table position=','position=bottom-boxed'],[':::gb-note scope=figure label','label="^{a}"']]) {
+  await evaluate(`mdEditor.setValue(${JSON.stringify(input)});gbView.dispatch({selection:{anchor:gbView.state.doc.length}});mdEditor.setCompletions(c=>gbAnalysis.provideCompletions({...c,templateType:'gb'},gbAnalysis.analyzeMarkdown(c.text,{templateType:'gb'})));MDEditorVendor.startCompletion(gbView);`);
+  await new Promise(r=>setTimeout(r,150));
+  assert.ok((await evaluate(`document.querySelector('.cm-tooltip-autocomplete')?.textContent||''`)).includes(wanted),'note parameter completion '+wanted);
+ }
+ console.log('PASS: real editor GB completion menu, insertion, automatic @ targets and template isolation');
 }finally{await chrome.stop();await app.close();await rm(temp,{recursive:true,force:true});}

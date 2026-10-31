@@ -1,4 +1,8 @@
-import { prepareGbContent, transformGbContent } from './gb-content.mjs';
+import { installInlineScripts } from './inline-scripts.mjs';
+import {prepareDocumentContent,prepareContentHeadings,finalizeContentNavigation} from './document-content.mjs';
+import { gbSectionCatalog, gbSectionDiagnostics } from './gb-sections.mjs';
+import { prepareGbContent, transformGbContent, separateGbBodyHeading } from './gb-content.mjs';
+import { documentFonts } from './fonts.mjs';
 import { GB_FONT_CHECKS, requireGbFonts } from './gb-fonts.mjs';
 import { finalizeGbLayout, prepareGbLayout } from './gb-layout.mjs';
 import { finalizeGbIndexLayout } from './gb-index-layout.mjs';
@@ -161,9 +165,8 @@ function numberFloats(html, gb = false) {
   const sequence = new Map();
   const floatNumber = (kind, offset, source, fallback) => {
     if (!gb) return fallback;
-    const heading = [...source.slice(0, offset).matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/g)].at(-1);
-    const appendix = heading && /^附录\s*([A-Z])/i.exec(stripTags(heading[1]));
-    const prefix = appendix?.[1].toUpperCase() || '';
+    const heading = [...source.slice(0, offset).matchAll(/<h2([^>]*)>[\s\S]*?<\/h2>/g)].at(-1);
+    const prefix = /data-gb-appendix="([A-Z])"/.exec(heading?.[1] || '')?.[1] || '';
     const key = kind + prefix, n = (sequence.get(key) || 0) + 1;
     sequence.set(key, n);
     return prefix ? prefix + '.' + n : n;
@@ -196,8 +199,9 @@ function numberFloats(html, gb = false) {
     }
     figN++;
     const display = floatNumber('fig', offset, source, figN);
+    if (gb && label && refs.has(label)) throw Object.assign(new Error('稳定标识重复：' + label), {status:400});
     if (label) refs.set(label, { num: display, id: 'fig-' + figN });
-    return '<figure class="fig" id="fig-' + figN + '">' + body +
+    return '<figure class="fig" id="fig-' + figN + '"' + (gb && label ? ' data-gb-stable-key="' + label + '"' : '') + '>' + body +
       '<figcaption>图 ' + display + (gb ? '　' : '：') + caption + '</figcaption></figure>';
   });
 
@@ -207,11 +211,43 @@ function numberFloats(html, gb = false) {
     if (labM) { label = labM[1]; cap = cap.replace(labM[0], ' ').trim(); }
     tabN++;
     const display = floatNumber('tab', offset, source, tabN);
+    if (gb && label && refs.has(label)) throw Object.assign(new Error('稳定标识重复：' + label), {status:400});
     if (label) refs.set(label, { num: display, id: 'tab-' + tabN });
-    return '<table class="tbl" id="tab-' + tabN + '">\n<caption>表 ' + display + (gb ? '　' : '：') + cap + '</caption>';
+    return '<table class="tbl" id="tab-' + tabN + '"' + (gb && label ? ' data-gb-stable-key="' + label + '"' : '') + '>\n<caption>表 ' + display + (gb ? '　' : '：') + cap + '</caption>';
   });
 
   return { html, refs };
+}
+
+function prepareGbHeadingTargets(html, sections) {
+  const seen = new Set();
+  let index = 0;
+  return html.replace(/<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g, (whole,level,attrs,inner) => {
+    const section = sections[index++];
+    if(section.error) throw Object.assign(new Error(section.error),{status:400});
+    const {id:key,role,nature,number,appendix} = section;
+    const suffix = /\s*\{[^{}]*\}\s*$/.exec(inner);
+    if (suffix) inner = inner.slice(0,suffix.index);
+    if (role) attrs += ' data-gb-role="'+role+'"';
+    if (nature) attrs += ' data-gb-nature="'+nature+'"';
+    if (appendix) attrs += ' data-gb-appendix="'+appendix+'"';
+    if (number) attrs += ' data-gb-number="'+number+'"';
+    if (key) {
+      if (seen.has(key)) throw Object.assign(new Error('稳定标识重复：' + key), {status:400});
+      seen.add(key);
+      attrs = attrs.replace(/\s+id="[^"]*"/, '') + ' id="gb-'+key.replace(':','-')+'" data-gb-stable-key="'+key+'"';
+    }
+    return '<h'+level+attrs+'>'+inner+'</h'+level+'>';
+  });
+}
+
+function collectGbHeadingReferences(html, refs) {
+  for (const match of html.matchAll(/<h[2-6]([^>]*)>([\s\S]*?)<\/h[2-6]>/g)) {
+    const key = /data-gb-stable-key="([^"]+)"/.exec(match[1])?.[1];
+    const id = /\bid="([^"]+)"/.exec(match[1])?.[1];
+    const number = /data-gb-number="([^"]+)"/.exec(match[1])?.[1];
+    if (key && id && number) refs.set(key, {id,num:number.replace(/\s/g,'')});
+  }
 }
 
 /* ---------------- 章节编号 ---------------- */
@@ -220,44 +256,42 @@ function numberFloats(html, gb = false) {
 const HEADING_NUM_RE = /^\s*(?:\d+(?:\.\d+)*[、．.)]\s?|[一二三四五六七八九十百]+[、．.]|第[一二三四五六七八九十百\d]+[章节篇]|\([一二三四五六七八九十\d]+\)|[IVX]+[.、])\s*/;
 
 // 章节编号：mode 为 auto（默认，识别到已有编号则不动）/ force（强制编号）/ none（不动）
-function numberHeadings(html, mode, scheme) {
+function numberHeadings(html, mode, scheme, gb = false, paper = false) {
   if (mode === 'none') return html;
   const re = /<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g;
+  if (gb) {
+    let bodyStart=false;
+    return html.replace(re,(_,level,attrs,inner)=>{
+      const role=/data-gb-role="([^"]+)"/.exec(attrs)?.[1];
+      const number=/data-gb-number="([^"]+)"/.exec(attrs)?.[1];
+      const clean=inner.replace(HEADING_NUM_RE,'');
+      if(role==='appendix') {
+        const letter=/data-gb-appendix="([A-Z])"/.exec(attrs)?.[1];
+        const nature=/data-gb-nature="(normative|informative)"/.exec(attrs)?.[1];
+        return '<h'+level+addClass(attrs,'appendix')+'><span class="gb-appendix-number">附录 '+letter+'</span>'+(nature?'<span class="gb-appendix-kind">（'+(nature==='normative'?'规范性':'资料性')+'）</span>':'')+'<span class="gb-appendix-title">'+clean+'</span></h'+level+'>';
+      }
+      if(role) return '<h'+level+addClass(attrs,'unnumbered '+(['preface','introduction','toc'].includes(role)?'front':'back'))+'>'+clean+'</h'+level+'>';
+      if(+level===2 && !bodyStart) { attrs=addClass(attrs,'body-start'); bodyStart=true; }
+      return '<h'+level+attrs+'>'+ (number ? number+'　' : '')+clean+'</h'+level+'>';
+    });
+  }
   const all = [...html.matchAll(re)];
   if (!all.length) return html;
   if (mode !== 'force' && all.some(m => HEADING_NUM_RE.test(stripTags(m[3])))) return html;
   const raw = resolveNumberScheme(scheme || 'arabic');
-  // scheme 既可为函数，也可为 { skip, fmt } 对象（GB 需要 skip 与有状态 fmt）
-  const skipFn = typeof raw === 'function' ? null : raw.skip;
   const fmt = typeof raw === 'function' ? raw : raw.fmt;
-  // 对象型 scheme（gb）额外产出语义 class，供主题做版式（命名页 / 前置部分）。
-  // 其他 scheme 输出与旧版逐字节一致，避免回归。
-  const isGb = typeof raw !== 'function';
+  const fullWidthSpace = typeof raw !== 'function';
   const counters = [0, 0, 0, 0, 0];
-  const state = {};   // 单次渲染的可变状态（如 GB 的当前附录字母）
   let markedBodyStart = false;
   return html.replace(re, (m, level, attrs, inner) => {
+    if(paper && /data-document-role="bibliography"/.test(attrs))return '<h'+level+addClass(attrs,'unnumbered')+'>'+inner+'</h'+level+'>';
     const lvl = parseInt(level, 10) - 2;
-    const text = stripTags(inner);
     const clean = inner.replace(HEADING_NUM_RE, '');
-    // 跳过：不编号、且不占号（如 GB 的前言/引言/目次/参考文献）
-    if (skipFn && skipFn(text)) {
-      if (!isGb) return '<h' + level + attrs + '>' + clean + '</h' + level + '>';
-      // 前言/引言属「前置部分」（罗马页码、各自起新页）；参考文献只在版式上独立起页
-      const cls = /^(前言|引言)\s*$/.test(text.trim()) ? 'front' : 'back';
-      return '<h' + level + addClass(attrs, 'unnumbered ' + cls) + '>' + clean + '</h' + level + '>';
-    }
     counters[lvl]++;
     for (let k = lvl + 1; k < 5; k++) counters[k] = 0;
-    const num = fmt({ counters, lvl, text, state });
-    let extra = '';
-    if (isGb) {
-      if (num == null && /^附录/.test(text.trim())) extra = 'appendix';
-      // 正文（阿拉伯页码）从第一个带号的章开始，页码计数器在此归零
-      else if (num != null && !markedBodyStart && lvl === 0) { extra = 'body-start'; markedBodyStart = true; }
-    }
-    const outAttrs = extra ? addClass(attrs, extra) : attrs;
-    return '<h' + level + outAttrs + '>' + (num == null ? clean : (isGb ? num.replace(/ $/, '　') : num) + clean) + '</h' + level + '>';
+    const num = fmt({ counters, lvl, text:stripTags(inner) });
+    if(fullWidthSpace && !markedBodyStart && lvl===0) { attrs=addClass(attrs,'body-start'); markedBodyStart=true; }
+    return '<h' + level + attrs + '>' + (fullWidthSpace ? num.replace(/ $/, '　') : num) + clean + '</h' + level + '>';
   });
 }
 
@@ -432,7 +466,7 @@ function renderFootnotes(footnotes, title, marked, gb = false) {
     return '<li id="fn-' + num + '"><a href="#fnref-' + num + '" class="fnref-back">[' + num + ']</a>' + (gb ? '　' : ' ') + content + '</li>';
   }).join('\n');
   const list = '<ol class="references">\n' + items + '\n</ol>';
-  return (title ? '<h2>' + title + '</h2>\n' : '') + list;
+  return (title ? '<h2'+(gb ? ' data-gb-role="bibliography"' : '')+'>' + title + '</h2>\n' : '') + list;
 }
 
 /* ---------------- Chrome ---------------- */
@@ -539,6 +573,7 @@ export async function render(src, options = {}, context = {}) {
   const { Marked } = await import(pathToFileURL(path.join(ROOT, 'vendor', 'marked.esm.js')).href);
   throwIfAborted();
   const marked = new Marked({ gfm: true });
+  installInlineScripts(marked);
   const require = createRequire(import.meta.url);
   const hljs = require(path.join(ROOT, 'vendor', 'highlight', 'highlight.cjs'));
   marked.use({
@@ -567,8 +602,11 @@ export async function render(src, options = {}, context = {}) {
   } });
   // 配置解析与校验统一走 config 模块：YAML 语法/重复键/类型冲突在此抛 ConfigError。
   const reusableParse = context.parsedFrontmatter?.source === src ? context.parsedFrontmatter.parsed : undefined;
-  const { fm, body: rawBody, positions, warnings = [] } = reusableParse || parseFrontmatter(src);
-  const profile = detectProfile({ basename: path.basename(mdPath), fm, explicit: options.type || fm.type });
+  const { fm, body: sourceBody, positions, warnings: parseWarnings = [] } = reusableParse || parseFrontmatter(src);
+  const warnings=[...parseWarnings];
+  const content=prepareDocumentContent(sourceBody);
+  const rawBody=content.body;
+  const profile = detectProfile({ body:rawBody, basename: path.basename(mdPath), fm, explicit: options.type || fm.type });
   // 有效配置：explicit(CLI/Web) > FM > profile.defaults > 全局默认，统一由 config.resolveDocumentOptions 合并。
   const eff = resolveDocumentOptions(options, fm, profile, { ...context, positions });
   const effTheme = eff.theme ?? profile.defaults.theme ?? 'elegant';
@@ -636,6 +674,20 @@ export async function render(src, options = {}, context = {}) {
 
   if (context.webSafe) html = html.replace(/\u0003FOOTNOTE(\d+)\u0003/g, (m, i) => fnMarkup[+i] ?? m);
 
+  const common=prepareContentHeadings(html,profile.gbDoc);
+  html=common.html;
+  if(!profile.gbDoc && orderedFootnotes.length && !common.roles.has('bibliography')) warnings.push('存在文献引用，但未声明 role=bibliography；文献列表未生成。');
+  if (profile.gbDoc) {
+    // Code examples are literal, including references to identifiers not in the document.
+    html = html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/g, code => code.replace(/\u0002REF(\d+)\u0002/g, (_,i)=>esc('\\ref{' + refStore[+i] + '}')));
+    const headings=[...html.matchAll(/<h([2-6])[^>]*>([\s\S]*?)<\/h\1>/g)].map(m=>({level:+m[1],text:stripTags(m[2])}));
+    const sections=gbSectionCatalog(headings);
+    const issues=gbSectionDiagnostics(headings,{tocEnabled:useToc,referenceLine:orderedFootnotes.length ? 1 : undefined},sections);
+    if (issues.some(d=>d.code==='gb-section-duplicate')) throw Object.assign(new Error(issues.find(d=>d.code==='gb-section-duplicate').message),{status:400});
+    warnings.push(...issues.map(d=>d.message));
+    html = prepareGbHeadingTargets(html,sections);
+  }
+
   // 图/表自动编号与题注（收集标签）
   const floats = eff.floatNumbering === false
     ? { html, refs: new Map() }
@@ -644,11 +696,12 @@ export async function render(src, options = {}, context = {}) {
   // The editor accepts ordinary Mermaid fences without requiring a CLI figure caption.
   if (context.webSafe) html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, '<pre class="mermaid">$1</pre>');
 
-  // 还原 \ref{} 为对应编号
-  html = html.replace(/\u0002REF(\d+)\u0002/g, (m, i) => {
-    const info = floats.refs.get(refStore[+i]);
+  const restoreReferences = html => html.replace(/\u0002REF(\d+)\u0002/g, (m, i) => {
+    const key = refStore[+i], info = floats.refs.get(key);
+    if (!info && profile.gbDoc && /^(?:fig|tab|sec):/.test(key)) throw Object.assign(new Error('引用的稳定标识不存在或未编号：' + key), {status:400});
     return info ? '<a href="#' + info.id + '" class="ref">' + info.num + '</a>' : '?';
   });
+  if (!profile.gbDoc) html = restoreReferences(html);
 
   // 还原数学公式（原样交回 MathJax 渲染）
   html = html.replace(/\u0001MATH(\d+)\u0001/g, (m, i) => context.webSafe ? esc(mathStore[+i] ?? m) : (mathStore[+i] ?? m));
@@ -656,17 +709,16 @@ export async function render(src, options = {}, context = {}) {
   // 代码高亮：对带语言标记的代码块做 highlight.js 着色
   html = highlightCode(html, hljs);
 
-  // 脚注/参考文献：先追加到正文末尾，再编号，使参考文献章节纳入编号体系。
-  // bibliographyTitle 默认「参考文献」；显式空串时只去掉标题，条目与链接保留；无引用则不生成。
-  const bibTitle = eff.bibliographyTitle !== undefined ? eff.bibliographyTitle : '参考文献';
-  const referencesHtml = renderFootnotes(orderedFootnotes, bibTitle, marked, profile.gbDoc);
-  const indexHeading = /<h2[^>]*>\s*索引\s*<\/h2>/;
-  if (profile.gbDoc && indexHeading.test(html)) html = html.replace(indexHeading, heading => referencesHtml + heading);
-  else html += referencesHtml;
+  // All templates fill references only at the explicitly declared bibliography.
+  // The declared heading supplies both the visible title and insertion point.
+  const bibliography = /(<h2[^>]*(?:data-gb-role|data-document-role)="bibliography"[^>]*>[\s\S]*?<\/h2>)/;
+  html = html.replace(bibliography, heading => heading + renderFootnotes(orderedFootnotes, '', marked, profile.gbDoc));
   html = html.replace(/<h2(?=[\s>])/g, '<h2 data-chapter');
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
-  html = numberHeadings(html, effNumbering, effScheme);
+  html = numberHeadings(html, effNumbering, effScheme, profile.gbDoc, profile.paperHeader);
+
+  if (profile.gbDoc) { collectGbHeadingReferences(html, floats.refs); html = restoreReferences(html); }
 
   // 标题：显式 title（含显式空串）优先，空串即隐藏文档标题、不再回退 H1/文件名；否则取首个 H1 → GB 中文名称 → 文件名/网页提示。
   const h1 = /<h1(?:\s[^>]*)?>([\s\S]*?)<\/h1>/.exec(html);
@@ -709,27 +761,39 @@ export async function render(src, options = {}, context = {}) {
     const front = /\bclass="[^"]*\bfront\b/.test(attrs);
     const existing = /\sid="([^"]+)"/.exec(attrs);
     const id = existing ? existing[1] : `sec-${secIds.length + 1}`;
-    secIds.push({ id, text: stripTags(inner), front, level: +level });
+    secIds.push({ id, text: stripTags(inner), front, level: +level, role:/data-gb-role="([^"]+)"/.exec(attrs)?.[1] });
     return existing ? m : `<h${level}${attrs} id="${id}">${inner}</h${level}>`;
   });
   let toc = '';
-  if (useToc && secIds.length) {
+  const tocHeading = profile.gbDoc ? secIds.find(s=>s.role==='toc') : null;
+  if (useToc && secIds.length && (!profile.gbDoc || tocHeading)) {
     const levels = [...new Set(secIds.map(s => s.level))].sort((a, b) => a - b);
     const included = levels.slice(0, eff.tocDepth || 1);
-    const items = secIds.filter(s => included.includes(s.level));
+    const items = secIds.filter(s => included.includes(s.level) && s.role!=='toc');
     const tocItem = s => profile.gbDoc
       ? `<li class="toc-level-${included.indexOf(s.level)}${s.float ? ' toc-float' : ''}"><a href="#${s.id}"${s.front ? ' class="toc-front"' : ''}><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`
       : `<li class="toc-level-${included.indexOf(s.level)}${s.float ? ' toc-float' : ''}"><a href="#${s.id}"><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`;
     const floatLists = profile.gbDoc ? ['fig', 'tab'].map(kind => {
-      const entries = [...html.matchAll(kind === 'fig' ? /<figure class="fig" id="([^"]+)">[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/g : /<table class="tbl" id="([^"]+)">\s*<caption>([\s\S]*?)<\/caption>/g)];
+      const entries = [...html.matchAll(kind === 'fig' ? /<figure class="fig" id="([^"]+)"[^>]*>[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/g : /<table class="tbl" id="([^"]+)"[^>]*>\s*<caption>([\s\S]*?)<\/caption>/g)];
       return entries.length ? '<ol class="gb-float-toc">' + entries.map(m => tocItem({id:m[1],text:stripTags(m[2]),level:2,float:true})).join('') + '</ol>' : '';
     }).join('') : '';
-    toc = `<div class="toc"><div class="toc-title">${profile.tocTitle || '目  录'}</div><ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';
+    toc = `<div class="toc">${profile.gbDoc ? '<h2 class="toc-title" data-gb-role="toc" id="'+tocHeading.id+'">'+esc(tocHeading.text)+'</h2>' : '<div class="toc-title">'+(profile.tocTitle || '目  录')+'</div>'}<ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';
   }
 
   if (profile.gbDoc) html = applyGbEquations(transformGbContent(html, title));
   if (gbNotes) html = gbNotes.finalize(html);
-  html = sectionize(html);
+  html = finalizeContentNavigation(sectionize(html));
+  if (profile.gbDoc) html = separateGbBodyHeading(html);
+  if (profile.gbDoc && /data-gb-role="toc"/.test(html)) {
+    const contentsSection = /<section>\s*<h2[^>]*data-gb-role="toc"[^>]*>[\s\S]*?<\/h2>([\s\S]*?)<\/section>/;
+    const contents = contentsSection.exec(html);
+    // Keep the usual first contents outside main: nested named pages create an empty front sheet.
+    if (contents && !html.slice(0,contents.index).trim()) html = html.replace(contentsSection, (_,rest)=>rest);
+    else {
+      html = html.replace(contentsSection, (_,rest)=>toc ? '<section class="gb-toc-section">'+toc+rest+'</section>' : rest);
+      toc = '';
+    }
+  }
   if (profile.gbDoc && !(fm.gb_source_cover === true || fm.gb_source_cover === 'true') && /class="[^"]*body-start/.test(html)) {
     html = html.replace(/<\/section>\s*$/, '<div class="gb-end-line" aria-label="文件终结线"></div></section>');
   }
@@ -745,6 +809,9 @@ export async function render(src, options = {}, context = {}) {
   // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 themes/gb.css 的
   // body{line-height:1.62} 直接覆盖，且 server 拒绝为 gb 传入 lineHeight。
   const effLineHeight = Number.isFinite(eff.lineHeight) ? eff.lineHeight : 1.9;
+  const fontPlan = documentFonts(eff.fonts, profile.gbDoc);
+  const fontChecks = [...(profile.gbDoc ? GB_FONT_CHECKS : []), ...fontPlan.checks];
+  const fontScript = fontChecks.length ? '<script>\nwindow.__md2pdfFontsReady=false;\n' + requireGbFonts.toString() + '\nwindow.__md2pdfFontCheck=requireGbFonts(' + JSON.stringify(fontChecks) + ');\nwindow.__md2pdfFontCheck.then(function(){window.__md2pdfFontsReady=true;},function(){window.__md2pdfFontsReady=true;});\n</script>\n' : '';
   const css = (base + '\n' + theme + (profile.gbDoc ? '\n' + GB_EQUATION_CSS : ''))
     .replace(/\{\{PAGE_SIZE\}\}/g, eff.landscape ? 'A4 landscape' : 'A4')
     .replace(/\{\{MARGIN_TOP\}\}/g, `${effMarginTop}mm`)
@@ -758,7 +825,7 @@ export async function render(src, options = {}, context = {}) {
   // 做不到奇偶差异，改由 Paged.js 的命名页 margin box 绘制（故标准号在这里动态成 CSS）。
   const stdno = fm['标准号'] || fm.standard || '';
   const pageCss = profile.gbDoc ? gbHeaderCss(stdno) : '';
-  let finalCss = (pageCss ? css + '\n' + pageCss : css) + (gbNotes ? '\n' + gbNotes.css : '');
+  let finalCss = (pageCss ? css + '\n' + pageCss : css) + (gbNotes ? '\n' + gbNotes.css : '') + (fontPlan.css ? '\n' + fontPlan.css : '');
 
   const chapterStart = eff.chapterStart;
   if (chapterStart !== 'continuous') {
@@ -767,10 +834,9 @@ export async function render(src, options = {}, context = {}) {
   // Intentional parity pages stay entirely blank, including custom margin boxes.
   if (chapterStart === 'odd-page') finalCss += '\n@page :blank { @top-left { content: none; } @top-center { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-center { content: none; } @bottom-right { content: none; } }\n.pagedjs_blank_page .pagedjs_margin-content { visibility: hidden !important; }';
 
-  const kicker = eff.kicker !== undefined ? eff.kicker
-    : (fmStr(fm.kicker) || fmStr(fm.category) || (profile.kicker ?? ''));
+  const kicker = content.kicker ?? (fmStr(fm.category) || (profile.kicker ?? ''));
 
-  // 学术论文：报头三件套（作者行 + 「摘要」块 + 「关键词」行）
+  // Author affiliations remain structured metadata; summaries live in Markdown.
   const authorsHtml = profile.paperHeader ? paperAuthorsHtml(fm, esc) : '';
   const sourceCover = fm.gb_source_cover === true || fm.gb_source_cover === 'true';
   const coverHtml = profile.gbDoc && eff.gbCover !== false && !sourceCover ? buildCover(fm, title, eff.gbDefaults !== false, await readFile(path.join(ASSETS, 'gb-cover-banner.svg'), 'utf8'), JSON.parse(await readFile(path.join(ASSETS, 'gb-issuer-outlines.json'), 'utf8'))) : '';
@@ -780,18 +846,13 @@ export async function render(src, options = {}, context = {}) {
     finalCss += '\nbody, main { page: gb-body; }\nmain > section:first-child { break-before: auto; }\nmain img { max-height: 230mm; object-fit: contain; }\n@page { ' + header + ' @bottom-right { content: counter(page); } }';
   }
 
-  const paperHtml = profile.paperHeader
-    ? [
-        fm.abstract ? '<div class="abstract"><span class="paper-label">摘要</span><span>' + esc(fm.abstract) + '</span></div>' : '',
-        fm.keywords?.length ? '<div class="keywords"><span class="paper-label">关键词</span><span>' + esc(fm.keywords.join('；')) + '</span></div>' : '',
-      ].filter(Boolean).join('\n')
-    : '';
   // 文末落款：CLI 与 Web 默认一致 —— 左侧官方仓库口号，右侧本次渲染生成时间（本机时区，带偏移）。
   // 文字与整栏开关分别解析；关闭整栏不影响保存的文字。
   const stamp = formatStamp(context.generatedAt instanceof Date ? context.generatedAt : new Date());
   const colophonLeftDefault = `make <a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a> great`;
-  const colophonParts = [eff.colophonLeft === undefined ? colophonLeftDefault : esc(eff.colophonLeft),
-    esc(eff.colophonCenter || ''), esc(eff.colophonRight === undefined ? stamp : eff.colophonRight)];
+  const version = typeof fm.version==='string'||(typeof fm.version==='number'&&Number.isFinite(fm.version)) ? String(fm.version) : '';
+  const colophonParts = [content.colophon?.left === undefined ? colophonLeftDefault : esc(content.colophon.left),
+    esc(content.colophon?.center ?? version), esc(content.colophon?.right === undefined ? stamp : content.colophon.right)];
   const colophonHtml = profile.gbDoc || eff.colophonEnabled === false || !colophonParts.some(Boolean) ? '' :
     `<div class="colophon">${colophonParts.map(part => `<span>${part}</span>`).join('')}</div>`;
 
@@ -806,7 +867,7 @@ export async function render(src, options = {}, context = {}) {
     'window.__md2pdfMermaidReady = false;',
     'try {',
     // 用文档主题的 CSS 变量驱动 mermaid 配色/字体（elegant / minimal 自动适配）
-    '  var cs = getComputedStyle(document.documentElement);',
+    fontPlan.checks.length ? '  var cs = getComputedStyle(document.querySelector("main") || document.body);' : '  var cs = getComputedStyle(document.documentElement);',
     '  var v = function (n) { return (cs.getPropertyValue(n) || "").trim(); };',
     '  mermaid.initialize({',
     '    startOnLoad: false,',
@@ -827,7 +888,7 @@ export async function render(src, options = {}, context = {}) {
     '      edgeLabelBackground: v("--paper")',
     '    }',
     '  });',
-    '  mermaid.run().then(function () { window.__md2pdfMermaidReady = true; })',
+    (fontPlan.checks.length ? '  window.__md2pdfFontCheck.catch(function () {}).then(function () { return mermaid.run(); })' : '  mermaid.run()') + '.then(function () { window.__md2pdfMermaidReady = true; })',
     '    .catch(function () { window.__md2pdfMermaidReady = true; });',
     '} catch (e) { window.__md2pdfMermaidReady = true; }',
     '</script>',
@@ -863,7 +924,7 @@ export async function render(src, options = {}, context = {}) {
     'window.__md2pdfPagedReady = false;',
     installPagedLayout.toString(),
     profile.gbDoc ? '' : stampPagedLists.toString(),
-    profile.gbDoc ? [requireGbFonts, prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbTableRules, finalizeGbIndexLayout, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
+    profile.gbDoc ? [prepareGbLayout, finalizeGbLayout, prepareGbBodyLayout, finalizeGbBodyLayout, finalizeGbTableRules, finalizeGbIndexLayout, finalizeGbEquations, prepareGbBodyAudit, finalizeGbBodyAudit].map(fn=>fn.toString()).join('\n') : finalizePagedCounters.toString(),
     '(function () {',
     '  function depsReady() {',
     '    return window.__md2pdfMathReady !== false && window.__md2pdfMermaidReady !== false;',
@@ -878,7 +939,7 @@ export async function render(src, options = {}, context = {}) {
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
-    profile.gbDoc ? '  function start() { requireGbFonts(' + JSON.stringify(GB_FONT_CHECKS) + ').then(run).catch(function (error) { if (window.__md2pdfAllowFontFallback && window.__md2pdfFontError) { document.fonts.ready.then(run); return; } window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
+    fontChecks.length ? '  function start() { window.__md2pdfFontCheck.then(run).catch(function (error) { if (window.__md2pdfAllowFontFallback && window.__md2pdfFontError) { document.fonts.ready.then(run); return; } window.__md2pdfPagedError = String(error); window.__md2pdfPagedReady = true; }); }' : '  function start() { document.fonts.ready.then(run); }',
     '  if (document.readyState === "complete") start(); else window.addEventListener("load", start);',
     '})();',
     '</script>',
@@ -891,7 +952,7 @@ export async function render(src, options = {}, context = {}) {
     '国际标准分类号', 'ICS', 'ics', '中国标准分类号', 'CCS', 'ccs',
     '发布日期', 'date', '实施日期', '全部代替标准', '代替标准',
     '采标国际标准', '采标英文名称', '采标中文名称', '采标程度',
-    '发布单位', '发布机构', '发布机构2', '文件类别', 'kicker', 'category', 'author']);
+    '发布单位', '发布机构', '发布机构2', '文件类别', 'category', 'author']);
   const gbMeta = profile.gbDoc
     ? Object.entries(fm)
         .filter(([k, v]) => fmStr(v).trim() && !GB_COVER_KEYS.has(k))
@@ -924,8 +985,7 @@ export async function render(src, options = {}, context = {}) {
     '{{COLOPHON}}': colophonHtml,
     '{{COVER}}': coverHtml,
     '{{AUTHORS}}': authorsHtml,
-    '{{PAPER}}': paperHtml,
-    '{{MATHJAX}}': mathScript,
+    '{{MATHJAX}}': fontScript + mathScript,
     '{{MERMAID}}': mermaidScript,
     '{{PAGEDJS}}': pagedScript,
     '{{HEAD_META}}': headMeta,
@@ -985,6 +1045,6 @@ export async function render(src, options = {}, context = {}) {
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
   return { title, warnings, html: assetHtml(usePaged && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
-    printOptions: { ...(profile.gbDoc ? {requireGbFonts:true} : {}), footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
+    printOptions: { ...(profile.gbDoc ? {requireGbFonts:true} : {}), ...(fontChecks.length ? {requireFonts:true,waitFonts:true} : {}), footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
       landscape: eff.landscape, outline: eff.outline !== false, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
 }

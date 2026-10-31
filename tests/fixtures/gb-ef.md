@@ -12,11 +12,13 @@
   - 国家标准化管理委员会
 ---
 
-## 前言
+## 目次 {role=toc}
+
+## 前言 {role=preface}
 
 FOREWORD_MARK 本文件按照 GB/T 1.1—2020 的规定起草，覆盖国家标准各项排版要素。
 
-## 引言
+## 引言 {role=introduction}
 
 INTRO_MARK 本样例用于检查目录、正文、图表和附录的排版结果。
 
@@ -43,22 +45,18 @@ verification term
 在规定条件下用于验证排版的术语定义。
 :::
 
-:::gb-source
-GB/T 1.1—2020，3.1
+:::gb-note
+[来源：GB/T 1.1—2020，3.1]
 :::
 
 ## 技术要求
 
-:::gb-note 注1：
+:::gb-note label="注1："
 NOTE_MARK 这是条文中的注。
 :::
 
 :::gb-example 示例1：
 EXAMPLE_MARK 这是示例内容。
-:::
-
-:::gb-unit
-单位为毫米
 :::
 
 :::gb-subfigure
@@ -72,11 +70,15 @@ flowchart LR
   A[输入] --> B[验收]
 ```
 
-:::gb-figure-note
+:::gb-note scope=figure position=top align=right
+单位为毫米
+:::
+
+:::gb-note scope=figure label="注："
 FIGURENOTEMARK 图中附加说明。
 :::
 
-:::gb-figure-footnote a）
+:::gb-note scope=figure label="^{a}" weight=normal
 FIGUREFOOTMARK 图脚注内容。
 :::
 
@@ -185,11 +187,11 @@ FIGUREFOOTMARK 图脚注内容。
 | GBROW_099 | 第 99 项内容用于验证长表跨页和续表表头 | 合格 |
 | GBROW_100 | 第 100 项内容用于验证长表跨页和续表表头 | 合格 |
 
-:::gb-table-note 注1：
+:::gb-note scope=table position=bottom-boxed label="注1："
 TABLE_NOTE_MARK 表内说明。
 :::
 
-## 附录 A（规范性）检查方法
+## 检查方法 {role=appendix nature=normative}
 
 ### 试验步骤
 
@@ -199,17 +201,15 @@ APPENDIX_MARK 依次检查排版和内容。
 
 | 项目 | 判定 |
 | --- | --- |
-| 附录项目 | 合格 |
+| 附录项目[^@appendix-table] | 合格 |
 
-:::gb-table-footnote a）
-TABLEFOOTMARK 表脚注内容。
-:::
+[^@appendix-table]: TABLEFOOTMARK 表脚注内容。
 
-## 参考文献
+## 参考文献 {role=bibliography}
 
 [1] GB/T 1.1—2020 标准化工作导则 第1部分：标准化文件的结构和起草规则
 
-## 索引
+## 索引 {role=index}
 
 :::gb-index A
 INDEX_MARK 检查方法 | A.1

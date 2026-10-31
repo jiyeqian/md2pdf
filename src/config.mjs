@@ -1,3 +1,4 @@
+import { REMOVED_CONTENT_FIELDS } from './frontmatter-fields.mjs';
 /**
  * config —— frontmatter 解析与文档级配置合并（唯一事实来源）
  *
@@ -11,13 +12,14 @@
  * 命名约定：配置字段在 frontmatter 中同时接受 kebab-case（与 CLI 同名，如 font-size）
  * 与历史 camelCase（fontSize）；同一层两种写法取值一致时允许，矛盾时报错。
  * 普通元数据字段（name / author / 标准号 / description …）不做配置校验，原样保留，
- * 允许 null / 列表 / 对象；keywords / tags 限定为字符串列表，
+ * 允许 null / 列表 / 对象；tags 限定为字符串列表；已迁移的正文内容字段不再接受，
  * authors / affiliations 校验结构与单位引用。
  *
  * 安全：解析结果经 sanitize 深拷贝，剔除 __proto__ / prototype / constructor，
  * 防止 YAML 反序列化污染原型；解析设置 maxAliasCount 上限，避免别名炸弹。
  */
 import { CHAPTER_START_VALUES, TOC_LEVEL_VALUES, TEXT_FIELDS, NUMBER_FIELDS, BOOL_FIELDS, CONTROL_FIELDS, SPECIAL_FIELDS, CONFIG_FIELDS, FM_ALIASES, NUMBERING_VALUES, BIBLIOGRAPHY_VALUES } from './frontmatter-fields.mjs';
+import { normalizeFonts } from './fonts.mjs';
 import { paperAuthorErrors, paperAuthorWarnings } from './paper-authors.mjs';
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { GLOBAL_OPTION_DEFAULTS, FEATURES, RUNTIME_FEATURES, listThemes } from './options.mjs';
@@ -95,7 +97,7 @@ const MERGE_KEYS = [
   ...TEXT_FIELDS,
   ...BOOL_FIELDS,
   ...Object.keys(ENUM_FIELDS),
-  'fontSize', 'lineHeight', 'tocDepth', 'bibliography',
+  'fontSize', 'lineHeight', 'tocDepth', 'bibliography', 'fonts',
 ];
 
 /* ---------------- 值规范化 ---------------- */
@@ -168,7 +170,7 @@ const coerceBoolField = (v, rawKey, canon, pos, tocDepthSink, explicitDepth = fa
 const coerceBibliography = (v, rawKey, canon, pos, warnings) => {
   if (v === true) return 'footnote';
   if (v === false) {
-    warnings.push('字段 bibliography 已废弃：参考文献始终自动处理，不再支持关闭');
+    warnings.push('字段 bibliography 已废弃：参考文献由 role=bibliography 章节填充，不再支持此开关');
     return 'footnote';
   }
   if (BIBLIOGRAPHY_VALUES.includes(v)) return v;
@@ -186,7 +188,7 @@ const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
  */
 function ingestLayer(raw, opts = {}) {
   const { positions = {}, allowRuntimeFeatures = false, warnings = [] } = opts;
-  for (const key of ['keywords', 'tags']) {
+  for (const key of ['tags']) {
     if (hasOwn(raw, key) && (!Array.isArray(raw[key]) || raw[key].some(item => typeof item !== 'string'))) {
       throw cfgError(`字段 ${key} 必须为字符串列表（例如：${key}: ["词条一", "词条二"]）`, key, positions[key]);
     }
@@ -250,12 +252,18 @@ function ingestLayer(raw, opts = {}) {
   };
 
   for (const [rawKey, rawValue] of Object.entries(raw || {})) {
+    if(REMOVED_CONTENT_FIELDS.has(rawKey)) throw cfgError('字段 '+rawKey+' 已移至 Markdown 内容，请使用显式 role 或内容块',rawKey,posOf(rawKey));
     const canon = canonicalField(rawKey);
     if (canon === null) continue; // 普通元数据：不参与配置
     const pos = posOf(rawKey);
     if (canon === 'enable' || canon === 'disable') {
       const names = readFeatureList(rawKey, rawValue, pos);
       (canon === 'enable' ? enableList : disableList).push(...names.map(n => [n, rawKey]));
+      continue;
+    }
+    if (canon === 'fonts') {
+      try { setField(canon, normalizeFonts(rawValue), rawKey); }
+      catch (error) { throw cfgError(error.message, 'fonts', pos); }
       continue;
     }
     if (TEXT_FIELDS.includes(canon)) { setField(canon, coerceText(rawValue, rawKey, canon, pos), rawKey); continue; }
@@ -487,10 +495,7 @@ export function resolveDocumentOptions(explicit = {}, fm = {}, profile = null, c
   const out = {};
   for (const key of MERGE_KEYS) out[key] = pick(key);
 
-  // 文档版本仅作落款中栏的缺省值，不覆盖显式空串或类型固定版式。
-  if (out.colophonCenter === undefined && (typeof fm.version === 'string' || (typeof fm.version === 'number' && Number.isFinite(fm.version)))) {
-    out.colophonCenter = String(fm.version);
-  }
+  if ([p,f,e].some(layer => layer.fonts !== undefined)) out.fonts = { ...p.fonts, ...f.fonts, ...e.fonts };
 
   // 页边距：四边与简写 marginSide 分层取值，且低层简写不得覆盖高层显式四边。
   const pickSide = side => {
@@ -514,9 +519,6 @@ export function resolveDocumentOptions(explicit = {}, fm = {}, profile = null, c
   if (prof.gbDoc) {
     out.lead = false;
     out.colophonEnabled = false;
-    out.colophonLeft = '';
-    out.colophonCenter = '';
-    out.colophonRight = '';
   }
 
   out.type = prof.name;
@@ -524,6 +526,7 @@ export function resolveDocumentOptions(explicit = {}, fm = {}, profile = null, c
   // 运行字段透传（仅来自 explicit；frontmatter 不可控制）
   out.inputs = Array.isArray(explicit.inputs) ? explicit.inputs.slice() : [];
   out.output = explicit.output;
+  out.allowFontFallback = explicit.allowFontFallback === true;
   out.help = explicit.help === true;
   out.version = explicit.version === true;
   out.open = hasOwn(e, 'open') ? e.open : explicit.open === true;

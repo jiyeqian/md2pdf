@@ -49,17 +49,21 @@ body:
 | {rowspan=2} 控制器 | 稳态 | 合格 |
 | 恢复 | 合格 |
 :::
+
+:::gb-note scope=table position=top align=right
+单位为毫米
+:::
 ```
 
 `widths` 是列宽权重，可省略为等宽；每行必须填满网格，跨行单元格不能越过表头／表体分界。支持最多 12 列、500 行，非法跨度、缺格或属性返回明确错误。跨行连通组保持同页，组过高时要求作者拆分，不静默裁切；不支持嵌套表、跨页超大合并组或任意 HTML 属性。复杂表单元格中的图片和相对资源链接返回明确的400错误，请将图放在独立图中；单元格链接只接受 HTTP/HTTPS、mailto 和锚点，代码中的字面写法不误判。普通 Markdown 表格的既有图片行为不受此限制。
 
-单位陈述块置于表后，渲染时只附到紧邻的表题，并随续表重复：
+单位陈述使用 `:::gb-note scope=table position=top align=right`，写在对应表格之后；渲染时置于表题文字与表格之间，并随续表重复。图同样在对象后定义，使用 `scope=figure position=top`。完整的九个指令及参数规则见[模板说明](gb-template.md)。
 
-```markdown
-:::gb-unit
-单位为毫米
-:::
-```
+## 表注、表脚注与上标下标
+
+本次更新后的 Node 全面范例为20页。全面范例用 `scope=table position=bottom-boxed` 明确生成表内普通说明区。复杂检测表包含两条表注，以及表头／表体中的 `[^@sensor-location]` 复引和另一脚注 `[^@temperature-range]`；脚注自动生成 a、b，并在表注后单独形成跨列行区。性能表和长记录表分别重新从 a 编号；长表表头重复时标记保持不变，脚注内容仅在最终片段出现。条文页底脚注仍独立连续编号。
+
+图内已有固定字母的示例使用 `label="^{a}" weight=normal`，保留人工对应关系；不新增映射参数。所有模板支持 `x^{2}`、`l_{1}` 等行内上标下标，删除线保留 `~~…~~`。具体语法与归属边界见[GB模板说明](gb-template.md)。
 
 ## 本轮补充校准
 
@@ -82,15 +86,15 @@ GB/T 1.1 无规定的项目按所供正式样本执行，工程取值不冒充�
 以21922、47135两份2026标准的共同出版实践为索引版式参考，GB/T 1.1仍为最高依据。新版GB范例及补全优先使用中英分区：汉语拼音双栏、英文对应词单栏，分区标题通栏；英文可接在中文结束后的同一页。两份样本的普通行距均约15.72pt、字母分组典型过渡约47.16pt（含字母标题），详见测量台账。栏间采用3mm工程值。
 
 ```markdown
-## 索引
+## 索引 {role=index}
 
 :::gb-index-section lang=zh
 
-:::gb-index C
+:::gb-index
 采集信息 | 6.1
 :::
 
-:::gb-index Z
+:::gb-index
 抓取成功率 | @grasp
 :::
 
@@ -98,20 +102,20 @@ GB/T 1.1 无规定的项目按所供正式样本执行，工程取值不冒充�
 
 :::gb-index-section lang=en
 
-:::gb-index G
+:::gb-index
 grasping success rate | @grasp
 :::
 
 :::
 ```
 
-`@grasp`指向已有 `:::gb-term id=grasp`。位置编号和跳转随自动术语编号更新；关键词与分组顺序按作者给出的拼音／英文顺序保留，不猜测多音字。英文关键词使用已有GB西文粗体候选，不宣称是样本原字库。
+`@grasp`指向已有 `:::gb-term id=grasp`。位置编号和跳转随自动术语编号更新；省略分组字母时按词条自动分组，中文按拼音、英文按字母排序；可通过 `sort-key` 指定多音字读音，或 `gb-index K` 强制分组。`sort=input` 保留分组首次出现及组内输入顺序。英文关键词使用已有GB西文粗体候选，不宣称是样本原字库。
 
-旧 `:::gb-index A` 独立分组继续保持原单栏、原行距；不会根据文字内容自动迁移。新中文分区可显式写 `lang=zh columns=1`。英文分区固定单栏；非法语言、栏数、非索引内容或未闭合分区给出明确错误。补全提供中文分区、英文分区、旧分组三种入口。
+独立 `:::gb-index A` 继续保持单栏、原行距，强制归入A并自动排序；无字母则自动分组。新中文分区可显式写 `lang=zh columns=1`。英文分区固定单栏；非法语言、栏数、非索引内容或未闭合分区给出明确错误。补全提供中文分区、英文分区、自动分组三种入口，另支持排序参数、词条排序键及位置栏 `@` 稳定引用。
 
 新分区按左栏自上而下、再右栏、再下一页阅读，分组可续栏，字母标题与第一条同栏；索引单条不跨页，超出单页高度明确拒绝。长关键词自然回行，编号靠右对齐末行；分页后只调整引导点，不移动关键词或链接，不遮盖文字。索引终结线沿用现有同页规则。
 
-专项验收涵盖12条短中文索引、150条跨页中文索引（每组含长词）及英文条目、14条旧单栏中文索引；检查实际PDF内容完整且每项一次、阅读顺序、标题与首条同栏、引导线不遮挡、重复校准不移位。真实编辑器验证分区补全与嵌套关闭行。记录见 `gb-index-layout-acceptance.json`，运行 `node tests/gb-index-layout-checks.mjs`。Node全面范例仍为19页，本轮未重新生成CLI／静态交付PDF，三入口共用渲染一致性检查通过。未代替Safari、手机或实体打印验收。
+专项验收涵盖12条短中文索引、150条跨页中文索引（每组含长词）及英文条目、14条旧单栏中文索引；检查实际PDF内容完整且每项一次、阅读顺序、标题与首条同栏、引导线不遮挡、重复校准不移位。真实编辑器验证分区补全与嵌套关闭行。记录见 `gb-index-layout-acceptance.json`，运行 `node tests/gb-index-layout-checks.mjs`。当时Node全面范例为19页，该轮未重新生成CLI／静态交付PDF，三入口共用渲染一致性检查通过。未代替Safari、手机或实体打印验收。
 
 ## 图表目次外边距回归修复
 
@@ -159,3 +163,9 @@ GB补全最多渲染10项，其他模板5项；菜单限制为可用屏幕高度
 自动检查：`npm run test:gb-body`、`npm run test:gb-ef`、`npm run test:gb-cover`、`npm run check:consistency`。本轮Node PDF生成运行 `node tests/gb-body-acceptance.mjs --node-only`，墨迹测量运行 `tests/gb-body-ink.py /private/tmp/md2pdf-gb-comprehensive --runtime node`；本轮新增检查：`node tests/gb-completion-browser-checks.mjs`（真实编辑器补全）与 `PYTHON=/Users/jiyeqian/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 node tests/gb-table-rules-checks.mjs`（真实PDF线宽）。完整结果归档于 `docs/gb-comprehensive-measurements.json`。其他模板以前一提交导出源码作基线，逐页比较实际 PDF 的 90 dpi 光栅，记录见 `docs/gb-other-templates-regression.json`。
 
 WebApp 需从本工作树重启；确认端口空闲后执行 `PORT=8766 npm start`，访问 `http://127.0.0.1:8766/`，从国家标准模板创建并导出。静态版需重新构建、部署和更新缓存。本次不替代手机、Pages 线上部署或实体打印验收。
+
+## 章节角色验收
+
+全面范例显式声明目次、前言、引言、参考文献及索引；两份附录分别声明规范性、资料性，并采用不同属性顺序验证等效解析。附录标题不再手写 A/B，子条款、图表与稳定索引随附录顺序更新。可在目次和参考文献标题处查看自动内容，在专业助手中核查删除 nature 后的提示；提示不阻止 PDF 下载。
+
+全面范例的所有特殊章节均显式声明 role；不再依赖标题识别或隐式插入。开启目次但删去 role=toc 时不生成目次；保留文献引用但删去 role=bibliography 时保留上标、不生成文献列表，两者均由专业助手提示。

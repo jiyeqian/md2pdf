@@ -109,7 +109,7 @@ test('assertOptionsAllowed accepts the legitimate selections', () => {
 test('resolveWebType detects the effective type from frontmatter and explicit override', () => {
   assert.equal(resolveWebType('# 普通\n\n正文'), 'general');
   assert.equal(resolveWebType('---\nname: 日志分析\n---\n# 技能'), 'skill');
-  assert.equal(resolveWebType('---\nabstract: 摘要\n---\n# 论文'), 'paper');
+  assert.equal(resolveWebType('---\nauthor: 作者\n---\n# 论文\n\n## 摘要 {role=abstract}\n\n摘要正文'), 'paper');
   assert.equal(resolveWebType('---\n标准号: GB/T 1234-2020\n---\n# 标准\n\n## 范围'), 'gb');
   assert.equal(resolveWebType('---\nstandard: GB 1\n---\n# 标准'), 'gb');
   // 显式类型优先于自动探测

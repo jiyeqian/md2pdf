@@ -310,3 +310,22 @@ section { break-inside: auto; }
 .colophon > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .colophon > span:nth-child(2) { text-align: center; }
 .colophon > span:last-child { text-align: right; }
+
+/* Semantic summaries retain Markdown paragraphs without body indentation. */
+.summary-content { display: inline; }
+.summary-content > p { margin: .4em 0 0; text-indent: 0; }
+.summary-content > p:first-child { display: inline; }
+.abstract .paper-label, .keywords .paper-label { font-weight: 600; margin-right: 8px; }
+
+/* Summary labels are headings for navigation, while retaining their original inline layout. */
+h2.summary-heading {
+  display: inline; position: static; font: inherit; font-weight: 600; color: var(--accent);
+  margin: 0 8px 0 0; padding: 0; border: 0; letter-spacing: inherit; text-indent: 0; text-align: inherit;
+  break-before: auto; break-after: auto; break-inside: auto;
+}
+h2.summary-heading::before { content: none; display: none; }
+
+/* Keep inline scripts from enlarging paragraph line boxes. */
+.md-superscript, .md-subscript { font-size: .75em; line-height: 0; position: relative; vertical-align: baseline; }
+.md-superscript { top: -.5em; }
+.md-subscript { bottom: -.25em; }

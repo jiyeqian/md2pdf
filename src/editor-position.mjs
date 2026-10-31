@@ -6,7 +6,7 @@
 //
 // 设计边界：
 //   * 只改写标题的开始标签，不触碰标题内部（可能含被转义的用户内容），不改变版式；
-//   * 仅在「层级相同且纯文本匹配」时写入；不匹配的标题保持原样，不臆造行号；
+//   * 优先按唯一的 GB 稳定标识及层级匹配；其他标题按纯文本匹配，不臆造行号；
 //   * 编号前缀剥离只识别 md2pdf 渲染器已知的编号格式（阿拉伯 / 第X章 / 中文 / 括号 /
 //     GB 附录字母），不做泛化猜测；
 //   * Markdown 侧只统计 frontmatter 与代码围栏之外的 ATX（可选 setext）标题。
@@ -108,19 +108,35 @@ export function parseMarkdownHeadings(md) {
 export function attachSourcePositions(html, md) {
   if (typeof html !== 'string') throw new TypeError('attachSourcePositions 需要 HTML 字符串');
   if (typeof md !== 'string') throw new TypeError('attachSourcePositions 需要 Markdown 字符串');
+  const sourceHeadings=parseMarkdownHeadings(md);
+  html=html.replace(/<div class="(abstract|keywords)" data-document-role="\1"([^>]*)>/g,(tag,role,attrs)=>{
+    if(/data-md2pdf-source-line=/.test(attrs))return tag;
+    const heading=sourceHeadings.find(h=>new RegExp('\\brole='+role+'\\b').test(h.text));
+    return heading?tag.slice(0,-1)+' data-md2pdf-source-line="'+heading.line+'">':tag;
+  });
   if (!/<h[2-6][\s>]/.test(html)) return html;
-  const targets = parseMarkdownHeadings(md)
-    .filter(h => h.level >= 2 && h.level <= 6)
-    .map(h => ({ line: h.line, level: h.level, norm: normalize(markdownHeadingText(h.text)) }));
+  const gb = html.includes('md2pdf-gb-') || /data-gb-(?:role|stable-key)=/.test(html);
+  const targets = sourceHeadings
+    .filter(h => h.level >= 2 && h.level <= 6 && !/\brole=(abstract|keywords)\b/.test(h.text))
+    .map(h => ({ line: h.line, level: h.level, stable: (gb ? /#(sec:[\w.-]+)(?=\s|})/ : /\s*\{#(sec:[\w.-]+)\}\s*$/).exec(h.text)?.[1], norm: normalize(markdownHeadingText(gb || /\brole=bibliography\b/.test(h.text) ? h.text.replace(/\s*\{[^{}]*(?:role=|nature=|#sec:)[^{}]*\}\s*$/, '') : h.text)) }));
   if (!targets.length) return html;
+  const stableTargets = new Map();
+  for (const [index, target] of targets.entries()) {
+    if (target.stable) stableTargets.set(target.stable, stableTargets.has(target.stable) ? null : index);
+  }
   let pointer = 0;
   return html.replace(HEADING_RE, (match, level, attrs, inner) => {
+    if (/\bclass="[^"]*\bsummary-heading\b/.test(attrs)) return match; // The containing summary already owns the source position.
     if (/(?:^|\s)data-md2pdf-source-line\s*=/.test(attrs)) return match; // 幂等：已标注不再重复
     const lvl = Number(level);
-    const rawNorm = normalize(inner);
-    const strippedNorm = normalize(inner.replace(RENDER_NUMBER_PREFIX, ''));
-    let found = -1;
-    for (let k = pointer; k < targets.length && k < pointer + 6; k++) {
+    // GB's first h2 also contains the document name and optional warning.
+    const headingInner = /<span class="gb-first-heading">([\s\S]*?)<\/span>/.exec(inner)?.[1] ?? (/data-gb-role="appendix"/.test(attrs) ? /<span class="gb-appendix-title">([\s\S]*?)<\/span>/.exec(inner)?.[1] : null) ?? inner;
+    const rawNorm = normalize(headingInner);
+    const strippedNorm = rawNorm.replace(RENDER_NUMBER_PREFIX, '');
+    const stable = /data-gb-stable-key="(sec:[\w.-]+)"/.exec(attrs)?.[1];
+    let found = stable ? stableTargets.get(stable) : -1;
+    if (stable && (found == null || targets[found].level !== lvl)) return match;
+    for (let k = pointer; !stable && k < targets.length && k < pointer + 6; k++) {
       const target = targets[k];
       if (target.level !== lvl) continue;
       if (target.norm === rawNorm || target.norm === strippedNorm) { found = k; break; }

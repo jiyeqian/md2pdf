@@ -1,3 +1,4 @@
+import { isFontFamilyName } from './fonts.mjs';
 export const GB_FONT_CHECKS = [
   ['10.5pt "GB Song"', undefined, '方正书宋_GBK'],
   ['10.5pt "GB Hei"', undefined, '方正黑体_GBK'],
@@ -7,7 +8,7 @@ export const GB_FONT_CHECKS = [
   ['10.5pt "GB Symbols"', '−•', 'Times New Roman 普通'],
 ];
 
-// Serialized into GB documents; do not reference module globals here.
+// Serialized into documents; do not reference module globals here.
 export async function requireGbFonts(checks) {
   const missing = await Promise.all(checks.map(async ([font, text, label]) => {
     try { return (await document.fonts.load(font, text ?? 'BESbswy')).length ? null : label; }
@@ -15,15 +16,19 @@ export async function requireGbFonts(checks) {
   }));
   const fonts = [...new Set(missing.filter(Boolean))];
   if (fonts.length) {
-    window.__md2pdfFontError = { code: 'GB_FONT_MISSING', fonts };
-    throw new Error('国家标准所需字体未能加载：' + fonts.join('、') + '。请确认渲染设备已安装这些字体且渲染进程可访问。');
+    window.__md2pdfFontError = { code: checks.some(check => check[3] === 'custom') ? 'FONT_MISSING' : 'GB_FONT_MISSING', fonts };
+    throw new Error('未能加载字体：' + fonts.join('、') + '。');
   }
   return document.fonts.ready;
 }
 
-// Only allow known public family names across the browser/server error boundary.
+// Expose only known GB or validated user family names, never raw errors or paths.
 export function gbFontDiagnostic(value) {
-  if (value?.code !== 'GB_FONT_MISSING') return null;
+  if (!['GB_FONT_MISSING','FONT_MISSING'].includes(value?.code)) return null;
+  if (value.code === 'FONT_MISSING') {
+    const fonts = [...new Set((Array.isArray(value.fonts) ? value.fonts : []).filter(isFontFamilyName))].slice(0,12);
+    return fonts.length ? {code:'FONT_MISSING',fonts} : null;
+  }
   const known = [...new Set(GB_FONT_CHECKS.map(([, , label]) => label))];
   const fonts = known.filter(label => Array.isArray(value.fonts) && value.fonts.includes(label));
   return { code: 'GB_FONT_MISSING', fonts: fonts.length ? fonts : known };

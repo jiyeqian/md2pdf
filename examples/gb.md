@@ -32,11 +32,13 @@ toc: 2
 
 <!-- gb-check: 全面范例；假设标准，技术数据仅用于版式演示；GB/T 1.1—2020 9.7/9.8/9.9、10及附录E/F -->
 
-## 前言
+## 目次 {role=toc}
+
+## 前言 {role=preface}
 
 本文件按照 GB/T 1.1—2020《标准化工作导则　第1部分：标准化文件的结构和起草规则》的规定起草。
 
-本文件为排版能力演示用假设标准，文件编号、技术指标和试验记录不作为实际产品的合格判定依据。
+本文件为排版能力演示用假设标准，章条与附录按文档结构连续编号；文件编号、技术指标和试验记录不作为实际产品的合格判定依据。
 
 本文件代替 GB/T 142857—2019《仿生机械手抓取控制系统技术要求》，与 GB/T 142857—2019 相比，除结构调整和编辑性改动外，主要技术变化如下：
 
@@ -58,19 +60,19 @@ toc: 2
 
 [^@purpose]: 本文件为假设标准，不作为真实产品的合格判定依据。
 
-## 引言
+## 引言 {role=introduction}
 
 仿生机械手在非结构化环境中的稳定抓取，需要同时考虑接触力、关节位姿、目标物表面状态和故障恢复过程。对试验条件、量的符号和结果记录作出一致规定，有助于比较不同控制方案。
 
 本文件将一般技术要求、检测方法和判定规则结合编排，图、表和数学公式分别表达控制流程、试验数据以及量之间的关系。有关结构和表述形式的依据见参考文献[^gb11]，有关仿真测试与术语组织的参考见参考文献[^gb48316]和参考文献[^gb21922]。
 
-## 范围
+## 范围 {#sec:scope}
 
 本文件规定了仿生机械手抓取控制系统的技术要求、试验方法、检验规则以及标志和使用说明，描述了相应的结果记录方法。
 
 本文件适用于工业、物流与服务机器人领域的仿生机械手抓取控制系统，不适用于直接作用于人体的医疗操作装置。
 
-## 规范性引用文件
+## 规范性引用文件 {#sec:normative-references}
 
 下列文件中的内容通过文中的规范性引用而构成本文件必不可少的条款。其中，注日期的引用文件，仅该日期对应的版本适用于本文件；不注日期的引用文件，其最新版本（包括所有的修改单）适用于本文件。
 
@@ -82,13 +84,13 @@ GB/T 12643—2013　机器人与机器人装备　词汇
 
 GB/T 20000.1—2014　标准化工作指南　第1部分：标准化和相关活动的通用术语
 
-## 术语和定义
+## 术语和定义 {#sec:terms}
 
 GB/T 12643—2013、GB/T 20000.1—2014 界定的以及下列术语和定义适用于本文件。为区分性能量与基础概念，术语按类别编排；各类别中的英文对应词、定义、来源及附注均属于相应术语条目。
 
 <!-- gb-check: F.1/10.3.5；中英文术语五号黑体，间空一字，长定义及条目注 -->
 
-### 控制与性能术语
+### 控制与性能术语 {#sec:control-terms}
 
 :::gb-term id=grasp
 抓取成功率
@@ -96,11 +98,11 @@ grasping success rate
 
 在规定试验条件下，成功抓取并保持目标物达到规定时间的次数与总抓取尝试次数之比。
 
-:::gb-note 注1：
+:::gb-note label="注1："
 成功抓取还包括在规定的保持阶段，目标物没有发生超出允许值的滑移、翻转或脱离。统计时应记录接近、接触、提升和保持各阶段的状态；当试验装置在阶段切换时产生短暂信号波动，应依据事先约定的判据区分测量噪声与实际失效，不应在结果出现后临时调整判定口径。
 :::
 
-:::gb-note 注2：
+:::gb-note label="注2："
 不同目标物类别应分别统计，合并统计时应同时给出各类别的试验次数，以免由样本构成改变比较结果。
 :::
 :::
@@ -120,7 +122,7 @@ fault recovery time
 从检测到可恢复异常的时刻起，到系统重新进入可接受正常指令的工作状态所经历的时间。
 :::
 
-### 基础概念
+### 基础概念 {#sec:basic-concepts}
 
 :::gb-term id=standard
 标准
@@ -128,12 +130,12 @@ standard
 
 通过标准化活动，按照规定的程序经协商一致制定，为各种活动或其结果提供规则、指南或特性，供共同使用和重复使用的文件。
 
-:::gb-source
+:::gb-note
 [来源：GB/T 20000.1—2014，5.3]
 :::
 :::
 
-## 符号和缩略语
+## 符号和缩略语 {#sec:symbols}
 
 下列符号和缩略语适用于本文件。
 
@@ -145,11 +147,11 @@ standard
 - API：应用程序接口（application programming interface）；
 - RMS：均方根（root mean square）。
 
-## 技术要求
+## 技术要求 {#sec:requirements}
 
 技术要求包括一般要求、安全状态、控制性能和检测条件。各项要求应结合规定的试验环境、量值溯源和记录方法进行验证；对于具有不同末端执行器或控制模式的系统，应在试验开始前明确适用条件，并使后续检验与报告采用相同的配置。
 
-### 一般要求
+### 一般要求 {#sec:general-requirements}
 
 机械手应在 −10 ℃～40 ℃ 的环境温度下正常工作，设计的试验配置应涵盖低温、常温和高温状态。目标物、传感器量程及控制参数应在试验开始前记录。
 
@@ -159,7 +161,7 @@ standard
 - 传感器完成校准，时间戳采用统一的时间基准，记录中保留采样周期及校准有效期；
 - 工作空间内没有未经识别的障碍物，急停装置能够独立终止危险运动。
 
-### 安全状态与异常恢复
+### 安全状态与异常恢复 {#sec:safety-recovery}
 
 <!-- gb-check: 7.5、10.2.2；一层a)b)c)，二层1)2)，长列项回行和嵌套间隔号 -->
 
@@ -173,13 +175,13 @@ standard
    - 先以受限速度接近目标位姿，确认接触力没有超过允许值；
    - 再逐步恢复额定控制参数，并记录最终恢复时刻。
 
-### 控制性能
+### 控制性能 {#sec:control-performance}
 
-#### 抓取成功率
+#### 抓取成功率 {#sec:grasp-success}
 
 抓取成功率应不低于 98%。每组试验应完成不少于 100 次抓取，目标物的类型、质量和表面状态应保持可追溯。
 
-#### 单指响应延迟
+#### 单指响应延迟 {#sec:finger-latency}
 
 单指响应延迟应不大于 12 ms。期望力位关系按公式（1）确定。
 
@@ -198,7 +200,7 @@ $\dot{x}_d$ | 期望速度，单位为米每秒（m/s）；
 $\dot{x}$ | 实测速度，单位为米每秒（m/s）。
 :::
 
-#### 综合误差
+#### 综合误差 {#sec:overall-error}
 
 综合误差按公式（2）计算。较长公式在加号之后回行，两行合为一个公式，不将其细分为带字母的子编号。
 
@@ -223,13 +225,15 @@ $F_i$ | 第 $i$ 个采样点的实测接触力；
 $s_F$ | 接触力归一化基准量。
 :::
 
-### 性能指标与标定
+### 性能指标与标定 {#sec:calibration}
+
+常用量纲可写为 mm^{2}，编号可写为 l_{1} 和 l_{2}；复杂表达式仍使用数学公式。
 
 系统性能应符合表 \ref{tab:perf} 的规定。数值相同量纲的比较应使用一致的单位，不在记录中省略有意义的有效数字。
 
 表：抓取控制系统性能指标 {#tab:perf}
 
-| 指标 | 要求 | 检测条件 |
+| 指标 | 要求[^@performance-limit] | 检测条件 |
 | --- | --- | --- |
 | 抓取成功率 | ≥ 98% | 每组 100 次 |
 | 单指响应延迟 | ≤ 12 ms | 稳态运行 |
@@ -246,15 +250,15 @@ $s_F$ | 接触力归一化基准量。
 | 行程末端 | 123.45 | 123.40 |
 | 未布置测点 | | |
 
-:::gb-unit
+:::gb-note scope=table position=top align=right
 单位为毫米
 :::
 
-:::gb-table-note
+:::gb-note scope=table position=bottom-boxed label="注："
 空白测点不构成有效的标定数据；一字线表示该测点没有对应记录。
 :::
 
-### 检测条件组合
+### 检测条件组合 {#sec:test-conditions}
 
 <!-- gb-check: 9.8、10.4.2；多级表头、横纵合并、列宽、空格、整行表注和表脚注 -->
 
@@ -265,43 +269,43 @@ $s_F$ | 接触力归一化基准量。
 :::gb-table
 widths: 24 37 28 28 48
 head:
-| {rowspan=2} 检测对象 | {rowspan=2} 检测项目 | {colspan=2} 环境条件 | {rowspan=2} 判定要求 |
-| 温度/℃ | 相对湿度/% |
+| {rowspan=2} 检测对象[^@sensor-location] | {rowspan=2} 检测项目 | {colspan=2} 环境条件 | {rowspan=2} 判定要求 |
+| 温度/℃[^@temperature-range] | 相对湿度/% |
 body:
-| {rowspan=2} 控制器 | 稳态响应 | 25 ± 2 | 45～75 | 延迟不大于 12 ms |
+| {rowspan=2} 控制器[^@sensor-location] | 稳态响应 | 25 ± 2 | 45～75 | 延迟不大于 12 ms |
 | 异常恢复 | 25 ± 2 | 45～75 | 进入可接受指令的状态 |
 | {rowspan=2} 末端执行器 | 保持能力 | 低温 −10 | 45～75 | 目标物无脱离 |
 | 滑移检测 | 高温 40 | 45～75 | 在规定时间内识别滑移 |
 | {colspan=2} 通信接口 | 25 ± 2 | | 记录序列号连续 |
 :::
 
-:::gb-table-note 注1：
+:::gb-note scope=table position=bottom-boxed label="注1："
 高低温条件仅用于区分不同检测状态，实际产品的环境适用范围应以产品文件为准。
 :::
 
-:::gb-table-footnote a）
-传感器安装位置应在试验记录中说明，回行文字与本条脚注的内容起点对齐。
+:::gb-note scope=table position=bottom-boxed label="注2："
+同一检测对象的合并单元格表示这些项目采用相同的安装配置。
 :::
 
-### 数据有效性
+### 数据有效性 {#sec:data-validity}
 
-#### 时间序列的判定
+#### 时间序列的判定 {#sec:time-sequence}
 
-##### 完整记录
+##### 完整记录 {#sec:complete-records}
 
 每组有效记录应包含连续时间戳、控制指令与反馈值。出现字段缺失时，应记录缺失区间和原因，避免只保留可通过判定的采样点。
 
-##### 中断记录
+##### 中断记录 {#sec:interrupted-records}
 
 试验发生中断时应标识中断前后的状态，不应将两个不连续片段直接拼接为连续记录。
 
-#### 异常数据的处理
+#### 异常数据的处理 {#sec:abnormal-data}
 
 异常数据应保留原值及处理依据，处理前后的数据应能够相互追溯。
 
-## 试验方法
+## 试验方法 {#sec:test-methods}
 
-### 试验准备
+### 试验准备 {#sec:test-preparation}
 
 试验前应确认量值溯源、试验装置连接和急停功能，采集装置的时钟应与控制器时钟同步[^@clock]。试验报告宜记录接口协议的英文名称，如 timestamp、sampling period 和 application programming interface，避免同一字段存在不同解释。
 
@@ -309,7 +313,7 @@ body:
 
 记录中应保留采集装置时钟偏差与异常切换过程的追溯信息，以便复核时间同步结果。
 
-### 控制流程
+### 控制流程 {#sec:control-flow}
 
 控制流程见图 \ref{fig:flow}，数据处理的层次关系见图 \ref{fig:data}。图中的箭头分别表示状态转换或数据传递方向，流程图的图形表达可参阅参考文献[^gb1526]。
 
@@ -320,15 +324,15 @@ flowchart LR
  B --> C[受控接近]
  C --> D[稳定保持]
  D --> E[完成记录]
- C --> F[异常保持]
+ C --> F["异常保持<sup>a</sup>"]
  F --> B
 ```
 
-:::gb-figure-note
+:::gb-note scope=figure label="注："
 异常保持状态不表示试验完成；未满足恢复条件时应继续保持安全状态。
 :::
 
-:::gb-figure-footnote a）
+:::gb-note scope=figure label="^{a}" weight=normal
 图示只表达状态转换关系，实际控制器还应记录各状态的进入与退出时刻。
 :::
 
@@ -341,15 +345,15 @@ flowchart LR
  D --> E[报告归档]
 ```
 
-:::gb-figure-note 注1：
+:::gb-note scope=figure label="注1："
 无效样本应保留标识，不应直接删除原始记录。
 :::
 
-:::gb-figure-note 注2：
+:::gb-note scope=figure label="注2："
 数据处理过程应能回溯到原始采样时间和设备编号。
 :::
 
-### 结果记录
+### 结果记录 {#sec:results}
 
 试验结果宜按表 \ref{tab:records} 的顺序逐项记录。该表节选连续 40 条示意记录，用于核对跨页时的续表、表头、单位和表注；正式试验仍应满足每组不少于 100 次的要求。
 
@@ -357,7 +361,7 @@ flowchart LR
 
 表：连续抓取试验记录 {#tab:records}
 
-| 记录编号 | 试验状态 | 响应时间 | 恢复时间 |
+| 记录编号 | 试验状态 | 响应时间[^@record-time] | 恢复时间 |
 | --- | --- | --- | --- |
 | R001 | 正常抓取 | 9.1 | — |
 | R002 | 正常抓取 | 9.2 | — |
@@ -400,11 +404,11 @@ flowchart LR
 | R039 | 正常抓取 | 9.5 | — |
 | R040 | 异常恢复 | 9.6 | 160 |
 
-:::gb-unit
+:::gb-note scope=table position=top align=right
 单位为毫秒
 :::
 
-:::gb-table-note
+:::gb-note scope=table position=bottom-boxed label="注："
 记录中的数值为排版演示数据，不能据此评价实际系统性能。
 :::
 
@@ -425,9 +429,9 @@ flowchart LR
 补充说明与列表共同属于本示例，标签独立成行。
 :::
 
-## 检验规则
+## 检验规则 {#sec:inspection}
 
-### 判定
+### 判定 {#sec:assessment}
 
 检验应按照下列顺序进行：
 
@@ -435,25 +439,25 @@ flowchart LR
 2. 按公式（1）和公式（2）核算必要数据；
 3. 对不满足要求的项目给出原因和处置记录。
 
-:::gb-note 注1：
+:::gb-note label="注1："
 计算结果的修约不应改变对边界值的判定，原始数据应保留足够的有效位数。
 :::
 
-:::gb-note 注2：
+:::gb-note label="注2："
 当计算方法或者基准量发生改变时，应同时说明对既有结论的影响，不能只替换最终数值。
 :::
 
-### 复核
+### 复核 {#sec:review}
 
 复核人员应能够从记录编号定位到试验条件、原始数据和计算过程。需要补充试验时，应说明补充试验与原试验的关系。
 
-## 标志和使用说明
+## 标志和使用说明 {#sec:marking}
 
 使用说明应给出系统工作条件、允许的目标物范围、接口配置、安全状态及必要的维护要求。包装标志应符合 GB/T 191 的规定。
 
-## 附录 A（规范性）试验报告
+## 试验报告 {role=appendix nature=normative #sec:appendix-report}
 
-### 报告内容
+### 报告内容 {#sec:report-content}
 
 试验报告应包括下列内容：
 
@@ -462,7 +466,7 @@ flowchart LR
 3. 图表、原始记录及异常处置；
 4. 结论与复核信息。
 
-### 报告字段
+### 报告字段 {#sec:report-fields}
 
 报告字段应能够追溯原始记录[^@report]。
 
@@ -476,9 +480,9 @@ flowchart LR
 | 试验条件 | 环境温度、相对湿度、供电状态 |
 | 记录关联 | 试验批次、记录编号、异常编号 |
 
-## 附录 B（资料性）数据整理示例
+## 数据整理示例 {#sec:appendix-data nature=informative role=appendix}
 
-### 采样结果的整理
+### 采样结果的整理 {#sec:sample-processing}
 
 单组有效采样值的算术平均值可按公式（B.1）计算。附录公式采用附录字母和独立序号，不接续正文公式编号。
 
@@ -491,81 +495,59 @@ $n$ | 有效采样数；
 $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 :::
 
-### 数据示例
+### 数据示例 {#sec:sample-data}
 
-表：响应时间整理示例
+表：响应时间整理示例 {#tab:response-summary}
 
 | 组别 | 最小值/ms | 最大值/ms | 平均值/ms |
 | --- | --- | --- | --- |
 | 第一组 | 9.1 | 10.2 | 9.65 |
 | 第二组 | 9.2 | 10.4 | 9.80 |
 
-## 索引
+## 参考文献 {role=bibliography}
+
+## 索引 {role=index}
 
 <!-- gb-check: 10.3.6/E.11；索引位于参考文献之后，分组、关键词与位置 -->
 
 :::gb-index-section lang=zh
 
-:::gb-index C
-采集装置时钟偏差与异常切换过程的追溯信息 | 6.1
-:::
-
-:::gb-index G
-刚度系数 | 4，5.3.2
+:::gb-index
+抓取成功率 | @grasp，@sec:grasp-success
+试验步骤 | @sec:report-content
+异常恢复时间 | @recovery，@sec:safety-recovery
+刚度系数 {sort-key="gang du xi shu"} | @sec:symbols，@sec:finger-latency
+数据整理 | @sec:sample-processing，@tab:response-summary
+控制器检测 | @tab:complex
+采集装置时钟偏差与异常切换过程的追溯信息 | @sec:test-preparation
+原始记录 | @tab:records，@sec:results
+试验报告 | @sec:appendix-report，@sec:report-fields
+异常恢复流程 | @fig:flow
 :::
 
 :::gb-index K
-控制流程 | 图1，图2
-控制器检测 | 表3
-:::
-
-:::gb-index S
-试验报告 | 附录A，A.2
-试验步骤 | A.1
-数据整理 | B.1，表B.1
-:::
-
-:::gb-index Y
-异常恢复流程 | 图1
-异常恢复时间 | @recovery，5.2
-原始记录 | 表4，6.3
-:::
-
-:::gb-index Z
-抓取成功率 | @grasp，5.3.1
+控制流程 | @fig:flow，@fig:data
 :::
 
 :::
 
 :::gb-index-section lang=en
 
-:::gb-index C
-control flow | 图1，图2
-controller verification | 表3
-:::
-
-:::gb-index F
-fault recovery time | @recovery，5.2
-:::
-
-:::gb-index G
-grasping success rate | @grasp，5.3.1
-:::
-
-:::gb-index I
+:::gb-index
+timestamp traceability | @sec:test-preparation，@sec:sample-processing
 impedance control | @impedance
+controller verification | @tab:complex
+traceability information for acquisition clock deviations and abnormal clock source switching | @sec:test-preparation
+grasping success rate | @grasp，@sec:grasp-success
+control flow | @fig:flow，@fig:data
+fault recovery time | @recovery，@sec:safety-recovery
 :::
 
 :::gb-index T
-test report | 附录A，A.2
-timestamp traceability | 6.1，B.1
-traceability information for acquisition clock deviations and abnormal clock source switching | 6.1
+test report | @sec:appendix-report，@sec:report-fields
 :::
 
 :::
-
-
-
 
 [^gb11]: GB/T 1.1—2020　标准化工作导则　第1部分：标准化文件的结构和起草规则
 [^gb48316]: GB/T 48316—2026　人形机器人　仿真测试平台技术规范
@@ -573,3 +555,8 @@ traceability information for acquisition clock deviations and abnormal clock sou
 [^gb47032]: GB/T 47032—2026　风光储联合发电站运行评价规程
 
 [^gb1526]: GB/T 1526—1989　信息处理　数据流程图、程序流程图、系统流程图、程序网络图和系统资源图的文件编制符号及约定
+
+[^@performance-limit]: 表中的限值为试验判定条件；不代表所有工况下的产品保证值。
+[^@sensor-location]: 传感器安装位置应在试验记录中说明，回行文字与本条脚注的内容起点对齐。
+[^@temperature-range]: 温度是检测时的设定值，应记录稳定后的实测值及其测量不确定度。
+[^@record-time]: 响应时间从有效指令输入时刻起算，同一续表沿用相同定义。
