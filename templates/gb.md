@@ -80,7 +80,7 @@ term
 
 ……
 
-## 附录标题 {role=appendix nature=normative}
+## 附录标题 {role=appendix subtitle="（规范性）"}
 
 ### 附录条标题
 

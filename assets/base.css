@@ -329,3 +329,4 @@ h2.summary-heading::before { content: none; display: none; }
 .md-superscript, .md-subscript { font-size: .75em; line-height: 0; position: relative; vertical-align: baseline; }
 .md-superscript { top: -.5em; }
 .md-subscript { bottom: -.25em; }
+.heading-subtitle { margin: -.3em 0 .7em; font-size: .9em; font-weight: 400; }

@@ -29,6 +29,6 @@ try {
  assert.equal(r.exceptionDetails,undefined,JSON.stringify(r.exceptionDetails));
  assert.match(r.result.value.fonts,/heading: "PostScript Name or Full Name"/);assert.match(r.result.value.fonts,/body: ""/);
  assert.equal(r.result.value.kicker,'kicker\n技术报告\n:::');
- assert.equal(r.result.value.colophon,'colophon\nleft: "编制：方鸿渐"\ncenter: "审核：褚慎明、韩学愈、李广智"\nright: "校对：范进、孔乙己、李梅亭"\n:::');
+ assert.equal(r.result.value.colophon,'colophon\n"编制：方鸿渐" | "审核：褚慎明、韩学愈、李广智" | "校对：范进、孔乙己、李梅亭"\n:::');
  console.log('browser completion defaults verified');
 }finally{globalThis.fetch=nativeFetch;await chrome.stop();await app.close();await rm(tmp,{recursive:true,force:true});}

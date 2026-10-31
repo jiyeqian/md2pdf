@@ -5,7 +5,7 @@ import {resolveWebType} from '../src/web-options.mjs';
 import {parseFrontmatter} from '../src/config.mjs';
 import {parseArgs} from '../src/options.mjs';
 import {prepareDocumentContent} from '../src/document-content.mjs';
-const summary='## 摘要 {role=abstract}\n\n研究 **问题**。\n\n第二段。\n\n## 关键词 {role=keywords}\n\n- 矢量图形\n- 版面校准\n';
+const summary='## 摘要 {role=abstract}\n\n研究 **问题**。\n\n第二段。\n\n## 关键词 {role=keywords}\n\n矢量图形；版面校准\n';
 test('explicit bibliography fills all templates only at its declared position',async()=>{
  for(const type of ['general','paper','skill','gb']){
   const r=await render('## 范围\n\n文字[^r]。\n\n## 资料 {role=bibliography}\n\n## 后记\n\n结束。\n\n[^r]: 引用内容',{type});
@@ -17,7 +17,7 @@ test('explicit bibliography fills all templates only at its declared position',a
   assert.ok(missing.warnings.some(w=>w.includes('role=bibliography')));
  }
 });
-test('summaries and keyword lists work in every template without becoming numbered chapters',async()=>{
+test('summaries and keyword paragraphs work in every template without becoming numbered chapters',async()=>{
  for(const type of ['general','paper','skill','gb']){
   const r=await render(summary+'\n## 范围\n\n正文',{type});
   assert.match(r.html,/class="abstract"/);assert.match(r.html,/<strong>问题<\/strong>/);
@@ -27,7 +27,7 @@ test('summaries and keyword lists work in every template without becoming number
   const toc=(r.html.match(/<div class="toc">([\s\S]*?)<\/ol>/)||[])[1]||'';
   assert.doesNotMatch(toc,/摘要|关键词/);
  }
- await assert.rejects(render('## 关键词 {role=keywords}\n\n甲；乙',{type:'general'}),/非编号列表/);
+ await assert.rejects(render('## 关键词 {role=keywords}\n\n- 甲\n- 乙',{type:'general'}),/普通段落/);
 });
 test('paper inference requires author and a nonempty explicit abstract; explicit template wins',()=>{
  const md='---\nauthor: 张三\n---\n\n'+summary;
@@ -42,10 +42,10 @@ test('removed frontmatter and CLI text settings fail explicitly, tags and switch
  assert.deepEqual(parseFrontmatter('---\ntags: [甲,乙]\ncolophon-enabled: false\n---').fm.tags,['甲','乙']);
 });
 test('kicker and colophon override supplied positions, preserve defaults and obey switches',async()=>{
- const r=await render('---\nversion: v2\n---\n\n:::kicker\n研究报告\n:::\n\n:::colophon\nleft: 编制：张三\nright: ""\n:::\n\n## 正文',{type:'general'});
+ const r=await render('---\nversion: v2\n---\n\n:::kicker\n研究报告\n:::\n\n:::colophon\n"编制：张三" | | ""\n:::\n\n## 正文',{type:'general'});
  assert.match(r.html,/<div class="kicker">研究报告<\/div>/);
  assert.match(r.html,/<div class="colophon"><span>编制：张三<\/span><span>v2<\/span><span><\/span>/);
- const off=await render('---\ncolophon-enabled: false\n---\n\n:::colophon\n姓名\n:::',{type:'general'});assert.doesNotMatch(off.html,/<div class="colophon">/);
+ const off=await render('---\ncolophon-enabled: false\n---\n\n:::colophon\n姓名 | |\n:::',{type:'general'});assert.doesNotMatch(off.html,/<div class="colophon">/);
  assert.throws(()=>prepareDocumentContent(':::kicker\n一\n:::\n:::kicker\n二\n:::'),/重复/);
  assert.throws(()=>prepareDocumentContent(':::colophon align=left\n内容\n:::'),/不接受行内参数/);
  assert.throws(()=>prepareDocumentContent(':::colophon\nleft: A\nleft: B\n:::'),/colophon/);
@@ -67,7 +67,7 @@ test('common role and content block completion is shared, without retired frontm
   assert.ok(!analyzeMarkdown(summary,{templateType}).diagnostics.some(d=>d.code==='gb-section-invalid'));
   assert.ok(provideCompletions({text,pos:text.length,templateType},analyzeMarkdown(text)).options.some(o=>o.label==='role=bibliography'));
   const block=':::col';const result=provideCompletions({text:block,pos:block.length,templateType},analyzeMarkdown(block));
-  assert.ok(result.options.some(o=>o.label==='colophon'&&o.apply==='colophon\nleft: "编制：方鸿渐"\ncenter: "审核：褚慎明、韩学愈、李广智"\nright: "校对：范进、孔乙己、李梅亭"\n:::'));
+  assert.ok(result.options.some(o=>o.label==='colophon'&&o.apply==='colophon\n"编制：方鸿渐" | "审核：褚慎明、韩学愈、李广智" | "校对：范进、孔乙己、李梅亭"\n:::'));
  }
 });
 

@@ -791,7 +791,7 @@ test('fonts and common content completion use the requested editable defaults',a
  const existing='---\nfon\n  body: Arial\n---';
  assert.equal(complete(existing,'general',existing.indexOf('fon')+3).options.find(o=>o.label==='fonts').apply,'fonts:');
  const {prepareDocumentContent}=await import('../src/document-content.mjs');
- const defaults={kicker:'技术报告',colophon:'left: "编制：方鸿渐"\ncenter: "审核：褚慎明、韩学愈、李广智"\nright: "校对：范进、孔乙己、李梅亭"'};
+ const defaults={kicker:'技术报告',colophon:'"编制：方鸿渐" | "审核：褚慎明、韩学愈、李广智" | "校对：范进、孔乙己、李梅亭"'};
  for(const templateType of ['general','paper','skill','gb'])for(const [name,body]of Object.entries(defaults)) {
   const prefix=':::'+name.slice(0,2),o=complete(prefix,templateType).options.find(o=>o.label===name);
   assert.equal(o.apply,name+'\n'+body+'\n:::');

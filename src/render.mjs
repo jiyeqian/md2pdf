@@ -1,6 +1,6 @@
 import { installInlineScripts } from './inline-scripts.mjs';
-import {prepareDocumentContent,prepareContentHeadings,finalizeContentNavigation} from './document-content.mjs';
-import { gbSectionCatalog, gbSectionDiagnostics } from './gb-sections.mjs';
+import {prepareDocumentContent,prepareContentHeadings,finalizeContentNavigation,finalizeHeadingSubtitles} from './document-content.mjs';
+import { gbSectionCatalog, gbSectionDiagnostics,HEADING_ATTRIBUTES,decodeHeadingText,protectHeadingAttributes } from './gb-sections.mjs';
 import { prepareGbContent, transformGbContent, separateGbBodyHeading } from './gb-content.mjs';
 import { documentFonts } from './fonts.mjs';
 import { GB_FONT_CHECKS, requireGbFonts } from './gb-fonts.mjs';
@@ -225,11 +225,11 @@ function prepareGbHeadingTargets(html, sections) {
   return html.replace(/<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g, (whole,level,attrs,inner) => {
     const section = sections[index++];
     if(section.error) throw Object.assign(new Error(section.error),{status:400});
-    const {id:key,role,nature,number,appendix} = section;
-    const suffix = /\s*\{[^{}]*\}\s*$/.exec(inner);
+    const {id:key,role,subtitle,number,appendix} = section;
+    const suffix = HEADING_ATTRIBUTES.exec(inner);
     if (suffix) inner = inner.slice(0,suffix.index);
     if (role) attrs += ' data-gb-role="'+role+'"';
-    if (nature) attrs += ' data-gb-nature="'+nature+'"';
+    if (subtitle!==undefined) attrs += ' data-heading-subtitle="'+esc(subtitle)+'"';
     if (appendix) attrs += ' data-gb-appendix="'+appendix+'"';
     if (number) attrs += ' data-gb-number="'+number+'"';
     if (key) {
@@ -267,8 +267,9 @@ function numberHeadings(html, mode, scheme, gb = false, paper = false) {
       const clean=inner.replace(HEADING_NUM_RE,'');
       if(role==='appendix') {
         const letter=/data-gb-appendix="([A-Z])"/.exec(attrs)?.[1];
-        const nature=/data-gb-nature="(normative|informative)"/.exec(attrs)?.[1];
-        return '<h'+level+addClass(attrs,'appendix')+'><span class="gb-appendix-number">附录 '+letter+'</span>'+(nature?'<span class="gb-appendix-kind">（'+(nature==='normative'?'规范性':'资料性')+'）</span>':'')+'<span class="gb-appendix-title">'+clean+'</span></h'+level+'>';
+        const subtitle=/data-heading-subtitle="([^"]*)"/.exec(attrs)?.[1];
+        attrs=attrs.replace(/ data-heading-subtitle="[^"]*"/,'');
+        return '<h'+level+addClass(attrs,'appendix')+'><span class="gb-appendix-number">附录 '+letter+'</span>'+(subtitle?'<span class="gb-appendix-kind">'+subtitle+'</span>':'')+'<span class="gb-appendix-title">'+clean+'</span></h'+level+'>';
       }
       if(role) return '<h'+level+addClass(attrs,'unnumbered '+(['preface','introduction','toc'].includes(role)?'front':'back'))+'>'+clean+'</h'+level+'>';
       if(+level===2 && !bodyStart) { attrs=addClass(attrs,'body-start'); bodyStart=true; }
@@ -636,7 +637,8 @@ export async function render(src, options = {}, context = {}) {
   const fnIndex = new Map();
   const fnRefCount = new Map();
   const fnMarkup = [];
-  const bodyWithRefs = body.replace(/\[\^([^\]]+)\]/g, (m, id) => {
+  const headingAttributes=protectHeadingAttributes(body);
+  const bodyWithRefs = headingAttributes.body.replace(/\[\^([^\]]+)\]/g, (m, id) => {
     if (!defIds.has(id)) return m;
     if (!fnIndex.has(id)) fnIndex.set(id, fnIndex.size + 1);
     const n = fnIndex.get(id);
@@ -671,6 +673,7 @@ export async function render(src, options = {}, context = {}) {
   const gbBlocks = profile.gbDoc ? prepareGbContent(bodyProtected) : null;
   let html = marked.parse(gbBlocks ? gbBlocks.body : bodyProtected, { gfm: true, breaks: false, async: false });
   if (gbBlocks) html = gbBlocks.restore(html, marked);
+  html=headingAttributes.restore(html);
 
   if (context.webSafe) html = html.replace(/\u0003FOOTNOTE(\d+)\u0003/g, (m, i) => fnMarkup[+i] ?? m);
 
@@ -680,7 +683,7 @@ export async function render(src, options = {}, context = {}) {
   if (profile.gbDoc) {
     // Code examples are literal, including references to identifiers not in the document.
     html = html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/g, code => code.replace(/\u0002REF(\d+)\u0002/g, (_,i)=>esc('\\ref{' + refStore[+i] + '}')));
-    const headings=[...html.matchAll(/<h([2-6])[^>]*>([\s\S]*?)<\/h\1>/g)].map(m=>({level:+m[1],text:stripTags(m[2])}));
+    const headings=[...html.matchAll(/<h([2-6])[^>]*>([\s\S]*?)<\/h\1>/g)].map(m=>({level:+m[1],text:decodeHeadingText(stripTags(m[2]))}));
     const sections=gbSectionCatalog(headings);
     const issues=gbSectionDiagnostics(headings,{tocEnabled:useToc,referenceLine:orderedFootnotes.length ? 1 : undefined},sections);
     if (issues.some(d=>d.code==='gb-section-duplicate')) throw Object.assign(new Error(issues.find(d=>d.code==='gb-section-duplicate').message),{status:400});
@@ -775,14 +778,14 @@ export async function render(src, options = {}, context = {}) {
       : `<li class="toc-level-${included.indexOf(s.level)}${s.float ? ' toc-float' : ''}"><a href="#${s.id}"><span class="toc-text">${esc(s.text)}</span><span class="toc-dots"></span></a></li>`;
     const floatLists = profile.gbDoc ? ['fig', 'tab'].map(kind => {
       const entries = [...html.matchAll(kind === 'fig' ? /<figure class="fig" id="([^"]+)"[^>]*>[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>/g : /<table class="tbl" id="([^"]+)"[^>]*>\s*<caption>([\s\S]*?)<\/caption>/g)];
-      return entries.length ? '<ol class="gb-float-toc">' + entries.map(m => tocItem({id:m[1],text:stripTags(m[2]),level:2,float:true})).join('') + '</ol>' : '';
+      return entries.length ? '<ol class="gb-float-toc">' + entries.map(m => tocItem({id:m[1],text:decodeHeadingText(stripTags(m[2])),level:2,float:true})).join('') + '</ol>' : '';
     }).join('') : '';
     toc = `<div class="toc">${profile.gbDoc ? '<h2 class="toc-title" data-gb-role="toc" id="'+tocHeading.id+'">'+esc(tocHeading.text)+'</h2>' : '<div class="toc-title">'+(profile.tocTitle || '目  录')+'</div>'}<ol>` + items.map(tocItem).join('') + '</ol>' + floatLists + '</div>';
   }
 
   if (profile.gbDoc) html = applyGbEquations(transformGbContent(html, title));
   if (gbNotes) html = gbNotes.finalize(html);
-  html = finalizeContentNavigation(sectionize(html));
+  html = finalizeHeadingSubtitles(finalizeContentNavigation(sectionize(html)));
   if (profile.gbDoc) html = separateGbBodyHeading(html);
   if (profile.gbDoc && /data-gb-role="toc"/.test(html)) {
     const contentsSection = /<section>\s*<h2[^>]*data-gb-role="toc"[^>]*>[\s\S]*?<\/h2>([\s\S]*?)<\/section>/;
@@ -851,8 +854,16 @@ export async function render(src, options = {}, context = {}) {
   const stamp = formatStamp(context.generatedAt instanceof Date ? context.generatedAt : new Date());
   const colophonLeftDefault = `make <a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a> great`;
   const version = typeof fm.version==='string'||(typeof fm.version==='number'&&Number.isFinite(fm.version)) ? String(fm.version) : '';
-  const colophonParts = [content.colophon?.left === undefined ? colophonLeftDefault : esc(content.colophon.left),
-    esc(content.colophon?.center ?? version), esc(content.colophon?.right === undefined ? stamp : content.colophon.right)];
+  const cellHtml=value=>{
+    const result=marked.parseInline(esc(value));
+    if(/<img\b/.test(result))throw Object.assign(new Error('colophon 仅支持行内文字，不支持图片'),{status:400});
+    return result.replace(/href="([^"]*)"/g,(attribute,url)=>{
+      if(!/^(?:https?:|mailto:|#)/i.test(decodeHeadingText(url).replace(/[\u0000-\u0020]/g,'')))throw Object.assign(new Error('colophon 链接仅支持 HTTP、HTTPS、邮件或文内锚点'),{status:400});
+      return attribute;
+    });
+  };
+  const colophonParts = [content.colophon?.left === undefined ? colophonLeftDefault : cellHtml(content.colophon.left),
+    content.colophon?.center === undefined ? esc(version) : cellHtml(content.colophon.center), content.colophon?.right === undefined ? esc(stamp) : cellHtml(content.colophon.right)];
   const colophonHtml = profile.gbDoc || eff.colophonEnabled === false || !colophonParts.some(Boolean) ? '' :
     `<div class="colophon">${colophonParts.map(part => `<span>${part}</span>`).join('')}</div>`;
 

@@ -15,7 +15,7 @@ test('正文首页准备阶段保留名称与首章，title 按纯文本转义',
 });
 test('附录仅从显式角色生成标题，不再解析手写字母',async()=>{
   const {render}=await import('../src/render.mjs');
-  const {html}=await render('## 范围\n\n## 检查项目 {role=appendix nature=normative}\n\n## 未知性质 {role=appendix}',{type:'gb'});
+  const {html}=await render('## 范围\n\n## 检查项目 {role=appendix subtitle="（规范性）"}\n\n## 未知性质 {role=appendix}',{type:'gb'});
   assert.match(html,/<span class="gb-appendix-number">附录 A<\/span><span class="gb-appendix-kind">（规范性）<\/span><span class="gb-appendix-title">检查项目<\/span>/);
   assert.match(html,/<span class="gb-appendix-number">附录 B<\/span><span class="gb-appendix-title">未知性质<\/span>/);
 });
@@ -181,7 +181,7 @@ test('没有角色的附录字样不触发标题重写',()=>{
 
 test('附录图表范围在文后要素开始时结束', async () => {
   const {render}=await import('../src/render.mjs');
-  const source='# 标准\n\n## 范围\n\n![正文图](a.png)\n\n## 说明 {role=appendix nature=informative}\n\n![附录图](b.png)\n\n表：附录表\n\n| 甲 |\n|---|\n| 乙 |\n\n## 参考文献 {role=bibliography}\n\n![文后图](c.png)\n\n表：文后表\n\n| 甲 |\n|---|\n| 乙 |';
+  const source='# 标准\n\n## 范围\n\n![正文图](a.png)\n\n## 说明 {role=appendix subtitle="（资料性）"}\n\n![附录图](b.png)\n\n表：附录表\n\n| 甲 |\n|---|\n| 乙 |\n\n## 参考文献 {role=bibliography}\n\n![文后图](c.png)\n\n表：文后表\n\n| 甲 |\n|---|\n| 乙 |';
   const {html}=await render(source,{type:'gb'});
   assert.match(html,/<figcaption>图 A\.1　附录图/);
   assert.match(html,/<figcaption>图 2　文后图/);

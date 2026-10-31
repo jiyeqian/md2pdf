@@ -32,7 +32,7 @@ test('moving chapter, figures and tables updates numbers and keeps semantic targ
 });
 
 test('appendix heading and table references show appendix numbers',async()=>{
- const md='## 范围\n\n内容。\n\n## 补充 {role=appendix nature=informative #sec:appendix}\n\n### 项目 {#sec:item}\n\n'+table('appendix')+'\n## 索引 {role=index}\n\n:::gb-index A\n附录 | @sec:appendix\n条款 | @sec:item\n表格 | @tab:appendix\n:::';
+ const md='## 范围\n\n内容。\n\n## 补充 {role=appendix subtitle="（资料性）" #sec:appendix}\n\n### 项目 {#sec:item}\n\n'+table('appendix')+'\n## 索引 {role=index}\n\n:::gb-index A\n附录 | @sec:appendix\n条款 | @sec:item\n表格 | @tab:appendix\n:::';
  const {html}=await make(md);
  assert.equal(entry(html,'附录').number,'附录A');
  assert.equal(entry(html,'条款').number,'A.1');
