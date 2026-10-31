@@ -10,7 +10,7 @@ try{
   ['wide formula','$$'+Array(500).fill('x').join('+')+'$$','正文元素超出版心'],
   ['huge merged group',':::gb-table\nhead:\n| 对象 | 内容 |\nbody:\n| {rowspan=2} 系统 | '+('合并行组。'.repeat(1500))+' |\n| 次行 |\n:::','合并行组超过'],
   ['huge row','| 项目 | 内容 |\n| --- | --- |\n| 一 | '+('长单元格。'.repeat(1600))+' |','表格单行超过'],
-  ['huge table note','| 项目 | 内容 |\n| --- | --- |\n| 一 | 二 |\n\n:::gb-note scope=table label=\"注：\"\n'+('长表注。'.repeat(1800))+'\n:::','表格单行超过'],
+  ['huge table note','| 项目 | 内容 |\n| --- | --- |\n| 一 | 二 |\n\n:::gb-note scope=table layout=boxed label=\"注：\"\n'+('长表注。'.repeat(1800))+'\n:::','表格单行超过'],
   ['huge footnote','内容[^@a]\n\n[^@a]: '+('长脚注。'.repeat(2000)),'条文脚注超过'],
   ['huge equation',':::gb-equation\n$$F=x$$\n\n式中：\n$F$ | '+('长释义。'.repeat(2200))+'\n:::','公式及释义超过'],
  ];
@@ -30,10 +30,10 @@ try{
   const r=await render(base+'前文。\n\n<!-- pagebreak -->\n\n'+ending,{type:'gb',pagedHtml:true});
   const path=temp+'/last-'+name+'.html';await writeFile(path,r.pagedHtml);await chrome.print(path,{...r.printOptions,waitPaged:true});
  }
- const nested=await render(base+':::gb-note\n说明[^@n]。\n:::\n\n| 项目 | 内容 |\n| --- | --- |\n| 一 | 说明[^@t] |\n\n[^@n]: 注中的页底脚注。\n[^@t]: 单元格中的页底脚注。',{type:'gb',pagedHtml:true});
+ const nested=await render(base+':::gb-note\n说明[^@n]。\n:::\n\n| 项目 | 内容 |\n| --- | --- |\n| 一 | 说明[^@t] |\n\n[^@n]: 注中的页底脚注。\n[^@t]: 单元格中的表脚注。',{type:'gb',pagedHtml:true});
  const nestedPath=temp+'/nested-notes.html';await writeFile(nestedPath,nested.pagedHtml);await chrome.print(nestedPath,{...nested.printOptions,waitPaged:true});
- const nestedState=await chrome.send('Runtime.evaluate',{returnByValue:true,expression:`document.querySelectorAll('.pagedjs_pages .gb-footnote-content').length`});
- assert.equal(nestedState.result.value,2,'footnotes inside notes and table cells survive floating');
+ const nestedState=await chrome.send('Runtime.evaluate',{returnByValue:true,expression:`({body:document.querySelectorAll('.pagedjs_pages .gb-footnote-content').length,table:document.querySelectorAll('.pagedjs_pages .gb-table-footnote').length})`});
+ assert.deepEqual(nestedState.result.value,{body:1,table:1},'note footnote stays at page bottom; table-cell footnote stays in table');
  const source=await render('---\ngb_source_cover: true\n标准号: GB/T 1—2020\n---\n\nSOURCE_COVER 原始证据正文。',{type:'gb',gbDefaults:false,pagedHtml:true});
  assert.ok(!source.pagedHtml.includes('<header class="masthead'));
  const sourcePath=temp+'/source-cover.html';await writeFile(sourcePath,source.pagedHtml);await chrome.print(sourcePath,{...source.printOptions,waitPaged:true});

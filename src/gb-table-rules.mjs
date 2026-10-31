@@ -68,7 +68,7 @@ export function finalizeGbTableRules() {
       frame(() => true);
       const head = table.querySelector('thead');
       if (head) frame(cell => cell.closest('thead') === head);
-      for (const row of table.querySelectorAll('tfoot tr, tbody tr.gb-table-notes')) {
+      for (const row of table.querySelectorAll('tfoot tr, tbody tr.gb-table-notes, tbody tr.gb-table-footnotes')) {
         if (row.closest('table') === table) frame(cell => cell.closest('tr') === row);
       }
       table.classList.add('gb-vector-rules');

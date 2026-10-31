@@ -78,7 +78,7 @@ flowchart LR
 FIGURENOTEMARK 图中附加说明。
 :::
 
-:::gb-note scope=figure label="a）" weight=normal
+:::gb-note scope=figure label="^a^" weight=normal
 FIGUREFOOTMARK 图脚注内容。
 :::
 
@@ -187,7 +187,7 @@ FIGUREFOOTMARK 图脚注内容。
 | GBROW_099 | 第 99 项内容用于验证长表跨页和续表表头 | 合格 |
 | GBROW_100 | 第 100 项内容用于验证长表跨页和续表表头 | 合格 |
 
-:::gb-note scope=table label="注1："
+:::gb-note scope=table layout=boxed label="注1："
 TABLE_NOTE_MARK 表内说明。
 :::
 
@@ -201,11 +201,9 @@ APPENDIX_MARK 依次检查排版和内容。
 
 | 项目 | 判定 |
 | --- | --- |
-| 附录项目 | 合格 |
+| 附录项目[^@appendix-table] | 合格 |
 
-:::gb-note scope=table label="a）" weight=normal
-TABLEFOOTMARK 表脚注内容。
-:::
+[^@appendix-table]: TABLEFOOTMARK 表脚注内容。
 
 ## 参考文献 {role=bibliography}
 

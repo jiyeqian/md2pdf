@@ -266,7 +266,7 @@ main .gb-figure-note p, main .gb-figure-footnote p, main .gb-table-footnote p {
 .gb-figure-note .gb-note-text, .gb-figure-footnote .gb-note-text,
 .gb-table-footnote .gb-note-text { flex: 1; min-width: 0; }
 figure.fig { break-inside: avoid; }
-.gb-table-notes { break-inside: avoid; }
+.gb-table-notes, .gb-table-footnotes { break-inside: avoid; }
 /* 数字列按原数值的小数点/个位对齐，不补零或改写数值。 */
 .gb-number-cell { text-align: center; }
 .gb-decimal {
@@ -389,3 +389,12 @@ main h2.toc-title { margin: 0 0 12mm; text-align: center; font: 16pt/1 var(--fon
 
 .gb-body-heading { display: flow-root; break-inside: avoid; font: 10.5pt/1.62 var(--font-head); margin: 0 0 1.62em; }
 .gb-body-heading > h2.body-start { margin: 0; }
+
+.gb-float-footnote-call { font-size: .75em; line-height: 0; }
+.gb-float-footnote-call a { color: inherit; border: 0; text-decoration: none; }
+.gb-table-footnote .gb-label, .gb-figure-footnote .gb-label { font-family: var(--font-body); font-weight: 400; }
+.gb-table-group { margin: 0; }
+/* Keep a table title and unit with its header instead of a title-only fragment. */
+table caption { break-after: avoid; break-inside: avoid; }
+.gb-table-group > .gb-table-note[data-gb-note-layout="plain"] { border: 0; padding: 0; }
+.gb-label:has(.md-superscript, .md-subscript) { min-width: 1em; }

@@ -1,3 +1,4 @@
+import { renderScriptLabel } from './inline-scripts.mjs';
 import { parseGbIndex, parseGbIndexSection, groupGbIndex } from './gb-index.mjs';
 import { renderGbTable } from './gb-tables.mjs';
 import { GB_BLOCKS, parseGbParameters } from './gb-blocks.mjs';
@@ -142,15 +143,17 @@ function renderBlock({ role, label, text }, marked, depth) {
 }
 
 function renderNote(argumentsText, text, marked, depth) {
-  const args = parseGbParameters(argumentsText, ['scope','position','align','label','weight']);
+  const args = parseGbParameters(argumentsText, ['scope','position','align','label','weight','layout']);
   const fail = message => { const error = new Error('gb-note：' + message); error.status = 400; throw error; };
   if (args.scope !== undefined && !['table','figure'].includes(args.scope)) fail('scope 仅支持 table 或 figure');
   if (args.position !== undefined && !['top','bottom'].includes(args.position)) fail('position 仅支持 top 或 bottom');
   if (args.align !== undefined && !['left','center','right'].includes(args.align)) fail('align 仅支持 left、center 或 right');
   if (args.weight !== undefined && !['bold','normal'].includes(args.weight)) fail('weight 仅支持 bold 或 normal');
-  const position = args.position || 'bottom', align = args.align || 'left';
-  const lead = args.label ? '<span class="gb-label">' + escape(args.label) + '</span>' : '';
-  const attributes = (args.scope ? ' data-gb-note-scope="' + args.scope + '"' : '') + ' data-gb-note-position="' + position + '" data-gb-note-align="' + align + '"' + (lead && args.weight === 'normal' ? ' data-gb-note-weight="normal"' : '');
+  if (args.layout !== undefined && !['plain','boxed'].includes(args.layout)) fail('layout 仅支持 plain 或 boxed');
+  if (args.layout === 'boxed' && (args.scope !== 'table' || args.position === 'top')) fail('layout=boxed 仅用于表格底部说明');
+  const position = args.position || 'bottom', align = args.align || 'left', layout = args.layout || 'plain';
+  const lead = args.label ? '<span class="gb-label">' + renderScriptLabel(args.label) + '</span>' : '';
+  const attributes = (args.scope ? ' data-gb-note-scope="' + args.scope + '"' : '') + ' data-gb-note-layout="' + layout + '" data-gb-note-position="' + position + '" data-gb-note-align="' + align + '"' + (lead && args.weight === 'normal' ? ' data-gb-note-weight="normal"' : '');
   const content = markdown(text, marked, depth);
   const role = args.scope ? args.scope + '-note' : 'note';
   const body = lead && content.startsWith('<p>') ? content.replace(/^<p>([\s\S]*?)<\/p>/, (_,first)=>'<p>'+lead+'<span class="gb-note-text">'+first+'</span></p>') : lead + content;
@@ -171,7 +174,7 @@ export function transformGbContent(html, title) {
     const scope = /data-gb-note-scope="(table|figure)"/.exec(node.token)?.[1];
     if (!scope) continue;
     let parent = node.parent;
-    while (parent?.tag && parent.tag !== scope) parent = parent.parent;
+    while (parent?.tag && parent.tag !== scope && !(scope === 'table' && classes(parent).includes('gb-table-group'))) parent = parent.parent;
     if (!parent?.tag) { const error = new Error('gb-note scope=' + scope + '：未找到相邻的对应图表（所有图表说明均须紧接对应图表之后）'); error.status = 400; throw error; }
   }
   return html;
@@ -185,7 +188,7 @@ const FLOAT_NOTES = new Set([...TABLE_NOTES, ...FIGURE_NOTES]);
 
 // Pair real tags instead of matching </div> with a lazy regex: a note can contain
 // nested paragraphs and semantic divs. Only adjacent sibling blocks are attached.
-function elements(html) {
+export function elements(html) {
   const root = {children:[]}, stack = [root], all = [];
   const tags = /<!--[\s\S]*?-->|<\/?([A-Za-z][\w:-]*)\b(?:[^>"']|"[^"]*"|'[^']*')*>/g;
   for (const match of html.matchAll(tags)) {
@@ -365,7 +368,7 @@ function fillEmptyTableCells(html) {
   return html;
 }
 
-function tableColumns(rows) {
+export function tableColumns(rows) {
   let max = 1, occupied = [], group = null;
   for (const row of rows) {
     // Row spans do not cross row-group boundaries; rowspan=0 extends to its end.
@@ -404,8 +407,11 @@ function attachFloatNotes(html) {
       notes.push(next); end = next.end;
     }
     if (!notes.length) continue;
-    const top = [], bottom = [];
-    for (const note of notes) (/data-gb-note-position="top"/.test(note.token) ? top : bottom).push(html.slice(note.start,note.end));
+    const top = [], bottom = [], plain = [];
+    for (const note of notes) {
+      const target=/data-gb-note-position="top"/.test(note.token)?top:node.tag==='table'&&/data-gb-note-layout="plain"/.test(note.token)?plain:bottom;
+      target.push(html.slice(note.start,note.end));
+    }
     const insertions = [];
     if (node.tag === 'figure') {
       if (top.length) insertions.push({at:node.openEnd,text:top.join('\n')+'\n'});
@@ -432,6 +438,7 @@ function attachFloatNotes(html) {
       const offset=insertion.at-node.start;
       output=output.slice(0,offset)+insertion.text+output.slice(offset);
     }
+    if(plain.length)output='<div class="gb-table-group">'+output+'\n'+plain.join('\n')+'</div>';
     edits.push({start:node.start,end,text:output});
   }
   for (const edit of edits.sort((a,b) => b.start-a.start)) html = html.slice(0,edit.start) + edit.text + html.slice(edit.end);

@@ -1,3 +1,4 @@
+import { installInlineScripts } from './inline-scripts.mjs';
 import {prepareDocumentContent,prepareContentHeadings,finalizeContentNavigation} from './document-content.mjs';
 import { gbSectionCatalog, gbSectionDiagnostics } from './gb-sections.mjs';
 import { prepareGbContent, transformGbContent, separateGbBodyHeading } from './gb-content.mjs';
@@ -572,6 +573,7 @@ export async function render(src, options = {}, context = {}) {
   const { Marked } = await import(pathToFileURL(path.join(ROOT, 'vendor', 'marked.esm.js')).href);
   throwIfAborted();
   const marked = new Marked({ gfm: true });
+  installInlineScripts(marked);
   const require = createRequire(import.meta.url);
   const hljs = require(path.join(ROOT, 'vendor', 'highlight', 'highlight.cjs'));
   marked.use({

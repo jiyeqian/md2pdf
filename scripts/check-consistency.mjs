@@ -88,12 +88,15 @@ try {
   }
   console.log('✓ 章分页三种策略与表头运行时：CLI、Node、静态配置及 HTML 一致');
   for (const type of ['general','paper','gb','skill']) {
-    const md='---\nfonts:\n  body: Arial\n  heading: Helvetica\n  western: Times New Roman\n  code: Menlo\n---\n# 字体一致性\n\n## 范围\n\n正文 ABC 123。`code`';
+    const md='---\nfonts:\n  body: Arial\n  heading: Helvetica\n  western: Times New Roman\n  code: Menlo\n---\n# 字体一致性\n\n## 范围\n\n正文 ABC 123。`code`，x^2^、H~2~O、~~删除~~。';
     const body={md,opts:{type}},opts={type,pagedHtml:true};
     const core=await render(md,opts,{webSafe:true});
     const local=await browserRender(md,opts,{webSafe:true});
     sameHtml(local.pagedHtml,core.pagedHtml,type+': custom font core');
     assert.deepEqual(local.printOptions,core.printOptions);
+    assert.match(core.html,/<sup class="md-superscript">2<\/sup>/);
+    assert.match(core.html,/<sub class="md-subscript">2<\/sub>/);
+    assert.match(core.html,/<del>删除<\/del>/);
     const response=await nativeFetch(base+'/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     assert.equal(response.status,200);
     const online=await response.json(),offline=await(await browser.appFetch('/api/preview',{body:JSON.stringify(body)})).json();

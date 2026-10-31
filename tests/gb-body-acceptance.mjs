@@ -57,6 +57,9 @@ try{
    extras.tocRowHeights=[...scope.querySelectorAll('.toc li')].filter(e=>e.textContent.trim()).map(e=>e.getBoundingClientRect().height/(e.closest('.pagedjs_page').querySelector('.pagedjs_pagebox').getBoundingClientRect().width/(210*96/25.4)));
    extras.tocMargins=[...scope.querySelectorAll('.toc li')].map(e=>({top:parseFloat(getComputedStyle(e).marginTop),bottom:parseFloat(getComputedStyle(e).marginBottom)}));
    extras.tocGroups=[...scope.querySelectorAll('.toc>ol')].map(ol=>{const page=ol.closest('.pagedjs_page');const rows=[...ol.querySelectorAll('.toc-text')];return {page:pages.indexOf(page)+1,kind:rows[0]?.textContent.startsWith('图')?'figure':rows[0]?.textContent.startsWith('表')?'table':'body',rows:rows.map(e=>({text:e.textContent,box:box(e,page)}))};});
+   extras.floatTables=[...scope.querySelectorAll('table')].map(t=>({title:t.caption?.textContent||'',notes:t.querySelectorAll('.gb-table-notes').length,feet:[...t.querySelectorAll('.gb-table-footnote')].map(e=>({label:e.querySelector('.gb-label')?.textContent,text:e.textContent})),calls:[...t.querySelectorAll('.gb-float-footnote-call')].map(e=>e.textContent)}));
+   extras.manualLabels=[...scope.querySelectorAll('.gb-figure-note .gb-label .md-superscript')].map(e=>e.textContent);
+   extras.scripts={sup:scope.querySelectorAll('.md-superscript').length,sub:scope.querySelectorAll('.md-subscript').length};
    extras.footnotes=[...scope.querySelectorAll('.pagedjs_footnote_area .gb-footnote')].map(e=>({number:parseInt(e.querySelector('.gb-footnote-label').textContent,10),page:pages.indexOf(e.closest('.pagedjs_page'))}));
    extras.depth4=[...scope.querySelectorAll('h5')].some(e=>e.textContent.includes('5.6.1.1'));
    extras.depth3Term=!!scope.querySelector('[id="gb-term-grasp"]');
@@ -81,6 +84,15 @@ try{
   assert.ok(Math.max(...state.extras.tocRowHeights)-Math.min(...state.extras.tocRowHeights)<.1,'equal contents row spacing across all levels and groups');
   assert.ok(state.extras.tocRowHeights.every(h=>Math.abs(h*.75-18.34)<.1),'contents rows match 2026 reference 18.34pt');
   assert.ok(state.extras.tocMargins.every(m=>m.top===0&&m.bottom===0),'all contents rows have no external margins, including float rows');
+  const complexNotes=state.extras.floatTables.filter(t=>t.title.includes('分项检测条件'));
+  assert.equal(complexNotes.flatMap(t=>t.feet).length,2,'complex table has exactly two automatic footnotes');
+  assert.deepEqual(complexNotes.flatMap(t=>t.feet).map(f=>f.label),['a','b']);
+  assert.ok(complexNotes.some(t=>t.notes===1&&t.feet.length===2),'ordinary notes and footnotes use separate full-width rows');
+  const recordNotes=state.extras.floatTables.filter(t=>t.title.includes('连续抓取试验记录'));
+  assert.ok(recordNotes.length>1&&recordNotes.every(t=>t.calls.includes('a')),'continued headers retain their original footnote a');
+  assert.equal(recordNotes.flatMap(t=>t.feet).length,1,'continued table footnote text appears once');
+  assert.equal(recordNotes.at(-1).feet.length,1,'continued table footnote stays on the final fragment');
+  assert.ok(state.extras.manualLabels.includes('a')&&state.extras.scripts.sup>0&&state.extras.scripts.sub>=2,'manual image label and inline scripts');
   assert.ok(state.extras.depth4&&state.extras.depth3Term,'four-level clauses and three-level terms');
   const footnotes=state.extras.footnotes;
   assert.ok(footnotes.length>=3&&new Set(footnotes.map(n=>n.page)).size>=3,'footnotes span front/body/appendix pages');

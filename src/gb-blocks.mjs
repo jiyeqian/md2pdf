@@ -14,14 +14,14 @@ export const GB_BLOCKS = [
 // The completion menu offers common forms without adding directive names.
 export const GB_NOTE_FORMS = [
   { argument: 'label="注："', description: '正文或术语注' },
-  { argument: 'scope=table label="注："', description: '表注（放在表后）' },
+  { argument: 'scope=table layout=boxed label="注："', description: '表注（放在表后）' },
   { argument: 'scope=figure label="注："', description: '图注（放在图后）' },
-  { argument: 'scope=table label="a）" weight=normal', description: '表脚注（标记另行填写）' },
-  { argument: 'scope=figure label="a）" weight=normal', description: '图脚注（标记另行填写）' },
+  { argument: 'scope=table layout=plain label="注："', description: '表下方独立说明（框外）' },
+  { argument: 'scope=figure label="^a^" weight=normal', description: '图片固定标记脚注（上标标签）' },
   { argument: 'scope=table position=top align=right', description: '表上方右对齐说明（写在表后）', body: '单位为毫米' },
   { argument: 'scope=figure position=top align=right', description: '图上方右对齐说明（写在图后）', body: '单位为毫米' },
   { argument: 'weight=normal', description: '来源文字（原样显示）', body: '[来源：GB/T 20000.1—2014，5.3]' },
-  { argument: 'scope=table align=left', description: '表来源（原样显示，写在表后）', body: '[来源：GB/T XXXXX—2026，表2]' },
+  { argument: 'scope=table layout=boxed align=left', description: '表来源（原样显示，写在表后）', body: '[来源：GB/T XXXXX—2026，表2]' },
   { argument: 'scope=figure align=left', description: '图来源（原样显示，写在图后）', body: '[来源：GB/T XXXXX—2026，图1]' },
 ];
 

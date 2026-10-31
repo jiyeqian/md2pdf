@@ -324,3 +324,8 @@ h2.summary-heading {
   break-before: auto; break-after: auto; break-inside: auto;
 }
 h2.summary-heading::before { content: none; display: none; }
+
+/* Keep inline scripts from enlarging paragraph line boxes. */
+.md-superscript, .md-subscript { font-size: .75em; line-height: 0; position: relative; vertical-align: baseline; }
+.md-superscript { top: -.5em; }
+.md-subscript { bottom: -.25em; }

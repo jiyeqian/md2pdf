@@ -227,11 +227,13 @@ $s_F$ | 接触力归一化基准量。
 
 ### 性能指标与标定 {#sec:calibration}
 
+常用量纲可写为 mm^2^，编号可写为 l~1~ 和 l~2~；复杂表达式仍使用数学公式。
+
 系统性能应符合表 \ref{tab:perf} 的规定。数值相同量纲的比较应使用一致的单位，不在记录中省略有意义的有效数字。
 
 表：抓取控制系统性能指标 {#tab:perf}
 
-| 指标 | 要求 | 检测条件 |
+| 指标 | 要求[^@performance-limit] | 检测条件 |
 | --- | --- | --- |
 | 抓取成功率 | ≥ 98% | 每组 100 次 |
 | 单指响应延迟 | ≤ 12 ms | 稳态运行 |
@@ -252,7 +254,7 @@ $s_F$ | 接触力归一化基准量。
 单位为毫米
 :::
 
-:::gb-note scope=table label="注："
+:::gb-note scope=table layout=boxed label="注："
 空白测点不构成有效的标定数据；一字线表示该测点没有对应记录。
 :::
 
@@ -267,22 +269,22 @@ $s_F$ | 接触力归一化基准量。
 :::gb-table
 widths: 24 37 28 28 48
 head:
-| {rowspan=2} 检测对象 | {rowspan=2} 检测项目 | {colspan=2} 环境条件 | {rowspan=2} 判定要求 |
-| 温度/℃ | 相对湿度/% |
+| {rowspan=2} 检测对象[^@sensor-location] | {rowspan=2} 检测项目 | {colspan=2} 环境条件 | {rowspan=2} 判定要求 |
+| 温度/℃[^@temperature-range] | 相对湿度/% |
 body:
-| {rowspan=2} 控制器 | 稳态响应 | 25 ± 2 | 45～75 | 延迟不大于 12 ms |
+| {rowspan=2} 控制器[^@sensor-location] | 稳态响应 | 25 ± 2 | 45～75 | 延迟不大于 12 ms |
 | 异常恢复 | 25 ± 2 | 45～75 | 进入可接受指令的状态 |
 | {rowspan=2} 末端执行器 | 保持能力 | 低温 −10 | 45～75 | 目标物无脱离 |
 | 滑移检测 | 高温 40 | 45～75 | 在规定时间内识别滑移 |
 | {colspan=2} 通信接口 | 25 ± 2 | | 记录序列号连续 |
 :::
 
-:::gb-note scope=table label="注1："
+:::gb-note scope=table layout=boxed label="注1："
 高低温条件仅用于区分不同检测状态，实际产品的环境适用范围应以产品文件为准。
 :::
 
-:::gb-note scope=table label="a）" weight=normal
-传感器安装位置应在试验记录中说明，回行文字与本条脚注的内容起点对齐。
+:::gb-note scope=table layout=boxed label="注2："
+同一检测对象的合并单元格表示这些项目采用相同的安装配置。
 :::
 
 ### 数据有效性 {#sec:data-validity}
@@ -322,7 +324,7 @@ flowchart LR
  B --> C[受控接近]
  C --> D[稳定保持]
  D --> E[完成记录]
- C --> F[异常保持]
+ C --> F["异常保持<sup>a</sup>"]
  F --> B
 ```
 
@@ -330,7 +332,7 @@ flowchart LR
 异常保持状态不表示试验完成；未满足恢复条件时应继续保持安全状态。
 :::
 
-:::gb-note scope=figure label="a）" weight=normal
+:::gb-note scope=figure label="^a^" weight=normal
 图示只表达状态转换关系，实际控制器还应记录各状态的进入与退出时刻。
 :::
 
@@ -359,7 +361,7 @@ flowchart LR
 
 表：连续抓取试验记录 {#tab:records}
 
-| 记录编号 | 试验状态 | 响应时间 | 恢复时间 |
+| 记录编号 | 试验状态 | 响应时间[^@record-time] | 恢复时间 |
 | --- | --- | --- | --- |
 | R001 | 正常抓取 | 9.1 | — |
 | R002 | 正常抓取 | 9.2 | — |
@@ -406,7 +408,7 @@ flowchart LR
 单位为毫秒
 :::
 
-:::gb-note scope=table label="注："
+:::gb-note scope=table layout=boxed label="注："
 记录中的数值为排版演示数据，不能据此评价实际系统性能。
 :::
 
@@ -553,3 +555,8 @@ test report | @sec:appendix-report，@sec:report-fields
 [^gb47032]: GB/T 47032—2026　风光储联合发电站运行评价规程
 
 [^gb1526]: GB/T 1526—1989　信息处理　数据流程图、程序流程图、系统流程图、程序网络图和系统资源图的文件编制符号及约定
+
+[^@performance-limit]: 表中的限值为试验判定条件；不代表所有工况下的产品保证值。
+[^@sensor-location]: 传感器安装位置应在试验记录中说明，回行文字与本条脚注的内容起点对齐。
+[^@temperature-range]: 温度是检测时的设定值，应记录稳定后的实测值及其测量不确定度。
+[^@record-time]: 响应时间从有效指令输入时刻起算，同一续表沿用相同定义。

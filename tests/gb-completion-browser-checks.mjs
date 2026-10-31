@@ -47,5 +47,10 @@ try {
    assert.ok((await evaluate('mdEditor.getValue()')).endsWith('@sec:scope'),'inserts one @ and stable id');
   }else assert.equal(menu,'','paper does not activate index @ completion');
  }
+ for(const [input,wanted] of [[':::gb-note scope=table layout=','layout=boxed'],[':::gb-note scope=figure label','label="^a^"']]) {
+  await evaluate(`mdEditor.setValue(${JSON.stringify(input)});gbView.dispatch({selection:{anchor:gbView.state.doc.length}});mdEditor.setCompletions(c=>gbAnalysis.provideCompletions({...c,templateType:'gb'},gbAnalysis.analyzeMarkdown(c.text,{templateType:'gb'})));MDEditorVendor.startCompletion(gbView);`);
+  await new Promise(r=>setTimeout(r,150));
+  assert.ok((await evaluate(`document.querySelector('.cm-tooltip-autocomplete')?.textContent||''`)).includes(wanted),'note parameter completion '+wanted);
+ }
  console.log('PASS: real editor GB completion menu, insertion, automatic @ targets and template isolation');
 }finally{await chrome.stop();await app.close();await rm(temp,{recursive:true,force:true});}

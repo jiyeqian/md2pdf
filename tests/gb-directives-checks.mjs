@@ -40,7 +40,7 @@ test('removed directives and old bare labels fail, while fenced code remains lit
 
 test('table and figure notes are authored after their object, with independent placement',()=>{
  for(const [scope,object] of [['table',table],['figure',figure]]) {
-  const source=parse(`:::gb-note scope=${scope}\n[来源：GB/T 1，表2]\n:::`);
+  const source=parse(`:::gb-note scope=${scope}${scope==='table'?' layout=boxed':''}\n[来源：GB/T 1，表2]\n:::`);
   const top=parse(`:::gb-note position=top align=right scope=${scope} label="自定义：" weight=normal\n单位或其他内容\n:::`);
   const out=transformGbContent(object+source+top,'');
   assert.ok(out.indexOf('单位或其他内容')<out.indexOf('<tbody>')||scope==='figure');
