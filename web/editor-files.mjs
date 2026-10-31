@@ -151,10 +151,7 @@ export function frontmatterTitle(markdown, type = '') {
   const title = frontmatterScalar(markdown, 'title');
   const chinese = frontmatterScalar(markdown, '中文名称');
   if (!chinese) return title;
-  const fm = Object.fromEntries(['type', 'standard', '标准号', 'name', 'abstract'].map(key => [key, frontmatterScalar(markdown, key)]));
-  // 这里只为沿用模板识别优先级检查关键词是否非空，不解析其内容。
-  const keywords = frontmatterRaw(markdown, 'keywords');
-  if (keywords !== null && !/^(?:\[\s*\]|null|~)\s*(?:#.*)?$/i.test(keywords.trim())) fm.keywords = [''];
+  const fm = Object.fromEntries(['type','standard','标准号','name'].map(key=>[key,frontmatterScalar(markdown,key)]));
   const selected = type || fm.type;
   const profile = detectProfile({ basename: '', fm, explicit: PROFILE_NAMES.includes(selected) ? selected : '' });
   return profile.gbDoc ? chinese : title;

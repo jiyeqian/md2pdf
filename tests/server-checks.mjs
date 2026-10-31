@@ -275,7 +275,7 @@ test('enforces document-type policy on both render and pdf before rendering', as
   assert.equal((await app.post('/api/pdf', { md: doc.md, opts: { numberScheme: 'gb' } })).status, 400);
 
   // 未开放的编号方案（paper 无 cjk）→ 400
-  const paper = { md: '---\nabstract: 摘要\n---\n# 论文\n\n## 方法\n\n正文', opts: { numberScheme: 'cjk' } };
+  const paper = { md: '---\nauthor: 作者\n---\n# 论文\n\n## 摘要 {role=abstract}\n\n摘要\n\n## 方法\n\n正文', opts: { numberScheme: 'cjk' } };
   assert.equal((await app.post('/api/render', paper)).status, 400);
 
   // 自动识别为 gb 后，字号 / 版式等一律锁定 → 400

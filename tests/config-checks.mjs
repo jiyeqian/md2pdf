@@ -61,17 +61,17 @@ test('YAML 语法错误：抛 ConfigError 且 message 为中文', () => {
 });
 
 test('文本字段严格 string：null / 列表 / 对象 / 数值均报错', () => {
-  throws(() => parseFrontmatter(FM('colophon: null')), /colophon/);
+  throws(() => parseFrontmatter(FM('header-left: null')), /header-left/);
   throws(() => parseFrontmatter(FM('title: [a, b]')), /title/);
   throws(() => parseFrontmatter(FM('kicker: {a: 1}')), /kicker/);
   throws(() => parseFrontmatter(FM('footer-left: 123')), /footer-left/);
 });
 
 test('文本字段显式空串合法：清空且阻止低层回退', () => {
-  const r = parseFrontmatter(FM('colophon: ""'));
-  assert.equal(r.config.colophonLeft, '');
-  const resolved = resolveDocumentOptions({}, r.fm, general({ defaults: { colophon: '低层' } }));
-  assert.equal(resolved.colophonLeft, '');
+  const r = parseFrontmatter(FM('header-left: ""'));
+  assert.equal(r.config.headerLeft, '');
+  const resolved = resolveDocumentOptions({}, r.fm, general({ defaults: { headerLeft: '低层' } }));
+  assert.equal(resolved.headerLeft, '');
 });
 
 test('数值字段不能为空 / 非法值报错，合法数值通过', () => {
@@ -107,9 +107,9 @@ test('同层 kebab 与 camelCase 别名：同值放行，异值冲突', () => {
 });
 
 test('普通元数据不受配置校验：null / 列表 / 对象都保留', () => {
-  const r = parseFrontmatter(FM('author: null\nkeywords: [甲, 乙]\nmetaData: {a: 1}\n描述: 中文说明'));
+  const r = parseFrontmatter(FM('author: null\ntags: [甲, 乙]\nmetaData: {a: 1}\n描述: 中文说明'));
   assert.equal(r.fm.author, null);
-  assert.deepEqual(r.fm.keywords, ['甲', '乙']);
+  assert.deepEqual(r.fm.tags, ['甲', '乙']);
   assert.deepEqual(r.fm.metaData, { a: 1 });
   assert.equal(r.fm['描述'], '中文说明');
 });
@@ -155,7 +155,7 @@ test('合并优先级：explicit > fm > profile.defaults > 全局默认', () => 
   assert.equal(resolved.lineHeight, 1.5);   // profile 覆盖全局
   assert.equal(resolved.marginLeft, 18);    // 全局默认
   assert.equal(resolved.outline, true);
-  assert.equal(resolved.bibliographyTitle, '参考文献');
+  assert.equal(resolved.bibliographyTitle, undefined);
 });
 
 test('页边距：四边显式与 marginSide 分层，低层简写不覆盖高层显式', () => {
@@ -168,12 +168,10 @@ test('页边距：四边显式与 marginSide 分层，低层简写不覆盖高�
   assert.equal(resolved.marginBottom, 18); // 全局
 });
 
-test('GB 强制版式：无导语无落款，不被 enable/disable 或 FM 绕过', () => {
-  const fm = parseFrontmatter(FM('lead: true\ncolophon: "落款"')).fm;
-  const resolved = resolveDocumentOptions({ lead: true, colophon: '显式落款' }, fm,
-    { name: 'gb', gbDoc: true, defaults: { theme: 'gb', lead: false } });
-  assert.equal(resolved.lead, false);
-  assert.equal(resolved.colophonLeft, '');
+test('GB 强制版式：无导语无落款，不被 enable/disable 绕过',()=>{
+ const fm=parseFrontmatter(FM('lead: true\ncolophon-enabled: true')).fm;
+ const resolved=resolveDocumentOptions({lead:true},fm,{name:'gb',gbDoc:true,defaults:{lead:false}});
+ assert.equal(resolved.lead,false);assert.equal(resolved.colophonEnabled,false);
 });
 
 test('运行字段透传：frontmatter 不能控制 keep-html / open / output', () => {
@@ -247,9 +245,9 @@ test('别名安全：合法别名可复用，别名炸弹被限制为 ConfigErro
 });
 
 test('修复后普通元数据保持：null / 合法多行 / 数组不被破坏', () => {
-  const r = parseFrontmatter(FM('author: null\nkeywords: [甲, 乙]\ndescription: |\n  第一行\n  第二行'));
+  const r = parseFrontmatter(FM('author: null\ntags: [甲, 乙]\ndescription: |\n  第一行\n  第二行'));
   assert.equal(r.fm.author, null);
-  assert.deepEqual(r.fm.keywords, ['甲', '乙']);
+  assert.deepEqual(r.fm.tags, ['甲', '乙']);
   assert.equal(r.fm.description, '第一行\n第二行\n');
 });
 
@@ -292,8 +290,8 @@ test('colophon-enabled aliases the legacy camelCase flag without changing preced
 });
 
 
-test('keywords and tags require string lists with source field diagnostics', () => {
-  for (const field of ['keywords', 'tags']) {
+test('tags require string lists with source field diagnostics', () => {
+  for (const field of ['tags']) {
     assert.deepEqual(parseFrontmatter(FM(field + ': [甲, 乙]')).fm[field], ['甲', '乙']);
     assert.deepEqual(parseFrontmatter(FM(field + ': []')).fm[field], []);
     for (const value of ['旧字符串', 'null', 'true', '[甲, 1]', '[甲, null]', '{a: b}']) {

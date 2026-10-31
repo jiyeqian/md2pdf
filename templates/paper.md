@@ -1,5 +1,5 @@
 ---
-# 模板：paper（学术论文）—— frontmatter 含 abstract 或 keywords 即自动识别，
+# 模板：paper（学术论文）—— 作者信息与 Markdown 中非空的 role=abstract 摘要组合用于自动识别，
 # 报头三件套（作者行 + 摘要 + 关键词）自动生成。
 # 用法：md2pdf 本文件.md
 # 完整示例见 examples/paper.md。
@@ -24,12 +24,17 @@ affiliations:
     text: 三闾大学自动化研究所
   - id: clayton
     text: 克莱登大学机械工程系
-abstract: 一段 200 字左右的摘要，说明问题、方法与主要结果。
-keywords:
-  - 关键词一
-  - 关键词二
-  - 关键词三
 ---
+
+## 摘要 {role=abstract}
+
+一段 200 字左右的摘要，说明问题、方法与主要结果。
+
+## 关键词 {role=keywords}
+
+- 关键词一
+- 关键词二
+- 关键词三
 
 ## 引言
 

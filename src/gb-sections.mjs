@@ -1,6 +1,6 @@
 // Section meaning is independent of the visible heading. Shared with the editor.
 export const GB_SECTION_ROLES = {toc:'目次',preface:'前言',introduction:'引言',appendix:'附录',bibliography:'参考文献',index:'索引'};
-export function gbHeading(text, level = 2) {
+export function gbHeading(text, level = 2, roles = GB_SECTION_ROLES) {
   const match = /\s*\{([^{}]*)\}\s*$/.exec(text);
   const attrs = {};
   let id;
@@ -16,7 +16,7 @@ export function gbHeading(text, level = 2) {
         attrs[pair[1]] = pair[2];
       }
     }
-    if (attrs.role && !Object.hasOwn(GB_SECTION_ROLES, attrs.role)) throw new Error('未知章节 role：' + attrs.role);
+    if (attrs.role && !Object.hasOwn(roles, attrs.role)) throw new Error('未知章节 role：' + attrs.role);
     if (attrs.nature && !['normative','informative'].includes(attrs.nature)) throw new Error('nature 仅支持 normative 或 informative');
     if (attrs.role && level !== 2) throw new Error('章节 role 仅支持二级标题；附录子章节无需重复设置');
     text = text.slice(0, match.index).trim();

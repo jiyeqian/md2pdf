@@ -82,7 +82,7 @@ test('运行型开关：仅 CLI 可控，保留原模式', () => {
 test('--key=value：支持含空串与以 - 开头的值', () => {
   assert.equal(parseArgs(['--title=']).title, '');
   assert.equal(parseArgs(['--title=-abc']).title, '-abc');
-  assert.equal(parseArgs(['--colophon=']).colophonLeft, '');
+  assert.equal(parseArgs(['--header-left=']).headerLeft, '');
   assert.equal(parseArgs(['--theme=minimal']).theme, 'minimal');
   assert.equal(parseArgs(['--enable=toc,outline']).outline, true);
 });
@@ -90,7 +90,7 @@ test('--key=value：支持含空串与以 - 开头的值', () => {
 test('缺值不吞下一选项；纯缺值报错', () => {
   throws(() => parseArgs(['--title', '--theme', 'minimal']), /缺少参数值/);
   throws(() => parseArgs(['--title']), /缺少参数值/);
-  throws(() => parseArgs(['--colophon', '--open']), /缺少参数值/);
+  throws(() => parseArgs(['--header-left', '--open']), /缺少参数值/);
 });
 
 test('重复取值：一致允许，矛盾报错', () => {
@@ -147,9 +147,9 @@ test('浏览器解析全链路：parseArgs(expandArgs(argv)) 保持可用', () =
 });
 
 test('resolveDocumentOptions：CLI 显式值胜出，空串清空并阻断 fm 回退', () => {
-  const fm = parseFrontmatter('---\ncolophon: "文档落款"\nfooter-center: "内部资料"\n---\n# 标题').fm;
-  const resolved = resolveDocumentOptions(parseArgs(['doc.md', '--colophon', '']), fm, { name: 'general', defaults: {} });
-  assert.equal(resolved.colophonLeft, '');
+  const fm = parseFrontmatter('---\nheader-left: "文档落款"\nfooter-center: "内部资料"\n---\n# 标题').fm;
+  const resolved = resolveDocumentOptions(parseArgs(['doc.md', '--header-left', '']), fm, { name: 'general', defaults: {} });
+  assert.equal(resolved.headerLeft, '');
   assert.equal(resolved.footerCenter, '内部资料');
   assert.equal(resolved.keepHtml, false);
 });
@@ -162,7 +162,7 @@ test('resolveDocumentOptions：全局默认与 GB 强制版式', () => {
   assert.equal(resolved.marginBottom, 18);
   assert.equal(resolved.marginLeft, 18);
   assert.equal(resolved.bibliography, 'footnote');
-  assert.equal(resolved.bibliographyTitle, '参考文献');
+  assert.equal(resolved.bibliographyTitle, undefined);
   assert.equal(resolved.outline, true);
   assert.equal(resolved.toc, false);
   assert.equal(resolved.numberScheme, 'arabic');
@@ -170,5 +170,5 @@ test('resolveDocumentOptions：全局默认与 GB 强制版式', () => {
 
   const gb = resolveDocumentOptions(parseArgs(['--enable', 'lead']), {}, { name: 'gb', gbDoc: true, defaults: { lead: false } });
   assert.equal(gb.lead, false);
-  assert.equal(gb.colophonLeft, '');
+  assert.equal(gb.colophonEnabled, false);
 });

@@ -204,7 +204,7 @@ test('脚注定义与 BibTeX 条目被收集，正文引用不重复入库', () 
   assert.equal(r.footnotes.length, 1);
   assert.equal(r.footnotes[0].id, 'r1');
   assert.match(r.footnotes[0].body, /^@article\{/);
-  assert.deepEqual(codes(r), []);
+  assert.deepEqual(codes(r), ['missing-bibliography']);
 });
 
 test('手写章节号提示：不一致给出应有序号，缺失给出缺失提示', () => {
@@ -318,7 +318,7 @@ test('脚注 / 表格片段自洽：ID 一致且回灌解析器无缺失诊断',
   const r1 = analyzeMarkdown(fn.text);
   assert.equal(r1.footnotes.length, 1);
   assert.equal(r1.footnotes[0].id, fn.id);
-  assert.deepEqual(codes(r1), []);
+  assert.deepEqual(codes(r1), ['missing-bibliography']);
 
   const tb = renderSnippet('table', { title: '指标' });
   const r2 = analyzeMarkdown(tb.text);
@@ -650,7 +650,7 @@ test('frontmatter value recommendations are scoped, canonical and use parser def
     assert.equal(candidate.apply, field + ': ""');
     assert.equal(candidate.selectionOffset, candidate.apply.length - 1);
   }
-  for (const field of ['keywords', 'tags']) {
+  for (const field of ['tags']) {
     const candidate = complete(field).options.find(o => o.label === field);
     assert.equal(candidate.apply, field + ': \n  - ');
     assert.equal(candidate.selectionOffset, candidate.apply.length);
@@ -722,15 +722,15 @@ test('pagebreak insertion preserves selections, isolates the marker and reuses e
 test('GB 指令补全只在有效 GB 模板的块起始位置出现', () => {
   const complete = (text, templateType = 'gb', pos = text.length) => provideCompletions({ text, pos, templateType }, analyzeMarkdown(text));
   const all = complete(':::');
-  assert.equal(all.options.length, 21);
-  assert.ok(all.options.every(option => option.label.startsWith('gb-') && option.detail));
+  assert.equal(all.options.length, 23);
+  assert.ok(all.options.every(option => (option.label.startsWith('gb-')||['kicker','colophon'].includes(option.label)) && option.detail));
   assert.deepEqual(complete(':::gb-figure-f').options, []);
-  assert.equal(complete(':::', 'general'), null);
+  assert.deepEqual(complete(':::', 'general').options.map(o=>o.label),['kicker','colophon']);
   assert.equal(complete('正文 :::'), null);
   assert.equal(complete('```\n:::'), null);
   assert.equal(complete('---\ntitle: x\n:::'), null);
   assert.equal(complete('`:::gb-'), null);
-  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 21);
+  assert.equal(complete('---\ntitle: x\n---\n:::', 'gb').options.length, 23);
 });
 
 test('GB 指令补全插入有效参数与成对结构，并复用已有关闭行', () => {

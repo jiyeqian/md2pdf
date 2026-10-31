@@ -60,7 +60,6 @@ export const GLOBAL_OPTION_DEFAULTS = {
   linkUrls: false,
   landscape: false,
   bibliography: 'footnote',
-  bibliographyTitle: '参考文献',
 };
 
 /**
@@ -191,18 +190,12 @@ export function parseArgs(argv) {
 
       // 文本
       case '--title': put('title', takeValue('--title'), '--title'); break;
-      case '--kicker': put('kicker', takeValue('--kicker'), '--kicker'); break;
-      case '--colophon': put('colophonLeft', takeValue('--colophon'), '--colophon'); break;
       case '--header-left': put('headerLeft', takeValue('--header-left'), '--header-left'); break;
       case '--header-center': put('headerCenter', takeValue('--header-center'), '--header-center'); break;
       case '--header-right': put('headerRight', takeValue('--header-right'), '--header-right'); break;
-      case '--colophon-left': put('colophonLeft', takeValue('--colophon-left'), '--colophon-left'); break;
-      case '--colophon-center': put('colophonCenter', takeValue('--colophon-center'), '--colophon-center'); break;
-      case '--colophon-right': put('colophonRight', takeValue('--colophon-right'), '--colophon-right'); break;
       case '--footer-left': put('footerLeft', takeValue('--footer-left'), '--footer-left'); break;
       case '--footer-center': put('footerCenter', takeValue('--footer-center'), '--footer-center'); break;
       case '--footer-right': put('footerRight', takeValue('--footer-right'), '--footer-right'); break;
-      case '--bibliography-title': put('bibliographyTitle', takeValue('--bibliography-title'), '--bibliography-title'); break;
 
       // 数值
       case '--font-body': case '--font-heading': case '--font-western': case '--font-code': {
@@ -278,7 +271,7 @@ export function parseArgs(argv) {
         if (v === undefined) v = 'footnote';
         if (!['footnote', 'bib'].includes(v)) throw enumError('参考文献模式', v, ['footnote', 'bib']);
         put('bibliography', v, '--bibliography');
-        warn('--bibliography 已废弃：参考文献始终自动处理，请使用 --bibliography-title 设置标题');
+        warn('--bibliography 已废弃：参考文献始终自动处理，请使用 Markdown 的 role=bibliography 章节');
         break;
       }
       case '--no-bibliography':

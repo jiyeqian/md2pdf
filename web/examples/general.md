@@ -83,6 +83,8 @@ def impedance_control(f_err, kp=1.2, kd=0.05):
 
 上述指标、控制流程与参考文献均按标准著录规则自动排版，所用工具 [md2pdf](https://cnb.cool/jiyeqian/md2pdf) 即本项目[^md2pdf]。
 
+## 参考文献 {role=bibliography}
+
 [^window]: 采样窗口宽度为经验值；实际部署时须按传感器噪声水平调整，窗口过大会引入额外相位延迟。
 
 [^md2pdf]: @misc{md2pdf,

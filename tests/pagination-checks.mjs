@@ -44,8 +44,8 @@ test('tables use the same repeat-header pagination runtime in PDF and preview',a
 });
 
 
-test('generated bibliography participates in chapter pagination',async()=>{
- const result=await render('# Title\n\n## Summary\n\nReference[^one].\n\n[^one]: Reference item.',{chapterStart:'page'});
+test('explicit bibliography participates in chapter pagination',async()=>{
+ const result=await render('# Title\n\n## Summary\n\nReference[^one].\n\n## 参考文献 {role=bibliography}\n\n[^one]: Reference item.',{chapterStart:'page'});
  assert.equal((result.html.match(/<h2 data-chapter/g)||[]).length,2);
  assert.match(result.html,/<h2 data-chapter[^>]*>[^<]*参考文献/);
 });

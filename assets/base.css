@@ -310,3 +310,9 @@ section { break-inside: auto; }
 .colophon > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .colophon > span:nth-child(2) { text-align: center; }
 .colophon > span:last-child { text-align: right; }
+
+/* Semantic summaries retain Markdown paragraphs without body indentation. */
+.summary-content { display: inline; }
+.summary-content > p { margin: .4em 0 0; text-indent: 0; }
+.summary-content > p:first-child { display: inline; }
+.abstract .paper-label, .keywords .paper-label { font-weight: 600; margin-right: 8px; }

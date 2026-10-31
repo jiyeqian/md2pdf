@@ -1,3 +1,4 @@
+import {CONTENT_ROLES} from '../src/document-content.mjs';
 import * as YAML from '../vendor/yaml/yaml.mjs';
 import { gbHeading, gbSectionDiagnostics, GB_SECTION_ROLES } from '../src/gb-sections.mjs';
 import { GB_BLOCKS, GB_NOTE_FORMS } from '../src/gb-blocks.mjs';
@@ -398,9 +399,13 @@ export function analyzeMarkdown(source, options = {}) {
       let id = null;
       const mark = /\{#([^{}\n]*)\}/.exec(maskInlineCode(content));
       if (mark) { id = mark[1].trim(); text = content.slice(0, mark.index).trim(); }
+      if(result.templateType!=='gb' && /\brole=(abstract|keywords|bibliography)\b/.test(content)) {
+        try {const section=gbHeading(text,h[1].length,CONTENT_ROLES);text=section.text;id=section.id || id;}
+        catch(error){addDiagnostic(result,{severity:'warning',code:'content-role-invalid',line:row.line,message:error.message});}
+      }
       if (result.templateType==='gb') {
-        gbHeadings.push({text:content.replace(TRAILING_HASHES,'').trim(),level:h[1].length,line:row.line});
-        try { const section=gbHeading(text,h[1].length); text=section.text; id=section.id || id; } catch {}
+        if(!/\brole=(abstract|keywords)\b/.test(content))gbHeadings.push({text:content.replace(TRAILING_HASHES,'').trim(),level:h[1].length,line:row.line});
+        try { const section=gbHeading(text,h[1].length,{...GB_SECTION_ROLES,...CONTENT_ROLES}); text=section.text; id=section.id || id; } catch {}
       }
       result.headings.push({
         line: row.line,
@@ -441,7 +446,7 @@ export function analyzeMarkdown(source, options = {}) {
     for (const m of marks) {
       const id = m[1].trim();
       if (!id) continue;
-      const kind = id.indexOf('fig:') === 0 ? 'figure' : id.indexOf('tab:') === 0 ? 'table' : (result.templateType === 'gb' && h && h[1].length >= 2 && /^sec:[\w.-]+$/.test(id) && result.headings.at(-1)?.id===id) ? 'section' : 'anchor';
+      const kind = id.indexOf('fig:') === 0 ? 'figure' : id.indexOf('tab:') === 0 ? 'table' : (result.templateType === 'gb' && h && h[1].length >= 2 && /^sec:[\w.-]+$/.test(id) && !/\brole=(abstract|keywords)\b/.test(h[2]||'') && result.headings.at(-1)?.id===id) ? 'section' : 'anchor';
       const target = {
         id: id, kind: kind, line: row.line, offset: row.start + m.index,
         title: titleFromLine(raw, m[0]) || id,
@@ -488,6 +493,11 @@ export function analyzeMarkdown(source, options = {}) {
     if(options.toc!==undefined) tocEnabled=!!options.toc;
     const referenceLine=result.occurrences.find(o=>o.kind==='footnote-ref'&&!o.id.startsWith('@'))?.line;
     for (const diag of gbSectionDiagnostics(gbHeadings,{tocEnabled,tocLine,referenceLine})) addDiagnostic(result,diag);
+  }
+  if(result.templateType!=='gb') {
+    const refs=result.occurrences.find(o=>o.kind==='footnote-ref');
+    const hasBibliography=lines.some(r=>/^ {0,3}## .+\{[^{}]*\brole=bibliography\b[^{}]*\}\s*$/.test(r.text) && result.headings.some(h=>h.line===r.line));
+    if(refs&&!hasBibliography)addDiagnostic(result,{severity:'warning',code:'missing-bibliography',line:refs.line,message:'存在文献引用，但未声明 role=bibliography；文献列表未生成。'});
   }
   reportDiagnostics(result);
   reportHeadingNumbers(result);
@@ -723,14 +733,26 @@ export function provideCompletions(context, analysis) {
   const before = text.slice(0, pos);
   const fields = frontmatterCompletions(text, pos, context.frontmatterValues);
   if (fields) return fields;
-  if (context.templateType === 'gb') {
+  {
     const heading = /(?:^|\n) {0,3}(#{2,6}) [^\n{}]*\{([^{}]*)$/.exec(before);
     if (heading && !isSuppressedContext(text,pos)) {
       const typed=heading[2].split(/\s+/).at(-1);
-      const choices=[...Object.entries(GB_SECTION_ROLES).map(([role,name])=>({label:'role='+role,detail:name})),{label:'nature=normative',detail:'规范性附录'},{label:'nature=informative',detail:'资料性附录'},{label:'#sec:section',detail:'稳定章节标识，请改为唯一名称'}];
+      const choices=[...Object.entries(context.templateType==='gb'?{...GB_SECTION_ROLES,...CONTENT_ROLES}:CONTENT_ROLES).map(([role,name])=>({label:'role='+role,detail:name})),{label:'nature=normative',detail:'规范性附录'},{label:'nature=informative',detail:'资料性附录'},{label:'#sec:section',detail:'稳定章节标识，请改为唯一名称'}];
       const used=heading[2].slice(0,-typed.length || undefined).trim().split(/\s+/).map(t=>t.split('=')[0]);
-      return {from:pos-typed.length,options:choices.filter(c=>(heading[1].length===2 || c.label.startsWith('#sec:')) && c.label.startsWith(typed) && !used.includes(c.label.split('=')[0])).map(c=>({...c,apply:c.label}))};
+      const options=choices.filter(c=>(context.templateType==='gb'||!c.label.startsWith('nature=')&&!c.label.startsWith('#sec:'))&&(heading[1].length===2 || c.label.startsWith('#sec:')) && c.label.startsWith(typed) && !used.includes(c.label.split('=')[0])).map(c=>({...c,apply:c.label}));
+      return options.length?{from:pos-typed.length,options}:null;
     }
+  }
+  const commonBlock=/(?:^|\n) {0,3}:::(k[a-z]*|c[a-z]*)?$/.exec(before);
+  if(commonBlock&&(context.templateType!=='gb'||commonBlock[1])&&!isSuppressedContext(text,pos)){
+    const typed=commonBlock[1]||'',suffix=/^[a-z]*/.exec(text.slice(pos))[0];
+    const existing=existingGbBlock(text.slice(pos+suffix.length));
+    return {from:pos-typed.length,to:pos+suffix.length,options:['kicker','colophon'].filter(n=>n.startsWith(typed)).map(n=>{
+      const body=n==='kicker'?'技术研究报告':'编制：张三';
+      return {label:n,detail:n==='kicker'?'报头短文字':'文末落款',apply:existing?.hasContent?n:n+'\n'+body+(existing?'':'\n:::'),selectionOffset:n.length+1};
+    })};
+  }
+  if (context.templateType === 'gb') {
     const match = /(?:^|\n)( {0,3}):::(gb-[a-z-]*)?$/.exec(before);
     if (match && !isSuppressedContext(text, pos)) {
       const typed = match[2] || '';
@@ -742,6 +764,10 @@ export function provideCompletions(context, analysis) {
         const apply = existing?.hasContent ? opening : opening + '\n' + block.body + (existing ? '' : '\n:::');
         return { label: block.completionLabel || 'gb-' + block.name, detail: block.description, type: 'text', apply, selectionOffset: existing?.hasContent ? opening.length : opening.length + 1 };
       });
+      if(!typed) for(const name of ['kicker','colophon']) {
+        const body=name==='kicker'?'技术研究报告':'编制：张三';
+        options.push({label:name,detail:name==='kicker'?'报头短文字':'文末落款',apply:existing?.hasContent?name:name+'\n'+body+(existing?'':'\n:::'),selectionOffset:name.length+1});
+      }
       return { from: pos - typed.length, to: pos + suffix.length, options };
     }
   }

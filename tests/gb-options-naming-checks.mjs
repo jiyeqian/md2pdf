@@ -7,7 +7,7 @@ import {documentDownloadName,frontmatterTitle} from '../web/editor-files.mjs';
 import {draftTitle} from '../web/draft-store.mjs';
 import {resolveWebInput,validateInput} from '../src/web-input.mjs';
 import {parseArgs} from '../src/options.mjs';
-const doc=fm=>`---\n${fm}\n---\n## 范围\n\n### 次级条\n\n#### 三级条\n\n##### 四级条\n`;
+const doc=fm=>`---\n${fm}\n---\n## 目次 {role=toc}\n\n## 范围\n\n### 次级条\n\n#### 三级条\n\n##### 四级条\n`;
 const date=new Date(2026,9,29,12,0,0);
 
 test('toc 0–3, legacy booleans/depth and explicit level override',()=>{
@@ -60,8 +60,8 @@ test('GB Chinese title drives drafts and matching Markdown/PDF basenames',()=>{
 
 test('GB naming keeps non-GB detection and invalid metadata fallbacks',()=>{
   const base='standard: GB/T 1\n中文名称: 中文名\ntitle: 普通名';
-  for(const extra of ['name: skill','abstract: 摘要','keywords: [a]','keywords:\n  - a']){
-    assert.equal(frontmatterTitle(doc(base+'\n'+extra)),'普通名');
+  for(const extra of ['name: skill','tags: [a]']){
+    assert.equal(frontmatterTitle(doc(base+'\n'+extra)),'中文名');
   }
   for(const bad of ['""','null','[a]','{a: b}']){
     assert.equal(frontmatterTitle(doc(`type: gb\n中文名称: ${bad}\ntitle: 回退`)),'回退');

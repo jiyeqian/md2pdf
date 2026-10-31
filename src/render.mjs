@@ -1,3 +1,4 @@
+import {prepareDocumentContent,prepareContentHeadings} from './document-content.mjs';
 import { gbSectionCatalog, gbSectionDiagnostics } from './gb-sections.mjs';
 import { prepareGbContent, transformGbContent, separateGbBodyHeading } from './gb-content.mjs';
 import { documentFonts } from './fonts.mjs';
@@ -254,7 +255,7 @@ function collectGbHeadingReferences(html, refs) {
 const HEADING_NUM_RE = /^\s*(?:\d+(?:\.\d+)*[、．.)]\s?|[一二三四五六七八九十百]+[、．.]|第[一二三四五六七八九十百\d]+[章节篇]|\([一二三四五六七八九十\d]+\)|[IVX]+[.、])\s*/;
 
 // 章节编号：mode 为 auto（默认，识别到已有编号则不动）/ force（强制编号）/ none（不动）
-function numberHeadings(html, mode, scheme, gb = false) {
+function numberHeadings(html, mode, scheme, gb = false, paper = false) {
   if (mode === 'none') return html;
   const re = /<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g;
   if (gb) {
@@ -282,6 +283,7 @@ function numberHeadings(html, mode, scheme, gb = false) {
   const counters = [0, 0, 0, 0, 0];
   let markedBodyStart = false;
   return html.replace(re, (m, level, attrs, inner) => {
+    if(paper && /data-document-role="bibliography"/.test(attrs))return '<h'+level+addClass(attrs,'unnumbered')+'>'+inner+'</h'+level+'>';
     const lvl = parseInt(level, 10) - 2;
     const clean = inner.replace(HEADING_NUM_RE, '');
     counters[lvl]++;
@@ -598,8 +600,11 @@ export async function render(src, options = {}, context = {}) {
   } });
   // 配置解析与校验统一走 config 模块：YAML 语法/重复键/类型冲突在此抛 ConfigError。
   const reusableParse = context.parsedFrontmatter?.source === src ? context.parsedFrontmatter.parsed : undefined;
-  const { fm, body: rawBody, positions, warnings = [] } = reusableParse || parseFrontmatter(src);
-  const profile = detectProfile({ basename: path.basename(mdPath), fm, explicit: options.type || fm.type });
+  const { fm, body: sourceBody, positions, warnings: parseWarnings = [] } = reusableParse || parseFrontmatter(src);
+  const warnings=[...parseWarnings];
+  const content=prepareDocumentContent(sourceBody);
+  const rawBody=content.body;
+  const profile = detectProfile({ body:rawBody, basename: path.basename(mdPath), fm, explicit: options.type || fm.type });
   // 有效配置：explicit(CLI/Web) > FM > profile.defaults > 全局默认，统一由 config.resolveDocumentOptions 合并。
   const eff = resolveDocumentOptions(options, fm, profile, { ...context, positions });
   const effTheme = eff.theme ?? profile.defaults.theme ?? 'elegant';
@@ -667,6 +672,9 @@ export async function render(src, options = {}, context = {}) {
 
   if (context.webSafe) html = html.replace(/\u0003FOOTNOTE(\d+)\u0003/g, (m, i) => fnMarkup[+i] ?? m);
 
+  const common=prepareContentHeadings(html,profile.gbDoc);
+  html=common.html;
+  if(!profile.gbDoc && orderedFootnotes.length && !common.roles.has('bibliography')) warnings.push('存在文献引用，但未声明 role=bibliography；文献列表未生成。');
   if (profile.gbDoc) {
     // Code examples are literal, including references to identifiers not in the document.
     html = html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/g, code => code.replace(/\u0002REF(\d+)\u0002/g, (_,i)=>esc('\\ref{' + refStore[+i] + '}')));
@@ -699,16 +707,14 @@ export async function render(src, options = {}, context = {}) {
   // 代码高亮：对带语言标记的代码块做 highlight.js 着色
   html = highlightCode(html, hljs);
 
-  // GB fills its declared bibliography; other templates retain their generated trailing section.
-  // bibliographyTitle 默认「参考文献」；显式空串时只去掉标题，条目与链接保留；无引用则不生成。
-  const bibTitle = eff.bibliographyTitle !== undefined ? eff.bibliographyTitle : '参考文献';
-  const explicitBibliography = /(<h2[^>]*data-gb-role="bibliography"[^>]*>[\s\S]*?<\/h2>)/;
-  if (profile.gbDoc) html = html.replace(explicitBibliography, heading => heading + renderFootnotes(orderedFootnotes, '', marked, true));
-  else html += renderFootnotes(orderedFootnotes, bibTitle, marked, false);
+  // All templates fill references only at the explicitly declared bibliography.
+  // The declared heading supplies both the visible title and insertion point.
+  const bibliography = /(<h2[^>]*(?:data-gb-role|data-document-role)="bibliography"[^>]*>[\s\S]*?<\/h2>)/;
+  html = html.replace(bibliography, heading => heading + renderFootnotes(orderedFootnotes, '', marked, profile.gbDoc));
   html = html.replace(/<h2(?=[\s>])/g, '<h2 data-chapter');
 
   // 章节编号：H2 起编号，H1 作为文档标题不动
-  html = numberHeadings(html, effNumbering, effScheme, profile.gbDoc);
+  html = numberHeadings(html, effNumbering, effScheme, profile.gbDoc, profile.paperHeader);
 
   if (profile.gbDoc) { collectGbHeadingReferences(html, floats.refs); html = restoreReferences(html); }
 
@@ -826,10 +832,9 @@ export async function render(src, options = {}, context = {}) {
   // Intentional parity pages stay entirely blank, including custom margin boxes.
   if (chapterStart === 'odd-page') finalCss += '\n@page :blank { @top-left { content: none; } @top-center { content: none; } @top-right { content: none; } @bottom-left { content: none; } @bottom-center { content: none; } @bottom-right { content: none; } }\n.pagedjs_blank_page .pagedjs_margin-content { visibility: hidden !important; }';
 
-  const kicker = eff.kicker !== undefined ? eff.kicker
-    : (fmStr(fm.kicker) || fmStr(fm.category) || (profile.kicker ?? ''));
+  const kicker = content.kicker ?? (fmStr(fm.category) || (profile.kicker ?? ''));
 
-  // 学术论文：报头三件套（作者行 + 「摘要」块 + 「关键词」行）
+  // Author affiliations remain structured metadata; summaries live in Markdown.
   const authorsHtml = profile.paperHeader ? paperAuthorsHtml(fm, esc) : '';
   const sourceCover = fm.gb_source_cover === true || fm.gb_source_cover === 'true';
   const coverHtml = profile.gbDoc && eff.gbCover !== false && !sourceCover ? buildCover(fm, title, eff.gbDefaults !== false, await readFile(path.join(ASSETS, 'gb-cover-banner.svg'), 'utf8'), JSON.parse(await readFile(path.join(ASSETS, 'gb-issuer-outlines.json'), 'utf8'))) : '';
@@ -839,18 +844,13 @@ export async function render(src, options = {}, context = {}) {
     finalCss += '\nbody, main { page: gb-body; }\nmain > section:first-child { break-before: auto; }\nmain img { max-height: 230mm; object-fit: contain; }\n@page { ' + header + ' @bottom-right { content: counter(page); } }';
   }
 
-  const paperHtml = profile.paperHeader
-    ? [
-        fm.abstract ? '<div class="abstract"><span class="paper-label">摘要</span><span>' + esc(fm.abstract) + '</span></div>' : '',
-        fm.keywords?.length ? '<div class="keywords"><span class="paper-label">关键词</span><span>' + esc(fm.keywords.join('；')) + '</span></div>' : '',
-      ].filter(Boolean).join('\n')
-    : '';
   // 文末落款：CLI 与 Web 默认一致 —— 左侧官方仓库口号，右侧本次渲染生成时间（本机时区，带偏移）。
   // 文字与整栏开关分别解析；关闭整栏不影响保存的文字。
   const stamp = formatStamp(context.generatedAt instanceof Date ? context.generatedAt : new Date());
   const colophonLeftDefault = `make <a href="${REPO_URL}" data-md2pdf-open-repo="1">md2pdf</a> great`;
-  const colophonParts = [eff.colophonLeft === undefined ? colophonLeftDefault : esc(eff.colophonLeft),
-    esc(eff.colophonCenter || ''), esc(eff.colophonRight === undefined ? stamp : eff.colophonRight)];
+  const version = typeof fm.version==='string'||(typeof fm.version==='number'&&Number.isFinite(fm.version)) ? String(fm.version) : '';
+  const colophonParts = [content.colophon?.left === undefined ? colophonLeftDefault : esc(content.colophon.left),
+    esc(content.colophon?.center ?? version), esc(content.colophon?.right === undefined ? stamp : content.colophon.right)];
   const colophonHtml = profile.gbDoc || eff.colophonEnabled === false || !colophonParts.some(Boolean) ? '' :
     `<div class="colophon">${colophonParts.map(part => `<span>${part}</span>`).join('')}</div>`;
 
@@ -950,7 +950,7 @@ export async function render(src, options = {}, context = {}) {
     '国际标准分类号', 'ICS', 'ics', '中国标准分类号', 'CCS', 'ccs',
     '发布日期', 'date', '实施日期', '全部代替标准', '代替标准',
     '采标国际标准', '采标英文名称', '采标中文名称', '采标程度',
-    '发布单位', '发布机构', '发布机构2', '文件类别', 'kicker', 'category', 'author']);
+    '发布单位', '发布机构', '发布机构2', '文件类别', 'category', 'author']);
   const gbMeta = profile.gbDoc
     ? Object.entries(fm)
         .filter(([k, v]) => fmStr(v).trim() && !GB_COVER_KEYS.has(k))
@@ -983,7 +983,6 @@ export async function render(src, options = {}, context = {}) {
     '{{COLOPHON}}': colophonHtml,
     '{{COVER}}': coverHtml,
     '{{AUTHORS}}': authorsHtml,
-    '{{PAPER}}': paperHtml,
     '{{MATHJAX}}': fontScript + mathScript,
     '{{MERMAID}}': mermaidScript,
     '{{PAGEDJS}}': pagedScript,

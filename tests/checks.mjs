@@ -155,15 +155,15 @@ const ppDir = path.join(os.tmpdir(), 'md2pdf-ci-paper');
 fs.mkdirSync(ppDir, { recursive: true });
 fs.writeFileSync(path.join(ppDir, 'paper.md'), [
   '---', 'title: 抓取控制研究', 'author: 张三，李四', 'affiliation: 清华大学',
-  'abstract: 本文提出一种方法。', 'keywords: [深度学习, 抓取控制]', '---', '',
+  '---', '', '## 摘要 {role=abstract}', '', '本文提出一种方法。', '', '## 关键词 {role=keywords}', '', '- 深度学习', '- 抓取控制', '',
   '## 引言', '', '正文。', ''
 ].join('\n'));
 const rPaper = run([path.join(ppDir, 'paper.md'), '--html-only', '-o', path.join(ppDir, 'out.html')]);
 const paperHtml = readIf(path.join(ppDir, 'out.html'));
-ok('profile：frontmatter 含 abstract → paper（作者行）',
+ok('profile：作者与显式摘要 → paper（作者行）',
   rPaper.status === 0 && /<p class="authors">[\s\S]*张三/.test(paperHtml), `status=${rPaper.status}`);
-ok('profile：paper 摘要块', /<div class="abstract">[\s\S]*摘要[\s\S]*<\/div>/.test(paperHtml));
-ok('profile：paper 关键词行', /<div class="keywords">[\s\S]*关键词[\s\S]*<\/div>/.test(paperHtml));
+ok('profile：paper 摘要块', /<div class="abstract"[^>]*>[\s\S]*摘要[\s\S]*<\/div>/.test(paperHtml));
+ok('profile：paper 关键词行', /<div class="keywords"[^>]*>[\s\S]*关键词[\s\S]*<\/div>/.test(paperHtml));
 
 // gb profile：frontmatter 标准号 → gb（封面 / 章条 / 附录字母 / 前言豁免 / 目次标题）
 const gbDir = path.join(os.tmpdir(), 'md2pdf-ci-gb');

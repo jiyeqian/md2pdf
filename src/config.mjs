@@ -1,3 +1,4 @@
+import { REMOVED_CONTENT_FIELDS } from './frontmatter-fields.mjs';
 /**
  * config —— frontmatter 解析与文档级配置合并（唯一事实来源）
  *
@@ -11,7 +12,7 @@
  * 命名约定：配置字段在 frontmatter 中同时接受 kebab-case（与 CLI 同名，如 font-size）
  * 与历史 camelCase（fontSize）；同一层两种写法取值一致时允许，矛盾时报错。
  * 普通元数据字段（name / author / 标准号 / description …）不做配置校验，原样保留，
- * 允许 null / 列表 / 对象；keywords / tags 限定为字符串列表，
+ * 允许 null / 列表 / 对象；tags 限定为字符串列表；已迁移的正文内容字段不再接受，
  * authors / affiliations 校验结构与单位引用。
  *
  * 安全：解析结果经 sanitize 深拷贝，剔除 __proto__ / prototype / constructor，
@@ -169,7 +170,7 @@ const coerceBoolField = (v, rawKey, canon, pos, tocDepthSink, explicitDepth = fa
 const coerceBibliography = (v, rawKey, canon, pos, warnings) => {
   if (v === true) return 'footnote';
   if (v === false) {
-    warnings.push('字段 bibliography 已废弃：参考文献始终自动处理，不再支持关闭');
+    warnings.push('字段 bibliography 已废弃：参考文献由 role=bibliography 章节填充，不再支持此开关');
     return 'footnote';
   }
   if (BIBLIOGRAPHY_VALUES.includes(v)) return v;
@@ -187,7 +188,7 @@ const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
  */
 function ingestLayer(raw, opts = {}) {
   const { positions = {}, allowRuntimeFeatures = false, warnings = [] } = opts;
-  for (const key of ['keywords', 'tags']) {
+  for (const key of ['tags']) {
     if (hasOwn(raw, key) && (!Array.isArray(raw[key]) || raw[key].some(item => typeof item !== 'string'))) {
       throw cfgError(`字段 ${key} 必须为字符串列表（例如：${key}: ["词条一", "词条二"]）`, key, positions[key]);
     }
@@ -251,6 +252,7 @@ function ingestLayer(raw, opts = {}) {
   };
 
   for (const [rawKey, rawValue] of Object.entries(raw || {})) {
+    if(REMOVED_CONTENT_FIELDS.has(rawKey)) throw cfgError('字段 '+rawKey+' 已移至 Markdown 内容，请使用显式 role 或内容块',rawKey,posOf(rawKey));
     const canon = canonicalField(rawKey);
     if (canon === null) continue; // 普通元数据：不参与配置
     const pos = posOf(rawKey);
@@ -495,11 +497,6 @@ export function resolveDocumentOptions(explicit = {}, fm = {}, profile = null, c
 
   if ([p,f,e].some(layer => layer.fonts !== undefined)) out.fonts = { ...p.fonts, ...f.fonts, ...e.fonts };
 
-  // 文档版本仅作落款中栏的缺省值，不覆盖显式空串或类型固定版式。
-  if (out.colophonCenter === undefined && (typeof fm.version === 'string' || (typeof fm.version === 'number' && Number.isFinite(fm.version)))) {
-    out.colophonCenter = String(fm.version);
-  }
-
   // 页边距：四边与简写 marginSide 分层取值，且低层简写不得覆盖高层显式四边。
   const pickSide = side => {
     const order = [
@@ -522,9 +519,6 @@ export function resolveDocumentOptions(explicit = {}, fm = {}, profile = null, c
   if (prof.gbDoc) {
     out.lead = false;
     out.colophonEnabled = false;
-    out.colophonLeft = '';
-    out.colophonCenter = '';
-    out.colophonRight = '';
   }
 
   out.type = prof.name;

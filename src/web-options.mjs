@@ -65,11 +65,11 @@ const AUTO_CAPABILITIES = GENERAL_CAPS;
 const TYPE_NOTES = {
   general: ['不含其他类型特征时按通用文档排版；一级、二级标题之间的首段作为导言，标题层级自动编号。'],
   skill: ['frontmatter 含 name / description 时自动识别，报头带「技能文档」标识与元信息条。'],
-  paper: ['frontmatter 含 abstract / keywords 自动识别，自动生成作者行、摘要与关键词。'],
+  paper: ['作者信息与非空的 role=abstract 摘要组合用于自动识别；摘要和关键词在 Markdown 中定义。'],
   gb: [
     '国家标准版式应用内置国家标准模板：封面与页眉、GB 章条编号、订口式页边距均按模板输出，不能在线修改。',
     '标准元数据来自 frontmatter；缺失值按统一默认规则补全，disable: [gb-defaults] 可保持空白。',
-    '如需「前言 / 引言 / 目次 / 附录 A」的编号规则，直接按 GB 结构书写标题即可。',
+    '前言、引言、目次、附录和参考文献须用显式 role 声明；标题文字不决定特殊章节身份。',
   ],
 };
 
@@ -255,9 +255,9 @@ export function assertOptionsAllowed(opts, type, frontmatter = {}) {
  * 网页端无文件名，basename 固定为空。
  */
 export function resolveWebType(md, explicit = '') {
-  const { fm } = parseFrontmatter(String(md ?? ''));
+  const { fm, body } = parseFrontmatter(String(md ?? ''));
   // 与 render 一致：显式类型 > frontmatter.type > 自动探测。
-  return detectProfile({ basename: '', fm, explicit: explicit || fm.type || undefined }).name;
+  return detectProfile({ body, basename: '', fm, explicit: explicit || fm.type || undefined }).name;
 }
 
 /**
