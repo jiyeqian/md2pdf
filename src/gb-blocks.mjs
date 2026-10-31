@@ -5,8 +5,8 @@ export const GB_BLOCKS = [
   { name: 'term', description: '术语与定义', body: '术语名称\nterm name\n\n术语定义' },
   { name: 'subfigure', description: '分图', body: '分图内容' },
   { name: 'important', description: '重要提示', body: '提示内容' },
-  { name: 'index-section', description: '中文索引分区（双栏）', argument: 'lang=zh', body: ':::gb-index A\n关键词 | 3.1\n:::' },
-  { name: 'index', description: '索引分组', argument: 'A', body: '关键词 | 3.1' },
+  { name: 'index-section', description: '中文索引分区（双栏）', argument: 'lang=zh', body: ':::gb-index\n关键词 | @sec:section\n:::' },
+  { name: 'index', description: '索引自动分组（可指定字母）', body: '关键词 | @sec:section' },
   { name: 'equation', description: '公式', body: '$$a=b$$\n\n式中：\n$a$ | 参数 a；\n$b$ | 参数 b。' },
   { name: 'table', description: '复杂表格', body: 'head:\n| 项目 | 数值 |\nbody:\n| 示例 | 1 |' },
 ];

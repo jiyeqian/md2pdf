@@ -95,7 +95,7 @@ term
 <!-- 按实际关键词的拼音／英文顺序调整分组；@term跟随上述术语自动编号。 -->
 :::gb-index-section lang=zh
 
-:::gb-index S
+:::gb-index
 术语名称 | @term
 :::
 
@@ -103,7 +103,7 @@ term
 
 :::gb-index-section lang=en
 
-:::gb-index T
+:::gb-index
 term | @term
 :::
 

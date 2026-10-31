@@ -155,16 +155,16 @@ test('图注移动后再定脚注号，按图注在前、图题在后的最终�
   assert.ok(out.indexOf('id="gb-footnote-1"')<out.indexOf('id="gb-footnote-2"'));
 });
 
-test('显式索引按输入分组，关键词和多个位置均按纯文本转义',()=>{
+test('显式索引强制大写分组，关键词和多个位置均按纯文本转义',()=>{
   const html=parse(':::gb-index a\n关键词 <甲> | 3.6, 5.1.3, 表2，附录B\n**乙** | 图1、表A.1、C.3.1\n:::');
-  assert.match(html,/<div class="gb-index-letter">a<\/div><ul class="gb-index-entries">/);
-  assert.match(html,/<li><span class="gb-index-term">关键词 &lt;甲&gt;<\/span><span class="gb-index-dots"><\/span><span class="gb-index-locations">3.6, 5.1.3, 表2，附录B<\/span><\/li>/);
+  assert.match(html,/<div class="gb-index-letter">A<\/div><ul class="gb-index-entries">/);
+  assert.match(html,/<li><span class="gb-index-term">关键词 &lt;甲&gt;<\/span><span class="gb-index-dots"><\/span><span class="gb-index-locations">3.6，5.1.3，表2，附录B<\/span><\/li>/);
   assert.ok(html.includes('<span class="gb-index-term">**乙**</span>'));
-  assert.ok(html.includes('图1、表A.1、C.3.1'));
+  assert.ok(html.includes('图1，表A.1，C.3.1'));
   assert.ok(!html.includes('<strong>'));
   const ungrouped=parse(':::gb-index\n术语 | 3.1\n:::');
   assert.ok(ungrouped.includes('gb-index-entries'));
-  assert.ok(!ungrouped.includes('gb-index-letter'));
+  assert.match(ungrouped,/gb-index-letter">S</);
 });
 test('普通索引样式段落不猜测为索引，显式索引缺项报输入错误',()=>{
   const prose='关键词 | 3.6, 表2\n\nA';

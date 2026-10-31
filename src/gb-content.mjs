@@ -1,3 +1,4 @@
+import { parseGbIndex, parseGbIndexSection, groupGbIndex } from './gb-index.mjs';
 import { renderGbTable } from './gb-tables.mjs';
 import { GB_BLOCKS, parseGbParameters } from './gb-blocks.mjs';
 const escape = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -77,35 +78,24 @@ function markdown(text, marked, depth = 0) {
   }));
 }
 
+function renderIndex(entries, params) {
+  return groupGbIndex(entries,params).map(([letter,rows])=>'<div class="gb-index"><div class="gb-index-letter">'+escape(letter)+'</div><ul class="gb-index-entries">'+rows.map(({term,locations})=>'<li><span class="gb-index-term">'+escape(term)+'</span><span class="gb-index-dots"></span><span class="gb-index-locations">'+escape(locations)+'</span></li>').join('')+'</ul></div>').join('');
+}
+
 function renderBlock({ role, label, text }, marked, depth) {
   if (role === 'note') return renderNote(label, text, marked, depth);
   if (role === 'table') return renderGbTable(text, label, marked);
   if (role === 'index-section') {
-    const params = parseGbParameters(label, ['lang','columns']);
+    const params = parseGbParameters(label, ['lang','columns','sort']);
     if (!['zh','en'].includes(params.lang) || (params.columns && !['1','2'].includes(params.columns)) || (params.lang === 'en' && params.columns === '2')) {
       const error = new Error('gb-index-section 使用 lang=zh（默认双栏，可选columns=1）或 lang=en（单栏）'); error.status = 400; throw error;
     }
-    const content = markdown(text, marked, depth);
-    const roots = elements(content).filter(n=>!n.parent?.tag);
-    if (!roots.length || roots.some(n=>n.tag !== 'div' || !classes(n).includes('gb-index'))) {
-      const error = new Error('gb-index-section 内仅支持 gb-index 字母分组'); error.status = 400; throw error;
-    }
+    const content = renderIndex(parseGbIndexSection(text),params);
     const lang=params.lang, columns=params.columns || (lang === 'zh' ? '2' : '1');
     return '<div class="gb-index-section gb-index-'+lang+'" data-gb-index-lang="'+lang+'"><div class="gb-index-section-title">'+(lang==='zh'?'汉语拼音索引':'英文对应词索引')+'</div><div class="gb-index-columns" data-gb-index-columns="'+columns+'">'+content+'</div></div>';
   }
   if (role === 'index') {
-    const rows = text.split('\n').map(line => line.trim()).filter(Boolean);
-    const entries = rows.map(line => {
-      const separator = line.indexOf('|');
-      return separator < 0 ? null : [line.slice(0,separator).trim(), line.slice(separator+1).trim()];
-    });
-    if ((label && !/^[A-Za-z]$/.test(label)) || !entries.length || entries.some(entry => !entry || !entry[0] || !entry[1])) {
-      const error = new Error('gb-index 分组只支持单个英文字母，条目必须为“关键词 | 章条、图表或附录位置”');
-      error.status = 400; throw error;
-    }
-    return '<div class="gb-index">' + (label ? '<div class="gb-index-letter">' + escape(label) + '</div>' : '')
-      + '<ul class="gb-index-entries">' + entries.map(([term,locations]) => '<li><span class="gb-index-term">' + escape(term)
-        + '</span><span class="gb-index-dots"></span><span class="gb-index-locations">' + escape(locations) + '</span></li>').join('') + '</ul></div>';
+    return renderIndex(parseGbIndex(text,label));
   }
   if (role === 'term') {
     const rows = text.trim().split('\n');
@@ -345,7 +335,7 @@ function linkIndexLocations(html) {
     let unresolved = false;
     const linked = value.split(/([,，、;；/])/).map(part => {
       const location = part.trim();
-      if (!/^(?:@[A-Za-z][\w:-]*|附录\s*[A-Z]|[图表]\s*(?:[A-Z]\.)?\d+|(?:[A-Z]\.)?\d+(?:\.\d+)*)$/i.test(location)) return part;
+      if (!/^(?:@[A-Za-z][\w.:-]*|附录\s*[A-Z]|[图表]\s*(?:[A-Z]\.)?\d+|(?:[A-Z]\.)?\d+(?:\.\d+)*)$/i.test(location)) return part;
       const id = targets.get(key(location));
       if (!id) {
         if (location.startsWith('@')) throw Object.assign(new Error('索引的稳定标识不存在或重复：' + location), {status:400});

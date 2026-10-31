@@ -510,12 +510,12 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 
 :::gb-index-section lang=zh
 
-:::gb-index C
+:::gb-index
 采集装置时钟偏差与异常切换过程的追溯信息 | @sec:test-preparation
 :::
 
-:::gb-index G
-刚度系数 | @sec:symbols，@sec:finger-latency
+:::gb-index
+刚度系数 {sort-key="gang du xi shu"} | @sec:symbols，@sec:finger-latency
 :::
 
 :::gb-index K
@@ -523,19 +523,19 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 控制器检测 | @tab:complex
 :::
 
-:::gb-index S
+:::gb-index
 试验报告 | @sec:appendix-report，@sec:report-fields
 试验步骤 | @sec:report-content
 数据整理 | @sec:sample-processing，@tab:response-summary
 :::
 
-:::gb-index Y
+:::gb-index
 异常恢复流程 | @fig:flow
 异常恢复时间 | @recovery，@sec:safety-recovery
 原始记录 | @tab:records，@sec:results
 :::
 
-:::gb-index Z
+:::gb-index
 抓取成功率 | @grasp，@sec:grasp-success
 :::
 
@@ -543,24 +543,24 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 
 :::gb-index-section lang=en
 
-:::gb-index C
+:::gb-index
 control flow | @fig:flow，@fig:data
 controller verification | @tab:complex
 :::
 
-:::gb-index F
+:::gb-index
 fault recovery time | @recovery，@sec:safety-recovery
 :::
 
-:::gb-index G
+:::gb-index
 grasping success rate | @grasp，@sec:grasp-success
 :::
 
-:::gb-index I
+:::gb-index
 impedance control | @impedance
 :::
 
-:::gb-index T
+:::gb-index
 test report | @sec:appendix-report，@sec:report-fields
 timestamp traceability | @sec:test-preparation，@sec:sample-processing
 traceability information for acquisition clock deviations and abnormal clock source switching | @sec:test-preparation

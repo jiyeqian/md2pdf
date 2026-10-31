@@ -396,6 +396,11 @@ export function analyzeMarkdown(source, options = {}) {
     // 行内代码替换为等长空格：只用于扫描，偏移与 raw 一致；正文展示仍用 raw。
     const scan = maskInlineCode(raw);
 
+    if (result.templateType==='gb') {
+      const term=/^ {0,3}:::gb-term(?:\s+\d+(?:\.\d+)+)?\s+id=([A-Za-z][\w:-]*)\s*$/.exec(raw);
+      if(term)pushTarget(result,{id:term[1],kind:'term',line:row.line,offset:row.start,title:lines.slice(i+1).find(r=>r.text.trim())?.text.trim()||term[1]});
+    }
+
     const h = HEADING_RE.exec(raw);
     if (h) {
       const content = h[2] || '';
@@ -720,6 +725,22 @@ function existingGbBlock(afterLine) {
   return null;
 }
 
+function inGbIndex(before) {
+  const stack=[],lines=splitLines(before),fm=frontmatterRange(lines);let fence=null;
+  for(const [i,row] of lines.slice(0,-1).entries()) {
+    if(fm&&i<=fm.to)continue;
+    const line=row.text;
+    const transition=fenceTransition(line,fence);
+    if(transition==='open'){fence=fenceInfo(line);continue;}
+    if(transition==='close'){fence=null;continue;}
+    if(fence)continue;
+    const open=/^ {0,3}:::(gb-[a-z-]+|kicker|colophon)(?:\s|$)/.exec(line);
+    if(open)stack.push(open[1]);
+    else if(/^ {0,3}:::\s*$/.test(line))stack.pop();
+  }
+  return stack.at(-1)==='gb-index';
+}
+
 /**
  * 补全提供器：脚注定义 ID、\ref{}（图/表）与 \eqref{}（公式）目标。
  * 候选只包含渲染器能真正解析的交叉引用目标，锚点与非法 ID 不会出现。
@@ -755,6 +776,26 @@ export function provideCompletions(context, analysis) {
       const body=CONTENT_COMPLETION_BODIES[n];
       return {label:n,detail:n==='kicker'?'报头短文字':'文末落款',apply:existing?.hasContent?n:n+'\n'+body+(existing?'':'\n:::'),selectionOffset:n.length+1};
     })};
+  }
+  if (context.templateType === 'gb' && !isSuppressedContext(text,pos)) {
+    const line=before.slice(before.lastIndexOf('\n')+1);
+    const params=/^ {0,3}:::gb-index-section\s+(.*)$/.exec(line);
+    if(params) {
+      const typed=params[1].split(/\s+/).at(-1),used=params[1].slice(0,-typed.length||undefined).trim().split(/\s+/).map(p=>p.split('=')[0]);
+      const choices=[['lang=zh','中文双栏'],['lang=en','英文单栏'],['sort=auto','自动排序（默认）'],['sort=input','保留输入顺序'],['sort=pinyin','拼音排序'],['sort=alphabetical','英文字母排序'],['columns=1','单栏'],['columns=2','双栏（仅中文）']];
+      const options=choices.filter(([value])=>value.startsWith(typed)&&!used.includes(value.split('=')[0])).map(([value,detail])=>({label:value,apply:value,detail}));
+      return options.length?{from:pos-typed.length,to:pos+(/^[\w=-]*/.exec(text.slice(pos))[0].length),options}:null;
+    }
+    if(inGbIndex(before)) {
+      // The first target follows |; subsequent targets follow a reference separator.
+      const ref=/^([^|]*\|)(?:[^\n]*[,，、;；/]\s*)?\s*@([\w.:-]*)$/.exec(line);
+      if(ref) {
+        const typed=ref[2],options=analysis.targets.filter(t=>isCompletionTarget(t,'ref')||t.kind==='term').filter(t=>t.id.startsWith(typed)).map(t=>({label:'@'+t.id,apply:t.id,type:t.kind,detail:({section:'章条',figure:'图',table:'表',term:'术语'}[t.kind]||'')+'：'+(t.title||t.id)}));
+        return {from:pos-typed.length,to:pos+/^[\w.:-]*/.exec(text.slice(pos))[0].length,options};
+      }
+      const key=/^[^|]*\{(sort[-\w=]*)$/.exec(line);
+      if(key)return {from:pos-key[1].length,options:[{label:'sort-key',apply:'sort-key=""}',detail:'指定拼音或字母排序键（不显示）',selectionOffset:10}]};
+    }
   }
   if (context.templateType === 'gb') {
     const match = /(?:^|\n)( {0,3}):::(gb-[a-z-]*)?$/.exec(before);

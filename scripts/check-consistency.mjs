@@ -172,6 +172,20 @@ try {
     execFileSync(process.execPath,['src/md2pdf.mjs',input,'--toc','--toc-depth','3','--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});
     sameHtml(await readFile(output,'utf8'),(await render(md,{...opts,pagedHtml:true},{webSafe:true})).pagedHtml,'CLI explicit depth3');
   }
+  for(const sort of ['auto','input','pinyin','alphabetical']) {
+    const md=`# 索引排序验收\n\n## 范围 {#sec:scope}\n\n## 索引 {role=index}\n\n:::gb-index-section lang=zh sort=${sort}\n:::gb-index\n试验 | @sec:scope\n重庆 {sort-key="chong qing"} | @sec:scope\n刚度 | @sec:scope\n:::\n:::gb-index K\n控制 | @sec:scope\n:::\n:::`;
+    const body={md,opts:{type:'gb',toc:false}};
+    const core=await render(md,{...body.opts,pagedHtml:true},{webSafe:true});
+    sameHtml((await browserRender(md,{...body.opts,pagedHtml:true},{webSafe:true})).pagedHtml,core.pagedHtml,'index '+sort+' browser core');
+    const nodeResponse=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    assert.equal(nodeResponse.status,200);
+    const online=await nodeResponse.json(),offline=await(await browser.appFetch('/api/render',{body:JSON.stringify(body)})).json();
+    sameHtml(offline.html,online.html,'index '+sort+' preview');
+    const input=path.join(tmp,'index.md'),output=path.join(tmp,'index.html');await writeFile(input,md);
+    execFileSync(process.execPath,['src/md2pdf.mjs',input,'--type','gb','--no-toc','--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});
+    sameHtml(await readFile(output,'utf8'),core.pagedHtml,'index '+sort+' CLI');
+  }
+  console.log('✓ GB索引 auto/input/pinyin/alphabetical、强制分组及排序键：CLI、Node、静态一致');
   const invalid={md:'---\nfont-size: bad\n---\n# Invalid',opts:{}};
   const online=await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(invalid)});
   const offline=await browser.appFetch('/api/render',{body:JSON.stringify(invalid)});
