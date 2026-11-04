@@ -1056,6 +1056,7 @@ export async function render(src, options = {}, context = {}) {
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
   return { title, warnings, html: assetHtml(usePaged && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
+    referenceKeys: orderedFootnotes.map(footnote => footnote.id),
     printOptions: { ...(profile.gbDoc ? {requireGbFonts:true} : {}), ...(fontChecks.length ? {requireFonts:true,waitFonts:true} : {}), footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
       landscape: eff.landscape, outline: eff.outline !== false, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };
 }

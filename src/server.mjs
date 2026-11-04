@@ -233,7 +233,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         try {
           const rendered = await render(md, opts, { webSafe: true, signal:controller.signal, parsedFrontmatter });
           controller.signal.throwIfAborted();
-          const html = await webDocument(attachSourcePositions(rendered.pagedHtml, md), true, rendered.type, controller.signal);
+          const html = await webDocument(attachSourcePositions(rendered.pagedHtml, md, {type:rendered.type,referenceKeys:rendered.referenceKeys}), true, rendered.type, controller.signal);
           controller.signal.throwIfAborted();
           json(200, { html, type:rendered.type, policy:policyForType(rendered.type, effective), effective, resetOptions, authorDiagnostics });
         } finally {

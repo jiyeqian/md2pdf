@@ -446,7 +446,7 @@
   function buildSyncButton() {
     // 带 aria-pressed 的图标开关按钮（有键盘语义），保留 #md-wt-sync 与 .checked 兼容访问器，
     // 不使用没有键盘语义的隐藏复选框冒充按钮。
-    var button = iconButton('sync', '同步定位', '同步定位：按标题所在章节近似联动（点击开启 / 关闭）');
+    var button = iconButton('sync', '同步定位', '同步定位：按正文内容双向联动（点击开启 / 关闭）');
     button.setAttribute('id', 'md-wt-sync');
     function updateSync(on) {
       button.setAttribute('aria-pressed', String(on));
@@ -887,7 +887,9 @@
       var followsCursor = syncInput && syncInput.checked && (pending.previous !== 'preview' || pending.mode === 'editor');
       if (!followsCursor && position && previewFrame.contentWindow) previewFrame.contentWindow.postMessage({ type: 'md2pdf-restore-position', position: position }, '*');
       if (syncInput && syncInput.checked) {
-        if (position && Number.isSafeInteger(position.line) && position.line > 0 && pending.previous === 'preview' && pending.mode !== 'editor') {
+        if (position && pending.previous === 'preview' && pending.mode !== 'editor' && Number.isSafeInteger(position.from) && typeof window.mdEditor.revealPosition === 'function') {
+          window.mdEditor.revealPosition(position.from, position.anchorRatio, false);
+        } else if (position && Number.isSafeInteger(position.line) && position.line > 0 && pending.previous === 'preview' && pending.mode !== 'editor') {
           window.mdEditor.goToLine(position.line);
         } else if (pending.previous !== 'preview' || pending.mode === 'editor' || !position || !position.line) locateCurrentCursor(true);
       }
@@ -1052,6 +1054,12 @@
   // ---------------------------------------------------------------- 位置桥接
   function locateCurrentCursor(instant) {
     if (!hasEditor() || !previewFrame || !previewFrame.contentWindow) return;
+    if (typeof window.mdEditor.getCursorPosition === 'function') {
+      var selection = window.mdEditor.getSelection();
+      var cursor = window.mdEditor.getCursorPosition();
+      postContentLocate(selection.from === selection.to ? cursor : selection.from, selection.to, 'cursor', .3, instant);
+      return;
+    }
     var line;
     try { line = window.mdEditor.getCursorLine(); } catch (e) { return; }
     if (!Number.isFinite(line)) return;
@@ -1064,13 +1072,36 @@
     catch (e) { /* 跨源异常忽略 */ }
   }
 
+  function postContentLocate(from, to, reason, ratio, instant) {
+    document.dispatchEvent(new CustomEvent('md-preview-locate', { detail: { from: from, to: to, reason: reason, ratio: ratio, instant: instant === true } }));
+  }
+
+  function onEditorScroll(event) {
+    if (!ready || !syncInput || !syncInput.checked || fullscreenMode()) return;
+    var anchor = event.detail;
+    if (!anchor || anchor.user !== true || !Number.isSafeInteger(anchor.from)) return;
+    suppressUntil = 0; // Explicit editor scrolling takes ownership immediately.
+    clearTimeout(cursorTimer);
+    postContentLocate(anchor.from, anchor.from, 'scroll', anchor.ratio, true);
+  }
+
+  function onPreviewContentSource(event) {
+    var source = event.detail;
+    if (!hasEditor() || !source || !Number.isSafeInteger(source.from)) return;
+    if (source.reason !== 'activate' && (!syncInput || !syncInput.checked || fullscreenMode() === 'editor')) return;
+    suppressUntil = Date.now() + 600;
+    clearTimeout(cursorTimer);
+    if (source.reason === 'activate') window.mdEditor.goToPosition(source.from, source.ratio);
+    else window.mdEditor.revealPosition(source.from, source.ratio, false);
+  }
+
   function onCursor(event) {
     if (!ready || !syncInput || !syncInput.checked || fullscreenMode() === 'editor') return;
     if (Date.now() < suppressUntil) return;      // 由预览跳转引发，不回传
     var line = event.detail && event.detail.line;
     if (!Number.isFinite(line)) return;
     clearTimeout(cursorTimer);
-    cursorTimer = setTimeout(function () { postLocate(line); }, CURSOR_DEBOUNCE);
+    cursorTimer = setTimeout(function () { locateCurrentCursor(); }, CURSOR_DEBOUNCE);
   }
 
   function onPreviewSource(event) {
@@ -1186,7 +1217,12 @@
 
   function wireEvents() {
     document.addEventListener('md-editor-ready', onReady);
+    window.addEventListener('md-preview-ready', function () {
+      if (syncInput && syncInput.checked && fullscreenMode() !== 'editor') locateCurrentCursor();
+    });
     document.addEventListener('md-editor-cursor', onCursor);
+    document.addEventListener('md-editor-scroll', onEditorScroll);
+    document.addEventListener('md-preview-content-source', onPreviewContentSource);
     document.addEventListener('md-preview-source', onPreviewSource);
     document.addEventListener('md-document-type', function (event) {
       var type = event.detail && event.detail.type;
@@ -1197,7 +1233,9 @@
     window.addEventListener('message', function (event) {
       if (!previewFrame || event.source !== previewFrame.contentWindow) return;
       if (!event.data) return;
-      if (event.data.type === 'md2pdf-ready') sendPreviewZoom();
+      if (event.data.type === 'md2pdf-ready') {
+        sendPreviewZoom();
+      }
       else if (event.data.type === 'md2pdf-preview-zoom-state' && typeof event.data.zoom === 'number' && previewZoomControl) previewZoomControl.display(event.data.zoom);
     });
     function updateSearchButton() {

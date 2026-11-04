@@ -1,5 +1,6 @@
 import {gbHeading,GB_SECTION_ROLES} from './gb-sections.mjs';
-// 预览位置关联（按章节粗定位）
+import {buildContentSourceMap} from './content-source-map.mjs';
+// 预览位置关联：标题提供保守回退，内容元数据提供字符及对象定位。
 //
 // attachSourcePositions(html, md)：在「已渲染的预览 HTML」上，为与 Markdown 标题
 // 顺序对应的 h2–h6 标题写入 data-md2pdf-source-line="<源行号>"，供预览点击标题 →
@@ -12,7 +13,7 @@ import {gbHeading,GB_SECTION_ROLES} from './gb-sections.mjs';
 //     GB 附录字母），不做泛化猜测；
 //   * Markdown 侧只统计 frontmatter 与代码围栏之外的 ATX（可选 setext）标题。
 //
-// 这是预览专用映射，不追求逐行或逐像素同步。
+// 标题匹配仍是独立回退；下方包装器只给完整预览增加内容映射。
 
 // 渲染后的 h2–h6 标题（渲染器只输出这些层级；h1 已提升为文档标题）。
 const HEADING_RE = /<h([2-6])([^>]*)>([\s\S]*?)<\/h\1>/g;
@@ -106,7 +107,7 @@ export function parseMarkdownHeadings(md) {
  * @param {string} md   原始 Markdown
  * @returns {string} 带 data-md2pdf-source-line 的 HTML（幂等）
  */
-export function attachSourcePositions(html, md) {
+function attachHeadingPositions(html, md) {
   if (typeof html !== 'string') throw new TypeError('attachSourcePositions 需要 HTML 字符串');
   if (typeof md !== 'string') throw new TypeError('attachSourcePositions 需要 Markdown 字符串');
   const sourceHeadings=parseMarkdownHeadings(md).map(h=>{try{return {...h,section:gbHeading(h.text,h.level,{...GB_SECTION_ROLES,abstract:'摘要',keywords:'关键词'})};}catch{return h;}});
@@ -145,4 +146,13 @@ export function attachSourcePositions(html, md) {
     pointer = found + 1;
     return '<h' + level + attrs + ' data-md2pdf-source-line="' + targets[found].line + '">' + inner + '</h' + level + '>';
   });
+}
+
+// Metadata lives outside the printable content. Offsets refer to the exact source
+// submitted for this preview; the parent rejects messages from stale revisions.
+export function attachSourcePositions(html, md, context = {}) {
+  const positioned = attachHeadingPositions(html, md);
+  if (!positioned.includes('</head>') || positioned.includes('data-md2pdf-content-map')) return positioned;
+  const json = JSON.stringify(buildContentSourceMap(md, context)).replace(/</g, '\\u003c');
+  return positioned.replace('</head>', '<script type="application/json" data-md2pdf-content-map>' + json + '</script></head>');
 }

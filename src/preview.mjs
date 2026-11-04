@@ -19,6 +19,7 @@
 // 不削弱 CSP。DOM 查找不做选择器字符串插值。
 
 import { REPO_URL } from './render.mjs';
+import { installContentSync } from './content-sync-runtime.mjs';
 
 export const PREVIEW_MARKER = 'md2pdf-preview-enhance';
 
@@ -98,6 +99,7 @@ function runtimeScript(type) {
     isolateFlowSvg.toString(),
     '  window.__md2pdfPreviewSnapshot = function () {',
     '    if (flowSnapshot) return;',
+    '    if (contentSync) contentSync.bind();',
     '    flowSnapshot = document.createDocumentFragment();',
     '    flowStyles = Array.from(document.querySelectorAll("head style:not([data-pagedjs-inserted-styles])")).map(function (style) { return style.textContent; }).join(String.fromCharCode(10));',
     '    var computed = getComputedStyle(document.body);',
@@ -237,7 +239,7 @@ function runtimeScript(type) {
     '  }',
     '  document.addEventListener("click", function (event) {',
     '    var heading = event.target.closest && event.target.closest("[data-md2pdf-source-line]");',
-    '    if (heading && !event.target.closest("a")) {',
+    '    if (heading && !event.target.closest("a,[data-md2pdf-source-id]")) {',
     "      parent.postMessage({type:'md2pdf-source',line:Number(heading.getAttribute('data-md2pdf-source-line'))}, '*');",
     '    }',
     '  });',
@@ -263,10 +265,11 @@ function runtimeScript(type) {
     "  });",
     "  var positionRevision = 0;",
     "  function capturePosition() {",
+    "    var precise = contentSync && contentSync.capture();",
     "    var headings = Array.from(activeNodes('[data-md2pdf-source-line]'));",
     "    var node = headings.find(function (node) { return node.getBoundingClientRect().top >= 0; }) || headings[headings.length - 1];",
     "    var width = document.documentElement.clientWidth || 1;",
-    "    return { line: node ? Number(node.getAttribute('data-md2pdf-source-line')) : 0,",
+    "    return { from: precise && precise.from, anchorRatio: precise && precise.anchorRatio, line: node ? Number(node.getAttribute('data-md2pdf-source-line')) : 0,",
     "      offset: node ? node.getBoundingClientRect().top / width : 0,",
     "      ratio: scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight) };",
     "  }",
@@ -280,6 +283,7 @@ function runtimeScript(type) {
     '    var restoreRevision = ++positionRevision;',
     '    requestAnimationFrame(function () {',
     '      if (restoreRevision !== positionRevision) return;',
+    '      if (Number.isSafeInteger(position.from)) { contentSync.refresh(); contentSync.locate({from:position.from,ratio:position.anchorRatio,reason:"scroll",instant:true}); updateOutlineCurrent(); return; }',
     '      var node = Array.from(activeNodes("[data-md2pdf-source-line]")).find(function (node) { return Number(node.getAttribute("data-md2pdf-source-line")) === position.line; });',
     '      if (node) scrollBy(0, node.getBoundingClientRect().top - position.offset * document.documentElement.clientWidth);',
     '      else scrollTo(0, position.ratio * Math.max(1, document.documentElement.scrollHeight - innerHeight));',
@@ -297,6 +301,7 @@ function runtimeScript(type) {
     "      fit();",
     "      requestAnimationFrame(function () {",
     "        if (restoreRevision !== positionRevision) return;",
+    '        if (Number.isSafeInteger(position.from)) { contentSync.refresh(); contentSync.locate({from:position.from,ratio:position.anchorRatio,reason:"scroll",instant:true}); return; }',
     "        var nodes = activeNodes('[data-md2pdf-source-line]');",
     "        var node = Array.from(nodes).find(function (node) { return Number(node.getAttribute('data-md2pdf-source-line')) === position.line; });",
     "        if (node) scrollBy(0, node.getBoundingClientRect().top - position.offset * document.documentElement.clientWidth);",
@@ -332,6 +337,7 @@ function runtimeScript(type) {
     '  addEventListener("message", function (event) {',
     '    if (event.source !== parent || !event.data || event.data.type !== "md2pdf-locate" || !Number.isSafeInteger(event.data.line) || event.data.line < 1) return;',
     '    positionRevision++; // 最新定位取消隐藏期间积压的旧位置恢复。',
+    '    if (contentSync) contentSync.suppress();',
     '    var headings = activeNodes("[data-md2pdf-source-line]"), best = null;',
     '    for (var i = 0; i < headings.length; i++) {',
     '      var line = Number(headings[i].getAttribute("data-md2pdf-source-line"));',
@@ -409,6 +415,7 @@ function runtimeScript(type) {
     '  }',
     '',
     '  if (!IS_GB) stampLists();',
+    '  var contentSync = (' + installContentSync.toString() + ')({activeScope:activeScope,revision:function(){return MD2PDF_PREVIEW_REVISION;},beforeLocate:function(){positionRevision++;}});',
     '  document.addEventListener("click", onClick, true);',
     '  addEventListener("load", check);',
     '})();',

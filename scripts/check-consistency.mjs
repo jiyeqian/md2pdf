@@ -68,7 +68,7 @@ try {
     sameHtml(autoStatic.html,autoNode.html,type+': single-call automatic preview');
     assert.deepEqual(autoStatic.effective,autoNode.effective,type+': automatic effective options');
     assert.deepEqual(autoStatic.resetOptions,autoNode.resetOptions,type+': reset controls');
-    sameHtml(online.html,await webDocument(attachSourcePositions(core.pagedHtml,md),true,type),type+': prepared HTML');
+    sameHtml(online.html,await webDocument(attachSourcePositions(core.pagedHtml,md,{type,referenceKeys:core.referenceKeys}),true,type),type+': prepared HTML');
     console.log(`✓ ${type}: CLI HTML、共用核心、Node API、静态预览与配置一致`);
   }
   for (const mode of ['continuous', 'page', 'odd-page']) {

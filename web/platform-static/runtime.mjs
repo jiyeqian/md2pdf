@@ -79,7 +79,7 @@ export async function renderDocument(body, preview = true, signal, autoPreview =
   const logoUrl = resource('assets/gb-logo.svg');
   const logo = rendered.type === 'gb' ? { logoUrl, logoData:await dataUrl(logoUrl, 'image/svg+xml', await assetBoundary(), signal) } : {};
   signal?.throwIfAborted();
-  const prepared = prepareWebDocument(preview ? attachSourcePositions(html, resolved.md) : html, {...scripts,...logo,preview,type:rendered.type});
+  const prepared = prepareWebDocument(preview ? attachSourcePositions(html, resolved.md, {type:rendered.type,referenceKeys:rendered.referenceKeys}) : html, {...scripts,...logo,preview,type:rendered.type});
   return { html:prepared, type:rendered.type, effective:resolved.effective, policy:resolved.policy, resetOptions:resolved.resetOptions, authorDiagnostics:resolved.authorDiagnostics, outline:rendered.printOptions.outline };
 }
 export async function appFetch(input, init = {}) {
