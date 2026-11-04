@@ -60,3 +60,13 @@ test('公式全角编号格式仅启用于GB，不改变其他模板的MathJax�
   assert.equal(html.includes('parseOptions.tags.formatTag ='),type==='gb',type);
  }
 });
+
+
+test('GB范例全部公式引用使用稳定标签',async()=>{
+ const md=await readFile(new URL('../web/examples/gb.md',import.meta.url),'utf8');
+ assert.doesNotMatch(md,/公式[（(][A-Z\d]/);
+ for(const key of ['force','error','mean']){
+  assert.ok(md.includes('\\eqref{eq:'+key+'}'));
+  assert.ok(md.includes('\\label{eq:'+key+'}'));
+ }
+});
