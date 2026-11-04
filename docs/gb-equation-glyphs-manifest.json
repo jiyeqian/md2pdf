@@ -1,0 +1,76 @@
+{
+  "file": "/Users/jiyeqian/Workspace/md2pdf-research/gb/Examples/GB:T 47036—2026 空间物体轨道摄动解析计算方法.pdf",
+  "sha256": "c9f56e58570832caf2c0d38755e34ede5837cc90f44039c30c131973eb70e93f",
+  "positions": {
+    "A": {
+      "physical_page": 14,
+      "svg_glyph": "glyph-4-2",
+      "pdf_encoding": ")"
+    },
+    "1": {
+      "physical_page": 14,
+      "svg_glyph": "glyph-4-3",
+      "pdf_encoding": "\""
+    },
+    "2": {
+      "physical_page": 14,
+      "svg_glyph": "glyph-4-4",
+      "pdf_encoding": "#"
+    },
+    "3": {
+      "physical_page": 14,
+      "svg_glyph": "glyph-4-1",
+      "pdf_encoding": "$"
+    },
+    "4": {
+      "physical_page": 14,
+      "svg_glyph": "glyph-4-13",
+      "pdf_encoding": "%"
+    },
+    "5": {
+      "physical_page": 14,
+      "svg_glyph": "glyph-4-16",
+      "pdf_encoding": "&"
+    },
+    "6": {
+      "physical_page": 14,
+      "svg_glyph": "glyph-4-19",
+      "pdf_encoding": "’"
+    },
+    "B": {
+      "physical_page": 17,
+      "svg_glyph": "glyph-2-1",
+      "pdf_encoding": ","
+    },
+    "7": {
+      "physical_page": 17,
+      "svg_glyph": "glyph-2-21",
+      "pdf_encoding": "("
+    },
+    "8": {
+      "physical_page": 17,
+      "svg_glyph": "glyph-2-16",
+      "pdf_encoding": "*"
+    },
+    "9": {
+      "physical_page": 17,
+      "svg_glyph": "glyph-2-19",
+      "pdf_encoding": "+"
+    },
+    "0": {
+      "physical_page": 37,
+      "svg_glyph": "glyph-3-11",
+      "pdf_encoding": "/"
+    },
+    "C": {
+      "physical_page": 19,
+      "svg_glyph": "glyph-4-1",
+      "pdf_encoding": "0"
+    },
+    "D": {
+      "physical_page": 37,
+      "svg_glyph": "glyph-3-0",
+      "pdf_encoding": "1"
+    }
+  }
+}

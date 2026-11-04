@@ -808,6 +808,7 @@ export async function render(src, options = {}, context = {}) {
   const base = await readFile(path.join(ASSETS, 'base.css'), 'utf8');
   throwIfAborted();
   const theme = await readFile(themeFile, 'utf8');
+  const equationGlyphs = profile.gbDoc && hasMath ? JSON.parse(await readFile(path.join(ASSETS, 'gb-equation-glyphs.json'), 'utf8')).glyphs : null;
   throwIfAborted();
   // 正文行距：webapp 选项 opts.lineHeight（有限数字 1.0–2.5，server 已校验范围）。
   // 省略 / 非有限数字回落到 1.9 —— 与旧硬编码一致。GB 固定值由 themes/gb.css 的
@@ -948,7 +949,7 @@ export async function render(src, options = {}, context = {}) {
     (profile.gbDoc ? '      prepareGbLayout(); prepareGbBodyLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); prepareGbBodyAudit();\n' : '') + '      installPagedLayout(' + (profile.gbDoc ? '(' + (297-effMarginBottom)*96/25.4 + ' - window.__gbContentTop)' : ((eff.landscape ? 210 : 297) - effMarginTop - effMarginBottom) * 96 / 25.4) + ', ' + JSON.stringify(chapterStart) + ', ' + (!profile.gbDoc && !useToc) + ', ' + ((eff.landscape ? 297 : 210) - effMarginLeft - effMarginRight) * 96 / 25.4 + ', ' + profile.gbDoc + ');',
     profile.gbDoc ? '' : '      stampPagedLists();',
     '      window.PagedPolyfill.preview()',
-    '        .then(function () { ' + (profile.gbDoc ? 'finalizeGbLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); finalizeGbBodyLayout(); finalizeGbTableRules(); finalizeGbIndexLayout(); finalizeGbEquations(); finalizeGbBodyAudit(); ' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
+    '        .then(function () { ' + (profile.gbDoc ? 'finalizeGbLayout(' + JSON.stringify(stdno).replace(/</g, '\\u003c') + '); finalizeGbBodyLayout(); finalizeGbTableRules(); finalizeGbIndexLayout(); finalizeGbEquations(' + JSON.stringify(equationGlyphs) + '); finalizeGbBodyAudit(); ' : 'finalizePagedCounters(' + (eff.footer !== false && eff.footerCenter === undefined) + '); ') + 'window.__md2pdfPagedReady = true; })',
     '        .catch(function (error) { window.__md2pdfPagedError = String(error.stack || error); window.__md2pdfPagedReady = true; });',
     '    } catch (e) { window.__md2pdfPagedError = String(e.stack || e); window.__md2pdfPagedReady = true; }',
     '  }',
