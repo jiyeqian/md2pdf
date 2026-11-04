@@ -915,6 +915,7 @@ export async function render(src, options = {}, context = {}) {
     '  startup: {',
     '    ready: function () {',
     '      MathJax.startup.defaultReady();',
+    ...(profile.gbDoc ? ['      MathJax.startup.input[0].parseOptions.tags.formatTag = function (n) { return "（" + n + "）"; };'] : []),
     '      MathJax.startup.promise.then(function () { window.__md2pdfMathReady = true; });',
     '    }',
     '  }',
