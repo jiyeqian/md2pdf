@@ -8,7 +8,7 @@
 
 验证：67 项针对性检查通过；`node tests/content-sync-browser-checks.mjs` 在真实服务器版和静态版均通过，覆盖长段跨页、同文段落、嵌套内容、续表、题注、代码、图／公式、文献、反向定位及保留编辑光标；原 `preview-mode-browser-checks.mjs` 通过。`npm run check:consistency` 通过。全量 `test:web` 有 4 项 DOI 文献旧测试失败，同四项已用 main 原始渲染器复现：夹具未声明当前必需的参考文献章节，未在本任务扩展修复。没有进行真实手机、Safari、线上缓存或实体打印验收；陌生实体及无法核实的生成内容保留章节回退。
 
-验收：从本工作树启动或重启 `PORT=3113 npm start`，打开 `http://127.0.0.1:3113/`；静态版运行 `node src/static-build.mjs` 后以 `python3 -m http.server 8773 --bind 127.0.0.1 --directory dist/static` 启动，入口 `http://127.0.0.1:8773/`。运行浏览器检查会生成 `/private/tmp/md2pdf-content-sync-acceptance.md`，可在两种入口打开：移动长段落末尾光标、选中文字、分别滚动两侧、双击预览文字，再切换流式／分页和全屏。已有标签页须更新到当前版本后验收；不清除用户草稿。
+验收：从本工作树启动或重启 `PORT=3113 npm start`，打开 `http://127.0.0.1:3113/`；静态版运行 `node scripts/build-static.mjs` 后以 `python3 -m http.server 8773 --bind 127.0.0.1 --directory dist/static` 启动，入口 `http://127.0.0.1:8773/`。运行浏览器检查会生成 `/private/tmp/md2pdf-content-sync-acceptance.md`，可在两种入口打开：移动长段落末尾光标、选中文字、分别滚动两侧、双击预览文字，再切换流式／分页和全屏。已有标签页须更新到当前版本后验收；不清除用户草稿。
 
 ## 2026-11-01 通用副标题、直接关键词与三格落款
 
