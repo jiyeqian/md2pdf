@@ -1,6 +1,7 @@
 import { installInlineScripts } from './inline-scripts.mjs';
 import {prepareDocumentContent,prepareContentHeadings,finalizeContentNavigation,finalizeHeadingSubtitles} from './document-content.mjs';
 import { gbSectionCatalog, gbSectionDiagnostics,HEADING_ATTRIBUTES,decodeHeadingText,protectHeadingAttributes } from './gb-sections.mjs';
+import { calibrateGbProse } from './gb-prose.mjs';
 import { prepareGbContent, transformGbContent, separateGbBodyHeading } from './gb-content.mjs';
 import { documentFonts } from './fonts.mjs';
 import { GB_FONT_CHECKS, requireGbFonts } from './gb-fonts.mjs';
@@ -786,7 +787,7 @@ export async function render(src, options = {}, context = {}) {
   if (profile.gbDoc) html = applyGbEquations(transformGbContent(html, title));
   if (gbNotes) html = gbNotes.finalize(html);
   html = finalizeHeadingSubtitles(finalizeContentNavigation(sectionize(html)));
-  if (profile.gbDoc) html = separateGbBodyHeading(html);
+  if (profile.gbDoc) html = calibrateGbProse(separateGbBodyHeading(html));
   if (profile.gbDoc && /data-gb-role="toc"/.test(html)) {
     const contentsSection = /<section>\s*<h2[^>]*data-gb-role="toc"[^>]*>[\s\S]*?<\/h2>([\s\S]*?)<\/section>/;
     const contents = contentsSection.exec(html);

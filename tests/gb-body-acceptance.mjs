@@ -53,6 +53,14 @@ try{
    const typography={header:style('.gb-fixed-header'),term:style('.gb-term-name'),body:style('.gb-term-definition p'),reference:style('.fnref-back'),front:style('h2.front'),references:style('h2.gb-references-title')};
    const scope=document.querySelector('.pagedjs_pages');
    const extras={firstChapterOutline:scope.querySelector('h2.body-start')?.textContent.trim(),contentsHeadings:scope.querySelectorAll('h2.toc-title').length,tocMarkers:[...scope.querySelectorAll('.toc li')].some(n=>getComputedStyle(n,'::before').display!=='none' && !['none','normal','""'].includes(getComputedStyle(n,'::before').content)),bibliographyHeadings:scope.querySelectorAll('h2[data-gb-role="bibliography"]').length,figureContents:scope.querySelectorAll('.toc-float').length,nestedContents:scope.querySelectorAll('.toc-level-1').length,indexLinks:scope.querySelectorAll('.gb-index-locations a').length,unresolved:scope.querySelectorAll('[data-gb-index-unresolved]').length,source:[...scope.querySelectorAll('.gb-note')].find(n=>n.textContent.includes('[来源：'))?.textContent,visibleCitations:[...scope.querySelectorAll('.fnref-back')].every(e=>getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'),vectorRules:scope.querySelectorAll('[data-gb-table-rules]').length};
+   const prose=[...scope.querySelectorAll('p')].find(p=>p.textContent.startsWith('下列文件中的内容通过文中的规范性引用'));
+   const proseLines=[];const proseWalker=document.createTreeWalker(prose,NodeFilter.SHOW_TEXT);
+   while(proseWalker.nextNode()){const node=proseWalker.currentNode;for(let i=0;i<node.length;i++){
+    const range=document.createRange();range.setStart(node,i);range.setEnd(node,i+1);const rect=range.getBoundingClientRect();
+    let line=proseLines.find(l=>Math.abs(l.top-rect.top)<1);if(!line){line={top:rect.top,text:'',characters:[]};proseLines.push(line);}
+    line.text+=node.textContent[i];line.characters.push({text:node.textContent[i],left:rect.left,right:rect.right});
+   }}
+   extras.proseCalibration={lines:proseLines,fontSize:getComputedStyle(prose).fontSize,width:prose.getBoundingClientRect().width,invalidScopes:[...scope.querySelectorAll('.gb-prose-punctuation')].filter(e=>e.closest('table,figure,li,.gb-note,.gb-footnote,.gb-term,code,mjx-container')).length};
    extras.listGeometry=[...scope.querySelectorAll('li')].filter(e=>/^(传感器重新|通信接口的序列号|先以受限速度|再逐步恢复)/.test(e.textContent.trim())).map(e=>{
     const page=e.closest('.pagedjs_page'),area=page.querySelector('.pagedjs_area').getBoundingClientRect(),r=e.getBoundingClientRect(),font=parseFloat(getComputedStyle(e).fontSize),marker=getComputedStyle(e,'::before'),scale=page.querySelector('.pagedjs_pagebox').getBoundingClientRect().width/(210*96/25.4);
     const texts=[];const walker=document.createTreeWalker(e,NodeFilter.SHOW_TEXT);while(walker.nextNode())if(walker.currentNode.textContent.trim()){const range=document.createRange();range.selectNodeContents(walker.currentNode);texts.push(...[...range.getClientRects()].filter(r=>r.width));}
@@ -85,6 +93,11 @@ try{
   assert.equal(state.extras.contentsHeadings,1,'semantic contents heading appears once');
   assert.equal(state.extras.bibliographyHeadings,1,'explicit bibliography heading appears once');
   assert.ok(state.extras.figureContents>=2&&state.extras.nestedContents>0,'multilevel contents and float list');
+  assert.equal(state.extras.proseCalibration.lines.length,3,'normative references introduction has three lines');
+  assert.ok(state.extras.proseCalibration.lines[0].text.endsWith('引用文'),'first line matches published reference');
+  assert.ok(state.extras.proseCalibration.lines[1].text.endsWith('适用于'),'second line ends after 适用于');
+  assert.equal(state.extras.proseCalibration.lines[2].text,'本文件。','final line matches published reference');
+  assert.equal(state.extras.proseCalibration.invalidScopes,0,'punctuation calibration stays out of special layouts');
   assert.equal(state.extras.listGeometry.length,4,'both numeric and bullet second-level items measured');
   assert.ok(state.extras.listGeometry.some(e=>e.text.startsWith('传感器')&&e.lines.length>1)&&state.extras.listGeometry.some(e=>e.text.startsWith('先以')&&e.lines.length>1),'numeric and bullet second-level examples both wrap');
   for(const item of state.extras.listGeometry){
