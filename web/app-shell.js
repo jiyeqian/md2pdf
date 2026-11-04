@@ -1,5 +1,6 @@
 /* WebApp 共用安装与缓存；主屏模式按需适配视口和文件分享。 */
 import { createCacheReadinessGate } from './cache-readiness.mjs';
+import { bindManualUpdate } from './manual-update.mjs';
 
 (() => {
   const root = document.documentElement;
@@ -144,6 +145,10 @@ import { createCacheReadinessGate } from './cache-readiness.mjs';
     if (document.visibilityState === 'visible') { checkUpdate(); requestStatus(); }
   });
   createCacheReadinessGate({ window, document, start:prepareApp });
+  if (!window.__MD2PDF_STATIC_BASE__) bindManualUpdate({
+    getRegistration: async () => { if (!registration) await prepareApp(); return registration; },
+    statusType: 'APP_STATUS', applyUpdate,
+  });
   window.mdAppShell = { standalone, offerFile };
   display.addEventListener?.('change', updateMode);
   window.addEventListener('resize', schedule);

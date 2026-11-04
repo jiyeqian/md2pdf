@@ -11,11 +11,11 @@ async function pinned(id) {
 async function pin(id, name = current) {
   if (id) await (await caches.open(metadata)).put(clientKey(id), new Response(name));
 }
-async function status(client) {
+async function status(client, reply = client) {
   const name = await pinned(client.id) || current;
   await pin(client.id, name);
   const ready = Boolean(await (await caches.open(name)).match(new URL('index.html', base)));
-  client.postMessage({ type:'APP_CACHE_STATUS', current, pinned:name, ready });
+  reply.postMessage({ type:'APP_CACHE_STATUS', current, pinned:name, ready });
 }
 self.addEventListener('install', event => event.waitUntil((async () => {
   // 旧协议激活时会删除前代缓存，所以创建顺序最早的现存版本是旧活动版本。
@@ -54,7 +54,7 @@ self.addEventListener('activate', event => event.waitUntil((async () => {
   for (const client of clients) await status(client);
 })()));
 self.addEventListener('message', event => {
-  if (event.data?.type === 'APP_CACHE_STATUS' && event.source?.url && inScope(event.source)) event.waitUntil(status(event.source));
+  if (event.data?.type === 'APP_CACHE_STATUS' && event.source?.url && inScope(event.source)) event.waitUntil(status(event.source, event.ports?.[0] || event.source));
 });
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
