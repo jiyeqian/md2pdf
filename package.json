@@ -51,6 +51,8 @@
     "test:workspace-actions": "node tests/workspace-actions-browser-checks.mjs",
     "test:pagination-browser": "node tests/pagination-browser-checks.mjs",
     "test:independent-window-browser": "node tests/independent-window-browser-checks.mjs",
+    "test:independent-tab-browser": "node tests/independent-tab-browser-checks.mjs",
+    "test:independent-tab-static-browser": "node tests/independent-static-browser-checks.mjs --tabs",
     "test:independent-viewport-browser": "node tests/independent-viewport-browser-checks.mjs",
     "test:independent-static-browser": "node tests/independent-static-browser-checks.mjs",
     "test:content-sync-browser": "node tests/content-sync-browser-checks.mjs",
