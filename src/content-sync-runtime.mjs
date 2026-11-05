@@ -3,7 +3,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   const metadata = document.querySelector('script[data-md2pdf-content-map]');
   let source = [];
   try { source = JSON.parse(metadata?.textContent || '[]'); } catch { /* Legacy preview. */ }
-  if (!source.length) return { bind() {}, refresh() { return []; }, capture() { return null; }, suppress() {}, locate() {}, outline() {}, captureOutline() { return null; }, captureHighlight() { return null; }, restoreHighlight() {} };
+  if (!source.length) return { bind() {}, refresh() { return []; }, capture() { return null; }, suppress() {}, locate() {}, outline() {}, suppressSelectionEcho() {}, captureOutline() { return null; }, captureHighlight() { return null; }, restoreHighlight() {} };
   const byId = new Map(source.map(item => [String(item.id), item]));
   let fragments = [], scoped = null, dirty = true, programmaticUntil = 0, userScroll = false, pending = 0;
   const tags = 'p,li,td,th,pre,h1,h2,h3,h4,h5,h6,caption,figcaption,.gb-important-paragraph,.keywords > .summary-content';
@@ -157,7 +157,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   }
 
   // A fixed overlay does not change line wrapping, pagination, or text selection.
-  let outlineFrom = null;
+  let outlineFrom = null, restoredSelection = null;
   let overlay, overlayTimer, selectedRange = null, paintFrame = 0, selectionGuardUntil = 0;
   function highlight(from, to, anchor) {
     overlay?.remove(); clearTimeout(overlayTimer);
@@ -275,8 +275,16 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     if (item) outlineFrom = item.from;
     if (item) send('outline', { from: item.from, to: item.to, rect: { top: 0 } });
   }
+  function suppressSelectionEcho() {
+    const selection = getSelection();
+    restoredSelection = selection?.rangeCount ? { anchor: selection.anchorNode, anchorOffset: selection.anchorOffset,
+      focus: selection.focusNode, focusOffset: selection.focusOffset } : null;
+  }
   function selectionSource() {
     const selection = getSelection();
+    if (restoredSelection && selection?.anchorNode === restoredSelection.anchor && selection.anchorOffset === restoredSelection.anchorOffset
+      && selection.focusNode === restoredSelection.focus && selection.focusOffset === restoredSelection.focusOffset) return;
+    restoredSelection = null;
     if (!selection || selection.isCollapsed || !selection.rangeCount) { if (Date.now() < selectionGuardUntil) return; send('selection', { from: 0, to: 0, rect: { top: 0 } }); return; }
     const range = selection.getRangeAt(0), scope = activeScope();
     if (!scope?.contains(range.startContainer) || !scope.contains(range.endContainer)) return;
@@ -317,13 +325,13 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     if (event.data.type === 'md2pdf-transfer-capture') selectionGuardUntil = Date.now() + 1000;
     if (event.data.type === 'md2pdf-content-locate') locate(event.data);
   });
-  document.addEventListener('keydown', () => { selectionGuardUntil = 0; outlineFrom = null; });
+  document.addEventListener('keydown', () => { selectionGuardUntil = 0; outlineFrom = null; restoredSelection = null; });
   document.addEventListener('dblclick', event => {
     if (event.target.closest('a,button,input') || !activeScope()?.contains(event.target)) return;
     send('activate', atPoint(event.clientX, event.clientY));
   });
   for (const name of ['wheel', 'touchmove', 'pointerdown']) addEventListener(name, () => {
-    userScroll = true; programmaticUntil = 0; selectionGuardUntil = 0; outlineFrom = null;
+    userScroll = true; programmaticUntil = 0; selectionGuardUntil = 0; outlineFrom = null; restoredSelection = null;
   }, { passive: true });
   addEventListener('scroll', () => {
     if (!userScroll || Date.now() < programmaticUntil || pending) return;
@@ -336,6 +344,6 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     });
   }, { passive: true });
   return { bind, refresh: () => { dirty = true; return refresh(); }, capture,
-    suppress: () => { userScroll = false; programmaticUntil = Date.now() + 250; }, locate, outline, captureOutline: () => outlineFrom, captureHighlight: () => selectedRange,
+    suppress: () => { userScroll = false; programmaticUntil = Date.now() + 250; }, locate, outline, suppressSelectionEcho, captureOutline: () => outlineFrom, captureHighlight: () => selectedRange,
     restoreHighlight: range => { if (range && Number.isSafeInteger(range.from) && Number.isSafeInteger(range.to) && range.to > range.from) highlight(range.from, range.to); } };
 }

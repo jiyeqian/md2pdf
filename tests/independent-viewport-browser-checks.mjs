@@ -56,13 +56,15 @@ try {
   const idle = () => wait('window.mdWindowMode.active && !mdWindowMode.busy');
   const normal = () => wait('!mdWindowMode.active && !mdWindowMode.popup && document.querySelector(".editor-panel") && document.querySelector(".preview-panel")');
   const label='目标章：横竖窗口交换验收';
-  const fixture='# 双窗口\n\n'+Array.from({length:6},(_,i)=>'## '+(i===2?label:'章节 '+i)+'\n\n'+Array(7).fill('长段落用于验证横竖屏自动换行之后的定位。'.repeat(20)).join('\n\n')).join('\n\n');
+  const fixture='# 双窗口\n\n'+Array.from({length:6},(_,i)=>'## '+(i===2?label:'章节 '+i)+'\n\n'+Array(45).fill('长段落用于验证横竖屏自动换行之后的定位。'.repeat(3)).join('\n\n')).join('\n\n');
   const offset=fixture.indexOf('## '+label);
   await browser.send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
   await browser.send('Page.navigate',{url});
   await wait('window.mdEditor && window.mdWindowMode');
   await evaluate(`window.frameProbes=[];window.addEventListener('message',event=>{if(event.data?.type==='md2pdf-test-frame-probe' && (event.source===mdWorkspaceHosts.query('#preview')?.contentWindow || [...document.querySelectorAll('.md-preview-thumbnails iframe')].some(frame=>frame.contentWindow===event.source)))frameProbes.push(event.data.probe)})`);
   await evaluate('mdEditor.setValue('+JSON.stringify(fixture)+')');await ready();
+  const oldCaret=fixture.split('\n').slice(0,407).join('\n').length+1;
+  await evaluate(`mdEditor.setSelection(${oldCaret});document.querySelector('.cm-content').focus();window.positionTrace=[];for(const name of ['revealPosition','restoreViewport','goToPosition','goToLine']){const original=mdEditor[name];mdEditor[name]=function(...args){positionTrace.push({name,args,t:performance.now(),stack:new Error().stack});return original.apply(this,args)}}document.addEventListener('md-preview-content-source',e=>positionTrace.push({source:e.detail,t:performance.now()}));`);
   await evaluate(`window.layoutTasks=0;new MutationObserver(()=>{if(new DOMParser().parseFromString(mdWorkspaceHosts.query('#preview').srcdoc,'text/html').querySelector('script[src]'))layoutTasks++}).observe(document.querySelector('#preview'),{attributes:true,attributeFilter:['srcdoc']})`);
   await evaluate(`document.querySelector('.preview-panel [data-panel-independent]').click()`);await idle();await ready();await wait('!mdWindowMode.restoring');
   const popup=await targetSession('page');
@@ -79,6 +81,8 @@ try {
       const selector=origin==='preview'?'.md-preview-outline button':'.md-pro-outline-item';
       await evaluate(`(()=>{if(document.querySelector('#${sidebar}').hidden)document.querySelector('#${sidebar}-toggle').click()})()`,owner);
       await wait(`document.querySelectorAll(${JSON.stringify(selector)}).length`,owner);
+      await evaluate(`(()=>{const map=JSON.parse(document.querySelector('script[data-md2pdf-content-map]').textContent);const item=map.find(i=>i.kind==='text'&&i.line>=408);const node=document.querySelector((document.documentElement.classList.contains('md2pdf-preview-flow')?'#md2pdf-preview-flow':'.pagedjs_pages')+' [data-md2pdf-source-id="'+item.id+'"]');const range=document.createRange();range.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`,frame.sessionId);
+      await new Promise(r=>setTimeout(r,150));
       await evaluate(`(()=>{[...document.querySelectorAll(${JSON.stringify(selector)})].find(n=>n.textContent.includes(${JSON.stringify(label)})).click()})()`,owner);
       await new Promise(r=>setTimeout(r,300));
       for(let n=0;n<6;n++) {
@@ -89,7 +93,8 @@ try {
         const delta=await evaluate(`(()=>{const rect=mdEditor.coordsAtPos(${offset}),box=mdEditor.getDocumentRoot().querySelector('.cm-scroller').getBoundingClientRect();return rect&&rect.top-box.top;})()`);
         console.log('swap',{flow,origin,n,top,delta});
         assert.ok(Math.abs(top)<8,'preview heading: '+JSON.stringify({flow,origin,n,top}));
-        assert.ok(delta!==null&&Math.abs(delta)<8,'editor heading: '+JSON.stringify({flow,origin,n,delta}));
+        assert.ok(delta!==null&&Math.abs(delta)<8,'editor heading: '+JSON.stringify({flow,origin,n,delta,trace:await evaluate('positionTrace.slice(-8)')}));
+        for(let settled=0;settled<8;settled++){await new Promise(r=>setTimeout(r,150));const later=await evaluate(`(()=>{const r=mdEditor.coordsAtPos(${offset}),b=mdEditor.getDocumentRoot().querySelector('.cm-scroller').getBoundingClientRect();return r&&r.top-b.top;})()`);assert.ok(later!==null&&Math.abs(later)<8,JSON.stringify({n,settled,later,trace:await evaluate('positionTrace.slice(-8)')}));}
         assert.equal(await evaluate('layoutTasks'),0,'completed preview is not repaginated');
       }
     }

@@ -180,3 +180,20 @@ test('preview mirror replaces the old source range without focus or scrolling', 
   assert.deepEqual(JSON.parse(JSON.stringify(transactions[0].effects)), { from: 3, to: 9 });
   assert.equal(transactions[0].scrollIntoView, undefined);
 });
+
+test('restored preview selection does not echo as new user navigation', async () => {
+  const runtime = await readFile(new URL('../src/content-sync-runtime.mjs', import.meta.url), 'utf8');
+  const node = {}, sent = [];
+  const selection = {rangeCount:1,isCollapsed:false,anchorNode:node,anchorOffset:0,focusNode:node,focusOffset:5,
+    getRangeAt:()=>({startContainer:node,endContainer:node,intersectsNode:()=>true})};
+  const context=vm.createContext({getSelection:()=>selection,restoredSelection:null,selectionGuardUntil:0,Date,
+    activeScope:()=>({contains:()=>true}),refresh:()=>[{atomic:true,item:{from:30,to:40},node:{getBoundingClientRect:()=>({top:20})}}],
+    selectedRange:null,overlay:null,overlayTimer:0,clearTimeout(){},send:(reason,range)=>sent.push({reason,range})});
+  vm.runInContext(runtime.slice(runtime.indexOf('  function suppressSelectionEcho('),runtime.indexOf('  let selectionTimer;')),context);
+  context.suppressSelectionEcho();context.selectionSource();context.selectionSource();
+  assert.equal(sent.length,0,'repeated events for the restored range stay silent');
+  selection.focusOffset=6;context.selectionSource();
+  assert.equal(sent.length,1,'a different selection still navigates');
+  context.suppressSelectionEcho();context.restoredSelection=null;context.selectionSource();
+  assert.equal(sent.length,2,'real pointer/keyboard ownership can select the same range');
+});
