@@ -247,11 +247,11 @@
       hosts.postPreview({ type: 'md2pdf-window-position-stream', revision: state().previewRevision, enabled: !!popup });
       if (pendingRestore) {
         const desired = pendingRestore; pendingRestore = null;
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          if (Number.isSafeInteger(desired.revision) && desired.revision !== state().previewRevision) { showPreview(); return; }
-          restoreTicket = { id: 'window-restore-' + (++sequence), revision: state().previewRevision };
-          hosts.postPreview({ type: 'md2pdf-restore-position', id: restoreTicket.id, position: desired });
-        }));
+        if (Number.isSafeInteger(desired.revision) && desired.revision !== state().previewRevision) { showPreview(); return; }
+        // The preview schedules its own layout. A background opener's animation
+        // frames can stop completely when both views are tabs in one browser.
+        restoreTicket = { id: 'window-restore-' + (++sequence), revision: state().previewRevision };
+        hosts.postPreview({ type: 'md2pdf-restore-position', id: restoreTicket.id, position: desired });
       } else showPreview();
       if (popup) capture();
     }, true);

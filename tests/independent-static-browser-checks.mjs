@@ -27,7 +27,7 @@ const server = createServer(async (request, response) => {
 try {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const result = await new Promise((accept, reject) => {
-    const child = spawn(process.execPath, [fileURLToPath(new URL('./independent-window-browser-checks.mjs', import.meta.url)), 'http://127.0.0.1:' + server.address().port + prefix], { stdio: 'inherit' });
+    const child = spawn(process.execPath, [fileURLToPath(new URL(process.argv.includes('--tabs') ? './independent-tab-browser-checks.mjs' : './independent-window-browser-checks.mjs', import.meta.url)), 'http://127.0.0.1:' + server.address().port + prefix], { stdio: 'inherit' });
     child.once('error', reject); child.once('exit', accept);
   });
   assert.equal(result, 0, 'static nested-path browser workflow');
