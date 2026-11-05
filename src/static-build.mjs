@@ -50,7 +50,7 @@ await writeFile(path.join(out, 'vendor/highlight/highlight.mjs'), await readFile
 const yamlFile = path.join(out, 'vendor/yaml/yaml.mjs');
 await writeFile(yamlFile, browserYaml(await readFile(yamlFile, 'utf8')));
 const textAssets = {};
-for (const file of ['assets/base.css','assets/shell.html','assets/gb-cover-banner.svg','assets/gb-issuer-outlines.json', ...(await readdir(path.join(root, 'assets/themes'))).filter(f => f.endsWith('.css')).map(f => 'assets/themes/' + f)]) {
+for (const file of ['assets/base.css','assets/shell.html','assets/gb-cover-banner.svg','assets/gb-issuer-outlines.json','assets/gb-equation-glyphs.json', ...(await readdir(path.join(root, 'assets/themes'))).filter(f => f.endsWith('.css')).map(f => 'assets/themes/' + f)]) {
   textAssets['/md2pdf/' + file] = await readFile(path.join(root, file), 'utf8');
 }
 await writeFile(path.join(out, 'assets-text.mjs'), 'export default ' + JSON.stringify(textAssets) + ';\n');

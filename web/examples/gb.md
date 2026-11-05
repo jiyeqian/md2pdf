@@ -42,9 +42,9 @@ toc: 2
 
 本文件代替 GB/T 142857—2019《仿生机械手抓取控制系统技术要求》，与 GB/T 142857—2019 相比，除结构调整和编辑性改动外，主要技术变化如下：
 
-- 增加了多环境下的稳定抓取要求和异常恢复要求；
-- 增加了分项检测条件、控制误差的计算方法和连续试验记录；
-- 完善了试验步骤、试验报告和数据追溯要求。
+1. 增加了多环境下的稳定抓取要求和异常恢复要求；
+2. 增加了分项检测条件、控制误差的计算方法和连续试验记录；
+3. 完善了试验步骤、试验报告和数据追溯要求。
 
 请注意本文件的某些内容可能涉及专利。本文件的发布机构不承担识别专利的责任。
 
@@ -57,6 +57,11 @@ toc: 2
 本文件主要起草人：张三、李四。
 
 本文件中的试验数据仅用于验证排版能力[^@purpose]。
+
+本文件及其所代替文件的历次版本发布情况为：
+
+- 2019 年首次发布为 GB/T 142857—2019；
+- 本次为第一次修订。
 
 [^@purpose]: 本文件为假设标准，不作为真实产品的合格判定依据。
 
@@ -149,8 +154,6 @@ standard
 
 ## 技术要求 {#sec:requirements}
 
-技术要求包括一般要求、安全状态、控制性能和检测条件。各项要求应结合规定的试验环境、量值溯源和记录方法进行验证；对于具有不同末端执行器或控制模式的系统，应在试验开始前明确适用条件，并使后续检验与报告采用相同的配置。
-
 ### 一般要求 {#sec:general-requirements}
 
 机械手应在 −10 ℃～40 ℃ 的环境温度下正常工作，设计的试验配置应涵盖低温、常温和高温状态。目标物、传感器量程及控制参数应在试验开始前记录。
@@ -169,10 +172,10 @@ standard
 
 1. 识别异常并保持安全状态，记录触发时刻、目标物状态和控制器最近一次有效输出；当恢复过程中需要人工确认时，应清楚给出等待条件，避免自动执行未经确认的动作；
 2. 检查恢复条件，包括：
-   1. 传感器重新进入有效测量范围，并连续获得规定数量的有效样本；
+   1. 传感器重新进入有效测量范围，并连续获得规定数量的有效样本，确认样本时间与当前检测条件一致，不得以恢复前的缓存数据替代有效测量值；
    2. 通信接口的序列号和时间戳连续，缓存数据不会被误认为新测量值；
 3. 恢复受控运动，满足下列条件：
-   - 先以受限速度接近目标位姿，确认接触力没有超过允许值；
+   - 先以受限速度接近目标位姿，确认接触力没有超过允许值，并在接近过程中持续监视末端执行器与目标物之间的相对运动；
    - 再逐步恢复额定控制参数，并记录最终恢复时刻。
 
 ### 控制性能 {#sec:control-performance}
@@ -183,7 +186,7 @@ standard
 
 #### 单指响应延迟 {#sec:finger-latency}
 
-单指响应延迟应不大于 12 ms。期望力位关系按公式（1）确定。
+单指响应延迟应不大于 12 ms。期望力位关系按公式 $\eqref{eq:force}$确定。
 
 <!-- gb-check: 9.9/10.4.3；变量斜体、编号右齐、省略点引导、长释义悬挂 -->
 
@@ -202,7 +205,7 @@ $\dot{x}$ | 实测速度，单位为米每秒（m/s）。
 
 #### 综合误差 {#sec:overall-error}
 
-综合误差按公式（2）计算。较长公式在加号之后回行，两行合为一个公式，不将其细分为带字母的子编号。
+综合误差按公式 $\eqref{eq:error}$计算。较长公式在加号之后回行，两行合为一个公式，不将其细分为带字母的子编号。
 
 :::gb-equation
 $$
@@ -436,7 +439,7 @@ flowchart LR
 检验应按照下列顺序进行：
 
 1. 核对试验条件及记录完整性；
-2. 按公式（1）和公式（2）核算必要数据；
+2. 按公式 $\eqref{eq:force}$和公式 $\eqref{eq:error}$核算必要数据；
 3. 对不满足要求的项目给出原因和处置记录。
 
 :::gb-note label="注1："
@@ -484,7 +487,7 @@ flowchart LR
 
 ### 采样结果的整理 {#sec:sample-processing}
 
-单组有效采样值的算术平均值可按公式（B.1）计算。附录公式采用附录字母和独立序号，不接续正文公式编号。
+单组有效采样值的算术平均值可按公式 $\eqref{eq:mean}$计算。附录公式采用附录字母和独立序号，不接续正文公式编号。
 
 :::gb-equation
 $$\overline{t}=\frac{1}{n}\sum_{i=1}^{n}t_i\tag{B.1}\label{eq:mean}$$
@@ -517,12 +520,12 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 试验步骤 | @sec:report-content
 异常恢复时间 | @recovery，@sec:safety-recovery
 刚度系数 {sort-key="gang du xi shu"} | @sec:symbols，@sec:finger-latency
-数据整理 | @sec:sample-processing，@tab:response-summary
-控制器检测 | @tab:complex
-采集装置时钟偏差与异常切换过程的追溯信息 | @sec:test-preparation
+控制器 | @tab:complex
+时钟偏差 | @sec:test-preparation
+异常切换 | @sec:test-preparation
 原始记录 | @tab:records，@sec:results
 试验报告 | @sec:appendix-report，@sec:report-fields
-异常恢复流程 | @fig:flow
+异常恢复 | @fig:flow
 :::
 
 :::gb-index K
@@ -534,10 +537,11 @@ $t_i$ | 第 $i$ 次采样的响应时间，单位为毫秒（ms）。
 :::gb-index-section lang=en
 
 :::gb-index
-timestamp traceability | @sec:test-preparation，@sec:sample-processing
+timestamp traceability | @sec:test-preparation
 impedance control | @impedance
 controller verification | @tab:complex
-traceability information for acquisition clock deviations and abnormal clock source switching | @sec:test-preparation
+clock deviation | @sec:test-preparation
+abnormal switching | @sec:test-preparation
 grasping success rate | @grasp，@sec:grasp-success
 control flow | @fig:flow，@fig:data
 fault recovery time | @recovery，@sec:safety-recovery

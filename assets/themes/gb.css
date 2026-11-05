@@ -197,6 +197,8 @@ ol li, ul li { padding-left: 0; }
 
 /* 10.2：段首空两字；列表文字用悬挂缩进，标记不占正文列。 */
 main p { text-indent: 2em; }
+/* Half-character punctuation advance; glyphs and source text stay unchanged. */
+.gb-prose-punctuation { margin-inline-end: -.5em; }
 main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) { list-style: none; padding-left: 4em; }
 main section li > :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) { padding-left: 2em; }
 main section :is(ol, ul):not(.references):not(.footnotes):not(.gb-index-entries):not(.toc ol):not(.toc ul) > li { padding-left: 0; }

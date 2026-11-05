@@ -1,0 +1,197 @@
+{
+  "reference_ledger": "gb-inline-spacing-measurements.json",
+  "scope": "GB direct ordinary and appendix section paragraphs only. No change to CJK glyph size, page width, indentation, tracking or source characters.",
+  "parameter": {
+    "comma_semicolon_margin_inline_end_em": -0.5
+  },
+  "before_lines": [
+    "下列文件中的内容通过文中的规范性引用而构成本文件必不可少的条款。其中，注日期的引用文",
+    "件，仅该日期对应的版本适用于本文件；不注日期的引用文件，其最新版本（包括所有的修改单）适",
+    "用于本文件。"
+  ],
+  "reference_punctuation_advances_pt": {
+    "comma": [
+      5.24,
+      5.434
+    ],
+    "semicolon": [
+      5.239
+    ]
+  },
+  "runtimes": [
+    {
+      "runtime": "cli",
+      "pdf_sha256": "9cd54efe4f034bde1943f89797ffb1624dea29c541d90b53e84627bb28ca6fd7",
+      "physical_page": 7,
+      "pages": 20,
+      "lines": [
+        {
+          "text": "下列文件中的内容通过文中的规范性引用而构成本文件必不可少的条款。其中，注日期的引用文",
+          "left_pt": 91.86327742236328,
+          "right_pt": 538.5800860341622,
+          "cjk_median_pt": 10.7672,
+          "cjk_advance_counts_pt": {
+            "10.7672": 36,
+            "10.7673": 1
+          },
+          "punctuation_advances": [
+            {
+              "text": "，",
+              "advance_pt": 5.5195
+            }
+          ]
+        },
+        {
+          "text": "件，仅该日期对应的版本适用于本文件；不注日期的引用文件，其最新版本（包括所有的修改单）适用于",
+          "left_pt": 70.86327829736328,
+          "right_pt": 538.579032809206,
+          "cjk_median_pt": 10.5102,
+          "cjk_advance_counts_pt": {
+            "10.5102": 34,
+            "10.5104": 1
+          },
+          "punctuation_advances": [
+            {
+              "text": "，",
+              "advance_pt": 5.2617
+            },
+            {
+              "text": "；",
+              "advance_pt": 5.2602
+            },
+            {
+              "text": "，",
+              "advance_pt": 5.2617
+            }
+          ]
+        },
+        {
+          "text": "本文件。",
+          "left_pt": 70.86327829736328,
+          "right_pt": 112.86327654736327,
+          "cjk_median_pt": 10.5,
+          "cjk_advance_counts_pt": {
+            "10.5": 2
+          },
+          "punctuation_advances": []
+        }
+      ]
+    },
+    {
+      "runtime": "node",
+      "pdf_sha256": "6c4a5b389c6c003f08e8890780e78104c44ae853b9e355a136f54a35d2cf7660",
+      "physical_page": 7,
+      "pages": 20,
+      "lines": [
+        {
+          "text": "下列文件中的内容通过文中的规范性引用而构成本文件必不可少的条款。其中，注日期的引用文",
+          "left_pt": 91.86327742236328,
+          "right_pt": 538.5800860341622,
+          "cjk_median_pt": 10.7672,
+          "cjk_advance_counts_pt": {
+            "10.7672": 36,
+            "10.7673": 1
+          },
+          "punctuation_advances": [
+            {
+              "text": "，",
+              "advance_pt": 5.5195
+            }
+          ]
+        },
+        {
+          "text": "件，仅该日期对应的版本适用于本文件；不注日期的引用文件，其最新版本（包括所有的修改单）适用于",
+          "left_pt": 70.86327829736328,
+          "right_pt": 538.579032809206,
+          "cjk_median_pt": 10.5102,
+          "cjk_advance_counts_pt": {
+            "10.5102": 34,
+            "10.5104": 1
+          },
+          "punctuation_advances": [
+            {
+              "text": "，",
+              "advance_pt": 5.2617
+            },
+            {
+              "text": "；",
+              "advance_pt": 5.2602
+            },
+            {
+              "text": "，",
+              "advance_pt": 5.2617
+            }
+          ]
+        },
+        {
+          "text": "本文件。",
+          "left_pt": 70.86327829736328,
+          "right_pt": 112.86327654736327,
+          "cjk_median_pt": 10.5,
+          "cjk_advance_counts_pt": {
+            "10.5": 2
+          },
+          "punctuation_advances": []
+        }
+      ]
+    },
+    {
+      "runtime": "static",
+      "pdf_sha256": "e684ba1a0e7c9f718aa8f87e888c9fe33514e2130900a2ee8165d5c5427037a6",
+      "physical_page": 7,
+      "pages": 20,
+      "lines": [
+        {
+          "text": "下列文件中的内容通过文中的规范性引用而构成本文件必不可少的条款。其中，注日期的引用文",
+          "left_pt": 91.86327742236328,
+          "right_pt": 538.5800860341622,
+          "cjk_median_pt": 10.7672,
+          "cjk_advance_counts_pt": {
+            "10.7672": 36,
+            "10.7673": 1
+          },
+          "punctuation_advances": [
+            {
+              "text": "，",
+              "advance_pt": 5.5195
+            }
+          ]
+        },
+        {
+          "text": "件，仅该日期对应的版本适用于本文件；不注日期的引用文件，其最新版本（包括所有的修改单）适用于",
+          "left_pt": 70.86327829736328,
+          "right_pt": 538.579032809206,
+          "cjk_median_pt": 10.5102,
+          "cjk_advance_counts_pt": {
+            "10.5102": 34,
+            "10.5104": 1
+          },
+          "punctuation_advances": [
+            {
+              "text": "，",
+              "advance_pt": 5.2617
+            },
+            {
+              "text": "；",
+              "advance_pt": 5.2602
+            },
+            {
+              "text": "，",
+              "advance_pt": 5.2617
+            }
+          ]
+        },
+        {
+          "text": "本文件。",
+          "left_pt": 70.86327829736328,
+          "right_pt": 112.86327654736327,
+          "cjk_median_pt": 10.5,
+          "cjk_advance_counts_pt": {
+            "10.5": 2
+          },
+          "punctuation_advances": []
+        }
+      ]
+    }
+  ]
+}

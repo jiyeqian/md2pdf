@@ -1,0 +1,274 @@
+{
+  "method": "pdfplumber character coordinates in PDF points; rows grouped by text baseline matrix[5] within 1pt; consecutive CJK pairs only; origin-to-origin advance is not CSS letter-spacing. Row data retain text and pair coordinates.",
+  "references": [
+    {
+      "file": "/Users/jiyeqian/Workspace/md2pdf-research/gb/Examples/GB:T 47032—2026 风光储联合发电站运行评价规程.pdf",
+      "sha256": "399fff1861e4cfff3c2342dc2560d7ff00e1f27082cc58df80ac441c40dbca52",
+      "physical_page": 7,
+      "rows": [
+        {
+          "text": "下列文件中的内容通过文中的规范性引用而构成本文件必不可少的条款。其中,注日期的引用文",
+          "top_pt": 301.8626,
+          "left_pt": 92.299,
+          "right_pt": 531.674,
+          "baseline_pt": 533.202,
+          "pair_count": 37,
+          "advance_counts_pt": {
+            "10.479": 4,
+            "10.48": 15,
+            "10.673": 1,
+            "10.674": 4,
+            "10.77": 2,
+            "10.771": 11
+          },
+          "median_glyph_width_pt": 9.704,
+          "median_advance_pt": 10.48,
+          "advance_range_pt": [
+            10.479,
+            10.771
+          ]
+        },
+        {
+          "text": "件,仅该日期对应的版本适用于本文件;不注日期的引用文件,其最新版本(包括所有的修改单)适用于",
+          "top_pt": 317.7756,
+          "left_pt": 71.339,
+          "right_pt": 531.674,
+          "baseline_pt": 517.289,
+          "pair_count": 35,
+          "advance_counts_pt": {
+            "10.479": 3,
+            "10.48": 15,
+            "10.673": 2,
+            "10.674": 6,
+            "10.77": 1,
+            "10.771": 8
+          },
+          "median_glyph_width_pt": 9.704,
+          "median_advance_pt": 10.48,
+          "advance_range_pt": [
+            10.479,
+            10.771
+          ]
+        },
+        {
+          "text": "本文件。",
+          "top_pt": 333.4956,
+          "left_pt": 71.339,
+          "right_pt": 112.482,
+          "baseline_pt": 501.569,
+          "pair_count": 2,
+          "advance_counts_pt": {
+            "10.48": 2
+          },
+          "median_glyph_width_pt": 9.704,
+          "median_advance_pt": 10.48,
+          "advance_range_pt": [
+            10.48,
+            10.48
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/Users/jiyeqian/Workspace/md2pdf-research/gb/Examples/GB:T 48316—2026 人形机器人 仿真测试平台技术规范.pdf",
+      "sha256": "94b6d58ed94429ad1fb680ad6eff66b0baf342947af95a4fd5118448914c0d96",
+      "physical_page": 7,
+      "rows": [
+        {
+          "text": "下列文件中的内容通过文中的规范性引用而构成本文件必不可少的条款。其中,注日期的引用文",
+          "top_pt": 283.0376,
+          "left_pt": 92.299,
+          "right_pt": 531.674,
+          "baseline_pt": 552.027,
+          "pair_count": 37,
+          "advance_counts_pt": {
+            "10.479": 4,
+            "10.48": 15,
+            "10.673": 1,
+            "10.674": 4,
+            "10.77": 2,
+            "10.771": 11
+          },
+          "median_glyph_width_pt": 9.704,
+          "median_advance_pt": 10.48,
+          "advance_range_pt": [
+            10.479,
+            10.771
+          ]
+        },
+        {
+          "text": "件,仅该日期对应的版本适用于本文件;不注日期的引用文件,其最新版本(包括所有的修改单)适用于",
+          "top_pt": 298.6606,
+          "left_pt": 71.339,
+          "right_pt": 531.674,
+          "baseline_pt": 536.404,
+          "pair_count": 35,
+          "advance_counts_pt": {
+            "10.479": 3,
+            "10.48": 15,
+            "10.673": 2,
+            "10.674": 6,
+            "10.77": 1,
+            "10.771": 8
+          },
+          "median_glyph_width_pt": 9.704,
+          "median_advance_pt": 10.48,
+          "advance_range_pt": [
+            10.479,
+            10.771
+          ]
+        },
+        {
+          "text": "本文件。",
+          "top_pt": 314.2826,
+          "left_pt": 71.339,
+          "right_pt": 112.482,
+          "baseline_pt": 520.782,
+          "pair_count": 2,
+          "advance_counts_pt": {
+            "10.48": 2
+          },
+          "median_glyph_width_pt": 9.704,
+          "median_advance_pt": 10.48,
+          "advance_range_pt": [
+            10.48,
+            10.48
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/Users/jiyeqian/Workspace/md2pdf-research/gb/Examples/GB:T 21922—2026 食品营养健康管理通用术语.pdf",
+      "sha256": "ca6d861cd503d3f2c45163b4c524c05915e5b429532b7cba6eabc694239f659e",
+      "physical_page": 7,
+      "rows": [
+        {
+          "text": "本文件界定了食品营养健康管理相关的一般术语及食品营养成分、膳食营养操作与管理、食品营养",
+          "top_pt": 207.8356,
+          "left_pt": 92.299,
+          "right_pt": 531.674,
+          "baseline_pt": 627.229,
+          "pair_count": 38,
+          "advance_counts_pt": {
+            "10.479": 9,
+            "10.48": 29
+          },
+          "median_glyph_width_pt": 9.704,
+          "median_advance_pt": 10.48,
+          "advance_range_pt": [
+            10.479,
+            10.48
+          ]
+        },
+        {
+          "text": "评价和营养声称及标示相关术语。",
+          "top_pt": 224.2346,
+          "left_pt": 71.339,
+          "right_pt": 227.76,
+          "baseline_pt": 610.83,
+          "pair_count": 13,
+          "advance_counts_pt": {
+            "10.479": 3,
+            "10.48": 10
+          },
+          "median_glyph_width_pt": 9.704,
+          "median_advance_pt": 10.48,
+          "advance_range_pt": [
+            10.479,
+            10.48
+          ]
+        },
+        {
+          "text": "本文件适用于食品检测和营养健康管理等食品营养健康领域。",
+          "top_pt": 240.6336,
+          "left_pt": 92.299,
+          "right_pt": 374.477,
+          "baseline_pt": 594.431,
+          "pair_count": 25,
+          "advance_counts_pt": {
+            "10.479": 6,
+            "10.48": 19
+          },
+          "median_glyph_width_pt": 9.704,
+          "median_advance_pt": 10.48,
+          "advance_range_pt": [
+            10.479,
+            10.48
+          ]
+        }
+      ]
+    }
+  ],
+  "formula_parentheses": {
+    "file": "/Users/jiyeqian/Workspace/md2pdf-research/gb/Examples/GB:T 47032—2026 风光储联合发电站运行评价规程.pdf",
+    "physical_page": 25,
+    "equations": "B.1–B.4",
+    "characters": [
+      {
+        "text": "(",
+        "x0": 499.846,
+        "x1": 509.55,
+        "top": 243.52523200000007,
+        "size": 9.70399999999995,
+        "fontname": "AJCDEE+E-BZ"
+      },
+      {
+        "text": ")",
+        "x0": 527.016,
+        "x1": 536.7199999999999,
+        "top": 243.52523200000007,
+        "size": 9.70399999999995,
+        "fontname": "AJCDEE+E-BZ"
+      },
+      {
+        "text": "(",
+        "x0": 499.846,
+        "x1": 509.55,
+        "top": 411.687232,
+        "size": 9.704000000000008,
+        "fontname": "AJCDEE+E-BZ"
+      },
+      {
+        "text": ")",
+        "x0": 527.016,
+        "x1": 536.7199999999999,
+        "top": 411.687232,
+        "size": 9.704000000000008,
+        "fontname": "AJCDEE+E-BZ"
+      },
+      {
+        "text": "(",
+        "x0": 499.846,
+        "x1": 509.55,
+        "top": 554.328232,
+        "size": 9.704000000000008,
+        "fontname": "AJCDEE+E-BZ"
+      },
+      {
+        "text": ")",
+        "x0": 527.016,
+        "x1": 536.7199999999999,
+        "top": 554.328232,
+        "size": 9.704000000000008,
+        "fontname": "AJCDEE+E-BZ"
+      },
+      {
+        "text": "(",
+        "x0": 499.846,
+        "x1": 509.55,
+        "top": 696.291232,
+        "size": 9.704000000000008,
+        "fontname": "AJCDEE+E-BZ"
+      },
+      {
+        "text": ")",
+        "x0": 527.016,
+        "x1": 536.7199999999999,
+        "top": 696.291232,
+        "size": 9.704000000000008,
+        "fontname": "AJCDEE+E-BZ"
+      }
+    ]
+  },
+  "decision": "Do not apply global letter-spacing: within-line advances vary; font metrics, justification and punctuation must be separated. Formula reference uses full-em parentheses glyphs despite ASCII encoding; GB-only fullwidth tag rendering is justified as sample alignment, not mandatory Unicode prescribed by GB/T 1.1."
+}

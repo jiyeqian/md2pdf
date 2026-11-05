@@ -53,6 +53,20 @@ try{
    const typography={header:style('.gb-fixed-header'),term:style('.gb-term-name'),body:style('.gb-term-definition p'),reference:style('.fnref-back'),front:style('h2.front'),references:style('h2.gb-references-title')};
    const scope=document.querySelector('.pagedjs_pages');
    const extras={firstChapterOutline:scope.querySelector('h2.body-start')?.textContent.trim(),contentsHeadings:scope.querySelectorAll('h2.toc-title').length,tocMarkers:[...scope.querySelectorAll('.toc li')].some(n=>getComputedStyle(n,'::before').display!=='none' && !['none','normal','""'].includes(getComputedStyle(n,'::before').content)),bibliographyHeadings:scope.querySelectorAll('h2[data-gb-role="bibliography"]').length,figureContents:scope.querySelectorAll('.toc-float').length,nestedContents:scope.querySelectorAll('.toc-level-1').length,indexLinks:scope.querySelectorAll('.gb-index-locations a').length,unresolved:scope.querySelectorAll('[data-gb-index-unresolved]').length,source:[...scope.querySelectorAll('.gb-note')].find(n=>n.textContent.includes('[来源：'))?.textContent,visibleCitations:[...scope.querySelectorAll('.fnref-back')].every(e=>getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'),vectorRules:scope.querySelectorAll('[data-gb-table-rules]').length};
+   const prose=[...scope.querySelectorAll('p')].find(p=>p.textContent.startsWith('下列文件中的内容通过文中的规范性引用'));
+   const proseLines=[];const proseWalker=document.createTreeWalker(prose,NodeFilter.SHOW_TEXT);
+   while(proseWalker.nextNode()){const node=proseWalker.currentNode;for(let i=0;i<node.length;i++){
+    const range=document.createRange();range.setStart(node,i);range.setEnd(node,i+1);const rect=range.getBoundingClientRect();
+    let line=proseLines.find(l=>Math.abs(l.top-rect.top)<1);if(!line){line={top:rect.top,text:'',characters:[]};proseLines.push(line);}
+    line.text+=node.textContent[i];line.characters.push({text:node.textContent[i],left:rect.left,right:rect.right});
+   }}
+   extras.proseCalibration={lines:proseLines,fontSize:getComputedStyle(prose).fontSize,width:prose.getBoundingClientRect().width,invalidScopes:[...scope.querySelectorAll('.gb-prose-punctuation')].filter(e=>e.closest('table,figure,li,.gb-note,.gb-footnote,.gb-term,code,mjx-container')).length};
+   extras.listGeometry=[...scope.querySelectorAll('li')].filter(e=>/^(传感器重新|通信接口的序列号|先以受限速度|再逐步恢复)/.test(e.textContent.trim())).map(e=>{
+    const page=e.closest('.pagedjs_page'),area=page.querySelector('.pagedjs_area').getBoundingClientRect(),r=e.getBoundingClientRect(),font=parseFloat(getComputedStyle(e).fontSize),marker=getComputedStyle(e,'::before'),scale=page.querySelector('.pagedjs_pagebox').getBoundingClientRect().width/(210*96/25.4);
+    const texts=[];const walker=document.createTreeWalker(e,NodeFilter.SHOW_TEXT);while(walker.nextNode())if(walker.currentNode.textContent.trim()){const range=document.createRange();range.selectNodeContents(walker.currentNode);texts.push(...[...range.getClientRects()].filter(r=>r.width));}
+    return {text:e.textContent.trim(),marker:marker.content,markerEm:(r.left-area.left)/(font*scale)+parseFloat(marker.left)/font,bodyEm:(r.left-area.left)/(font*scale),lines:texts.map(t=>(t.left-area.left)/(font*scale))};
+   });
+   extras.formulaLabels=[...scope.querySelectorAll('[data-labels] > [data-mml-node="mtd"]')].map(e=>e.textContent);
    extras.indexSections=[...scope.querySelectorAll('.gb-index-section')].map(e=>({lang:e.dataset.gbIndexLang,columns:getComputedStyle(e.querySelector('.gb-index-columns')).columnCount}));
    extras.tocRowHeights=[...scope.querySelectorAll('.toc li')].filter(e=>e.textContent.trim()).map(e=>e.getBoundingClientRect().height/(e.closest('.pagedjs_page').querySelector('.pagedjs_pagebox').getBoundingClientRect().width/(210*96/25.4)));
    extras.tocMargins=[...scope.querySelectorAll('.toc li')].map(e=>({top:parseFloat(getComputedStyle(e).marginTop),bottom:parseFloat(getComputedStyle(e).marginBottom)}));
@@ -79,6 +93,18 @@ try{
   assert.equal(state.extras.contentsHeadings,1,'semantic contents heading appears once');
   assert.equal(state.extras.bibliographyHeadings,1,'explicit bibliography heading appears once');
   assert.ok(state.extras.figureContents>=2&&state.extras.nestedContents>0,'multilevel contents and float list');
+  assert.equal(state.extras.proseCalibration.lines.length,3,'normative references introduction has three lines');
+  assert.ok(state.extras.proseCalibration.lines[0].text.endsWith('引用文'),'first line matches published reference');
+  assert.ok(state.extras.proseCalibration.lines[1].text.endsWith('适用于'),'second line ends after 适用于');
+  assert.equal(state.extras.proseCalibration.lines[2].text,'本文件。','final line matches published reference');
+  assert.equal(state.extras.proseCalibration.invalidScopes,0,'punctuation calibration stays out of special layouts');
+  assert.equal(state.extras.listGeometry.length,4,'both numeric and bullet second-level items measured');
+  assert.ok(state.extras.listGeometry.some(e=>e.text.startsWith('传感器')&&e.lines.length>1)&&state.extras.listGeometry.some(e=>e.text.startsWith('先以')&&e.lines.length>1),'numeric and bullet second-level examples both wrap');
+  for(const item of state.extras.listGeometry){
+   assert.ok(Math.abs(item.markerEm-4)<.02,'second-level marker starts after four characters: '+JSON.stringify(item));
+   assert.ok(Math.abs(item.bodyEm-6)<.02,'second-level text starts at seventh character: '+JSON.stringify(item));
+   assert.ok(item.lines.every(x=>Math.abs(x-6)<.02),'second-level text and wrapped lines align: '+JSON.stringify(item));
+  }
   assert.ok(state.extras.indexLinks>=10&&state.extras.unresolved===0,'all index locations resolve');
   assert.ok(state.extras.source?.includes('[来源：GB/T 20000.1—2014，5.3]'),'bracketed terminology source');
   assert.ok(state.extras.visibleCitations&&state.extras.vectorRules>0,'visible citations and vector table rules');
@@ -102,11 +128,12 @@ try{
   assert.ok(footnotes.length>=3&&new Set(footnotes.map(n=>n.page)).size>=3,'footnotes span front/body/appendix pages');
   assert.deepEqual(footnotes.map(n=>n.number),footnotes.map((_,i)=>i+1),'document-wide footnote sequence');
   assert.ok(state.extras.notes.some(n=>n.lines>1&&n.aligned),'long notes wrap at the content start');
-  assert.ok(state.extras.intros.length>=2&&state.extras.intros.every(p=>p.indent===28&&p.before==='0px'&&p.after==='0px'),'unified introduction paragraphs');
+  assert.ok(state.extras.intros.length>=1&&state.extras.intros.every(p=>p.indent===28&&p.before==='0px'&&p.after==='0px'),'unified introduction paragraphs');
   assert.ok(state.extras.indexSections.some(e=>e.lang==='zh'&&e.columns==='2')&&state.extras.indexSections.some(e=>e.lang==='en'&&e.columns==='1'),'Chinese two-column and English single-column sections');
   assert.ok(state.extras.indexClean&&state.extras.referenceGaps&&state.extras.exampleLayouts,'index, bibliography and example styles');
   assert.ok(state.extras.autoExampleLabels.includes('示例3：'),'local automatic example numbering');
   assert.equal(state.error,null);assert.equal(state.audit.problems.length,0);assert.ok(state.legend,'structured equation legend');
+  assert.ok(state.extras.formulaLabels.length===3&&state.extras.formulaLabels.every(t=>t.startsWith('（')&&t.endsWith('）')),'GB equation tags use fullwidth parentheses');
   assert.ok(state.formulas.length&&state.formulas.every(f=>f.leader>0&&f.contained),'GB equations have dotted number leaders');
   for(const row of state.legendRows)assert.ok(row.lines.every(x=>x>=row.left-1),'symbol definitions stay within their shared column');
   const bodyStart=state.states.find(p=>p.kind==='body');
