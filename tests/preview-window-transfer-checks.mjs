@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { capturePreviewTransfer, installPreviewTransfer, installPreviewPositionStream, readPreviewTransferState } from '../src/preview-window-transfer.mjs';
+import { capturePreviewTransfer, installPreviewTransfer, installPreviewPositionStream, installPreviewSelection, readPreviewTransferState } from '../src/preview-window-transfer.mjs';
 import { enhancePreview } from '../src/preview.mjs';
 
 const escape = value => String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -148,6 +148,73 @@ test('window position stream validates control messages and throttles all scroll
   assert.equal(captures, 1, 'disable also cancels a queued report');
   current = 13;
   handlers.message({ source: parent, data: control }); handlers.scroll(); assert.equal(frames.length, 0, 'old revision cannot reenable');
+  handlers.message({ source: parent, data: { ...control, revision: current } }); handlers.selectionchange(); frames.shift()();
+  assert.equal(messages.at(-1).revision, current); assert.equal(captures, 2);
+});
+
+function textSelectionFixture() {
+  const element = (tag, ...children) => {
+    const node = { nodeType: 1, tagName: tag.toUpperCase(), id: tag === 'main' ? 'md2pdf-preview-flow' : '', childNodes: children };
+    children.forEach(child => { child.parentNode = node; });
+    node.contains = child => { while (child) { if (child === node) return true; child = child.parentNode; } return false; };
+    node.focus = () => { throw new Error('selection restoration must not focus'); };
+    return node;
+  };
+  const text = data => ({ nodeType: 3, data, childNodes: [] });
+  const first = text('ab'), middle = text('c🚀'), last = text(' def'), ignored = text('not selected');
+  const root = element('main', first, element('strong', middle), element('style', ignored), last);
+  const selection = { rangeCount: 1, anchorNode: last, anchorOffset: 3, focusNode: middle, focusOffset: 1, calls: 0,
+    setBaseAndExtent(anchorNode, anchorOffset, focusNode, focusOffset) { this.calls++; Object.assign(this, { rangeCount: 1, anchorNode, anchorOffset, focusNode, focusOffset }); } };
+  return { root, first, middle, last, ignored, selection };
+}
+
+test('native selection preserves backward direction and endpoints across text nodes and completed clones', () => {
+  const original = textSelectionFixture(); let active = original;
+  const api = installPreviewSelection({ activeScope: () => active.root, getSelection: () => active.selection });
+  const saved = api.capture();
+  assert.deepEqual(saved, { version: 1, scope: 'flow', anchor: 8, focus: 3, anchorBias: 1, focusBias: 1 });
+  active = textSelectionFixture(); active.selection.rangeCount = 0; active.selection.anchorNode = active.selection.focusNode = null;
+  assert.equal(api.restore(saved), true);
+  assert.equal(active.selection.anchorNode, active.last); assert.equal(active.selection.anchorOffset, 3);
+  assert.equal(active.selection.focusNode, active.middle); assert.equal(active.selection.focusOffset, 1);
+  assert.equal(active.selection.calls, 1);
+  assert.equal(api.restore(saved), true); assert.equal(active.selection.calls, 1, 'unchanged selection does not cause another selectionchange');
+});
+
+test('native selection handles element boundaries and text-end affinity while excluding style content', () => {
+  const env = textSelectionFixture();
+  const api = installPreviewSelection({ activeScope: () => env.root, getSelection: () => env.selection });
+  Object.assign(env.selection, { anchorNode: env.first, anchorOffset: 2, focusNode: env.root, focusOffset: 2 });
+  const saved = api.capture();
+  assert.equal(saved.anchor, 2); assert.equal(saved.anchorBias, -1); assert.equal(saved.focus, 5);
+  env.selection.anchorNode = null; env.selection.focusNode = null;
+  assert.equal(api.restore(saved), true);
+  assert.equal(env.selection.anchorNode, env.first); assert.equal(env.selection.anchorOffset, 2);
+  assert.equal(env.selection.focusNode, env.last); assert.equal(env.selection.focusOffset, 0);
+  Object.assign(env.selection, { anchorNode: env.ignored, anchorOffset: 0 });
+  assert.equal(api.capture(), null, 'style text cannot be captured as visible selection');
+});
+
+test('invalid or null native selection never clears or changes a newer selection', () => {
+  const env = textSelectionFixture(), api = installPreviewSelection({ activeScope: () => env.root, getSelection: () => env.selection });
+  const valid = api.capture();
+  for (const value of [null, { ...valid, scope: 'paged' }, { ...valid, anchor: -1 }, { ...valid, focus: Infinity }, { ...valid, focus: 16777217 }, { ...valid, anchor: 10 }, { ...valid, version: 2 }]) assert.equal(api.restore(value), false);
+  assert.equal(env.selection.calls, 0);
+  assert.equal(env.selection.anchorNode, env.last); assert.equal(env.selection.focusNode, env.middle);
+  api.protect(); env.selection.rangeCount = 0;
+  assert.deepEqual(api.capture(), valid, 'brief visibility changes preserve the captured nonempty range');
+  api.clearProtection(); assert.equal(api.capture(), null, 'new user input releases transition protection');
+});
+
+test('native selection and mirror highlight survive transfer state filtering', () => {
+  const env = textSelectionFixture(), selection = installPreviewSelection({ activeScope: () => env.root, getSelection: () => env.selection }).capture();
+  const value = state(); value.position.selection = selection; value.position.highlight = { from: 2, to: 9 }; value.position.revision = 12;
+  const parsed = readPreviewTransferState({ querySelector: () => ({ textContent: JSON.stringify(value) }) });
+  assert.deepEqual(parsed.position.selection, selection); assert.deepEqual(parsed.position.highlight, { from: 2, to: 9 });
+  assert.equal(parsed.position.revision, 12);
+  value.position.selection.anchor = NaN; value.position.highlight.to = -1;
+  const invalid = readPreviewTransferState({ querySelector: () => ({ textContent: JSON.stringify(value) }) });
+  assert.equal(invalid.position.selection, null); assert.equal(invalid.position.highlight, null);
 });
 
 test('rehydration reuses existing flow, flags work ready, and restores state without calling layout or rebinding source', async () => {

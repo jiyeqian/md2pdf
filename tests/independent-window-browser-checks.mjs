@@ -94,6 +94,8 @@ try {
   // Fault-inject the existing font-warning protocol, rather than change local fonts.
   const fontRevision = await evaluate('mdPreviewController.state().previewRevision');
   await evaluate(`window.__md2pdfFontError={fonts:['md2pdf-window-missing-font']};parent.postMessage({type:'md2pdf-ready',revision:${fontRevision},fonts:['md2pdf-window-missing-font']},'*')`, initialFrame.sessionId);
+  const selectedText = await evaluate(`(()=>{const node=document.querySelector('.pagedjs_pages p[data-md2pdf-source-id]');const range=document.createRange();range.selectNodeContents(node);getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));return getSelection().toString();})()`,initialFrame.sessionId);
+  await new Promise(resolve=>setTimeout(resolve,150));
   await evaluate('window.sameEditor=mdEditor;window.sameFrame=document.querySelector("#preview");window.renderTasks=0;new MutationObserver(()=>{if(new DOMParser().parseFromString(sameFrame.srcdoc,"text/html").querySelector("script[src]"))renderTasks++}).observe(sameFrame,{attributes:true,attributeFilter:["srcdoc"]});window.originalWidth=document.querySelector(".editor-panel").getBoundingClientRect().width;document.querySelector(".preview-panel [data-panel-independent]").click()');
   console.log('open preview window');
   await idle();
@@ -103,6 +105,14 @@ try {
   assert.equal(await evaluate('mdEditor===sameEditor && mdWorkspaceHosts.query("#preview")===sameFrame'), true);
   assert.equal(await evaluate('renderTasks'), 0, 'opening uses an already-computed result');
   let frame = await targetSession('iframe');
+  await wait('getSelection().toString()==='+JSON.stringify(selectedText),frame.sessionId);
+  assert.equal(await evaluate('getSelection().toString()',frame.sessionId),selectedText,'native preview selection survives independent-window transfer');
+  for(let round=0;round<2;round++) {
+    await evaluate('mdWindowMode.swap()'); await idle(); await ready();
+    frame = await targetSession('iframe');
+    await wait('getSelection().toString()==='+JSON.stringify(selectedText),frame.sessionId);
+    assert.equal(await evaluate('renderTasks'),0,'selection-preserving role swaps reuse computed pagination');
+  }
   assert.equal(await evaluate('typeof window.PagedPolyfill', frame.sessionId), 'undefined', 'moving a completed preview does not load Paged.js');
   assert.equal(await evaluate('document.querySelectorAll(".pagedjs_page").length>1', frame.sessionId), true);
   await evaluate(`(()=>{const node=document.querySelector('.pagedjs_pages p[data-md2pdf-source-id]');const range=document.createRange();range.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`,frame.sessionId);

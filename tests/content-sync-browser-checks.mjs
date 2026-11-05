@@ -106,7 +106,36 @@ try {
   assert.equal(await evaluate("document.querySelector('.md-sync-highlight')?.textContent"), 'value84', 'fullscreen source highlight persists beyond old timeout');
   assert.deepEqual(await evaluate('mdEditor.getSelection()'), originalSelection, 'reverse highlight preserves source selection');
   await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
+  await new Promise(resolve=>setTimeout(resolve,250));
+  for (let round=0;round<3;round++) {
+    await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('editor-focus')`);
+    await evaluate(`document.querySelector('.editor-panel .md-panel-mode').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('preview-focus')`);
+    await new Promise(resolve=>setTimeout(resolve,250));
+    assert.equal(await evaluate('getSelection().toString()',session),'value84','native preview selection survives M/P fullscreen swap');
+    await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
+    await new Promise(resolve=>setTimeout(resolve,250));
+    assert.equal(await evaluate('getSelection().toString()',session),'value84','native preview selection survives fullscreen exit');
+    assert.equal(await evaluate("document.querySelector('.md-sync-highlight')?.textContent"),'value84','source mirror survives mode changes');
+    assert.deepEqual(await evaluate('mdEditor.getSelection()'),originalSelection);
+  }
   await evaluate(`getSelection().removeAllRanges()`, session);
+  await evaluate(`mdEditor.setSelection(${target},${target+9})`);
+  await locate(target,target+9);
+  const selectedSource = await evaluate('mdEditor.getSelection()');
+  for(let round=0;round<2;round++) {
+    await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('editor-focus')`);
+    await evaluate(`document.querySelector('.editor-panel .md-panel-mode').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('preview-focus')`);
+    await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
+    await new Promise(resolve=>setTimeout(resolve,250));
+    assert.deepEqual(await evaluate('mdEditor.getSelection()'),selectedSource,'source selection survives fullscreen round trip');
+    assert.ok(await evaluate("!!document.querySelector('[data-md2pdf-sync-highlight]>div')",session),'preview mirror is redrawn after layout');
+  }
+  await new Promise(resolve=>setTimeout(resolve,2200));
+  assert.ok(await evaluate("!!document.querySelector('[data-md2pdf-sync-highlight]>div')",session),'preview source-range mirror no longer expires');
   await evaluate(`document.querySelector('#md-wt-sync').checked=false`);
   await evaluate(`(()=>{const node=[...document.querySelectorAll('#md2pdf-preview-flow td')].find(node=>node.textContent==='value83');const range=document.createRange();range.selectNodeContents(node);getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`, session);
   await new Promise(resolve=>setTimeout(resolve,150));

@@ -232,7 +232,7 @@
         if (result && data.revision === state().previewRevision) { cached = result; position = data.position; positionRevision = data.revision; }
         request.resolve(result);
       } else if (data.type === 'md2pdf-position' && data.id === 'window-position' && data.position && data.revision === state().previewRevision) { position = data.position; positionRevision = data.revision; }
-      else if (data.type === 'md2pdf-content-source' && data.revision === state().previewRevision) { position = { from: data.from, anchorRatio: data.ratio, offset: 0, ratio: 0, line: 0 }; positionRevision = data.revision; }
+      else if (data.type === 'md2pdf-content-source' && ['scroll', 'activate'].includes(data.reason) && data.revision === state().previewRevision) { position = { ...position, from: data.from, anchorRatio: data.ratio, offset: 0, ratio: 0, line: 0 }; positionRevision = data.revision; }
     });
     window.addEventListener('md-preview-ready', () => {
       hosts.postPreview({ type: 'md2pdf-window-position-stream', revision: state().previewRevision, enabled: !!popup });

@@ -20,7 +20,7 @@
 
 import { REPO_URL } from './render.mjs';
 import { installContentSync } from './content-sync-runtime.mjs';
-import { capturePreviewTransfer, installPreviewTransfer, installPreviewPositionStream, readPreviewTransferState } from './preview-window-transfer.mjs';
+import { capturePreviewTransfer, installPreviewTransfer, installPreviewPositionStream, installPreviewSelection, readPreviewTransferState } from './preview-window-transfer.mjs';
 
 export const PREVIEW_MARKER = 'md2pdf-preview-enhance';
 
@@ -120,6 +120,9 @@ function runtimeScript(type) {
     '  };',
     '  function activeScope() { return MD2PDF_PREVIEW_FLOW && flowRoot ? flowRoot : document.querySelector(".pagedjs_pages"); }',
     '  function activeNodes(selector) { var scope = activeScope(); return scope ? scope.querySelectorAll(selector) : []; }',
+    '  var nativeSelection = (' + installPreviewSelection.toString() + ')({activeScope:activeScope,getSelection:function(){return window.getSelection ? window.getSelection() : null;}});',
+    '  document.addEventListener("pointerdown", nativeSelection.clearProtection); document.addEventListener("keydown", nativeSelection.clearProtection);',
+    '  function restoreSelectionState(position) { if (!position || (position.revision !== undefined && position.revision !== MD2PDF_PREVIEW_REVISION)) return; nativeSelection.restore(position.selection); if (contentSync && contentSync.restoreHighlight) contentSync.restoreHighlight(position.highlight); }',
     '  function applyPreviewMode() {',
     '    document.documentElement.classList.toggle("md2pdf-preview-flow", MD2PDF_PREVIEW_FLOW && !!flowRoot);',
     '  }',
@@ -275,11 +278,11 @@ function runtimeScript(type) {
     "    var headings = Array.from(activeNodes('[data-md2pdf-source-line]'));",
     "    var node = headings.find(function (node) { return node.getBoundingClientRect().top >= 0; }) || headings[headings.length - 1];",
     "    var width = document.documentElement.clientWidth || 1;",
-    "    return { from: precise && precise.from, anchorRatio: precise && precise.anchorRatio, line: node ? Number(node.getAttribute('data-md2pdf-source-line')) : 0,",
+    "    return { revision:MD2PDF_PREVIEW_REVISION, selection:nativeSelection.capture(), highlight:contentSync && contentSync.captureHighlight ? contentSync.captureHighlight() : null, from: precise && precise.from, anchorRatio: precise && precise.anchorRatio, line: node ? Number(node.getAttribute('data-md2pdf-source-line')) : 0,",
     "      offset: node ? node.getBoundingClientRect().top / width : 0,",
     "      ratio: scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight) };",
     "  }",
-    '  (' + installPreviewPositionStream.toString() + ')({parent:parent,revision:function(){return MD2PDF_PREVIEW_REVISION;},capturePosition:capturePosition,listen:addEventListener,frame:requestAnimationFrame});',
+    '  (' + installPreviewPositionStream.toString() + ')({parent:parent,revision:function(){return MD2PDF_PREVIEW_REVISION;},capturePosition:capturePosition,listen:function(type,callback,options){if(type === "selectionchange")document.addEventListener(type,callback,options);else addEventListener(type,callback,options);},frame:requestAnimationFrame});',
     '  addEventListener("message", function (event) {',
     '    var data = event.data;',
     '    if (event.source !== parent || !data || data.type !== "md2pdf-preview-mode" || data.revision !== MD2PDF_PREVIEW_REVISION || (data.mode !== "paged" && data.mode !== "flow")) return;',
@@ -299,7 +302,9 @@ function runtimeScript(type) {
     '  });',
     "  addEventListener('message', function (event) {",
     "    if (event.source !== parent || !event.data) return;",
+    "    if (event.data.type === 'md2pdf-restore-selection') { restoreSelectionState(event.data); return; }",
     "    if (event.data.type === 'md2pdf-capture-position') {",
+    "      nativeSelection.protect();",
     "      parent.postMessage({type:'md2pdf-position',id:event.data.id,revision:MD2PDF_PREVIEW_REVISION,position:capturePosition()}, '*');",
     "    } else if (event.data.type === 'md2pdf-restore-position') {",
     "      var position = event.data.position;",
@@ -308,6 +313,7 @@ function runtimeScript(type) {
     "      fit();",
     "      requestAnimationFrame(function () {",
     "        if (restoreRevision !== positionRevision) return;",
+    "        restoreSelectionState(position);",
     '        if (Number.isSafeInteger(position.from)) { contentSync.refresh(); contentSync.locate({from:position.from,ratio:position.anchorRatio,reason:"scroll",instant:true}); return; }',
     "        var nodes = activeNodes('[data-md2pdf-source-line]');",
     "        var node = Array.from(nodes).find(function (node) { return Number(node.getAttribute('data-md2pdf-source-line')) === position.line; });",
@@ -425,6 +431,7 @@ function runtimeScript(type) {
     '          transferRestored = true;',
     '          requestAnimationFrame(function () {',
     '            var position = transferredState.position;',
+    '            restoreSelectionState(position);',
     '            if (Number.isSafeInteger(position.from)) { contentSync.refresh(); contentSync.locate({from:position.from,ratio:position.anchorRatio,reason:"scroll",instant:true}); }',
     '            else { var node = Array.from(activeNodes("[data-md2pdf-source-line]")).find(function(node){return Number(node.getAttribute("data-md2pdf-source-line")) === position.line;}); if (node) scrollBy(0,node.getBoundingClientRect().top - position.offset * document.documentElement.clientWidth); else scrollTo(0,position.ratio * Math.max(1,document.documentElement.scrollHeight-innerHeight)); }',
     '            announceReady();',

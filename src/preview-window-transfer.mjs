@@ -14,6 +14,16 @@ export function readPreviewTransferState(document) {
       anchorRatio: Number.isFinite(position.anchorRatio) ? position.anchorRatio : undefined,
       line: Number.isSafeInteger(position.line) && position.line >= 0 ? position.line : 0,
       offset: position.offset, ratio: position.ratio,
+      ...(Number.isSafeInteger(position.revision) && position.revision >= 0 ? { revision: position.revision } : {}),
+      ...(Object.hasOwn(position, 'selection') ? { selection: position.selection && position.selection.version === 1
+        && ['flow', 'paged'].includes(position.selection.scope)
+        && Number.isSafeInteger(position.selection.anchor) && position.selection.anchor >= 0
+        && Number.isSafeInteger(position.selection.focus) && position.selection.focus >= 0
+        ? { version: 1, scope: position.selection.scope, anchor: position.selection.anchor, focus: position.selection.focus,
+          anchorBias: position.selection.anchorBias === -1 ? -1 : 1, focusBias: position.selection.focusBias === -1 ? -1 : 1 } : null } : {}),
+      ...(Object.hasOwn(position, 'highlight') ? { highlight: position.highlight && Number.isSafeInteger(position.highlight.from)
+        && position.highlight.from >= 0 && Number.isSafeInteger(position.highlight.to) && position.highlight.to >= position.highlight.from
+        ? { from: position.highlight.from, to: position.highlight.to } : null } : {}),
     },
     fonts: Array.isArray(state.fonts) ? state.fonts.filter(font => typeof font === 'string').slice(0, 64) : [],
   };
@@ -92,7 +102,7 @@ export function installPreviewPositionStream({ parent, revision, capturePosition
       || data.revision !== revision() || typeof data.enabled !== 'boolean') return;
     enabled = data.enabled;
   });
-  listen('scroll', () => {
+  const schedule = () => {
     if (!enabled || pending) return;
     pending = true;
     frame(() => {
@@ -100,5 +110,73 @@ export function installPreviewPositionStream({ parent, revision, capturePosition
       if (!enabled) return;
       parent.postMessage({ type: 'md2pdf-position', id: 'window-position', revision: revision(), position: capturePosition() }, '*');
     });
-  }, { passive: true });
+  };
+  listen('scroll', schedule, { passive: true });
+  listen('selectionchange', schedule);
+}
+
+export function installPreviewSelection({ activeScope, getSelection }) {
+  let protectedSelection = null, protectedUntil = 0;
+  const mode = scope => scope.id === 'md2pdf-preview-flow' ? 'flow' : 'paged';
+  function collect(scope) {
+    const entries = [], bounds = new Map(), stack = [{ node: scope, exit: false }];
+    let length = 0, count = 0;
+    while (stack.length) {
+      if (++count > 400000 || length > 16777216) return null;
+      const { node, exit } = stack.pop();
+      if (exit) { bounds.get(node).to = length; continue; }
+      const range = { from: length, to: length }; bounds.set(node, range);
+      if (node.nodeType === 3) { length += node.data.length; range.to = length; if (node.data.length) entries.push({ node, ...range }); continue; }
+      if (node.nodeType === 1 && /^(?:SCRIPT|STYLE)$/i.test(node.tagName)) continue;
+      stack.push({ node, exit: true });
+      const children = node.childNodes || [];
+      for (let i = children.length - 1; i >= 0; i--) stack.push({ node: children[i], exit: false });
+    }
+    return { entries, bounds, length };
+  }
+  function capture() {
+    try {
+      const scope = activeScope(), selection = getSelection();
+      if (!scope || !selection?.rangeCount || !scope.contains(selection.anchorNode) || !scope.contains(selection.focusNode))
+        return Date.now() < protectedUntil ? protectedSelection : null;
+      const data = collect(scope); if (!data?.entries.length) return null;
+      const point = (node, offset) => {
+        const range = data.bounds.get(node);
+        if (!range || !Number.isSafeInteger(offset) || offset < 0) return null;
+        if (node.nodeType === 3) return offset <= node.data.length ? { offset: range.from + offset, bias: offset === node.data.length ? -1 : 1 } : null;
+        if (node.nodeType !== 1 || /^(?:SCRIPT|STYLE)$/i.test(node.tagName) || offset > node.childNodes.length) return null;
+        return { offset: offset === node.childNodes.length ? range.to : data.bounds.get(node.childNodes[offset]).from, bias: offset === node.childNodes.length ? -1 : 1 };
+      };
+      const anchor = point(selection.anchorNode, selection.anchorOffset), focus = point(selection.focusNode, selection.focusOffset);
+      if (!anchor || !focus) return null;
+      const saved = { version: 1, scope: mode(scope), anchor: anchor.offset, focus: focus.offset, anchorBias: anchor.bias, focusBias: focus.bias };
+      if (Date.now() < protectedUntil) protectedSelection = saved;
+      return saved;
+    } catch { return null; }
+  }
+  function restore(saved) {
+    if (!saved || saved.version !== 1 || !Number.isSafeInteger(saved.anchor) || !Number.isSafeInteger(saved.focus)
+      || saved.anchor < 0 || saved.focus < 0 || saved.anchor > 16777216 || saved.focus > 16777216) return false;
+    try {
+      const scope = activeScope(), selection = getSelection();
+      if (!scope || mode(scope) !== saved.scope || !selection) return false;
+      const data = collect(scope);
+      if (!data?.entries.length || saved.anchor > data.length || saved.focus > data.length) return false;
+      const point = (offset, bias) => {
+        let low = 0, high = data.entries.length;
+        while (low < high) { const mid = (low + high) >> 1; if (bias === -1 ? data.entries[mid].to < offset : data.entries[mid].to <= offset) low = mid + 1; else high = mid; }
+        const entry = data.entries[Math.min(low, data.entries.length - 1)];
+        return { node: entry.node, offset: Math.max(0, Math.min(entry.node.data.length, offset - entry.from)) };
+      };
+      const anchor = point(saved.anchor, saved.anchorBias), focus = point(saved.focus, saved.focusBias);
+      if (selection.anchorNode === anchor.node && selection.anchorOffset === anchor.offset && selection.focusNode === focus.node && selection.focusOffset === focus.offset) return true;
+      if (typeof selection.setBaseAndExtent === 'function') selection.setBaseAndExtent(anchor.node, anchor.offset, focus.node, focus.offset);
+      else if (typeof selection.extend === 'function') { selection.collapse(anchor.node, anchor.offset); selection.extend(focus.node, focus.offset); }
+      else return false;
+      protectedSelection = saved; protectedUntil = Date.now() + 800;
+      return true;
+    } catch { return false; }
+  }
+  return { capture, restore, protect() { const saved = capture(); if (saved && saved.anchor !== saved.focus) { protectedSelection = saved; protectedUntil = Date.now() + 800; } },
+    clearProtection() { protectedSelection = null; protectedUntil = 0; } };
 }

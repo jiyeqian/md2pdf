@@ -910,6 +910,13 @@
       updatePanelGrids();
       measureEditor();
       if (pending.anchor && window.mdEditor.restoreViewport) window.mdEditor.restoreViewport(pending.anchor);
+      if (position && Number.isSafeInteger(position.revision) && window.mdPreviewController && position.revision !== window.mdPreviewController.state().previewRevision) position = null;
+      // A layout change must not replace a user's selection with the old cursor.
+      if (position && ((position.selection && position.selection.anchor !== position.selection.focus) || position.highlight)) {
+        postPreview({ type: 'md2pdf-restore-position', position: position });
+        postPreview({ type: 'md2pdf-restore-selection', revision: position.revision, selection: position.selection, highlight: position.highlight });
+        return;
+      }
       // 同步开启时，退出写作全屏以最新光标为准，不能恢复旧预览锚点。
       var followsCursor = syncInput && syncInput.checked && (pending.previous !== 'preview' || pending.mode === 'editor');
       if (!followsCursor && position && previewFrame.contentWindow) postPreview({ type: 'md2pdf-restore-position', position: position });

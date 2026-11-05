@@ -3,7 +3,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   const metadata = document.querySelector('script[data-md2pdf-content-map]');
   let source = [];
   try { source = JSON.parse(metadata?.textContent || '[]'); } catch { /* Legacy preview. */ }
-  if (!source.length) return { bind() {}, refresh() { return []; }, capture() { return null; }, suppress() {}, locate() {}, outline() {} };
+  if (!source.length) return { bind() {}, refresh() { return []; }, capture() { return null; }, suppress() {}, locate() {}, outline() {}, captureHighlight() { return null; }, restoreHighlight() {} };
   const byId = new Map(source.map(item => [String(item.id), item]));
   let fragments = [], scoped = null, dirty = true, programmaticUntil = 0, userScroll = false, pending = 0;
   const tags = 'p,li,td,th,pre,h1,h2,h3,h4,h5,h6,caption,figcaption,.gb-important-paragraph,.keywords > .summary-content';
@@ -157,9 +157,10 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   }
 
   // A fixed overlay does not change line wrapping, pagination, or text selection.
-  let overlay, overlayTimer;
+  let overlay, overlayTimer, selectedRange = null, paintFrame = 0, selectionGuardUntil = 0;
   function highlight(from, to, anchor) {
     overlay?.remove(); clearTimeout(overlayTimer);
+    selectedRange = to > from ? { from, to } : null;
     overlay = document.createElement('div');
     overlay.dataset.md2pdfSyncHighlight = '';
     overlay.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483000;';
@@ -188,8 +189,18 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
       overlay.appendChild(mark);
     }
     document.body.appendChild(overlay);
-    overlayTimer = setTimeout(() => overlay?.remove(), 1800);
+    if (!selectedRange) overlayTimer = setTimeout(() => overlay?.remove(), 1800);
   }
+
+  function repaintSelection() {
+    if (paintFrame || !selectedRange) return;
+    paintFrame = requestAnimationFrame(() => {
+      paintFrame = 0;
+      if (selectedRange) highlight(selectedRange.from, selectedRange.to);
+    });
+  }
+  addEventListener('resize', repaintSelection);
+  addEventListener('scroll', repaintSelection, { passive: true });
 
   function locate(data) {
     if (!Number.isSafeInteger(data.from) || data.from < 0) return;
@@ -254,7 +265,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   }
   function selectionSource() {
     const selection = getSelection();
-    if (!selection || selection.isCollapsed || !selection.rangeCount) { send('selection', { from: 0, to: 0, rect: { top: 0 } }); return; }
+    if (!selection || selection.isCollapsed || !selection.rangeCount) { if (Date.now() < selectionGuardUntil) return; send('selection', { from: 0, to: 0, rect: { top: 0 } }); return; }
     const range = selection.getRangeAt(0), scope = activeScope();
     if (!scope?.contains(range.startContainer) || !scope.contains(range.endContainer)) return;
     let from = Infinity, to = -1, rect;
@@ -287,19 +298,23 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
       ratio: anchor.rect.top / Math.max(1, innerHeight), reason }, '*');
   }
   addEventListener('message', event => {
-    if (event.source !== parent || event.data?.revision !== revision()) return;
+    if (event.source !== parent || !event.data) return;
+    if (event.data.type === 'md2pdf-capture-position' || event.data.type === 'md2pdf-restore-position' || event.data.type === 'md2pdf-restore-selection') selectionGuardUntil = Date.now() + 1000;
+    if (event.data.revision !== revision()) return;
+    if (event.data.type === 'md2pdf-transfer-capture') selectionGuardUntil = Date.now() + 1000;
     if (event.data.type === 'md2pdf-content-locate') locate(event.data);
   });
+  document.addEventListener('keydown', () => { selectionGuardUntil = 0; });
   document.addEventListener('dblclick', event => {
     if (event.target.closest('a,button,input') || !activeScope()?.contains(event.target)) return;
     send('activate', atPoint(event.clientX, event.clientY));
   });
   for (const name of ['wheel', 'touchmove', 'pointerdown']) addEventListener(name, () => {
-    userScroll = true; programmaticUntil = 0;
+    userScroll = true; programmaticUntil = 0; selectionGuardUntil = 0;
   }, { passive: true });
   addEventListener('scroll', () => {
     if (!userScroll || Date.now() < programmaticUntil || pending) return;
-    overlay?.remove();
+    if (!selectedRange) overlay?.remove();
     pending = requestAnimationFrame(() => {
       pending = 0;
       if (!userScroll || Date.now() < programmaticUntil) return;
@@ -308,5 +323,6 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     });
   }, { passive: true });
   return { bind, refresh: () => { dirty = true; return refresh(); }, capture,
-    suppress: () => { userScroll = false; programmaticUntil = Date.now() + 250; }, locate, outline };
+    suppress: () => { userScroll = false; programmaticUntil = Date.now() + 250; }, locate, outline, captureHighlight: () => selectedRange,
+    restoreHighlight: range => { if (range && Number.isSafeInteger(range.from) && Number.isSafeInteger(range.to) && range.to > range.from) highlight(range.from, range.to); } };
 }
