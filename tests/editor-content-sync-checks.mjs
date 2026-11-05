@@ -197,3 +197,17 @@ test('restored preview selection does not echo as new user navigation', async ()
   context.suppressSelectionEcho();context.restoredSelection=null;context.selectionSource();
   assert.equal(sent.length,2,'real pointer/keyboard ownership can select the same range');
 });
+
+test('a source range immediately invalidates the saved fullscreen preview selection', () => {
+  const calls=[];
+  const context=vm.createContext({ready:true,syncInput:{checked:true},fullscreenMode:()=> 'editor',suppressUntil:Date.now()+1000,Date,
+    outlineAnchor:10,lastPreviewPosition:{selection:{anchor:1,focus:9}},cursorTimer:1,
+    clearTimeout(){calls.push('cancel')},setTimeout(){throw new Error('source range must not be delayed')},
+    locateCurrentCursor:instant=>calls.push(['locate',instant])});
+  const start=workspace.indexOf('  function onCursor(event)');
+  vm.runInContext(workspace.slice(start,workspace.indexOf('  function onPreviewSource(',start)),context);
+  context.onCursor({detail:{line:3,from:12,to:18}});
+  assert.equal(context.lastPreviewPosition,null);
+  assert.equal(context.outlineAnchor,null);
+  assert.deepEqual(calls,['cancel',['locate',true]]);
+});

@@ -188,6 +188,28 @@ try {
   }
   await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
 
+  // Preview selection -> M/P -> a new source range -> immediate M/P must have one owner.
+  for(const pause of [0,250]) {
+    await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('preview-focus')`);
+    await new Promise(r=>setTimeout(r,150));
+    await evaluate(`(()=>{const node=[...document.querySelectorAll('#md2pdf-preview-flow td')].find(n=>n.textContent==='value84');node.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));const range=document.createRange();range.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`,session);
+    await wait("document.querySelector('.md-sync-highlight')?.textContent==='value84'");
+    await evaluate(`document.querySelector('.preview-panel .md-panel-mode').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('editor-focus')`);
+    await new Promise(r=>setTimeout(r,150));
+    await evaluate(`mdEditor.setSelection(${target},${target+9})`);
+    if(pause) await new Promise(r=>setTimeout(r,pause));
+    await evaluate(`document.querySelector('.editor-panel .md-panel-mode').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('preview-focus')`);
+    await new Promise(r=>setTimeout(r,300));
+    assert.equal(await evaluate('getSelection().isCollapsed',session),true,'new source range clears old preview native selection across fullscreen');
+    assert.ok(await evaluate("!!document.querySelector('[data-md2pdf-sync-highlight]>div')",session),'new source range keeps its preview mirror');
+    assert.deepEqual(await evaluate('mdEditor.getSelection()'),{from:target,to:target+9,text:'token1500'});
+    await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
+    await new Promise(r=>setTimeout(r,200));
+  }
+
   const gb = '---\ntype: gb\ngb-cover: false\n---\n# 名称\n\n## 范围\n\n:::gb-important\nRepeated\n:::\n\nRepeated\n\n甲[^@n]乙。\n\nH_{2}O and m^{2}\n\n[^@n]: 注内容\n';
   await evaluate('mdEditor.setValue(' + JSON.stringify(gb) + ')');
   await wait('window.__MD2PDF_PREVIEW_READY__ && document.querySelector("#preview").srcdoc.includes("gb-important-paragraph") && document.querySelector("#status").textContent.includes("预览已更新")');

@@ -212,12 +212,13 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     if (!Number.isSafeInteger(data.from) || data.from < 0) return;
     outlineFrom = data.reason === 'outline' ? data.from : null;
     beforeLocate(data);
-    const anchor = atSource(data.from);
-    if (!anchor) return;
     if (data.reason === 'cursor' && data.to > data.from) {
+      selectedRange = null; overlay?.remove(); clearTimeout(overlayTimer);
       const selection = getSelection();
       if (selection?.rangeCount && activeScope()?.contains(selection.anchorNode)) { selectionGuardUntil = Date.now() + 1000; selection.removeAllRanges(); }
     }
+    const anchor = atSource(data.from);
+    if (!anchor) return;
     userScroll = false; programmaticUntil = Date.now() + 200;
     const ratio = Number.isFinite(data.ratio) ? Math.max(0, Math.min(1, data.ratio)) : .3;
     const rect = anchor.rect;

@@ -1203,6 +1203,11 @@
     if (!Number.isFinite(line)) return;
     outlineAnchor = null;
     clearTimeout(cursorTimer);
+    if (event.detail.from < event.detail.to) {
+      lastPreviewPosition = null; // A new source range supersedes the saved preview selection.
+      locateCurrentCursor(true);
+      return;
+    }
     cursorTimer = setTimeout(function () { locateCurrentCursor(); }, CURSOR_DEBOUNCE);
   }
 
