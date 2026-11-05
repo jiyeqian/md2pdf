@@ -3,7 +3,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   const metadata = document.querySelector('script[data-md2pdf-content-map]');
   let source = [];
   try { source = JSON.parse(metadata?.textContent || '[]'); } catch { /* Legacy preview. */ }
-  if (!source.length) return { bind() {}, refresh() { return []; }, capture() { return null; }, suppress() {}, locate() {} };
+  if (!source.length) return { bind() {}, refresh() { return []; }, capture() { return null; }, suppress() {}, locate() {}, outline() {} };
   const byId = new Map(source.map(item => [String(item.id), item]));
   let fragments = [], scoped = null, dirty = true, programmaticUntil = 0, userScroll = false, pending = 0;
   const tags = 'p,li,td,th,pre,h1,h2,h3,h4,h5,h6,caption,figcaption,.gb-important-paragraph,.keywords > .summary-content';
@@ -246,9 +246,44 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     const anchor = atPoint(box ? (box.left + box.right) / 2 : innerWidth / 2, innerHeight * .3);
     return anchor && { from: anchor.from, anchorRatio: anchor.rect.top / Math.max(1, innerHeight) };
   }
+  function outline(node) {
+    const mapped = node.closest('[data-md2pdf-source-id]') || node.querySelector('[data-md2pdf-source-id]');
+    const line = Number(node.dataset.md2pdfSourceLine || node.closest('[data-md2pdf-source-line]')?.dataset.md2pdfSourceLine);
+    const item = byId.get(mapped?.dataset.md2pdfSourceId) || source.find(item => item.kind === 'heading' && item.line === line);
+    if (item) send('outline', { from: item.from, to: item.to, rect: { top: 0 } });
+  }
+  function selectionSource() {
+    const selection = getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) return;
+    const range = selection.getRangeAt(0), scope = activeScope();
+    if (!scope?.contains(range.startContainer) || !scope.contains(range.endContainer)) return;
+    let from = Infinity, to = -1, rect;
+    for (const part of refresh()) {
+      if (!range.intersectsNode(part.node)) continue;
+      if (part.atomic) {
+        from = Math.min(from, part.item.from); to = Math.max(to, part.item.to);
+        rect ||= part.node.getBoundingClientRect();
+        continue;
+      }
+      for (let index = 0; index < part.points.length; index++) {
+        const point = part.points[index];
+        if (range.comparePoint(point.node, point.offset) !== 0 || range.comparePoint(point.node, point.offset + 1) !== 0) continue;
+        const position = part.item.positions[part.start + index];
+        if (!Number.isSafeInteger(position)) continue;
+        from = Math.min(from, position); to = Math.max(to, position + 1);
+        rect ||= rectAt(part, index);
+      }
+    }
+    if (to > from) send('selection', { from, to, rect });
+  }
+  let selectionTimer;
+  document.addEventListener('selectionchange', () => {
+    clearTimeout(selectionTimer);
+    selectionTimer = setTimeout(selectionSource, 80);
+  });
   function send(reason, anchor) {
     if (!anchor || !Number.isSafeInteger(anchor.from)) return;
-    parent.postMessage({ type: 'md2pdf-content-source', revision: revision(), from: anchor.from,
+    parent.postMessage({ type: 'md2pdf-content-source', revision: revision(), from: anchor.from, to: anchor.to,
       ratio: anchor.rect.top / Math.max(1, innerHeight), reason }, '*');
   }
   addEventListener('message', event => {
@@ -273,5 +308,5 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     });
   }, { passive: true });
   return { bind, refresh: () => { dirty = true; return refresh(); }, capture,
-    suppress: () => { userScroll = false; programmaticUntil = Date.now() + 250; }, locate };
+    suppress: () => { userScroll = false; programmaticUntil = Date.now() + 250; }, locate, outline };
 }

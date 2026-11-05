@@ -495,7 +495,7 @@ function renderOutline(analysis) {
       button.textContent = 'H' + heading.level + '  ' + (heading.text || '(无标题)');
       button.addEventListener('click', function () {
         const editor = getApi();
-        if (editor) { editor.goToLine(heading.line); editor.focus(); }
+        if (editor) document.dispatchEvent(new CustomEvent('md-editor-outline', { detail: { line: heading.line } }));
       });
       const children = el('div', 'md-pro-outline-children');
       function updateExpanded() {

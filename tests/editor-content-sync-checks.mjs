@@ -42,6 +42,7 @@ test('incoming scroll reveals without moving cursor, activation works with sync 
     window: { mdEditor: {
       revealPosition: (...args) => calls.push(['reveal', ...args]),
       goToPosition: (...args) => calls.push(['activate', ...args]),
+      highlightRange: (...args) => calls.push(['highlight', ...args]),
     } },
   });
   const start = workspace.indexOf('  function onPreviewContentSource(');
@@ -54,6 +55,14 @@ test('incoming scroll reveals without moving cursor, activation works with sync 
   context.onPreviewContentSource({ detail: { from: 12, ratio: .4, reason: 'activate' } });
   assert.deepEqual(calls[1], ['activate', 12, .4]);
   assert.ok(context.suppressUntil > Date.now());
+  context.onPreviewContentSource({ detail: { from: 4, to: 7, ratio: .2, reason: 'selection' } });
+  assert.equal(calls.length, 2, 'disabled sync ignores selections');
+  context.onPreviewContentSource({ detail: { from: 3, to: 9, ratio: .3, reason: 'outline' } });
+  assert.deepEqual(calls.at(-1), ['reveal', 3, 0, false], 'outline remains explicit with sync off');
+  context.syncInput.checked = true;
+  context.onPreviewContentSource({ detail: { from: 4, to: 7, ratio: .2, reason: 'selection' } });
+  assert.deepEqual(calls.slice(-2), [['reveal', 4, .2, false], ['highlight', 4, 7]]);
+
 });
 
 test('cursor events include character changes within the same source line', () => {

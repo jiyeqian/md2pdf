@@ -65,6 +65,18 @@ try {
   assert.equal(await evaluate('document.querySelectorAll("[data-panel-independent]").length'), 2);
   assert.equal(await evaluate('[...document.querySelectorAll("[data-panel-independent]")].every(button=>button.nextElementSibling.matches("[data-panel-fullscreen]"))'), true);
 
+  for (const width of [390, 600, 1440]) {
+    await browser.send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
+    await new Promise(resolve => setTimeout(resolve, 120));
+    const geometry = await evaluate(`Array.from(document.querySelectorAll('.panel-heading')).map(heading=>{const box=heading.getBoundingClientRect(),buttons=[...heading.querySelectorAll('.panel-actions > button')].filter(node=>!node.hidden).map(node=>node.getBoundingClientRect());return {left:box.left,right:box.right,buttons:buttons.map(rect=>({left:rect.left,right:rect.right,width:rect.width})),icon:heading.querySelector('[data-panel-independent] svg').getBoundingClientRect().width};})`);
+    for (const heading of geometry) {
+      assert.ok(heading.buttons.every(button=>button.left>=heading.left && button.right<=heading.right && button.width===28), JSON.stringify({width,heading}));
+      assert.ok(heading.buttons.every((button,index)=>!index || button.left>=heading.buttons[index-1].right), 'heading buttons do not overlap');
+      assert.equal(heading.icon,16,'independent icon matches neighboring button icon size');
+    }
+    if(width===390) await send('Page.captureScreenshot',{format:'png'}).then(result=>writeFile('/private/tmp/md2pdf-heading-actions-mobile.png',Buffer.from(result.data,'base64')));
+  }
+
   // Existing fullscreen stays within one window, with only its exit action.
   await evaluate('document.querySelector(".editor-panel [data-panel-fullscreen]").click()');
   await wait('document.querySelector(".workspace").classList.contains("editor-focus")');

@@ -58,7 +58,7 @@ test('assistant and outline are separate views with collapsed diagnostics and ty
   assert.ok(!pro.includes('typeSection.open'));
   assert.ok(pro.includes('const collapsedEditorOutline = new Set()'));
   assert.ok(pro.includes("disclosure.setAttribute('aria-expanded', String(expanded))"));
-  assert.ok(pro.includes('editor.goToLine(heading.line)'));
+  assert.ok(pro.includes("new CustomEvent('md-editor-outline', { detail: { line: heading.line } })"));
 });
 
 

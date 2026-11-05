@@ -806,7 +806,7 @@ function contentPosition(data) {
 document.addEventListener('md-preview-locate', event => {
   const data = event.detail;
   if (previewRevision !== revision || !window.__MD2PDF_PREVIEW_READY__ || !contentPosition(data)) return;
-  if (!['cursor', 'scroll'].includes(data.reason)) return;
+  if (!['cursor', 'scroll', 'outline'].includes(data.reason)) return;
   postPreview({ type: 'md2pdf-content-locate', revision: previewRevision,
     from: data.from, to: data.to ?? data.from, ratio: data.ratio, reason: data.reason, instant: data.instant === true });
 });
@@ -846,7 +846,7 @@ window.addEventListener('message', event => {
     clearTimeout(previewTimer);
     previewWait = null;
     if (!downloading) setStatus(previewResetOptions.length ? `预览已更新 · 已按模板重置不适用选项：${[...new Set(previewResetOptions.map(key => policyDoc?.labels?.option?.[key] || key))].join('、')}` : '预览已更新');
-  } else if (event.data.type === 'md2pdf-content-source' && contentPosition(event.data) && ['scroll', 'activate'].includes(event.data.reason)) {
+  } else if (event.data.type === 'md2pdf-content-source' && contentPosition(event.data) && ['scroll', 'activate', 'selection', 'outline'].includes(event.data.reason)) {
     document.dispatchEvent(new CustomEvent('md-preview-content-source', { detail: { from: event.data.from, to: event.data.to, ratio: event.data.ratio, reason: event.data.reason } }));
   } else if (event.data.type === 'md2pdf-source' && Number.isSafeInteger(event.data.line) && event.data.line > 0 && event.data.line <= editor.value.split('\n').length) {
     document.dispatchEvent(new CustomEvent('md-preview-source', { detail: { line: event.data.line } }));

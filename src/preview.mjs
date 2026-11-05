@@ -267,7 +267,7 @@ function runtimeScript(type) {
     "    if (event.source !== parent || !event.data) return;",
     "    if (event.data.type === 'md2pdf-sidebar-open') sidebarOpen = event.data.open === true;",
     "    if (event.data.type !== 'md2pdf-outline-locate' || !Number.isSafeInteger(event.data.index) || event.data.index < 0 || event.data.index >= outlineHeadings.length) return;",
-    "    var node = outlineHeadings[event.data.index]; if (node.classList.contains('summary-heading')) node = node.closest('[data-document-role]') || node; positionRevision++; node.scrollIntoView({behavior:'smooth',block:'start'}); highlight(node);",
+    "    var heading = outlineHeadings[event.data.index], node = heading; if (node.classList.contains('summary-heading')) node = node.closest('[data-document-role]') || node; positionRevision++; if (contentSync) contentSync.suppress(); node.scrollIntoView({behavior:'instant',block:'start'}); highlight(node); if (contentSync) contentSync.outline(heading);",
     "  });",
     "  var positionRevision = 0;",
     "  function capturePosition() {",

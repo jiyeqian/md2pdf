@@ -477,6 +477,22 @@
     let externalExtensions = [];
     let completionProvider = null;
     let completionLimit = 5;
+    const syncHighlightEffect = V.StateEffect.define();
+    const syncHighlight = V.ViewPlugin.fromClass(class {
+      constructor() { this.decorations = V.Decoration.none; }
+      update(update) {
+        if (update.docChanged || update.selectionSet) this.decorations = V.Decoration.none;
+        for (const effect of update.transactions.flatMap(transaction => transaction.effects)) {
+          if (effect.is(syncHighlightEffect)) {
+            const range = effect.value;
+            this.decorations = range && range.to > range.from
+              ? V.Decoration.set([V.Decoration.mark({ class: 'md-sync-highlight' }).range(range.from, range.to)])
+              : V.Decoration.none;
+          }
+        }
+      }
+    }, { decorations: plugin => plugin.decorations });
+    let syncHighlightTimer;
     let view = null;
     let ready = false;
     let editorScrollIntentUntil = 0;
@@ -566,6 +582,7 @@
       // drawSelection paints beneath text; an opaque active-line background hides it.
       '.cm-activeLine': { backgroundColor: 'rgba(244, 247, 251, 0.4)' },
       '.cm-activeLineGutter': { backgroundColor: '#eef2f8', color: '#42648b' },
+      '.md-sync-highlight': { backgroundColor: '#cfe0f4', borderRadius: '2px' },
       '.cm-selectionBackground': { backgroundColor: '#cfe0f4' },
       '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#233e60' },
       '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': { backgroundColor: '#bcd6f2' },
@@ -703,6 +720,7 @@
       V.highlightSpecialChars(),
       V.history(),
       V.drawSelection(),
+      syncHighlight,
       V.dropCursor(),
       V.rectangularSelection(),
       V.crosshairCursor(),
@@ -792,6 +810,13 @@
           });
         });
         if (activate) view.focus();
+      },
+      highlightRange: function (from, to) {
+        clearTimeout(syncHighlightTimer);
+        from = clamp(from, 0, view.state.doc.length);
+        to = clamp(to, from, view.state.doc.length);
+        view.dispatch({ effects: syncHighlightEffect.of({ from, to }) });
+        syncHighlightTimer = setTimeout(function () { view.dispatch({ effects: syncHighlightEffect.of(null) }); }, 1800);
       },
       goToPosition: function (from, ratio) { api.revealPosition(from, ratio, true); },
       applyEdit: function (from, to, text, anchor, head) {

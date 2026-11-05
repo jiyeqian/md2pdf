@@ -374,10 +374,12 @@
 .workspace.md-editor-workspace .panel-heading h2 { grid-column: 1; grid-row: 1; }
 .workspace.md-editor-workspace .panel-heading .panel-actions {
   display: flex;
-  grid-column: -4 / -1;
+  grid-column: var(--panel-actions-start, -4) / -1;
   grid-row: 1;
   gap: var(--panel-gap, 8px);
   justify-self: stretch;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 .workspace.md-editor-workspace .md-wt-mount { display: contents; }
 .workspace.md-editor-workspace .md-wt-group + .md-wt-group { margin-left: 0; padding-left: 0; }
@@ -389,9 +391,12 @@
   width: var(--panel-button, 28px); height: var(--panel-button, 28px);
 }
 .workspace.md-editor-workspace .md-wt-zoom {
+  display: var(--panel-zoom-display, flex);
   left: var(--panel-zoom-left, 50%);
   width: var(--panel-zoom-width, 140px);
 }
 
 
 .workspace.md-editor-workspace .preview-toolbar .icon-button{width:var(--panel-button,28px);height:var(--panel-button,28px)}
+
+.workspace.md-editor-workspace .panel-heading .panel-actions > .icon-button { flex: 0 0 var(--panel-button, 28px); }

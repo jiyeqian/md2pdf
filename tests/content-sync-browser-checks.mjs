@@ -97,6 +97,31 @@ try {
   assert.ok(flow.mapped && flow.top >= 0 && flow.bottom <= flow.height, JSON.stringify(flow));
   await browser.send('Page.captureScreenshot', { format: 'png' }).then(result => writeFile('/private/tmp/md2pdf-content-sync-browser.png', Buffer.from(result.data, 'base64')));
 
+  // A preview selection marks source without changing editor selection/focus.
+  const originalSelection = await evaluate('mdEditor.getSelection()');
+  await evaluate(`(()=>{const node=[...document.querySelectorAll('#md2pdf-preview-flow td')].find(node=>node.textContent==='value84');const range=document.createRange();range.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`, session);
+  await wait("document.querySelector('.md-sync-highlight')?.textContent === 'value84'");
+  assert.deepEqual(await evaluate('mdEditor.getSelection()'), originalSelection, 'reverse highlight preserves source selection');
+  await evaluate(`getSelection().removeAllRanges()`, session);
+  await evaluate(`document.querySelector('#md-wt-sync').checked=false`);
+  await evaluate(`(()=>{const node=[...document.querySelectorAll('#md2pdf-preview-flow td')].find(node=>node.textContent==='value83');const range=document.createRange();range.selectNodeContents(node);getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`, session);
+  await new Promise(resolve=>setTimeout(resolve,150));
+  assert.notEqual(await evaluate("document.querySelector('.md-sync-highlight')?.textContent"), 'value83', 'disabled sync ignores preview selection');
+
+  // Explicit outline navigation aligns both panels even with sync disabled.
+  await evaluate(`document.querySelector('#preview-outline-toggle').click()`);
+  await wait("document.querySelector('.md-preview-outline button[data-outline-index]')");
+  await evaluate(`(()=>{const rows=[...document.querySelectorAll('.md-preview-outline button[data-outline-index]')];rows.find(node=>node.textContent.includes('一个长章')).click();})()`);
+  const chapterOffset = md.indexOf('## 一个长章');
+  await wait(`(()=>{const coords=mdEditor.coordsAtPos(${chapterOffset});const box=document.querySelector('.cm-scroller').getBoundingClientRect();return coords&&Math.abs(coords.top-box.top)<5;})()`);
+  await wait(`(()=>{const h=[...document.querySelectorAll('#md2pdf-preview-flow h2')].find(node=>node.textContent.includes('一个长章'));return h&&Math.abs(h.getBoundingClientRect().top)<5;})()`,session);
+  await evaluate(`document.querySelector('#editor-assistant-toggle').click()`);
+  await wait("[...document.querySelectorAll('.md-pro-outline-item')].some(node=>node.textContent.includes('一个长章'))");
+  await evaluate(`scrollTo(0,500)`, session);
+  await evaluate(`(()=>{const rows=[...document.querySelectorAll('.md-pro-outline-item')];rows.find(node=>node.textContent.includes('一个长章')).click();})()`);
+  await wait(`(()=>{const h=[...document.querySelectorAll('#md2pdf-preview-flow h2')].find(node=>node.textContent.includes('一个长章'));return h&&Math.abs(h.getBoundingClientRect().top)<5;})()`,session);
+  await evaluate(`document.querySelector('#md-wt-sync').checked=true`);
+
   const gb = '---\ntype: gb\ngb-cover: false\n---\n# 名称\n\n## 范围\n\n:::gb-important\nRepeated\n:::\n\nRepeated\n\n甲[^@n]乙。\n\nH_{2}O and m^{2}\n\n[^@n]: 注内容\n';
   await evaluate('mdEditor.setValue(' + JSON.stringify(gb) + ')');
   await wait('window.__MD2PDF_PREVIEW_READY__ && document.querySelector("#preview").srcdoc.includes("gb-important-paragraph") && document.querySelector("#status").textContent.includes("预览已更新")');
@@ -113,7 +138,7 @@ try {
   session = await frame();
   const keywords = await evaluate(`(()=>{const map=JSON.parse(document.querySelector('script[data-md2pdf-content-map]').textContent),item=map.find(item=>item.text==='alpha beta; gamma.');return item&&document.querySelector('.pagedjs_pages .keywords .summary-content')?.dataset.md2pdfSourceId===String(item.id);})()`, session);
   assert.equal(keywords, true, 'paper keyword paragraph maps after its paragraph wrapper is removed');
-  console.log('PASS: character/selection, split paragraphs, duplicate text, nested content, table, formula, bibliography, reverse activation, scrolling and flow mapping at ' + url);
+  console.log('PASS: bidirectional selection, two-sided outline alignment, character/selection, split paragraphs, duplicate text, nested content, table, formula, bibliography, reverse activation, scrolling and flow mapping at ' + url);
 } finally {
   await browser.stop();
   if (app) await app.close();

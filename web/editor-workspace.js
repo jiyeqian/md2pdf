@@ -662,8 +662,9 @@
   function updatePanelGrid(panel) {
     var width = panel.clientWidth || panel.getBoundingClientRect().width;
     if (!width) return;
-    var mobile = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
-    var tiny = window.matchMedia && window.matchMedia('(max-width: 390px)').matches;
+    var view = panel.ownerDocument.defaultView || window;
+    var mobile = view.matchMedia && view.matchMedia('(max-width: 600px)').matches;
+    var tiny = view.matchMedia && view.matchMedia('(max-width: 390px)').matches;
     var button = 28;
     var inset = tiny ? 7 : mobile ? 8 : 10;
     var available = Math.max(button, width - inset * 2);
@@ -673,8 +674,16 @@
     panel.style.setProperty('--panel-button', button + 'px');
     panel.style.setProperty('--panel-gap', gap + 'px');
     panel.style.setProperty('--panel-inset', inset + 'px');
-    var empty = Math.max(0, available - button * 4 - gap * 2);
-    var zoomWidth = Math.min(empty, empty * 0.3 + 62.334);
+    var actions = panel.querySelector('.panel-heading').querySelector('.panel-actions');
+    var actionCount = Array.from(actions.children).filter(function (node) {
+      return (node.tagName === 'BUTTON' || node.tagName === 'A') && !node.hidden;
+    }).length;
+    actionCount = Math.max(1, actionCount);
+    panel.style.setProperty('--panel-actions-start', String(-actionCount - 1));
+    var actionsWidth = actionCount * button + Math.max(0, actionCount - 1) * gap;
+    var empty = Math.max(0, available - button - actionsWidth);
+    var zoomWidth = Math.min(Math.max(0, empty - gap * 2), empty * 0.3 + 62.334);
+    panel.style.setProperty('--panel-zoom-display', zoomWidth >= 62.334 ? 'flex' : 'none');
     panel.style.setProperty('--panel-zoom-width', zoomWidth + 'px');
     panel.style.setProperty('--panel-zoom-left', (inset + button + empty / 2) + 'px');
   }
@@ -690,6 +699,12 @@
       var observer = new window.ResizeObserver(updatePanelGrids);
       observer.observe(editorPanel);
       observer.observe(previewPanel);
+    }
+    if (window.MutationObserver) {
+      var actionsObserver = new window.MutationObserver(updatePanelGrids);
+      [editorPanel, previewPanel].forEach(function (panel) {
+        actionsObserver.observe(panel.querySelector('.panel-actions') || panel.querySelector('.panel-heading').querySelector('.panel-actions'), { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+      });
     }
     window.addEventListener('resize', updatePanelGrids);
   }
@@ -1095,8 +1110,8 @@
     });
     [editorPanel, previewPanel].forEach(function (panel, index) {
       var button = make('button', { type: 'button', class: 'icon-button', 'data-panel-independent': index === 0 ? 'editor' : 'preview', 'aria-label': '独立窗口', title: '将' + (index === 0 ? 'Markdown' : '预览') + '移到独立窗口' });
-      var svg = document.createElementNS(SVG_NS, 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.8'); svg.setAttribute('stroke-linejoin', 'round'); svg.setAttribute('aria-hidden', 'true');
-      var path = document.createElementNS(SVG_NS, 'path'); path.setAttribute('d', 'M9 4h11v11H9zM5 9H3v12h12v-2M12 12l5-5M13 7h4v4'); svg.appendChild(path); button.appendChild(svg);
+      var svg = document.createElementNS(SVG_NS, 'svg'); svg.setAttribute('class', 'btn-icon'); svg.setAttribute('viewBox', '0 0 20 20'); svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.4'); svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round'); svg.setAttribute('aria-hidden', 'true');
+      var path = document.createElementNS(SVG_NS, 'path'); path.setAttribute('d', 'M11 3.5h5.5V9M16 4l-7 7M7 4.5H4.5v11h11V13'); svg.appendChild(path); button.appendChild(svg);
       button.addEventListener('click', function () { window.mdWindowMode.open(index === 0 ? 'editor' : 'preview'); });
       panel.querySelector('[data-panel-fullscreen]').before(button);
       independentButtons.push(button);
@@ -1140,11 +1155,24 @@
   function onPreviewContentSource(event) {
     var source = event.detail;
     if (!hasEditor() || !source || !Number.isSafeInteger(source.from)) return;
-    if (source.reason !== 'activate' && (!syncInput || !syncInput.checked || fullscreenMode() === 'editor')) return;
+    if (source.reason !== 'activate' && source.reason !== 'outline' && (!syncInput || !syncInput.checked || fullscreenMode() === 'editor')) return;
     suppressUntil = Date.now() + 600;
     clearTimeout(cursorTimer);
     if (source.reason === 'activate') window.mdEditor.goToPosition(source.from, source.ratio);
-    else window.mdEditor.revealPosition(source.from, source.ratio, false);
+    else window.mdEditor.revealPosition(source.from, source.reason === 'outline' ? 0 : source.ratio, false);
+    if (source.reason === 'selection' && Number.isSafeInteger(source.to)) window.mdEditor.highlightRange(source.from, source.to);
+  }
+
+  function onEditorOutline(event) {
+    if (!hasEditor() || !event.detail || !Number.isSafeInteger(event.detail.line)) return;
+    var lines = window.mdEditor.getValue().split('\n');
+    var line = event.detail.line;
+    if (line < 1 || line > lines.length) return;
+    var from = lines.slice(0, line - 1).reduce(function (sum, text) { return sum + text.length + 1; }, 0);
+    suppressUntil = Date.now() + 600;
+    clearTimeout(cursorTimer);
+    window.mdEditor.revealPosition(from, 0, false);
+    postContentLocate(from, from, 'outline', 0, true);
   }
 
   function onCursor(event) {
@@ -1275,6 +1303,7 @@
       if (window.mdWindowMode && window.mdWindowMode.restoring) return;
       if (syncInput && syncInput.checked && fullscreenMode() !== 'editor') locateCurrentCursor();
     });
+    document.addEventListener('md-editor-outline', onEditorOutline);
     document.addEventListener('md-editor-cursor', onCursor);
     document.addEventListener('md-editor-scroll', onEditorScroll);
     document.addEventListener('md-preview-content-source', onPreviewContentSource);
