@@ -14,6 +14,7 @@ export function readPreviewTransferState(document) {
       anchorRatio: Number.isFinite(position.anchorRatio) ? position.anchorRatio : undefined,
       line: Number.isSafeInteger(position.line) && position.line >= 0 ? position.line : 0,
       offset: position.offset, ratio: position.ratio,
+      ...(Number.isSafeInteger(position.outline) && position.outline >= 0 ? {outline:position.outline} : {}),
       ...(Number.isSafeInteger(position.revision) && position.revision >= 0 ? { revision: position.revision } : {}),
       ...(Object.hasOwn(position, 'selection') ? { selection: position.selection && position.selection.version === 1
         && ['flow', 'paged'].includes(position.selection.scope)

@@ -21,11 +21,13 @@
     let popup = null, popupDoc = null, popupSpace = null, channel = '', role = null;
     let active = false, busy = false, operation = 0, sequence = 0, monitor = 0;
     let cached = null, position = null, pendingRestore = null, restoring = false;
+    let opacity = null, restoreTicket = null;
+    function showPreview() { const wasRestoring = restoring; if (opacity !== null) preview.style.opacity = opacity; opacity = null; restoreTicket = null; restoring = false; if (wasRestoring) changed(); }
     let positionRevision = -1;
     const state = () => window.mdPreviewController?.state() || { revision: -1, previewRevision: -1, ready: false, empty: true };
     function error(message) { onError(message); }
     function changed() {
-      onMode({ active, busy, role });
+      onMode({ active, busy: busy || restoring, role });
       document.dispatchEvent(new CustomEvent('md-window-layout'));
     }
     function validPopup() { try { return popup && !popup.closed && popup.document === popupDoc && popup.opener === window; } catch { return false; } }
@@ -70,9 +72,12 @@
       const owner = target.ownerDocument;
       if (panel.ownerDocument === owner) return;
       beforeMove?.();
-      const editorAnchor = window.mdEditor?.captureViewport?.();
+      const editorAnchor = window.mdEditor?.getScrollAnchor?.();
       const isPreview = panel === previewPanel;
-      if (isPreview) preview.remove();
+      if (isPreview) {
+        if (snapshot?.revision >= 0) { if (opacity === null) opacity = preview.style.opacity; preview.style.opacity = '0'; }
+        preview.remove();
+      }
       owner.adoptNode(panel);
       if (target === workspace) homes[panels.indexOf(panel)].after(panel);
       else target.appendChild(panel);
@@ -86,10 +91,13 @@
       } else {
         window.mdEditor?.setDocumentRoot?.(owner);
         for (const node of floating?.() || []) if (node && !panel.contains(node)) owner.body.appendChild(owner.adoptNode(node));
-        owner.defaultView.requestAnimationFrame(() => {
+        owner.defaultView.requestAnimationFrame(() => owner.defaultView.requestAnimationFrame(() => {
+          if (panel.ownerDocument !== owner) return;
           window.mdEditor?.requestMeasure?.();
-          if (editorAnchor) window.mdEditor?.restoreViewport?.(editorAnchor);
-        });
+          const outline = snapshot?.position?.outline;
+          if (Number.isSafeInteger(outline)) window.mdEditor?.revealPosition?.(outline, 0, false);
+          else if (editorAnchor) window.mdEditor?.revealPosition?.(editorAnchor.from, editorAnchor.ratio, false);
+        }));
       }
       panel.classList.add('md-independent-pane');
       document.dispatchEvent(new CustomEvent('md-panel-host-change', { detail: { panel, document: owner } }));
@@ -199,7 +207,7 @@
       }
     }
     async function swap() {
-      if (!active || busy || !validPopup()) return;
+      if (!active || busy || restoring || !validPopup()) return;
       busy = true; changed();
       const id = ++operation;
       const snapshot = await capture();
@@ -223,6 +231,7 @@
         return;
       }
       if (event.source !== preview.contentWindow || !data) return;
+      if (data.type === 'md2pdf-position-restored' && state().ready && data.revision === state().previewRevision && restoreTicket && data.id === restoreTicket.id && data.revision === restoreTicket.revision) { showPreview(); return; }
       if (data.type === 'md2pdf-transfer-snapshot' || data.type === 'md2pdf-transfer-error') {
         const request = requests.get(data.id);
         if (!request || data.revision !== request.revision) return;
@@ -239,17 +248,18 @@
       if (pendingRestore) {
         const desired = pendingRestore; pendingRestore = null;
         requestAnimationFrame(() => requestAnimationFrame(() => {
-          hosts.postPreview({ type: 'md2pdf-restore-position', position: desired });
-          restoring = false;
+          if (Number.isSafeInteger(desired.revision) && desired.revision !== state().previewRevision) { showPreview(); return; }
+          restoreTicket = { id: 'window-restore-' + (++sequence), revision: state().previewRevision };
+          hosts.postPreview({ type: 'md2pdf-restore-position', id: restoreTicket.id, position: desired });
         }));
-      } else restoring = false;
+      } else showPreview();
       if (popup) capture();
     }, true);
     window.addEventListener('pagehide', () => { if (popup) finishExit(fallback(), true); });
     document.addEventListener('md-window-layout', () => {
       if (popup && state().ready) postFrame(preview, { type: 'md2pdf-capture-position', id: 'window-position' });
     });
-    return { open, swap, exit: () => exit(), get active() { return active; }, get busy() { return busy; }, get restoring() { return restoring; },
+    return { open, swap, exit: () => exit(), get active() { return active; }, get busy() { return busy || restoring; }, get restoring() { return restoring; },
       get popup() { return popup; }, get role() { return role; }, get preparing() { return !!popup && !active; } };
   }
   window.mdIndependentWorkspace = { create };

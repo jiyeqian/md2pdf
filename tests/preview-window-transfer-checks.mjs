@@ -243,3 +243,11 @@ test('rehydration reuses existing flow, flags work ready, and restores state wit
   assert.ok(document.documentElement.classList.contains('md2pdf-preview-flow'));
   assert.equal(document.querySelector('.pagedjs_pages'), pages);
 });
+
+test('transfer keeps only a valid source outline target', () => {
+  const value={version:1,zoom:100,flow:false,position:{offset:0,ratio:0,outline:42}};
+  const read=()=>readPreviewTransferState({querySelector:()=>({textContent:JSON.stringify(value)})});
+  assert.equal(read().position.outline,42);
+  value.position.outline=-1;assert.equal(read().position.outline,undefined);
+  value.position.outline=1.5;assert.equal(read().position.outline,undefined);
+});

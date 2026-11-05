@@ -3,7 +3,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   const metadata = document.querySelector('script[data-md2pdf-content-map]');
   let source = [];
   try { source = JSON.parse(metadata?.textContent || '[]'); } catch { /* Legacy preview. */ }
-  if (!source.length) return { bind() {}, refresh() { return []; }, capture() { return null; }, suppress() {}, locate() {}, outline() {}, captureHighlight() { return null; }, restoreHighlight() {} };
+  if (!source.length) return { bind() {}, refresh() { return []; }, capture() { return null; }, suppress() {}, locate() {}, outline() {}, captureOutline() { return null; }, captureHighlight() { return null; }, restoreHighlight() {} };
   const byId = new Map(source.map(item => [String(item.id), item]));
   let fragments = [], scoped = null, dirty = true, programmaticUntil = 0, userScroll = false, pending = 0;
   const tags = 'p,li,td,th,pre,h1,h2,h3,h4,h5,h6,caption,figcaption,.gb-important-paragraph,.keywords > .summary-content';
@@ -336,6 +336,6 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     });
   }, { passive: true });
   return { bind, refresh: () => { dirty = true; return refresh(); }, capture,
-    suppress: () => { userScroll = false; programmaticUntil = Date.now() + 250; }, locate, outline, captureHighlight: () => selectedRange,
+    suppress: () => { userScroll = false; programmaticUntil = Date.now() + 250; }, locate, outline, captureOutline: () => outlineFrom, captureHighlight: () => selectedRange,
     restoreHighlight: range => { if (range && Number.isSafeInteger(range.from) && Number.isSafeInteger(range.to) && range.to > range.from) highlight(range.from, range.to); } };
 }
