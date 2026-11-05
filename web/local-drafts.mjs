@@ -11,11 +11,12 @@ const newId = () => {
   return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-');
 };
 const menuFontSize = () => {
-  const editor = document.querySelector('.cm-content, #markdown');
-  return Math.min(12, editor ? parseFloat(getComputedStyle(editor).fontSize) || 13 : 13);
+  const editor = window.mdWorkspaceHosts?.query('.cm-content, #markdown') || document.querySelector('.cm-content, #markdown');
+  return Math.min(12, editor ? parseFloat(editor.ownerDocument.defaultView.getComputedStyle(editor).fontSize) || 13 : 13);
 };
 
 function confirmDelete(message) {
+  const document = window.mdWorkspaceHosts?.activeDocument() || globalThis.document;
   return new Promise(resolve => {
     const dialog = document.createElement('dialog');
     dialog.className = 'template-confirm md-draft-confirm';
@@ -148,10 +149,12 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
   };
   function positionMenu() {
     if (!menu || menu.hidden) return;
+    const owner = trigger.ownerDocument, win = owner.defaultView;
+    if (menu.ownerDocument !== owner) owner.body.append(menu);
     const bounds = trigger.getBoundingClientRect();
-    const view = window.visualViewport;
+    const view = win.visualViewport;
     const left = view?.offsetLeft || 0, top = view?.offsetTop || 0;
-    const width = view?.width || innerWidth, height = view?.height || innerHeight;
+    const width = view?.width || win.innerWidth, height = view?.height || win.innerHeight;
     menu.style.maxHeight = Math.max(60, height - 16) + 'px';
     menu.style.fontSize = menuFontSize() + 'px';
     menu.style.width = 'max-content';
@@ -221,18 +224,23 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
           event.preventDefault();
           const buttons = [...menu.querySelectorAll('button:not(:disabled)')];
-          const index = buttons.indexOf(document.activeElement);
+          const index = buttons.indexOf(menu.ownerDocument.activeElement);
           buttons[(index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
         }
       });
-      document.addEventListener('click', event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) closeMenu(); });
-      document.addEventListener('focusin', event => { if (!menu.contains(event.target) && !trigger.contains(event.target) && !document.querySelector('dialog[open]')) closeMenu(); });
-      window.addEventListener('resize', positionMenu);
+      (window.mdWorkspaceHosts?.on || document.addEventListener.bind(document))('click', event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) closeMenu(); });
+      (window.mdWorkspaceHosts?.on || document.addEventListener.bind(document))('focusin', event => { if (!menu.contains(event.target) && !trigger.contains(event.target) && !menu.ownerDocument.querySelector('dialog[open]')) closeMenu(); });
+      if (window.mdWorkspaceHosts) {
+        window.mdWorkspaceHosts.on('resize', positionMenu);
+        window.mdWorkspaceHosts.on('scroll', positionMenu, true);
+      } else {
+        window.addEventListener('resize', positionMenu);
+        window.addEventListener('scroll', positionMenu, true);
+      }
       window.visualViewport?.addEventListener('resize', positionMenu);
       window.visualViewport?.addEventListener('scroll', positionMenu);
-      window.addEventListener('scroll', positionMenu, true);
       menu.addEventListener('pointerleave', event => {
-        if (event.pointerType === 'mouse' && !document.querySelector('dialog[open]')) closeMenu();
+        if (event.pointerType === 'mouse' && !menu.ownerDocument.querySelector('dialog[open]')) closeMenu();
       });
     }
     menu.hidden = false;
@@ -257,6 +265,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     });
   }
   if (channel) channel.onmessage = () => reconcile().catch(error => state(error.message, true));
+  document.addEventListener('md-panel-host-change', () => closeMenu());
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') enqueue(saveNow).catch(() => {});
     else reconcile().catch(error => state(error.message, true));

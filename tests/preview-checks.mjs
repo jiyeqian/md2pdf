@@ -208,3 +208,12 @@ test('预览缩放保留期望值，自动适配后回报实际比例并保持 1
     assert.ok(Math.abs(messages[0].zoom - expectedScale * 100) < 0.000001);
   }
 });
+
+test('hidden preview measurements do not overwrite its display scale', () => {
+  const js = injectedScript(enhancePreview(DOC, 'general'));
+  const body = js.match(/function fit\(\) \{([\s\S]*?)\n  \}/)[1];
+  const fit = new Function('document', 'zoom', 'parent', body);
+  for (const size of [{clientWidth:0,clientHeight:600},{clientWidth:600,clientHeight:0}]) {
+    fit({documentElement:size,querySelector(){throw new Error('hidden preview must not be measured');}},100,{postMessage(){throw new Error('hidden preview must not publish a scale');}});
+  }
+});

@@ -29,6 +29,7 @@ import { bindManualUpdate } from './manual-update.mjs';
     window.dispatchEvent(new Event('resize'));
   }
   function offerFile(file) {
+    const document = window.mdWorkspaceHosts?.activeDocument() || window.document || globalThis.document;
     // 分享需要安全上下文和一次新点击；PDF 异步生成后不能依赖最初点击的激活状态。
     if (!standalone() || !window.isSecureContext || typeof navigator.share !== 'function'
       || typeof navigator.canShare !== 'function') return false;

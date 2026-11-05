@@ -402,7 +402,8 @@
       cancel.addEventListener('click', function () { done('cancel'); });
       dialog.addEventListener('cancel', function (event) { event.preventDefault(); done('cancel'); });
 
-      doc.body.append(dialog);
+      const owner = global.mdWorkspaceHosts?.activeDocument() || doc;
+      owner.body.append(dialog);
       if (typeof dialog.showModal === 'function') { dialog.showModal(); keep.focus(); }
       else done('keep'); // environments without <dialog> default to keeping the original
     });
@@ -591,7 +592,11 @@
   }
 
   function ensurePicker() {
-    if (picker) return picker;
+    const owner = global.mdWorkspaceHosts?.activeDocument() || doc;
+    if (picker) {
+      if (picker.ownerDocument !== owner) owner.body.append(picker);
+      return picker;
+    }
     picker = doc.createElement('input');
     picker.type = 'file';
     picker.multiple = true;
@@ -606,7 +611,7 @@
       picker.value = '';
       if (files.length) startInsertion(files);
     });
-    doc.body.append(picker);
+    owner.body.append(picker);
     return picker;
   }
 

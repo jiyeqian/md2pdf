@@ -40,6 +40,16 @@
   var toolbar, divider, editorFullscreenBtn, previewFullscreenBtn, syncInput;
   var basicWrap, basicButton, basicMenu;
   var editorModeBtn, previewModeBtn;
+  var independentButtons = [];
+  function postPreview(data) {
+    if (window.mdWorkspaceHosts) window.mdWorkspaceHosts.postPreview(data);
+    else if (previewFrame && previewFrame.contentWindow) previewFrame.contentWindow.postMessage(data, '*');
+  }
+  function queryWorkspace(selector) { return window.mdWorkspaceHosts ? window.mdWorkspaceHosts.query(selector) : document.querySelector(selector); }
+  function onWorkspaceDOM(type, listener, options) {
+    if (window.mdWorkspaceHosts) window.mdWorkspaceHosts.on(type, listener, options);
+    else document.addEventListener(type, listener, options);
+  }
   var commandButtons = [];
   var ready = false;
   var dragging = false;
@@ -53,6 +63,8 @@
   var pendingLayout = null;
   var lastEditorAnchor = null;
   var lastPreviewPosition = null;
+  var outlineAnchor = null;
+  var previewSelection = null;
   import('./workspace-navigation.mjs').then(function (module) { documentShortcut = module.documentShortcut; }).catch(function () { console.warn('文档快捷键模块加载失败'); });
   var cmEditor = null;                     // CodeMirror 根元素；缩放只改它的 font-size，不动渲染字号
   var markdownZoom = ZOOM_DEFAULT;         // 百分比
@@ -416,7 +428,7 @@
   function positionBasicMenu() {
     if (!basicMenu || basicMenu.hidden) return;
     if (!basicButton.getBoundingClientRect || !basicMenu.getBoundingClientRect) return;
-    var viewport = (typeof window !== 'undefined' && window.innerWidth) || 1024;
+    var viewport = (basicButton && basicButton.ownerDocument.defaultView.innerWidth) || window.innerWidth || 1024;
     var anchor = basicButton.getBoundingClientRect();
     var rect = basicMenu.getBoundingClientRect();
     var width = basicMenu.offsetWidth || (rect && rect.width) || 360;
@@ -428,7 +440,7 @@
   function onBasicMenuKeydown(event) {
     var items = menuItems();
     if (!items.length) return;
-    var current = items.indexOf(document.activeElement);
+    var current = items.indexOf(basicMenu.ownerDocument.activeElement);
     var next = null;
     if (event.key === 'ArrowDown' || event.key === 'ArrowRight') next = current + 1;
     else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') next = current - 1;
@@ -446,9 +458,10 @@
   function buildSyncButton() {
     // 带 aria-pressed 的图标开关按钮（有键盘语义），保留 #md-wt-sync 与 .checked 兼容访问器，
     // 不使用没有键盘语义的隐藏复选框冒充按钮。
-    var button = iconButton('sync', '同步定位', '同步定位：按标题所在章节近似联动（点击开启 / 关闭）');
+    var button = iconButton('sync', '同步定位', '同步定位：按正文内容双向联动（点击开启 / 关闭）');
     button.setAttribute('id', 'md-wt-sync');
     function updateSync(on) {
+      if (!on) { outlineAnchor = null; previewSelection = null; }
       button.setAttribute('aria-pressed', String(on));
       button.textContent = '';
       button.appendChild(iconSvg(on ? 'sync' : 'unsync'));
@@ -508,7 +521,7 @@
       if (key !== 'ArrowRight' && key !== 'ArrowLeft' && key !== 'Home' && key !== 'End') return;
       var list = buttons();
       if (!list.length) return;
-      var current = list.indexOf(document.activeElement);
+      var current = list.indexOf(group.ownerDocument.activeElement);
       if (current < 0) current = 0;
       var next = key === 'ArrowRight' ? current + 1 : key === 'ArrowLeft' ? current - 1 : key === 'Home' ? 0 : list.length - 1;
       next = clamp(next, 0, list.length - 1);
@@ -629,7 +642,7 @@
 
   function sendPreviewZoom() {
     if (!previewFrame || !previewFrame.contentWindow) return;
-    try { previewFrame.contentWindow.postMessage({ type: 'md2pdf-preview-zoom', zoom: previewZoom }, '*'); }
+    try { postPreview({ type: 'md2pdf-preview-zoom', zoom: previewZoom }); }
     catch (e) { /* 跨源异常忽略 */ }
   }
 
@@ -652,8 +665,9 @@
   function updatePanelGrid(panel) {
     var width = panel.clientWidth || panel.getBoundingClientRect().width;
     if (!width) return;
-    var mobile = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
-    var tiny = window.matchMedia && window.matchMedia('(max-width: 390px)').matches;
+    var view = panel.ownerDocument.defaultView || window;
+    var mobile = view.matchMedia && view.matchMedia('(max-width: 600px)').matches;
+    var tiny = view.matchMedia && view.matchMedia('(max-width: 390px)').matches;
     var button = 28;
     var inset = tiny ? 7 : mobile ? 8 : 10;
     var available = Math.max(button, width - inset * 2);
@@ -663,8 +677,16 @@
     panel.style.setProperty('--panel-button', button + 'px');
     panel.style.setProperty('--panel-gap', gap + 'px');
     panel.style.setProperty('--panel-inset', inset + 'px');
-    var empty = Math.max(0, available - button * 4 - gap * 2);
-    var zoomWidth = Math.min(empty, empty * 0.3 + 62.334);
+    var actions = panel.querySelector('.panel-heading').querySelector('.panel-actions');
+    var actionCount = Array.from(actions.children).filter(function (node) {
+      return (node.tagName === 'BUTTON' || node.tagName === 'A') && !node.hidden;
+    }).length;
+    actionCount = Math.max(1, actionCount);
+    panel.style.setProperty('--panel-actions-start', String(-actionCount - 1));
+    var actionsWidth = actionCount * button + Math.max(0, actionCount - 1) * gap;
+    var empty = Math.max(0, available - button - actionsWidth);
+    var zoomWidth = Math.min(Math.max(0, empty - gap * 2), empty * 0.3 + 62.334);
+    panel.style.setProperty('--panel-zoom-display', zoomWidth >= 62.334 ? 'flex' : 'none');
     panel.style.setProperty('--panel-zoom-width', zoomWidth + 'px');
     panel.style.setProperty('--panel-zoom-left', (inset + button + empty / 2) + 'px');
   }
@@ -680,6 +702,12 @@
       var observer = new window.ResizeObserver(updatePanelGrids);
       observer.observe(editorPanel);
       observer.observe(previewPanel);
+    }
+    if (window.MutationObserver) {
+      var actionsObserver = new window.MutationObserver(updatePanelGrids);
+      [editorPanel, previewPanel].forEach(function (panel) {
+        actionsObserver.observe(panel.querySelector('.panel-actions') || panel.querySelector('.panel-heading').querySelector('.panel-actions'), { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+      });
     }
     window.addEventListener('resize', updatePanelGrids);
   }
@@ -837,6 +865,7 @@
   }
 
   function applyFullscreen(mode) {
+    if (window.mdWindowMode && (window.mdWindowMode.active || window.mdWindowMode.busy)) { window.mdWindowMode.exit(); return; }
     if (mode === fullscreenMode()) return;
     var id = ++layoutRevision;
     clearTimeout(cursorTimer);
@@ -845,7 +874,7 @@
     var anchor = lastEditorAnchor;
     pendingLayout = { id: id, mode: mode, previous: fullscreenMode(), anchor: anchor };
     if (previewFrame && previewFrame.contentWindow) {
-      previewFrame.contentWindow.postMessage({ type: 'md2pdf-capture-position', id: id }, '*');
+      postPreview({ type: 'md2pdf-capture-position', id: id });
       setTimeout(function () { finishFullscreen(id, null); }, 150);
     } else finishFullscreen(id, null);
   }
@@ -866,28 +895,53 @@
       editorFullscreenBtn.setAttribute('aria-pressed', String(editorOn));
       editorFullscreenBtn.textContent = '';
       editorFullscreenBtn.appendChild(fullscreenIcon(editorOn));
-      editorFullscreenBtn.setAttribute('aria-label', editorOn ? '退出 Markdown 全屏' : 'Markdown 全屏写作');
+      editorFullscreenBtn.setAttribute('aria-label', editorOn ? '退出全屏' : 'Markdown 全屏写作');
       editorFullscreenBtn.title = editorOn ? '退出全屏（Esc）' : '全屏写作（Esc 退出）';
     }
     if (previewFullscreenBtn) {
       previewFullscreenBtn.setAttribute('aria-pressed', String(previewOn));
       previewFullscreenBtn.textContent = '';
       previewFullscreenBtn.appendChild(fullscreenIcon(previewOn));
-      previewFullscreenBtn.setAttribute('aria-label', previewOn ? '退出预览全屏' : '预览全屏');
+      previewFullscreenBtn.setAttribute('aria-label', previewOn ? '退出全屏' : '预览全屏');
       previewFullscreenBtn.title = previewOn ? '退出全屏（Esc）' : '全屏预览（Esc 退出）';
     }
     updatePanelModeButtons();
+    independentButtons.forEach(function (button) { button.hidden = !!mode; });
     if (editorOn) focusEditor();
     requestAnimationFrame(function () { requestAnimationFrame(function () {
       if (id !== layoutRevision) return;
       updatePanelGrids();
       measureEditor();
       if (pending.anchor && window.mdEditor.restoreViewport) window.mdEditor.restoreViewport(pending.anchor);
+      if (position && Number.isSafeInteger(position.revision) && window.mdPreviewController && position.revision !== window.mdPreviewController.state().previewRevision) position = null;
+      if (syncInput && syncInput.checked && outlineAnchor !== null) {
+        window.mdEditor.revealPosition(outlineAnchor, 0, false);
+        postContentLocate(outlineAnchor, outlineAnchor, 'outline', 0, true);
+        return;
+      }
+      // The hidden editor could not measure this range at its final viewport size.
+      if (syncInput && syncInput.checked && mode !== 'preview' && previewSelection) {
+        window.mdEditor.revealPosition(previewSelection.from, previewSelection.ratio, false);
+        window.mdEditor.highlightRange(previewSelection.from, previewSelection.to);
+        if (position) {
+          postPreview({ type: 'md2pdf-restore-position', position: position });
+          postPreview({ type: 'md2pdf-restore-selection', revision: position.revision, selection: position.selection, highlight: position.highlight });
+        }
+        return;
+      }
+      // A layout change must not replace a user's selection with the old cursor.
+      if (position && ((position.selection && position.selection.anchor !== position.selection.focus) || position.highlight)) {
+        postPreview({ type: 'md2pdf-restore-position', position: position });
+        postPreview({ type: 'md2pdf-restore-selection', revision: position.revision, selection: position.selection, highlight: position.highlight });
+        return;
+      }
       // 同步开启时，退出写作全屏以最新光标为准，不能恢复旧预览锚点。
       var followsCursor = syncInput && syncInput.checked && (pending.previous !== 'preview' || pending.mode === 'editor');
-      if (!followsCursor && position && previewFrame.contentWindow) previewFrame.contentWindow.postMessage({ type: 'md2pdf-restore-position', position: position }, '*');
+      if (!followsCursor && position && previewFrame.contentWindow) postPreview({ type: 'md2pdf-restore-position', position: position });
       if (syncInput && syncInput.checked) {
-        if (position && Number.isSafeInteger(position.line) && position.line > 0 && pending.previous === 'preview' && pending.mode !== 'editor') {
+        if (position && pending.previous === 'preview' && pending.mode !== 'editor' && Number.isSafeInteger(position.from) && typeof window.mdEditor.revealPosition === 'function') {
+          window.mdEditor.revealPosition(position.from, position.anchorRatio, false);
+        } else if (position && Number.isSafeInteger(position.line) && position.line > 0 && pending.previous === 'preview' && pending.mode !== 'editor') {
           window.mdEditor.goToLine(position.line);
         } else if (pending.previous !== 'preview' || pending.mode === 'editor' || !position || !position.line) locateCurrentCursor(true);
       }
@@ -922,7 +976,7 @@
   }
 
   function fileStatus(message, error) {
-    var status = document.querySelector('#status');
+    var status = queryWorkspace('#status');
     if (status) { status.textContent = message; status.setAttribute('data-error', String(!!error)); }
   }
 
@@ -973,7 +1027,7 @@
     var text = window.mdEditor.getValue();
     var files = await import('./editor-files.mjs');
     var blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
-    var name = files.markdownDownloadName(text, new Date(), document.querySelector('#options')?.elements.type?.value || '');
+    var name = files.markdownDownloadName(text, new Date(), queryWorkspace('#options')?.elements.type?.value || '');
     if (window.mdAppShell && window.mdAppShell.offerFile(new File([blob], name, { type: blob.type }))) return;
     var url = URL.createObjectURL(blob);
     var link = make('a', { href: url, download: name });
@@ -987,6 +1041,10 @@
   // 预览侧追加在下载按钮之后，全屏始终位于该栏最右。
   function updatePanelModeButtons() {
     var mode = fullscreenMode();
+    if (window.mdWindowMode && window.mdWindowMode.active) {
+      [editorModeBtn, previewModeBtn].forEach(function (button) { if (button) { button.title = '交换编辑与预览窗口'; button.setAttribute('aria-label', button.textContent + '：' + button.title); } });
+      return;
+    }
     if (editorModeBtn) editorModeBtn.title = mode ? '切换到预览' : '交换面板位置';
     if (previewModeBtn) previewModeBtn.title = mode ? '切换到 Markdown' : '交换面板位置';
     if (editorModeBtn) editorModeBtn.setAttribute('aria-label', 'Markdown（M）：' + editorModeBtn.title);
@@ -994,6 +1052,7 @@
   }
 
   function switchPanelMode() {
+    if (window.mdWindowMode && window.mdWindowMode.active) { window.mdWindowMode.swap(); return; }
     var mode = fullscreenMode();
     if (mode) { applyFullscreen(mode === 'editor' ? 'preview' : 'editor'); return; }
     var anchor = hasEditor() && window.mdEditor.captureViewport ? window.mdEditor.captureViewport() : null;
@@ -1049,9 +1108,50 @@
     applyFullscreen(null); // 同步按钮初始 aria-pressed / title
   }
 
+  function buildIndependentWindows() {
+    if (!window.mdIndependentWorkspace) return;
+    window.mdWindowMode = window.mdIndependentWorkspace.create({
+      workspace: workspace, editorPanel: editorPanel, previewPanel: previewPanel, preview: previewFrame,
+      beforeMove: function () { closeBasicMenu(false); },
+      floating: function () { return [basicMenu]; },
+      onError: function (message) { fileStatus(message, true); },
+      onLayout: function () {
+        updatePanelGrids(); measureEditor();
+        requestAnimationFrame(function () { updatePanelGrids(); measureEditor(); });
+      },
+      onMode: function (state) {
+        [editorFullscreenBtn, previewFullscreenBtn].forEach(function (button, index) {
+          if (!button) return;
+          button.disabled = state.busy && !state.active;
+          button.textContent = ''; button.appendChild(fullscreenIcon(state.active));
+          button.setAttribute('aria-label', state.active ? '退出全屏' : index === 0 ? 'Markdown 全屏写作' : '预览全屏');
+          button.setAttribute('aria-pressed', String(state.active));
+          button.title = state.active ? '退出全屏（Esc）' : index === 0 ? '全屏写作（Esc 退出）' : '全屏预览（Esc 退出）';
+        });
+        independentButtons.forEach(function (button) { button.hidden = state.active || state.busy || !!fullscreenMode(); });
+        [editorModeBtn, previewModeBtn].forEach(function (button) { if (button) button.disabled = state.busy; });
+        updatePanelModeButtons();
+      }
+    });
+    [editorPanel, previewPanel].forEach(function (panel, index) {
+      var button = make('button', { type: 'button', class: 'icon-button', 'data-panel-independent': index === 0 ? 'editor' : 'preview', 'aria-label': '独立窗口', title: '将' + (index === 0 ? 'Markdown' : '预览') + '移到独立窗口' });
+      var svg = document.createElementNS(SVG_NS, 'svg'); svg.setAttribute('class', 'btn-icon'); svg.setAttribute('viewBox', '0 0 20 20'); svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.4'); svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round'); svg.setAttribute('aria-hidden', 'true');
+      var path = document.createElementNS(SVG_NS, 'path'); path.setAttribute('d', 'M11 3.5h5.5V9M16 4l-7 7M7 4.5H4.5v11h11V13'); svg.appendChild(path); button.appendChild(svg);
+      button.addEventListener('click', function () { window.mdWindowMode.open(index === 0 ? 'editor' : 'preview'); });
+      panel.querySelector('[data-panel-fullscreen]').before(button);
+      independentButtons.push(button);
+    });
+  }
+
   // ---------------------------------------------------------------- 位置桥接
   function locateCurrentCursor(instant) {
     if (!hasEditor() || !previewFrame || !previewFrame.contentWindow) return;
+    if (typeof window.mdEditor.getCursorPosition === 'function') {
+      var selection = window.mdEditor.getSelection();
+      var cursor = window.mdEditor.getCursorPosition();
+      postContentLocate(selection.from === selection.to ? cursor : selection.from, selection.to, 'cursor', .3, instant);
+      return;
+    }
     var line;
     try { line = window.mdEditor.getCursorLine(); } catch (e) { return; }
     if (!Number.isFinite(line)) return;
@@ -1060,17 +1160,70 @@
 
   function postLocate(line, instant) {
     if (!previewFrame || !previewFrame.contentWindow) return;
-    try { previewFrame.contentWindow.postMessage({ type: 'md2pdf-locate', line: line, instant: instant === true }, '*'); }
+    try { postPreview({ type: 'md2pdf-locate', line: line, instant: instant === true }); }
     catch (e) { /* 跨源异常忽略 */ }
   }
 
+  function postContentLocate(from, to, reason, ratio, instant) {
+    document.dispatchEvent(new CustomEvent('md-preview-locate', { detail: { from: from, to: to, reason: reason, ratio: ratio, instant: instant === true } }));
+  }
+
+  function onEditorScroll(event) {
+    if (!ready || !syncInput || !syncInput.checked) return;
+    var anchor = event.detail;
+    if (!anchor || anchor.user !== true || !Number.isSafeInteger(anchor.from)) return;
+    outlineAnchor = null;
+    previewSelection = null;
+    if (fullscreenMode()) return;
+    suppressUntil = 0; // Explicit editor scrolling takes ownership immediately.
+    clearTimeout(cursorTimer);
+    postContentLocate(anchor.from, anchor.from, 'scroll', anchor.ratio, true);
+  }
+
+  function onPreviewContentSource(event) {
+    var source = event.detail;
+    if (!hasEditor() || !source || !Number.isSafeInteger(source.from)) return;
+    if (source.reason !== 'activate' && (!syncInput || !syncInput.checked || fullscreenMode() === 'editor')) return;
+    if (source.reason === 'outline') { outlineAnchor = source.from; previewSelection = null; }
+    if (source.reason === 'selection') previewSelection = source.to > source.from ? {from:source.from,to:source.to,ratio:source.ratio} : null;
+    else if (source.reason === 'scroll' || source.reason === 'activate' || (source.reason === 'selection' && source.to > source.from)) outlineAnchor = null;
+    suppressUntil = Date.now() + 600;
+    clearTimeout(cursorTimer);
+    if (source.reason === 'selection' && source.from === source.to) { window.mdEditor.highlightRange(source.from, source.to); return; }
+    if (source.reason === 'activate') window.mdEditor.goToPosition(source.from, source.ratio);
+    else window.mdEditor.revealPosition(source.from, source.reason === 'outline' ? 0 : source.ratio, false);
+    if (source.reason === 'selection' && Number.isSafeInteger(source.to)) window.mdEditor.highlightRange(source.from, source.to);
+  }
+
+  function onEditorOutline(event) {
+    if (!hasEditor() || !event.detail || !Number.isSafeInteger(event.detail.line)) return;
+    var lines = window.mdEditor.getValue().split('\n');
+    var line = event.detail.line;
+    if (line < 1 || line > lines.length) return;
+    var from = lines.slice(0, line - 1).reduce(function (sum, text) { return sum + text.length + 1; }, 0);
+    suppressUntil = Date.now() + 600;
+    clearTimeout(cursorTimer);
+    window.mdEditor.revealPosition(from, 0, false);
+    previewSelection = null;
+    outlineAnchor = syncInput && syncInput.checked ? from : null;
+    if (syncInput && syncInput.checked) postContentLocate(from, from, 'outline', 0, true);
+  }
+
   function onCursor(event) {
-    if (!ready || !syncInput || !syncInput.checked || fullscreenMode() === 'editor') return;
-    if (Date.now() < suppressUntil) return;      // 由预览跳转引发，不回传
+    if (!ready || !syncInput || !syncInput.checked) return;
+    if (fullscreenMode() === 'editor' && !(event.detail && event.detail.from < event.detail.to)) { if (Date.now() >= suppressUntil) previewSelection = null; outlineAnchor = null; return; }
+    if (Date.now() < suppressUntil && !(event.detail && event.detail.from < event.detail.to)) return; // A new source selection takes ownership immediately.
     var line = event.detail && event.detail.line;
     if (!Number.isFinite(line)) return;
+    outlineAnchor = null;
     clearTimeout(cursorTimer);
-    cursorTimer = setTimeout(function () { postLocate(line); }, CURSOR_DEBOUNCE);
+    if (event.detail.from < event.detail.to) {
+      previewSelection = null;
+      lastPreviewPosition = null; // A new source range supersedes the saved preview selection.
+      locateCurrentCursor(true);
+      return;
+    }
+    cursorTimer = setTimeout(function () { locateCurrentCursor(); }, CURSOR_DEBOUNCE);
   }
 
   function onPreviewSource(event) {
@@ -1141,6 +1294,7 @@
     if (docAction) { event.preventDefault(); runDocumentAction(docAction); return; }
     if (event.isComposing || event.keyCode === 229) return;   // 输入法组合中不拦截
     if (event.key === 'Escape' && basicMenu && !basicMenu.hidden) { event.preventDefault(); closeBasicMenu(true); return; }
+    if (event.key === 'Escape' && window.mdWindowMode && (window.mdWindowMode.active || window.mdWindowMode.busy)) { window.mdWindowMode.exit(); return; }
     if (event.key === 'Escape' && fullscreenMode()) { applyFullscreen(null); return; }
     if (event.getModifierState && event.getModifierState('AltGraph')) return;
     if (!IS_MAC && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && (event.key || '').toLowerCase() === 'y' && inEditorTarget(event.target)) {
@@ -1161,7 +1315,7 @@
     if (action === 'save') saveMarkdown();
     else if (action === 'open' && openMarkdownInput) openMarkdownInput.click();
     else if (action === 'pdf') {
-      var download = document.querySelector('#download');
+      var download = queryWorkspace('#download');
       if (download && !download.disabled) download.click();
     }
   }
@@ -1173,6 +1327,7 @@
 
   // Escape in the sandboxed iframe cannot bubble into the parent document.
   document.addEventListener('md-preview-exit-fullscreen', function () {
+    if (window.mdWindowMode && window.mdWindowMode.active) { window.mdWindowMode.exit(); return; }
     if (fullscreenMode() === 'preview') applyFullscreen(null);
   });
 
@@ -1186,18 +1341,30 @@
 
   function wireEvents() {
     document.addEventListener('md-editor-ready', onReady);
+    document.addEventListener('md-editor-change', function () { outlineAnchor = null; previewSelection = null; });
+    document.addEventListener('md-editor-reset', function () { outlineAnchor = null; previewSelection = null; });
+    window.addEventListener('md-preview-ready', function () {
+      if (window.mdWindowMode && window.mdWindowMode.restoring) return;
+      if (syncInput && syncInput.checked && fullscreenMode() !== 'editor') locateCurrentCursor();
+    });
+    document.addEventListener('md-editor-outline', onEditorOutline);
+    document.addEventListener('md-preview-selection-intent', function () { clearTimeout(cursorTimer); suppressUntil = Date.now() + 600; });
     document.addEventListener('md-editor-cursor', onCursor);
+    document.addEventListener('md-editor-scroll', onEditorScroll);
+    document.addEventListener('md-preview-content-source', onPreviewContentSource);
     document.addEventListener('md-preview-source', onPreviewSource);
     document.addEventListener('md-document-type', function (event) {
       var type = event.detail && event.detail.type;
       if (typeof type === 'string' && type) { currentType = type; workspace.setAttribute('data-document-type', type); }
     });
-    document.addEventListener('keydown', onKeydown, true);
+    onWorkspaceDOM('keydown', onKeydown, true);
     // 预览就绪后重新下发当前缩放：iframe 重载会丢失状态；只接受预览窗口的消息。
     window.addEventListener('message', function (event) {
       if (!previewFrame || event.source !== previewFrame.contentWindow) return;
       if (!event.data) return;
-      if (event.data.type === 'md2pdf-ready') sendPreviewZoom();
+      if (event.data.type === 'md2pdf-ready') {
+        sendPreviewZoom();
+      }
       else if (event.data.type === 'md2pdf-preview-zoom-state' && typeof event.data.zoom === 'number' && previewZoomControl) previewZoomControl.display(event.data.zoom);
     });
     function updateSearchButton() {
@@ -1210,7 +1377,7 @@
     if (window.MutationObserver) new window.MutationObserver(updateSearchButton).observe(editorPanel, { childList: true, subtree: true });
     updateSearchButton();
     // 点击面板外部关闭「基础格式」面板；面板内部与触发器不触发。
-    document.addEventListener('click', function (event) {
+    onWorkspaceDOM('click', function (event) {
       if (!basicMenu || basicMenu.hidden) return;
       var target = event && event.target;
       if (basicWrap && basicWrap.contains && target && basicWrap.contains(target)) return;
@@ -1232,6 +1399,7 @@
   buildDivider();
   buildFullscreenButtons();
   buildPanelModeButtons();
+  buildIndependentWindows();
   buildZoomControls();
   restoreRatio();
   wireEvents();

@@ -222,16 +222,16 @@ function buildDialog() {
 }
 
 function mountDialog() {
-  if (dialog && dialog.isConnected) return dialog;
-  buildDialog();
-  if (!dialog.isConnected && document.body) document.body.appendChild(dialog);
+  const owner = window.mdWorkspaceHosts?.activeDocument() || document;
+  if (!dialog) buildDialog();
+  if (dialog.ownerDocument !== owner || !dialog.isConnected) owner.body.appendChild(dialog);
   ensureStatus();
   return dialog;
 }
 
 function ensureStatus() {
   if (statusEl && statusEl.isConnected) return statusEl;
-  var row = document.querySelector('.preview-footer');
+  var row = window.mdWorkspaceHosts?.query('.preview-footer') || document.querySelector('.preview-footer');
   if (!row) return null;
   statusEl = el('p', { class: 'md-doi-status', role: 'status', 'aria-live': 'polite' });
   row.appendChild(statusEl);
@@ -257,7 +257,7 @@ function open() {
     if (typeof node.showModal === 'function') node.showModal();
     return;
   }
-  opener = document.activeElement;
+  opener = (node.ownerDocument || document).activeElement;
   var snap = captureSnapshot();
   state.snapshot = snap.snapshot;
   state.at = snap.at;

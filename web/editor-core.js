@@ -311,7 +311,8 @@
           if (this.menu && !this.menu.contains(event.target) && !this.anchor.contains(event.target)) this.close();
         };
         this.scroll = () => this.close();
-        view.dom.ownerDocument.addEventListener('pointerdown', this.outside, true);
+        this.removeOutside = global.mdWorkspaceHosts ? global.mdWorkspaceHosts.on('pointerdown', this.outside, true) : null;
+        if (!this.removeOutside) view.dom.ownerDocument.addEventListener('pointerdown', this.outside, true);
         view.scrollDOM.addEventListener('scroll', this.scroll);
       }
       close(focus = false) {
@@ -369,7 +370,8 @@
       }
       destroy() {
         this.close();
-        this.view.dom.ownerDocument.removeEventListener('pointerdown', this.outside, true);
+        if (this.removeOutside) this.removeOutside();
+        else this.view.dom.ownerDocument.removeEventListener('pointerdown', this.outside, true);
         this.view.scrollDOM.removeEventListener('scroll', this.scroll);
       }
     });
@@ -475,9 +477,29 @@
     let externalExtensions = [];
     let completionProvider = null;
     let completionLimit = 5;
+    const syncHighlightEffect = V.StateEffect.define();
+    const syncHighlight = V.ViewPlugin.fromClass(class {
+      constructor() { this.decorations = V.Decoration.none; }
+      update(update) {
+        if (update.docChanged || update.selectionSet) this.decorations = V.Decoration.none;
+        for (const effect of update.transactions.flatMap(transaction => transaction.effects)) {
+          if (effect.is(syncHighlightEffect)) {
+            const range = effect.value;
+            this.decorations = range && range.to > range.from
+              ? V.Decoration.set([V.Decoration.mark({ class: 'md-sync-highlight' }).range(range.from, range.to)])
+              : V.Decoration.none;
+          }
+        }
+      }
+    }, { decorations: plugin => plugin.decorations });
     let view = null;
     let ready = false;
+    let editorScrollIntentUntil = 0;
+    let editorRevealRevision = 0;
     let lastCursorLine = -1;
+    let lastCursorPosition = -1;
+    let lastSelectionFrom = -1;
+    let lastSelectionTo = -1;
 
     // ---- completion bridge (setCompletions API) ----
     function completionSource(context) {
@@ -559,6 +581,7 @@
       // drawSelection paints beneath text; an opaque active-line background hides it.
       '.cm-activeLine': { backgroundColor: 'rgba(244, 247, 251, 0.4)' },
       '.cm-activeLineGutter': { backgroundColor: '#eef2f8', color: '#42648b' },
+      '.md-sync-highlight': { backgroundColor: '#cfe0f4', borderRadius: '2px' },
       '.cm-selectionBackground': { backgroundColor: '#cfe0f4' },
       '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#233e60' },
       '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': { backgroundColor: '#bcd6f2' },
@@ -596,9 +619,14 @@
     }
 
     function emitCursor(line) {
-      if (line === lastCursorLine) return;
+      const position = view ? view.state.selection.main.head : 0;
+      const range = view.state.selection.main;
+      if (line === lastCursorLine && position === lastCursorPosition && range.from === lastSelectionFrom && range.to === lastSelectionTo) return;
       lastCursorLine = line;
-      doc.dispatchEvent(new CustomEvent('md-editor-cursor', { detail: { line } }));
+      lastCursorPosition = position;
+      lastSelectionFrom = range.from;
+      lastSelectionTo = range.to;
+      doc.dispatchEvent(new CustomEvent('md-editor-cursor', { detail: { line, position, from: range.from, to: range.to } }));
     }
 
     // Full extension list for a fresh state: the fixed set plus the current
@@ -632,6 +660,7 @@
 
     // ---- update listener ----
     const updateListener = V.EditorView.updateListener.of(function (update) {
+      if (update.docChanged || update.selectionSet) editorScrollIntentUntil = 0;
       if (update.docChanged) {
         const value = update.state.doc.toString();
         writeTextarea(value);
@@ -690,6 +719,7 @@
       V.highlightSpecialChars(),
       V.history(),
       V.drawSelection(),
+      syncHighlight,
       V.dropCursor(),
       V.rectangularSelection(),
       V.crosshairCursor(),
@@ -738,7 +768,54 @@
     const api = {
       __mounted: true,
       requestMeasure: function () { view.requestMeasure(); },
+      getDocumentRoot: function () { return view.dom.ownerDocument; },
+      setDocumentRoot: function (nextDocument) {
+        view.setRoot(nextDocument);
+        view.requestMeasure();
+      },
       coordsAtPos: function (pos) { return view.coordsAtPos(pos); },
+      getCursorPosition: function () { return view.state.selection.main.head; },
+      getScrollAnchor: function () {
+        const rect = view.scrollDOM.getBoundingClientRect();
+        const ratio = .3;
+        const y = rect.top + view.scrollDOM.clientHeight * ratio;
+        const pos = view.posAtCoords({ x: view.contentDOM.getBoundingClientRect().left + 4, y }, false);
+        return { from: pos == null ? view.lineBlockAtHeight(view.scrollDOM.scrollTop).from : pos, ratio };
+      },
+      revealPosition: function (position, ratio, activate) {
+        editorScrollIntentUntil = 0;
+        const from = clamp(Number(position), 0, view.state.doc.length);
+        if (!Number.isFinite(from)) return;
+        const effects = [];
+        V.foldedRanges(view.state).between(from, from, (start, end) => {
+          if (start < from && end > from) effects.push(V.unfoldEffect.of({ from: start, to: end }));
+        });
+        // Let CodeMirror render the exact offset first, including offscreen wrapped lines.
+        effects.push(V.EditorView.scrollIntoView(from, { y: 'center' }));
+        view.dispatch({ effects, ...(activate ? { selection: { anchor: from } } : {}) });
+        const fraction = Math.max(0, Math.min(1, Number.isFinite(ratio) ? ratio : .3));
+        const revision = ++editorRevealRevision;
+        (view.dom?.ownerDocument.defaultView || globalThis).requestAnimationFrame(function () {
+          if (revision !== editorRevealRevision) return;
+          view.requestMeasure({
+            read: function () {
+              const rect = view.scrollDOM.getBoundingClientRect();
+              const coords = view.coordsAtPos(from);
+              return coords ? coords.top - rect.top + view.scrollDOM.scrollTop : null;
+            },
+            write: function (top) {
+              if (revision === editorRevealRevision && top !== null) view.scrollDOM.scrollTop = top - view.scrollDOM.clientHeight * fraction;
+            }
+          });
+        });
+        if (activate) view.focus();
+      },
+      highlightRange: function (from, to) {
+        from = clamp(from, 0, view.state.doc.length);
+        to = clamp(to, from, view.state.doc.length);
+        view.dispatch({ effects: syncHighlightEffect.of({ from, to }), ...(to > from ? { selection: { anchor: view.state.selection.main.head } } : {}) });
+      },
+      goToPosition: function (from, ratio) { api.revealPosition(from, ratio, true); },
       applyEdit: function (from, to, text, anchor, head) {
         view.dispatch({ changes: { from, to, insert: text }, selection: { anchor, head: head === undefined ? anchor : head }, userEvent: 'input.format' });
       },
@@ -836,6 +913,24 @@
       if (global.console && global.console.warn) global.console.warn('[md2pdf] 编辑器初始化失败，已回退到纯文本编辑区：', error);
       return;
     }
+
+    let scrollFrame = 0;
+    function claimScroll() { editorScrollIntentUntil = Date.now() + 1400; }
+    view.scrollDOM.addEventListener('wheel', claimScroll, { passive: true });
+    view.scrollDOM.addEventListener('touchmove', claimScroll, { passive: true });
+    view.scrollDOM.addEventListener('pointerdown', function (event) {
+      const rect = view.scrollDOM.getBoundingClientRect();
+      if (event.clientX >= rect.left + view.scrollDOM.clientWidth) claimScroll();
+    }, { passive: true });
+    view.scrollDOM.addEventListener('scroll', function () {
+      if (scrollFrame) return;
+      scrollFrame = (view.dom.ownerDocument.defaultView || global).requestAnimationFrame(function () {
+        scrollFrame = 0;
+        const user = Date.now() < editorScrollIntentUntil;
+        if (user) claimScroll();
+        doc.dispatchEvent(new CustomEvent('md-editor-scroll', { detail: { ...api.getScrollAnchor(), user } }));
+      });
+    }, { passive: true });
 
     // 外壳负责可用高度；内核在宿主尺寸变化后更新光标、滚动和搜索栏度量。
     if (global.ResizeObserver) new global.ResizeObserver(function () { view.requestMeasure(); }).observe(editorHost);

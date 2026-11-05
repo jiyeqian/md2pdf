@@ -247,6 +247,8 @@ test('纵向面板按可见高度等高或单屏滚动，同步按钮总间距�
 
 // ---------------------------------------------------------------- 行为：vm 执行
 function fakeEnvironment() {
+  let ownerDocument;
+  const createdNodes = [];
   class ClassList {
     constructor() { this.set = new Set(); }
     add(...c) { c.forEach(x => this.set.add(x)); }
@@ -256,6 +258,8 @@ function fakeEnvironment() {
   }
   class FakeNode {
     constructor(tag) {
+      this.ownerDocument = ownerDocument;
+      createdNodes.push(this);
       this.tagName = (tag || 'div').toUpperCase();
       this.classList = new ClassList();
       this.attrs = {};
@@ -342,6 +346,9 @@ function fakeEnvironment() {
     addEventListener(type, fn) { (winListeners[type] || (winListeners[type] = [])).push(fn); },
     removeEventListener() {},
   };
+  ownerDocument = document;
+  document.defaultView = sandbox;
+  createdNodes.forEach(node => { node.ownerDocument = document; });
   sandbox.window = sandbox;
   vm.createContext(sandbox);
   const buttonIn = node => node.children.find(child => child.tagName === 'BUTTON');
@@ -710,6 +717,8 @@ test('app.js：滑块与数值双向同步、跟随文档省略覆盖、触发�
 
 // ---------------------------------------------------------------- 选项模型（vm 执行 app.js 真实逻辑）
 function fakeAppEnvironment() {
+  let ownerDocument;
+  const createdNodes = [];
   class ClassList {
     constructor() { this.set = new Set(); }
     add(...c) { c.forEach(x => this.set.add(x)); }
@@ -719,6 +728,8 @@ function fakeAppEnvironment() {
   }
   class FakeNode {
     constructor(tag) {
+      this.ownerDocument = ownerDocument;
+      createdNodes.push(this);
       this.tagName = (tag || 'div').toUpperCase();
       this.classList = new ClassList();
       this.attrs = {};
@@ -791,6 +802,9 @@ function fakeAppEnvironment() {
     addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); },
     removeEventListener() {},
   };
+  ownerDocument = document;
+  document.defaultView = sandbox;
+  createdNodes.forEach(node => { node.ownerDocument = document; });
   sandbox.window = sandbox;
   vm.createContext(sandbox);
   return { sandbox, form, preview };
@@ -806,7 +820,7 @@ test('调整浮层定位在视口内，适配工具栏左右两列', () => {
   appEnv.sandbox.innerWidth = 452;
   for (const anchorLeft of [28, 232]) {
     const panel = { style: {}, getBoundingClientRect: () => ({ width: 300 }) };
-    const details = { querySelector: () => panel, getBoundingClientRect: () => ({ left: anchorLeft }) };
+    const details = { ownerDocument: appEnv.sandbox.document, querySelector: () => panel, getBoundingClientRect: () => ({ left: anchorLeft }) };
     appEnv.sandbox.positionRangePopover(details);
     const left = anchorLeft + parseFloat(panel.style.left);
     assert.ok(left >= 12, '浮层不应超出左边缘');
@@ -922,7 +936,8 @@ test('privacy 下载保存与标题栏 Markdown 下载使用同一个动作', ()
   assert.match(appCss, /\.preview-toolbar \.toolbar-field\{flex:0 0 auto;min-width:0/);
   assert.match(appJs, /slider.addEventListener\('keydown'/);
   assert.match(appJs, /slider.addEventListener\('blur', end\)/);
-  assert.match(appJs, /window.addEventListener\('pointerup', end\)/);
+  assert.match(appJs, /onWorkspaceDOM\('pointerup', end\)/);
+  assert.match(appJs, /onWorkspaceDOM\('pointercancel', end\)/);
 });
 
 test('范围图标跟随实际文档值，保留空覆盖并将数值气泡定位到滑块', () => {
@@ -1057,9 +1072,11 @@ test('面板共享网格覆盖左右边缘，缩放轨道占两侧按钮间空�
     assert.ok(gap >= 2 && gap < 6.5, '左右间距接近上下4px间距且不拉伸按钮');
     assert.ok(Math.abs(n * b + (n - 1) * gap + 2 * inset - width) < 0.001);
     const left = inset + b;
-    const right = width - inset - (3 * b + 2 * gap);
+    const actions = -Number(style['--panel-actions-start']) - 1;
+    const right = width - inset - (actions * b + (actions - 1) * gap);
     assert.ok(Math.abs(parseFloat(style['--panel-zoom-left']) - (left + right) / 2) < 0.001);
-    assert.ok(Math.abs((parseFloat(style['--panel-zoom-width']) - 62.334) / (right - left) - 0.3) < 0.001);
+    const expectedZoom = Math.min(right - left - gap * 2, (right - left) * .3 + 62.334);
+    assert.ok(Math.abs(parseFloat(style['--panel-zoom-width']) - expectedZoom) < .001);
     env.editorPanel.getBoundingClientRect = () => ({ width: width + 200 });
     observers[0].callback();
     assert.ok(Number(style['--panel-columns']) > n, '观察面板实际尺寸变化后更新网格');
@@ -1099,4 +1116,38 @@ test('页面方向空值跟随文档，显式纵向发送 boolean false，GB 清
   env.sandbox.applyPolicy({ type: 'gb', controls: { landscape: { available: false } } });
   assert.equal(env.form.elements.landscape.value, '');
   assert.equal(vm.runInContext('collectedOptions().landscape', env.sandbox), undefined);
+});
+
+
+test('标题栏根据实际可见动作数预留网格列，缩放不侵入四按钮区域', () => {
+  const source = wsJs.slice(wsJs.indexOf('  function updatePanelGrid(panel)'), wsJs.indexOf('  function updatePanelGrids()'));
+  for (const width of [210, 260, 340, 500, 1400]) {
+    const values = {}, buttons = Array.from({length: 4}, () => ({tagName: 'BUTTON', hidden: false}));
+    const actions = {children: buttons};
+    const heading = {querySelector: () => actions};
+    const panel = {clientWidth: width, ownerDocument: {defaultView: {matchMedia: query => ({matches: width <= (query.includes('390') ? 390 : 600)})}},
+      querySelector: () => heading, style: {setProperty: (name, value) => { values[name] = value; }} };
+    const context = vm.createContext({window: {}, Array, Math});
+    vm.runInContext(source, context);
+    context.updatePanelGrid(panel);
+    assert.equal(values['--panel-actions-start'], '-5', '四个动作必须占满最后四列');
+    const b = parseFloat(values['--panel-button']), gap = parseFloat(values['--panel-gap']), inset = parseFloat(values['--panel-inset']);
+    const firstAction = width - inset - (4 * b + 3 * gap);
+    const zoomRight = parseFloat(values['--panel-zoom-left']) + parseFloat(values['--panel-zoom-width']) / 2;
+    assert.ok(zoomRight <= firstAction - gap + .001, '缩放须与右侧按钮保留间距');
+    assert.equal(width < 230 ? 'none' : 'flex', values['--panel-zoom-display'], '极窄空间不足时隐藏缩放，保留全部按钮');
+    buttons[2].hidden = true;
+    context.updatePanelGrid(panel);
+    assert.equal(values['--panel-actions-start'], '-4', '隐藏独立窗口入口后恢复三列动作');
+  }
+  assert.match(wsCss, /grid-column: var\(--panel-actions-start, -4\) \/ -1/);
+  assert.match(wsCss, /flex: 0 0 var\(--panel-button, 28px\)/);
+});
+
+test('独立窗口图标使用与全屏一致的16px图标类和细描边', () => {
+  const source = wsJs.slice(wsJs.indexOf("'data-panel-independent': index"), wsJs.indexOf("independentButtons.push(button)"));
+  assert.ok(source.includes("svg.setAttribute('class', 'btn-icon')"));
+  assert.ok(source.includes("svg.setAttribute('viewBox', '0 0 20 20')"));
+  assert.ok(source.includes("svg.setAttribute('stroke-width', '1.4')"));
+  assert.ok(!source.includes('M9 4h11v11H9z'), '移除重叠窗口和箭头叠加的繁复线条');
 });

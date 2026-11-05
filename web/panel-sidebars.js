@@ -2,6 +2,7 @@
   'use strict';
   const sidebars = [];
   const preview = document.querySelector('#preview');
+  function send(data) { if (window.mdWorkspaceHosts) window.mdWorkspaceHosts.postPreview(data); else preview?.contentWindow?.postMessage(data, '*'); }
   function create({ panel, title, id, width = 260, button, content }) {
     const actions = panel.querySelector('.panel-actions');
     const main = panel.querySelector('.preview-surface') || panel.querySelector('.md-editor') || panel.querySelector('#markdown');
@@ -12,7 +13,7 @@
     button.id = id + '-toggle'; button.title = title; button.setAttribute('aria-label', title);
     button.setAttribute('aria-controls', id); button.setAttribute('aria-expanded', 'false');
     button.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M14 3v18M6 8h5M6 12h5M6 16h3"/></svg>';
-    const place = () => { const full = actions.querySelector('[data-panel-fullscreen]'); if (full && button.nextElementSibling !== full) actions.insertBefore(button, full); };
+    const place = () => { const next = actions.querySelector('[data-panel-independent]') || actions.querySelector('[data-panel-fullscreen]'); if (next && button.nextElementSibling !== next) actions.insertBefore(button, next); };
     actions.append(button); new MutationObserver(place).observe(actions, { childList: true }); place();
     const element = document.createElement('aside'); element.id = id; element.className = 'md-panel-sidebar'; element.hidden = true;
     element.setAttribute('aria-label', title);
@@ -34,7 +35,7 @@
       resize.setAttribute('aria-valuenow', String(Math.round(actual))); resize.setAttribute('aria-valuemin', String(Math.min(200, maximum))); resize.setAttribute('aria-valuemax', String(Math.round(maximum)));
     }
     function remember(next) { preferred = Math.max(200, Math.min(next, panel.clientWidth * .5)); fit(); try { localStorage.setItem('md2pdf.sidebar.' + id, String(preferred)); } catch (_) {} }
-    function notify() { if (preview?.contentWindow) preview.contentWindow.postMessage({ type: 'md2pdf-sidebar-open', open: sidebars.some(s => s.isOpen()) }, '*'); }
+    function notify() { if (preview?.contentWindow) send({ type: 'md2pdf-sidebar-open', open: sidebars.some(s => s.isOpen()) }); }
     const api = { element, body, content: body, button, isOpen: () => !element.hidden,
       open() { element.hidden = false; button.setAttribute('aria-expanded', 'true'); fit(); notify(); updateViews(); },
       close() { element.hidden = true; button.setAttribute('aria-expanded', 'false'); notify(); updateViews(); },
@@ -66,7 +67,7 @@
     }
     button.addEventListener('click', api.toggle); closeButton.addEventListener('click', () => { api.close(); button.focus(); });
     resize.addEventListener('pointerdown', event => {
-      if (matchMedia('(max-width: 600px)').matches || event.button !== 0) return;
+      if (panel.ownerDocument.defaultView.matchMedia('(max-width: 600px)').matches || event.button !== 0) return;
       event.preventDefault(); resize.setPointerCapture(event.pointerId);
       const startX = event.clientX, startWidth = element.getBoundingClientRect().width;
       const move = e => remember(startWidth + startX - e.clientX);
@@ -77,7 +78,7 @@
     element.append(resize, header, body); dock.append(element); sidebars.push(api); new ResizeObserver(fit).observe(panel); new MutationObserver(fit).observe(panel, { childList: true, subtree: true }); fit(); return api;
   }
   function closeAll() { const open = sidebars.filter(s => s.isOpen()); open.forEach(s => s.close()); return open.length > 0; }
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && closeAll()) { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
+  (window.mdWorkspaceHosts ? window.mdWorkspaceHosts.on : document.addEventListener.bind(document))('keydown', event => { if (event.key === 'Escape' && closeAll()) { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
   const icons = { outline: 'M8 5h13M8 12h13M8 19h13M3 5h1M3 12h1M3 19h1', assistant: 'M4 3h13v18H4zM8 7h5M8 11h5M8 15l2 2 5-5', thumbnails: 'M6 3h13v17H6zM3 6v16h13M9 7h7v6H9zM9 16h7' };
   window.mdPanelSidebars = { create, closeAll, icons };
   const panel = document.querySelector('.preview-panel');
@@ -120,7 +121,7 @@
       const disclosure = document.createElement('button'); disclosure.type = 'button'; disclosure.className = 'md-outline-disclosure'; disclosure.style.visibility = 'hidden'; disclosure.textContent = '⌄';
       disclosure.setAttribute('aria-label', '折叠或展开：' + item.text);
       const button = document.createElement('button'); button.type = 'button'; button.dataset.outlineIndex = String(index); button.textContent = item.text; button.title = item.text;
-      button.addEventListener('click', () => { preview.contentWindow.postMessage({ type: 'md2pdf-outline-locate', index }, '*'); select(index); });
+      button.addEventListener('click', () => { send({ type: 'md2pdf-outline-locate', index }); select(index); });
       label.append(disclosure, button); row.append(label); parent.container.append(row);
       const children = document.createElement('div'); children.className = 'md-outline-children'; row.append(children);
       function updateExpanded() { const expanded = !collapsedOutlinePaths.has(key); children.hidden = !expanded; disclosure.setAttribute('aria-expanded', String(expanded)); disclosure.textContent = expanded ? '⌄' : '›'; }
@@ -139,5 +140,5 @@
     else if (data.type === 'md2pdf-outline-current' && Number.isSafeInteger(data.index)) select(data.index);
     else if (data.type === 'md2pdf-sidebar-escape') closeAll();
   });
-  preview.addEventListener('load', () => preview.contentWindow.postMessage({ type: 'md2pdf-sidebar-open', open: sidebars.some(s => s.isOpen()) }, '*'));
+  preview.addEventListener('load', () => send({ type: 'md2pdf-sidebar-open', open: sidebars.some(s => s.isOpen()) }));
 })();

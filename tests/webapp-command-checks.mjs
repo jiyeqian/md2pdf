@@ -37,10 +37,11 @@ test('npm ships the web assets and each topbar ends with the safe GitHub link', 
   }
 });
 
-test('both brand icons are accessible links back to the editor homepage', () => {
+test('brand icons expose the editor update and template return actions', () => {
   for (const name of ['index.html', 'examples.html']) {
     const html = readFileSync(new URL('../web/' + name, import.meta.url), 'utf8');
-    assert.match(html, /<a class="brand-icon" href="\/"[^>]*aria-label="返回编辑器" title="返回编辑器">M↓<\/a>/);
+    const action = name === 'index.html' ? '检查并更新' : '返回编辑器';
+    assert.match(html, new RegExp('<a class="brand-icon" href="/"[^>]*aria-label="' + action + '" title="' + action + '">M↓</a>'));
     assert.doesNotMatch(html, /class="brand-icon"[^>]*aria-hidden/);
   }
 });

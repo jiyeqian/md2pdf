@@ -3,6 +3,7 @@
   let pending;
   window.mdConfirmTemplate = () => {
     if (pending) return pending;
+    const document = window.mdWorkspaceHosts?.activeDocument() || window.document || globalThis.document;
     const previousFocus = document.activeElement;
     const dialog = document.createElement('dialog');
     dialog.className = 'template-confirm';
@@ -45,6 +46,7 @@
 
 // Use the existing application dialog style for actionable font failures.
 window.mdShowFontError = fonts => {
+  const document = window.mdWorkspaceHosts?.activeDocument() || window.document || globalThis.document;
   if (document.querySelector('.font-error-dialog')) return;
   const previous = document.activeElement;
   const dialog = document.createElement('dialog');

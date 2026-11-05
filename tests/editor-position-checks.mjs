@@ -13,6 +13,17 @@ const BT = String.fromCharCode(96);        // 反引号，避免在测试源码�
 const FENCE = BT + BT + BT;
 const ATTR_RE = / data-md2pdf-source-line="(\d+)"/g;
 
+test('内容映射仅嵌入完整预览，JSON不能闭合脚本且重复处理幂等', () => {
+  const md = '# Title\n\nLiteral </script> and **text**.\n';
+  const html = '<html><head></head><body><main><p>Literal &lt;/script&gt; and <strong>text</strong>.</p></main></body></html>';
+  const mapped = attachSourcePositions(html, md);
+  const json = /<script type="application\/json" data-md2pdf-content-map>([\s\S]*?)<\/script>/.exec(mapped)[1];
+  assert.ok(json.includes('\\u003c/script>'));
+  assert.ok(JSON.parse(json).some(item => item.text.includes('</script>')));
+  assert.equal(attachSourcePositions(mapped, md), mapped);
+  assert.equal((mapped.match(/<script\b/g) || []).length, 1);
+});
+
 // 解析渲染 HTML 中 h2–h6 的层级、内部文本与已标注行号。
 function renderedHeadings(html) {
   const out = [];
