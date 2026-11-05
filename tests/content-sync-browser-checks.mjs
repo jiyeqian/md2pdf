@@ -97,14 +97,17 @@ try {
   assert.ok(flow.mapped && flow.top >= 0 && flow.bottom <= flow.height, JSON.stringify(flow));
   await browser.send('Page.captureScreenshot', { format: 'png' }).then(result => writeFile('/private/tmp/md2pdf-content-sync-browser.png', Buffer.from(result.data, 'base64')));
 
-  // A preview selection marks source without changing editor selection/focus.
-  const originalSelection = await evaluate('mdEditor.getSelection()');
+  // The newest selection replaces both the old native range and its mirror.
+  await evaluate(`mdEditor.setSelection(${target},${target+9})`);
+  await locate(target,target+9);
+  const originalSelection = { from: target+9, to: target+9, text: '' };
   await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
-  await evaluate(`(()=>{const node=[...document.querySelectorAll('#md2pdf-preview-flow td')].find(node=>node.textContent==='value84');const range=document.createRange();range.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`, session);
+  await evaluate(`(()=>{const node=[...document.querySelectorAll('#md2pdf-preview-flow td')].find(node=>node.textContent==='value84');node.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));const range=document.createRange();range.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`, session);
   await wait("document.querySelector('.md-sync-highlight')?.textContent === 'value84'");
   await new Promise(resolve=>setTimeout(resolve,2200));
   assert.equal(await evaluate("document.querySelector('.md-sync-highlight')?.textContent"), 'value84', 'fullscreen source highlight persists beyond old timeout');
-  assert.deepEqual(await evaluate('mdEditor.getSelection()'), originalSelection, 'reverse highlight preserves source selection');
+  assert.deepEqual(await evaluate('mdEditor.getSelection()'), originalSelection, 'preview selection collapses the old source range without moving its caret');
+  assert.equal(await evaluate("!!document.querySelector('[data-md2pdf-sync-highlight]>div')",session),false,'preview selection removes old source mirror');
   await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
   await new Promise(resolve=>setTimeout(resolve,250));
   for (let round=0;round<3;round++) {
@@ -120,9 +123,10 @@ try {
     assert.equal(await evaluate("document.querySelector('.md-sync-highlight')?.textContent"),'value84','source mirror survives mode changes');
     assert.deepEqual(await evaluate('mdEditor.getSelection()'),originalSelection);
   }
-  await evaluate(`getSelection().removeAllRanges()`, session);
   await evaluate(`mdEditor.setSelection(${target},${target+9})`);
   await locate(target,target+9);
+  await wait('getSelection().isCollapsed',session);
+  assert.equal(await evaluate("!!document.querySelector('.md-sync-highlight')"),false,'new source selection removes previous preview mirror');
   const selectedSource = await evaluate('mdEditor.getSelection()');
   for(let round=0;round<2;round++) {
     await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
@@ -132,7 +136,7 @@ try {
     await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
     await new Promise(resolve=>setTimeout(resolve,250));
     assert.deepEqual(await evaluate('mdEditor.getSelection()'),selectedSource,'source selection survives fullscreen round trip');
-    assert.ok(await evaluate("!!document.querySelector('[data-md2pdf-sync-highlight]>div')",session),'preview mirror is redrawn after layout');
+    assert.ok(await evaluate("!!document.querySelector('[data-md2pdf-sync-highlight]>div')",session),'preview mirror is redrawn after layout: '+JSON.stringify(await evaluate(`({selected:getSelection().toString(),overlay:document.querySelector('[data-md2pdf-sync-highlight]')?.outerHTML,y:scrollY})`,session)));
   }
   await new Promise(resolve=>setTimeout(resolve,2200));
   assert.ok(await evaluate("!!document.querySelector('[data-md2pdf-sync-highlight]>div')",session),'preview source-range mirror no longer expires');

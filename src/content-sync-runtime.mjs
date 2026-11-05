@@ -206,6 +206,10 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     if (!Number.isSafeInteger(data.from) || data.from < 0) return;
     const anchor = atSource(data.from);
     if (!anchor) return;
+    if (data.reason === 'cursor' && data.to > data.from) {
+      const selection = getSelection();
+      if (selection?.rangeCount && activeScope()?.contains(selection.anchorNode)) { selectionGuardUntil = Date.now() + 1000; selection.removeAllRanges(); }
+    }
     beforeLocate();
     userScroll = false; programmaticUntil = Date.now() + 200;
     const ratio = Number.isFinite(data.ratio) ? Math.max(0, Math.min(1, data.ratio)) : .3;
@@ -268,6 +272,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     if (!selection || selection.isCollapsed || !selection.rangeCount) { if (Date.now() < selectionGuardUntil) return; send('selection', { from: 0, to: 0, rect: { top: 0 } }); return; }
     const range = selection.getRangeAt(0), scope = activeScope();
     if (!scope?.contains(range.startContainer) || !scope.contains(range.endContainer)) return;
+    selectedRange = null; overlay?.remove(); clearTimeout(overlayTimer);
     let from = Infinity, to = -1, rect;
     for (const part of refresh()) {
       if (!range.intersectsNode(part.node)) continue;

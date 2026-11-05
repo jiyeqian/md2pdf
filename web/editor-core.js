@@ -813,7 +813,7 @@
       highlightRange: function (from, to) {
         from = clamp(from, 0, view.state.doc.length);
         to = clamp(to, from, view.state.doc.length);
-        view.dispatch({ effects: syncHighlightEffect.of({ from, to }) });
+        view.dispatch({ effects: syncHighlightEffect.of({ from, to }), ...(to > from ? { selection: { anchor: view.state.selection.main.head } } : {}) });
       },
       goToPosition: function (from, ratio) { api.revealPosition(from, ratio, true); },
       applyEdit: function (from, to, text, anchor, head) {

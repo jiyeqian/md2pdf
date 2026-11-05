@@ -1184,8 +1184,9 @@
   }
 
   function onCursor(event) {
-    if (!ready || !syncInput || !syncInput.checked || fullscreenMode() === 'editor') return;
-    if (Date.now() < suppressUntil) return;      // 由预览跳转引发，不回传
+    if (!ready || !syncInput || !syncInput.checked) return;
+    if (fullscreenMode() === 'editor' && !(event.detail && event.detail.from < event.detail.to)) return;
+    if (Date.now() < suppressUntil && !(event.detail && event.detail.from < event.detail.to)) return; // A new source selection takes ownership immediately.
     var line = event.detail && event.detail.line;
     if (!Number.isFinite(line)) return;
     clearTimeout(cursorTimer);
@@ -1312,6 +1313,7 @@
       if (syncInput && syncInput.checked && fullscreenMode() !== 'editor') locateCurrentCursor();
     });
     document.addEventListener('md-editor-outline', onEditorOutline);
+    document.addEventListener('md-preview-selection-intent', function () { clearTimeout(cursorTimer); suppressUntil = Date.now() + 600; });
     document.addEventListener('md-editor-cursor', onCursor);
     document.addEventListener('md-editor-scroll', onEditorScroll);
     document.addEventListener('md-preview-content-source', onPreviewContentSource);

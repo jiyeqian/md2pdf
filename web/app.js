@@ -814,7 +814,7 @@ document.addEventListener('md-preview-locate', event => {
 window.addEventListener('message', event => {
   if (event.source !== preview.contentWindow || !event.data || event.data.revision !== previewRevision) return;
   // 跨 sandbox iframe 预览的 pointerdown 不会冒泡到父文档：预览内按下指针时由其上报，关闭已打开的调整浮层。
-  if (event.data.type === 'md2pdf-preview-pointerdown') { closeRangePopovers(); return; }
+  if (event.data.type === 'md2pdf-preview-pointerdown') { closeRangePopovers(); document.dispatchEvent(new CustomEvent('md-preview-selection-intent')); return; }
   if (event.data.type === 'md2pdf-exit-fullscreen') {
     document.dispatchEvent(new CustomEvent('md-preview-exit-fullscreen'));
     return;

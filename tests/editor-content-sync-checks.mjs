@@ -164,3 +164,15 @@ test('offscreen wrapped targets are rendered at the exact offset before visual a
   frames.shift()();
   assert.equal(view.scrollDOM.scrollTop, 1040);
 });
+
+test('preview mirror replaces the old source range without focus or scrolling', () => {
+  const transactions = [];
+  const start = core.indexOf('      highlightRange: function (from, to) {');
+  const end = core.indexOf('      goToPosition:', start);
+  const context = vm.createContext({ view: { state: { doc: { length: 50 }, selection: { main: { head: 18 } } }, dispatch: value => transactions.push(value) },
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)), syncHighlightEffect: { of: value => value } });
+  vm.runInContext('var api = ({' + core.slice(start, end) + '}); api.highlightRange(3,9)', context);
+  assert.equal(transactions[0].selection.anchor, 18, 'collapse old native range at its existing caret');
+  assert.deepEqual(JSON.parse(JSON.stringify(transactions[0].effects)), { from: 3, to: 9 });
+  assert.equal(transactions[0].scrollIntoView, undefined);
+});

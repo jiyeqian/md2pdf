@@ -122,6 +122,7 @@ function runtimeScript(type) {
     '  function activeNodes(selector) { var scope = activeScope(); return scope ? scope.querySelectorAll(selector) : []; }',
     '  var nativeSelection = (' + installPreviewSelection.toString() + ')({activeScope:activeScope,getSelection:function(){return window.getSelection ? window.getSelection() : null;}});',
     '  document.addEventListener("pointerdown", nativeSelection.clearProtection); document.addEventListener("keydown", nativeSelection.clearProtection);',
+    '  addEventListener("message", function(event){var data=event.data;if(event.source===parent && data && data.revision===MD2PDF_PREVIEW_REVISION && data.type==="md2pdf-content-locate" && data.reason==="cursor" && data.to>data.from) nativeSelection.clearProtection();});',
     '  function restoreSelectionState(position) { if (!position || (position.revision !== undefined && position.revision !== MD2PDF_PREVIEW_REVISION)) return; nativeSelection.restore(position.selection); if (contentSync && contentSync.restoreHighlight) contentSync.restoreHighlight(position.highlight); }',
     '  function applyPreviewMode() {',
     '    document.documentElement.classList.toggle("md2pdf-preview-flow", MD2PDF_PREVIEW_FLOW && !!flowRoot);',
