@@ -1155,9 +1155,10 @@
   function onPreviewContentSource(event) {
     var source = event.detail;
     if (!hasEditor() || !source || !Number.isSafeInteger(source.from)) return;
-    if (source.reason !== 'activate' && source.reason !== 'outline' && (!syncInput || !syncInput.checked || fullscreenMode() === 'editor')) return;
+    if (source.reason !== 'activate' && (!syncInput || !syncInput.checked || fullscreenMode() === 'editor')) return;
     suppressUntil = Date.now() + 600;
     clearTimeout(cursorTimer);
+    if (source.reason === 'selection' && source.from === source.to) { window.mdEditor.highlightRange(source.from, source.to); return; }
     if (source.reason === 'activate') window.mdEditor.goToPosition(source.from, source.ratio);
     else window.mdEditor.revealPosition(source.from, source.reason === 'outline' ? 0 : source.ratio, false);
     if (source.reason === 'selection' && Number.isSafeInteger(source.to)) window.mdEditor.highlightRange(source.from, source.to);
@@ -1172,7 +1173,7 @@
     suppressUntil = Date.now() + 600;
     clearTimeout(cursorTimer);
     window.mdEditor.revealPosition(from, 0, false);
-    postContentLocate(from, from, 'outline', 0, true);
+    if (syncInput && syncInput.checked) postContentLocate(from, from, 'outline', 0, true);
   }
 
   function onCursor(event) {

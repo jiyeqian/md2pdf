@@ -492,7 +492,6 @@
         }
       }
     }, { decorations: plugin => plugin.decorations });
-    let syncHighlightTimer;
     let view = null;
     let ready = false;
     let editorScrollIntentUntil = 0;
@@ -812,11 +811,9 @@
         if (activate) view.focus();
       },
       highlightRange: function (from, to) {
-        clearTimeout(syncHighlightTimer);
         from = clamp(from, 0, view.state.doc.length);
         to = clamp(to, from, view.state.doc.length);
         view.dispatch({ effects: syncHighlightEffect.of({ from, to }) });
-        syncHighlightTimer = setTimeout(function () { view.dispatch({ effects: syncHighlightEffect.of(null) }); }, 1800);
       },
       goToPosition: function (from, ratio) { api.revealPosition(from, ratio, true); },
       applyEdit: function (from, to, text, anchor, head) {

@@ -58,7 +58,7 @@ test('incoming scroll reveals without moving cursor, activation works with sync 
   context.onPreviewContentSource({ detail: { from: 4, to: 7, ratio: .2, reason: 'selection' } });
   assert.equal(calls.length, 2, 'disabled sync ignores selections');
   context.onPreviewContentSource({ detail: { from: 3, to: 9, ratio: .3, reason: 'outline' } });
-  assert.deepEqual(calls.at(-1), ['reveal', 3, 0, false], 'outline remains explicit with sync off');
+  assert.equal(calls.length, 2, 'disabled sync keeps outline navigation local');
   context.syncInput.checked = true;
   context.onPreviewContentSource({ detail: { from: 4, to: 7, ratio: .2, reason: 'selection' } });
   assert.deepEqual(calls.slice(-2), [['reveal', 4, .2, false], ['highlight', 4, 7]]);

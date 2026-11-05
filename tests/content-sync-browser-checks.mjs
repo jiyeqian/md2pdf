@@ -99,28 +99,38 @@ try {
 
   // A preview selection marks source without changing editor selection/focus.
   const originalSelection = await evaluate('mdEditor.getSelection()');
+  await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
   await evaluate(`(()=>{const node=[...document.querySelectorAll('#md2pdf-preview-flow td')].find(node=>node.textContent==='value84');const range=document.createRange();range.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`, session);
   await wait("document.querySelector('.md-sync-highlight')?.textContent === 'value84'");
+  await new Promise(resolve=>setTimeout(resolve,2200));
+  assert.equal(await evaluate("document.querySelector('.md-sync-highlight')?.textContent"), 'value84', 'fullscreen source highlight persists beyond old timeout');
   assert.deepEqual(await evaluate('mdEditor.getSelection()'), originalSelection, 'reverse highlight preserves source selection');
+  await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
   await evaluate(`getSelection().removeAllRanges()`, session);
   await evaluate(`document.querySelector('#md-wt-sync').checked=false`);
   await evaluate(`(()=>{const node=[...document.querySelectorAll('#md2pdf-preview-flow td')].find(node=>node.textContent==='value83');const range=document.createRange();range.selectNodeContents(node);getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`, session);
   await new Promise(resolve=>setTimeout(resolve,150));
   assert.notEqual(await evaluate("document.querySelector('.md-sync-highlight')?.textContent"), 'value83', 'disabled sync ignores preview selection');
 
-  // Explicit outline navigation aligns both panels even with sync disabled.
+  // Disabled sync keeps each outline local; enabled sync aligns both panels.
   await evaluate(`document.querySelector('#preview-outline-toggle').click()`);
   await wait("document.querySelector('.md-preview-outline button[data-outline-index]')");
   await evaluate(`(()=>{const rows=[...document.querySelectorAll('.md-preview-outline button[data-outline-index]')];rows.find(node=>node.textContent.includes('一个长章')).click();})()`);
   const chapterOffset = md.indexOf('## 一个长章');
-  await wait(`(()=>{const coords=mdEditor.coordsAtPos(${chapterOffset});const box=document.querySelector('.cm-scroller').getBoundingClientRect();return coords&&Math.abs(coords.top-box.top)<5;})()`);
+  const editorBefore = await evaluate(`document.querySelector('.cm-scroller').scrollTop`);
+  await new Promise(resolve=>setTimeout(resolve,150));
+  assert.equal(await evaluate(`document.querySelector('.cm-scroller').scrollTop`), editorBefore, 'preview outline does not move editor with sync off');
   await wait(`(()=>{const h=[...document.querySelectorAll('#md2pdf-preview-flow h2')].find(node=>node.textContent.includes('一个长章'));return h&&Math.abs(h.getBoundingClientRect().top)<5;})()`,session);
   await evaluate(`document.querySelector('#editor-assistant-toggle').click()`);
   await wait("[...document.querySelectorAll('.md-pro-outline-item')].some(node=>node.textContent.includes('一个长章'))");
   await evaluate(`scrollTo(0,500)`, session);
   await evaluate(`(()=>{const rows=[...document.querySelectorAll('.md-pro-outline-item')];rows.find(node=>node.textContent.includes('一个长章')).click();})()`);
-  await wait(`(()=>{const h=[...document.querySelectorAll('#md2pdf-preview-flow h2')].find(node=>node.textContent.includes('一个长章'));return h&&Math.abs(h.getBoundingClientRect().top)<5;})()`,session);
+  await wait(`(()=>{const coords=mdEditor.coordsAtPos(${chapterOffset});const box=document.querySelector('.cm-scroller').getBoundingClientRect();return coords&&Math.abs(coords.top-box.top)<5;})()`);
+  await new Promise(resolve=>setTimeout(resolve,150));
+  assert.equal(await evaluate('scrollY',session),500,'editor outline does not move preview with sync off');
   await evaluate(`document.querySelector('#md-wt-sync').checked=true`);
+  await evaluate(`(()=>{const rows=[...document.querySelectorAll('.md-pro-outline-item')];rows.find(node=>node.textContent.includes('一个长章')).click();})()`);
+  await wait(`(()=>{const h=[...document.querySelectorAll('#md2pdf-preview-flow h2')].find(node=>node.textContent.includes('一个长章'));return h&&Math.abs(h.getBoundingClientRect().top)<5;})()`,session);
 
   const gb = '---\ntype: gb\ngb-cover: false\n---\n# 名称\n\n## 范围\n\n:::gb-important\nRepeated\n:::\n\nRepeated\n\n甲[^@n]乙。\n\nH_{2}O and m^{2}\n\n[^@n]: 注内容\n';
   await evaluate('mdEditor.setValue(' + JSON.stringify(gb) + ')');

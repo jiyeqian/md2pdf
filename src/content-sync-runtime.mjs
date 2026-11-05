@@ -254,7 +254,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   }
   function selectionSource() {
     const selection = getSelection();
-    if (!selection || selection.isCollapsed || !selection.rangeCount) return;
+    if (!selection || selection.isCollapsed || !selection.rangeCount) { send('selection', { from: 0, to: 0, rect: { top: 0 } }); return; }
     const range = selection.getRangeAt(0), scope = activeScope();
     if (!scope?.contains(range.startContainer) || !scope.contains(range.endContainer)) return;
     let from = Infinity, to = -1, rect;

@@ -105,6 +105,12 @@ try {
   let frame = await targetSession('iframe');
   assert.equal(await evaluate('typeof window.PagedPolyfill', frame.sessionId), 'undefined', 'moving a completed preview does not load Paged.js');
   assert.equal(await evaluate('document.querySelectorAll(".pagedjs_page").length>1', frame.sessionId), true);
+  await evaluate(`(()=>{const node=document.querySelector('.pagedjs_pages p[data-md2pdf-source-id]');const range=document.createRange();range.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`,frame.sessionId);
+  await wait("document.querySelector('.md-sync-highlight')");
+  await new Promise(resolve=>setTimeout(resolve,2200));
+  assert.ok(await evaluate("!!document.querySelector('.md-sync-highlight')"),'independent preview selection keeps source highlight');
+  await evaluate('getSelection().removeAllRanges();document.dispatchEvent(new Event("selectionchange"))',frame.sessionId);
+  await wait("!document.querySelector('.md-sync-highlight')");
   const pageGeometry = await evaluate('(()=>{const panel=document.querySelector(".preview-panel").getBoundingClientRect();return {left:panel.left,right:innerWidth-panel.right,top:panel.top,bottom:innerHeight-panel.bottom};})()', popup.sessionId);
   assert.ok(Object.values(pageGeometry).every(value => Math.abs(value - 12) < 2), JSON.stringify(pageGeometry));
   assert.match(await evaluate('document.querySelector("#status").textContent', popup.sessionId), /md2pdf-window-missing-font/);
