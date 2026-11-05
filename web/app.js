@@ -17,6 +17,15 @@ const emptyPreview = document.querySelector('#empty-preview');
 const configErrorsEl = document.querySelector('#config-errors');
 const topExamplesLink = document.querySelector('#examples-link-top');
 const currentTemplateEl = document.querySelector('#current-template');
+function postPreview(data) {
+  if (window.mdWorkspaceHosts) window.mdWorkspaceHosts.postPreview(data);
+  else preview.contentWindow?.postMessage(data, '*');
+}
+function workspaceQuery(selector) { return window.mdWorkspaceHosts?.query(selector) || document.querySelector(selector); }
+function onWorkspaceDOM(type, listener, options) {
+  if (window.mdWorkspaceHosts) window.mdWorkspaceHosts.on(type, listener, options);
+  else document.addEventListener(type, listener, options);
+}
 function trackUsage(event, properties) {
   try { window.md2pdfAnalytics?.track(event, properties); } catch { /* 统计不得影响文档操作。 */ }
 }
@@ -140,6 +149,8 @@ function headingAvailable(controls = {}) {
 }
 
 let timer;
+let previewClock = window;
+let pendingPreview = false;
 let controller;
 let revision = 0;
 let downloading = false;
@@ -149,9 +160,12 @@ let previewRevision = -1;
 let previewWait = null;
 
 function previewVisible() {
-  if (document.visibilityState !== 'visible' || !preview?.isConnected) return false;
+  if (window.mdWindowMode?.preparing) return window.mdWindowMode.popup?.document.visibilityState === 'visible';
+  const owner = preview?.ownerDocument || document;
+  const view = owner.defaultView || window;
+  if (owner.visibilityState !== 'visible' || !preview?.isConnected) return false;
   const rect = preview.getBoundingClientRect();
-  return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth;
+  return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.right > 0 && rect.top < view.innerHeight && rect.left < view.innerWidth;
 }
 
 function updatePreviewVisibility(force = false) {
@@ -160,7 +174,7 @@ function updatePreviewVisibility(force = false) {
   if (visible === previewWait.visible && force !== true) return;
   previewWait.budget.setVisible(visible, Date.now());
   previewWait.visible = visible;
-  preview.contentWindow?.postMessage({ type: 'md2pdf-visibility', revision: previewRevision, visible }, '*');
+  postPreview({ type: 'md2pdf-visibility', revision: previewRevision, visible });
   if (visible) {
     setStatus('正在加载公式、图表与分页…');
   } else {
@@ -186,12 +200,30 @@ function armPreviewWait(current) {
   const visible = previewVisible();
   budget.setVisible(visible, Date.now());
   previewWait.visible = visible;
-  preview.contentWindow?.postMessage({ type: 'md2pdf-visibility', revision: current, visible }, '*');
+  postPreview({ type: 'md2pdf-visibility', revision: current, visible });
   if (!visible) setStatus('预览已生成，滚动到预览区域后继续排版。');
   previewTimer = setTimeout(tick, 1000);
 }
 
-document.addEventListener('visibilitychange', updatePreviewVisibility);
+onWorkspaceDOM('visibilitychange', updatePreviewVisibility);
+document.addEventListener('md-window-layout', () => updatePreviewVisibility(true));
+document.addEventListener('md-panel-host-change', () => {
+  const owner = editor.ownerDocument.defaultView;
+  if (pendingPreview && owner !== previewClock) {
+    try { previewClock.clearTimeout(timer); } catch { /* Its window may have navigated. */ }
+    previewClock = owner;
+    timer = previewClock.setTimeout(renderPreview, 0);
+  }
+});
+window.mdPreviewController = {
+  state() { return { revision, previewRevision, ready: previewRevision === revision && window.__MD2PDF_PREVIEW_READY__ === true, empty: !editor.value.trim() }; },
+  rehost(expectedRevision) {
+    if (expectedRevision >= 0 && expectedRevision === previewRevision && previewRevision === revision) {
+      window.__MD2PDF_PREVIEW_READY__ = false;
+      armPreviewWait(previewRevision);
+    }
+  }
+};
 preview.addEventListener('load', () => updatePreviewVisibility(true));
 window.addEventListener('scroll', updatePreviewVisibility, true);
 window.addEventListener('resize', updatePreviewVisibility);
@@ -224,7 +256,7 @@ function saveDraft() {
     warning.id = 'draft-warning';
     warning.className = 'draft-warning';
     warning.setAttribute('role', 'alert');
-    const footer = document.querySelector('.preview-footer');
+    const footer = workspaceQuery('.preview-footer');
     if (footer) footer.after(warning);
   }
   if (warning) {
@@ -267,7 +299,7 @@ window.mdCreateBlank = async () => {
   window.mdEditor?.focus();
 };
 function reportDraft(message, error) {
-  const node = document.querySelector('#draft-save-status');
+  const node = workspaceQuery('#draft-save-status');
   if (node) { node.textContent = message; node.dataset.error = String(!!error); }
 }
 function readHandoff() {
@@ -508,8 +540,9 @@ function renderOptionMenu(name, focusSelected = false) {
   const menu = wrap && wrap.querySelector('[data-option-menu]');
   const field = form.elements[name];
   if (!menu || !field) return;
-  const activeValue = document.activeElement && document.activeElement.getAttribute('data-option-value');
-  const hadFocus = menu.contains && menu.contains(document.activeElement);
+  const focused = menu.ownerDocument.activeElement;
+  const activeValue = focused && focused.getAttribute('data-option-value');
+  const hadFocus = menu.contains && menu.contains(focused);
   let focusButton;
   menu.replaceChildren();
   for (const option of Array.from(field.options)) {
@@ -676,18 +709,24 @@ function injectRevision(html, rev) {
 
 // ---------- 预览（保留原有防抖 450ms 与 revision 竞态保护） ----------
 function schedulePreview() {
+  pendingPreview = true;
+  window.__MD2PDF_PREVIEW_READY__ = false;
+  window.__MD2PDF_PREVIEW_ERROR__ = false;
   revision++;
   previewRevision = -1;
   previewWait = null;
-  clearTimeout(timer);
+  try { previewClock.clearTimeout(timer); } catch { /* The previous editor host closed. */ }
   clearTimeout(previewTimer);
   controller?.abort();
   updateCount();
   setStatus('等待更新…');
-  timer = setTimeout(renderPreview, 450);
+  // The controller stays in the main page, while typing may be in its popup.
+  previewClock = window.mdWorkspaceHosts?.activeDocument()?.defaultView || window;
+  timer = previewClock.setTimeout(renderPreview, 450);
 }
 
 async function renderPreview() {
+  pendingPreview = false;
   if (!window.__MD2PDF_STATIC_BASE__ && !navigator.onLine) {
     setStatus('当前离线，预览与 PDF 导出需要联网。');
     return;
@@ -741,6 +780,7 @@ async function renderPreview() {
     hasPreview = true;
     clearConfigErrors();
     previewRevision = current;
+    window.__MD2PDF_PREVIEW_READY__ = false;
     preview.srcdoc = injectRevision(result.html, current);
     saveDraft();
     setStatus('正在加载公式、图表与分页…');
@@ -767,8 +807,8 @@ document.addEventListener('md-preview-locate', event => {
   const data = event.detail;
   if (previewRevision !== revision || !window.__MD2PDF_PREVIEW_READY__ || !contentPosition(data)) return;
   if (!['cursor', 'scroll'].includes(data.reason)) return;
-  preview.contentWindow?.postMessage({ type: 'md2pdf-content-locate', revision: previewRevision,
-    from: data.from, to: data.to ?? data.from, ratio: data.ratio, reason: data.reason, instant: data.instant === true }, '*');
+  postPreview({ type: 'md2pdf-content-locate', revision: previewRevision,
+    from: data.from, to: data.to ?? data.from, ratio: data.ratio, reason: data.reason, instant: data.instant === true });
 });
 
 window.addEventListener('message', event => {
@@ -913,7 +953,7 @@ function syncRangeFromEvent(target) {
   if (numberName) { if (target.value === '') showRangeDefault(numberName, currentRange(numberName)); else reflectRangeValue(numberName, target.value); }
 }
 function sendPreviewMode() {
-  preview.contentWindow?.postMessage({ type: 'md2pdf-preview-mode', mode: previewMode, revision: previewRevision }, '*');
+  postPreview({ type: 'md2pdf-preview-mode', mode: previewMode, revision: previewRevision });
 }
 form.querySelector('[data-preview-mode-toggle]')?.addEventListener('click', () => {
   previewMode = previewMode === 'paged' ? 'flow' : 'paged';
@@ -957,7 +997,8 @@ function positionRangePopover(details) {
   if (!panel) return;
   const anchor = details.getBoundingClientRect();
   const width = panel.getBoundingClientRect().width;
-  const left = Math.max(12, Math.min(anchor.left, window.innerWidth - width - 12));
+  const view = details.ownerDocument.defaultView;
+  const left = Math.max(12, Math.min(anchor.left, view.innerWidth - width - 12));
   panel.style.left = `${left - anchor.left}px`;
   panel.style.right = 'auto';
 }
@@ -968,8 +1009,8 @@ for (const name of RANGE_CONTROLS) {
   let dragging = false;
   slider.addEventListener('pointerdown', () => { dragging = true; wrap.classList.add('range-adjusting'); updateRangeTrigger(name); });
   const end = () => { dragging = false; wrap.classList.remove('range-adjusting'); };
-  window.addEventListener('pointerup', end);
-  window.addEventListener('pointercancel', end);
+  onWorkspaceDOM('pointerup', end);
+  onWorkspaceDOM('pointercancel', end);
   slider.addEventListener('keydown', event => {
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) wrap.classList.add('range-adjusting');
   });
@@ -982,11 +1023,11 @@ for (const details of form.querySelectorAll('details.range-pop')) {
     else { const wrap = details.closest('[data-control]'); if (wrap) wrap.classList.remove('range-adjusting'); }
   });
 }
-window.addEventListener('resize', () => {
+onWorkspaceDOM('resize', () => {
   const open = form.querySelector('details.range-pop[open]');
   if (open) positionRangePopover(open);
 });
-document.addEventListener('click', event => {
+onWorkspaceDOM('click', event => {
   const open = form.querySelector('details.range-pop[open]');
   if (!open || open.contains(event.target)) return;
   open.open = false;
@@ -997,7 +1038,7 @@ window.addEventListener('blur', () => {
   if (document.activeElement !== preview) return;
   closeRangePopovers();
 });
-document.addEventListener('keydown', event => {
+onWorkspaceDOM('keydown', event => {
   if (event.key !== 'Escape') return;
   const open = form.querySelector('details.range-pop[open]');
   if (!open) return;
@@ -1015,7 +1056,7 @@ form.elements.type.addEventListener('change', () => {
 topExamplesLink?.addEventListener('click', saveDraft);
 // 「从模板创建」由 editor-workspace.js 动态注入到 Markdown 工具条，加载期 querySelector
 // 可能取不到：改用事件委托 + pagehide 兜底，确保离开页面前草稿与选项一定落盘。
-document.addEventListener('click', event => {
+onWorkspaceDOM('click', event => {
   const target = event.target;
   const link = target && target.closest ? target.closest('#browse-examples, #examples-link-top') : null;
   if (link) saveDraft();

@@ -67,7 +67,7 @@ for(const file of await readdir(path.join(root,'web'))){
   if(!/\.(?:js|mjs)$/.test(file))continue;
   const target=path.join(out,file);
   const source=await readFile(target,'utf8');
-  await writeFile(target,source.replace(/(["'`])\/(icons\/|template-previews\/|src\/)/g,'$1./$2').replaceAll("../src/", "./src/"));
+  await writeFile(target,source.replace(/(["'`])\/(icons\/|template-previews\/|src\/)/g,'$1./$2').replaceAll("../src/", "./src/").replaceAll("../vendor/", "./vendor/"));
 }
 const manifest=JSON.parse(await readFile(path.join(out,'manifest.webmanifest'),'utf8'));
 Object.assign(manifest,{id:'./',start_url:'./',scope:'./'});

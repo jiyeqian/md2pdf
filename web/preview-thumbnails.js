@@ -72,10 +72,17 @@
       + 'html,body{margin:0!important;padding:0!important;background:#f4f6f9!important}#pages{padding:12px;display:block!important}.thumbnail{position:relative;display:block;padding:0;margin:0 0 12px;border:0;background:transparent;cursor:pointer;color:#35445a}.page-copy{position:relative;overflow:hidden;background:white;box-shadow:0 1px 4px #0003;pointer-events:none}.page-copy>.pagedjs_page,.page-copy>#md2pdf-preview-flow{position:absolute!important;top:0;left:0;margin:0!important;zoom:1!important;box-shadow:none!important;display:block!important}.number{display:block;font:12px/24px sans-serif;text-align:center}.thumbnail[aria-current]>.page-copy{outline:2px solid #8da2bb;outline-offset:2px}.pagedjs_pages{display:block!important}.page-copy>#md2pdf-preview-flow{display:block!important}'
       + '</style></head><body><nav id="pages" aria-label="页面缩略图"></nav><script nonce="' + nonce + '">(' + thumbnailRuntime.toString() + ')(' + JSON.stringify(token) + ',' + MAX_VISIBLE + ');</script></body></html>';
   }
+  function postFrame(frame, data) {
+    if (window.mdWorkspaceHosts) window.mdWorkspaceHosts.postFrame(frame, data);
+    else frame.contentWindow.postMessage(data, '*');
+  }
   function create(container) {
     let active = false, frame = null, session = '', revision = -1, initialized = false, frameReady = false;
     let wanted = [], pending = new Map(), metadata = null, sequence = 0;
-    function send(type, extra = {}) { preview.contentWindow?.postMessage({type, revision, request: session + ':' + (++sequence), ...extra}, '*'); }
+    function send(type, extra = {}) {
+      const data = {type, revision, request: session + ':' + (++sequence), ...extra};
+      if (window.mdWorkspaceHosts) window.mdWorkspaceHosts.postPreview(data); else preview.contentWindow?.postMessage(data, '*');
+    }
     function dispose() {
       frame?.remove(); frame = null; session = ''; initialized = false; frameReady = false;
       pending.clear(); wanted = []; metadata = null;
@@ -83,7 +90,7 @@
     function build() {
       dispose(); if (!active || readyRevision < 0) return;
       revision = readyRevision; session = crypto.randomUUID();
-      frame = document.createElement('iframe'); frame.title = '页面缩略图';
+      frame = (container.ownerDocument || document).createElement('iframe'); frame.id = 'md-thumbnails-' + session; frame.title = '页面缩略图';
       frame.setAttribute('sandbox', 'allow-scripts'); frame.setAttribute('referrerpolicy', 'no-referrer');
       Object.assign(frame.style, {border: '0', width: '100%', height: '100%', display: 'block', flex: '1', minHeight: '0'});
       frame.srcdoc = frameDocument(session); container.append(frame);
@@ -92,7 +99,7 @@
     function initFrame() {
       if (!frameReady || !metadata || initialized) return;
       initialized = true;
-      frame.contentWindow.postMessage({type: 'md2pdf-thumbnails-init', token: session, revision, ...metadata}, '*');
+      postFrame(frame, {type: 'md2pdf-thumbnails-init', token: session, revision, ...metadata});
     }
     function pump() {
       if (!active || !initialized) return;
@@ -123,7 +130,7 @@
         metadata = {pages: data.pages, styles: data.styles, typography: data.typography, flow: data.flow}; initFrame();
       } else if (data.type === 'md2pdf-thumbnails-page' && pending.get(data.index) === data.request && typeof data.html === 'string') {
         pending.delete(data.index);
-        if (wanted.includes(data.index)) frame.contentWindow.postMessage({type: 'md2pdf-thumbnails-deliver', token: session, revision, index: data.index, html: data.html}, '*');
+        if (wanted.includes(data.index)) postFrame(frame, {type: 'md2pdf-thumbnails-deliver', token: session, revision, index: data.index, html: data.html});
         wanted = wanted.filter(index => index !== data.index); pump();
       }
     }
@@ -141,6 +148,7 @@
       readyRevision = event.data.revision; managers.forEach(manager => manager.refresh());
     }
   });
+  document.addEventListener?.('md-panel-host-change', () => managers.forEach(manager => manager.refresh(true)));
   window.addEventListener('md-preview-ready', () => queueMicrotask(() => managers.forEach(manager => manager.refresh())));
   preview.addEventListener('load', () => {readyRevision = -1; managers.forEach(manager => manager.refresh());});
   window.mdPreviewThumbnails = {create};

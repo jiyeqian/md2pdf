@@ -247,6 +247,8 @@ test('纵向面板按可见高度等高或单屏滚动，同步按钮总间距�
 
 // ---------------------------------------------------------------- 行为：vm 执行
 function fakeEnvironment() {
+  let ownerDocument;
+  const createdNodes = [];
   class ClassList {
     constructor() { this.set = new Set(); }
     add(...c) { c.forEach(x => this.set.add(x)); }
@@ -256,6 +258,8 @@ function fakeEnvironment() {
   }
   class FakeNode {
     constructor(tag) {
+      this.ownerDocument = ownerDocument;
+      createdNodes.push(this);
       this.tagName = (tag || 'div').toUpperCase();
       this.classList = new ClassList();
       this.attrs = {};
@@ -342,6 +346,9 @@ function fakeEnvironment() {
     addEventListener(type, fn) { (winListeners[type] || (winListeners[type] = [])).push(fn); },
     removeEventListener() {},
   };
+  ownerDocument = document;
+  document.defaultView = sandbox;
+  createdNodes.forEach(node => { node.ownerDocument = document; });
   sandbox.window = sandbox;
   vm.createContext(sandbox);
   const buttonIn = node => node.children.find(child => child.tagName === 'BUTTON');
@@ -710,6 +717,8 @@ test('app.js：滑块与数值双向同步、跟随文档省略覆盖、触发�
 
 // ---------------------------------------------------------------- 选项模型（vm 执行 app.js 真实逻辑）
 function fakeAppEnvironment() {
+  let ownerDocument;
+  const createdNodes = [];
   class ClassList {
     constructor() { this.set = new Set(); }
     add(...c) { c.forEach(x => this.set.add(x)); }
@@ -719,6 +728,8 @@ function fakeAppEnvironment() {
   }
   class FakeNode {
     constructor(tag) {
+      this.ownerDocument = ownerDocument;
+      createdNodes.push(this);
       this.tagName = (tag || 'div').toUpperCase();
       this.classList = new ClassList();
       this.attrs = {};
@@ -791,6 +802,9 @@ function fakeAppEnvironment() {
     addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); },
     removeEventListener() {},
   };
+  ownerDocument = document;
+  document.defaultView = sandbox;
+  createdNodes.forEach(node => { node.ownerDocument = document; });
   sandbox.window = sandbox;
   vm.createContext(sandbox);
   return { sandbox, form, preview };
@@ -806,7 +820,7 @@ test('调整浮层定位在视口内，适配工具栏左右两列', () => {
   appEnv.sandbox.innerWidth = 452;
   for (const anchorLeft of [28, 232]) {
     const panel = { style: {}, getBoundingClientRect: () => ({ width: 300 }) };
-    const details = { querySelector: () => panel, getBoundingClientRect: () => ({ left: anchorLeft }) };
+    const details = { ownerDocument: appEnv.sandbox.document, querySelector: () => panel, getBoundingClientRect: () => ({ left: anchorLeft }) };
     appEnv.sandbox.positionRangePopover(details);
     const left = anchorLeft + parseFloat(panel.style.left);
     assert.ok(left >= 12, '浮层不应超出左边缘');
@@ -922,7 +936,8 @@ test('privacy 下载保存与标题栏 Markdown 下载使用同一个动作', ()
   assert.match(appCss, /\.preview-toolbar \.toolbar-field\{flex:0 0 auto;min-width:0/);
   assert.match(appJs, /slider.addEventListener\('keydown'/);
   assert.match(appJs, /slider.addEventListener\('blur', end\)/);
-  assert.match(appJs, /window.addEventListener\('pointerup', end\)/);
+  assert.match(appJs, /onWorkspaceDOM\('pointerup', end\)/);
+  assert.match(appJs, /onWorkspaceDOM\('pointercancel', end\)/);
 });
 
 test('范围图标跟随实际文档值，保留空覆盖并将数值气泡定位到滑块', () => {

@@ -50,7 +50,7 @@ test('Markdown 缩放只改字体尺寸，且优先走 mdEditor.requestMeasure',
 
 test('预览缩放经 postMessage 下发且与 Markdown 独立', () => {
   assert.ok(wsJs.includes("type: 'md2pdf-preview-zoom'"), '缺少缩放消息类型');
-  assert.match(wsJs, /previewFrame\.contentWindow\.postMessage\(\{ type: 'md2pdf-preview-zoom', zoom: previewZoom \}, '\*'\)/);
+  assert.match(wsJs, /postPreview\(\{ type: 'md2pdf-preview-zoom', zoom: previewZoom \}\)/);
   assert.match(wsJs, /function sendPreviewZoom\(\)/);
   // ready 重发按预览窗口校验来源。
   assert.match(wsJs, /event\.source !== previewFrame\.contentWindow/);
@@ -75,6 +75,8 @@ test('CSS：容器居中、bubble 位置随值、窄屏收缩、括号平衡', (
 
 // ---------------------------------------------------------------- 行为：vm 执行
 function fakeEnvironment(options = {}) {
+  let ownerDocument;
+  const createdNodes = [];
   class ClassList {
     constructor() { this.set = new Set(); }
     add(...c) { c.forEach(x => this.set.add(x)); }
@@ -84,6 +86,8 @@ function fakeEnvironment(options = {}) {
   }
   class FakeNode {
     constructor(tag) {
+      this.ownerDocument = ownerDocument;
+      createdNodes.push(this);
       this.tagName = (tag || 'div').toUpperCase();
       this.classList = new ClassList();
       this.attrs = {};
@@ -183,6 +187,9 @@ function fakeEnvironment(options = {}) {
     }
     sandbox.mdEditor = api;
   }
+  ownerDocument = document;
+  document.defaultView = sandbox;
+  createdNodes.forEach(node => { node.ownerDocument = document; });
   sandbox.window = sandbox;
   vm.createContext(sandbox);
   const dispatchWin = (type, event) => (winListeners[type] || []).forEach(fn => fn(event || { type }));
@@ -363,4 +370,27 @@ test('实际预览比例回写控件，保留用户期望且拒绝伪造和无�
   pv.input.dispatch('change');
   env.dispatchWin('message', {source:env.previewFrame.contentWindow, data:{type:'md2pdf-ready'}});
   assert.equal(env.sent.at(-1).zoom, 80, '主动选择80%应保留');
+});
+
+
+test('行为：预览缩放经工作区 transport 转发，未启用 transport 时保持原生消息回退', () => {
+  for (const relay of [false, true]) {
+    const env = fakeEnvironment();
+    const forwarded = [];
+    if (relay) env.sandbox.mdWorkspaceHosts = {
+      postPreview(message) { forwarded.push(message); },
+      on: (type, listener, options) => env.sandbox.document.addEventListener(type, listener, options),
+      query: selector => env.sandbox.document.querySelector(selector),
+    };
+    vm.runInContext(wsJs, env.sandbox, { filename: 'editor-workspace.js' });
+    const control = zoomParts(zoomControls(env.previewHeading)[0]);
+    const nativeBefore = env.sent.length;
+    control.input.value = '150';
+    control.input.dispatch('input', { type: 'input', target: control.input });
+    const messages = relay ? forwarded : env.sent;
+    assert.equal(messages.at(-1).type, 'md2pdf-preview-zoom');
+    assert.equal(messages.at(-1).zoom, 150);
+    if (relay) assert.equal(env.sent.length, nativeBefore, '工作区 transport 接管后不重复发送原生消息');
+    else assert.ok(env.sent.length > nativeBefore, '无 transport 时仍通过原生 postMessage');
+  }
 });

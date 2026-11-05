@@ -82,17 +82,22 @@ export function slashActions(text, pos) {
 }
 export function installQuickActions(editor) {
   const doc = document;
+  const hosts = window.mdWorkspaceHosts;
+  const on = hosts ? hosts.on : doc.addEventListener.bind(doc);
+  const owner = () => editor.getDocumentRoot?.() || hosts?.activeDocument() || doc;
   const menu = doc.createElement('div');menu.className='md-quick-actions';menu.setAttribute('role','toolbar');menu.hidden=true;doc.body.append(menu);
   let mode=null,range=null,index=0,dismissed=null;
   const place=sel=>{
+    const current = owner(), win = current.defaultView || window;
+    if (menu.ownerDocument !== current) current.body.append(menu);
     let coords;
     try { coords=editor.coordsAtPos(sel.from); } catch { coords=null; }
     menu.style.visibility='hidden';
     if(!coords)return;
-    const viewport=window.visualViewport;
+    const viewport=win.visualViewport;
     let left=viewport?viewport.offsetLeft:0,top=viewport?viewport.offsetTop:0;
-    let right=left+(viewport?viewport.width:window.innerWidth),bottom=top+(viewport?viewport.height:window.innerHeight);
-    const scroller=doc.querySelector('.cm-scroller');
+    let right=left+(viewport?viewport.width:win.innerWidth),bottom=top+(viewport?viewport.height:win.innerHeight);
+    const scroller=owner().querySelector('.cm-scroller');
     if(scroller){
       const rect=scroller.getBoundingClientRect();
       left=Math.max(left,rect.left);right=Math.min(right,rect.right);
@@ -107,7 +112,7 @@ export function installQuickActions(editor) {
     const y=above>=top+4?above:coords.bottom+8;
     if(y+height>bottom-4)return;
     // 页面定位与光标采用相同坐标，避免 iOS 键盘期间 fixed 图层额外偏移。
-    menu.style.left=(x+window.scrollX)+'px';menu.style.top=(y+window.scrollY)+'px';
+    menu.style.left=(x+win.scrollX)+'px';menu.style.top=(y+win.scrollY)+'px';
     menu.style.visibility='visible';
   };
   const close=()=>{menu.hidden=true;mode=null;range=null;};
@@ -119,7 +124,7 @@ export function installQuickActions(editor) {
     for (const action of actions) {
       const button=doc.createElement('button');button.type='button';button.dataset.action=action;button.title=labels[action];button.setAttribute('aria-label',labels[action]);
       const svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox',action==='formula'?'0 0 20 20':'0 0 24 24');svg.setAttribute('aria-hidden','true');const path=doc.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',paths[action]);svg.append(path);
-      const source=Array.from(doc.querySelectorAll('button[aria-label]')).find(b=>!menu.contains(b)&&b.getAttribute('aria-label')===labels[action])?.querySelector('svg,img');
+      const source=Array.from(owner().querySelectorAll('button[aria-label]')).find(b=>!menu.contains(b)&&b.getAttribute('aria-label')===labels[action])?.querySelector('svg,img');
       button.append(source?source.cloneNode(true):svg);
       button.addEventListener('mousedown',e=>e.preventDefault());button.addEventListener('click',()=>activate(action));menu.append(button);
     }
@@ -131,7 +136,7 @@ export function installQuickActions(editor) {
     const saved=range,kind=mode;close();if(!saved)return;
     const text=editor.getValue();
     if(kind==='selection') {const change=transformSelection(text,saved.from,saved.to,action);if(change)editor.applyEdit(change.from,change.to,change.text,change.anchor,change.head);}
-    else {const start=saved.triggerFrom;editor.applyEdit(start,saved.from,'',start,start);editor.focus();if(action==='image')doc.querySelector('.md-image-insert')?.click();else if(action==='doi')doc.dispatchEvent(new CustomEvent('md-doi-open'));else window.mdEditorTools?.insert(action);}
+    else {const start=saved.triggerFrom;editor.applyEdit(start,saved.from,'',start,start);editor.focus();if(action==='image')(hosts?.query('.md-image-insert') || doc.querySelector('.md-image-insert'))?.click();else if(action==='doi')doc.dispatchEvent(new CustomEvent('md-doi-open'));else window.mdEditorTools?.insert(action);}
     if(kind==='selection')editor.focus();
   };
   const update=()=>{
@@ -141,29 +146,30 @@ export function installQuickActions(editor) {
     if(slash){show('slash',{...sel,triggerFrom:slash.from},slash.actions);return;}
     close();dismissed=null;
   };
+  doc.addEventListener('md-panel-host-change', close);
   for(const event of ['md-editor-selection','md-editor-change','md-editor-reset'])doc.addEventListener(event,update);
-  doc.addEventListener('keydown',event=>{
+  on('keydown',event=>{
     if(menu.hidden||menu.style.visibility==='hidden')return;
     if(event.key==='Escape'){dismissed=menu.dataset.key;close();event.preventDefault();return;}
     if(mode==='slash' && ['ArrowLeft','ArrowRight','Enter'].includes(event.key)){event.preventDefault();event.stopPropagation();if(event.key==='Enter')activate(menu.children[index].dataset.action);else{index=(index+(event.key==='ArrowRight'?1:-1)+menu.children.length)%menu.children.length;mark();}}
   },true);
-  doc.addEventListener('pointerdown',event=>{if(!menu.hidden&&!menu.contains(event.target)){dismissed=menu.dataset.key;close();}});
+  on('pointerdown',event=>{if(!menu.hidden&&!menu.contains(event.target)){dismissed=menu.dataset.key;close();}});
   let repositionFrame=0,settleFrames=0;
   const measure=()=>{
     repositionFrame=0;
     if(menu.hidden||!range)return;
     place(range);
-    if(--settleFrames>0)repositionFrame=requestAnimationFrame(measure);
+    if(--settleFrames>0)repositionFrame=(owner().defaultView || window).requestAnimationFrame(measure);
   };
   const reposition=()=>{
     if(menu.hidden)return;
     settleFrames=6;
-    if(!repositionFrame)repositionFrame=requestAnimationFrame(measure);
+    if(!repositionFrame)repositionFrame=(owner().defaultView || window).requestAnimationFrame(measure);
   };
-  window.addEventListener('scroll',reposition,true);window.addEventListener('resize',reposition);
+  if(hosts){on('scroll',reposition,true);on('resize',reposition);}else{window.addEventListener('scroll',reposition,true);window.addEventListener('resize',reposition);}
   window.visualViewport?.addEventListener('scroll',reposition);window.visualViewport?.addEventListener('resize',reposition);
   if(window.ResizeObserver){
-    const scroller=doc.querySelector('.cm-scroller');
+    const scroller=owner().querySelector('.cm-scroller');
     if(scroller)new ResizeObserver(reposition).observe(scroller);
   }
   return {close,update};

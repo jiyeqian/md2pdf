@@ -311,7 +311,8 @@
           if (this.menu && !this.menu.contains(event.target) && !this.anchor.contains(event.target)) this.close();
         };
         this.scroll = () => this.close();
-        view.dom.ownerDocument.addEventListener('pointerdown', this.outside, true);
+        this.removeOutside = global.mdWorkspaceHosts ? global.mdWorkspaceHosts.on('pointerdown', this.outside, true) : null;
+        if (!this.removeOutside) view.dom.ownerDocument.addEventListener('pointerdown', this.outside, true);
         view.scrollDOM.addEventListener('scroll', this.scroll);
       }
       close(focus = false) {
@@ -369,7 +370,8 @@
       }
       destroy() {
         this.close();
-        this.view.dom.ownerDocument.removeEventListener('pointerdown', this.outside, true);
+        if (this.removeOutside) this.removeOutside();
+        else this.view.dom.ownerDocument.removeEventListener('pointerdown', this.outside, true);
         this.view.scrollDOM.removeEventListener('scroll', this.scroll);
       }
     });
@@ -749,6 +751,11 @@
     const api = {
       __mounted: true,
       requestMeasure: function () { view.requestMeasure(); },
+      getDocumentRoot: function () { return view.dom.ownerDocument; },
+      setDocumentRoot: function (nextDocument) {
+        view.setRoot(nextDocument);
+        view.requestMeasure();
+      },
       coordsAtPos: function (pos) { return view.coordsAtPos(pos); },
       getCursorPosition: function () { return view.state.selection.main.head; },
       getScrollAnchor: function () {
@@ -771,7 +778,7 @@
         view.dispatch({ effects, ...(activate ? { selection: { anchor: from } } : {}) });
         const fraction = Math.max(0, Math.min(1, Number.isFinite(ratio) ? ratio : .3));
         const revision = ++editorRevealRevision;
-        requestAnimationFrame(function () {
+        (view.dom?.ownerDocument.defaultView || globalThis).requestAnimationFrame(function () {
           if (revision !== editorRevealRevision) return;
           view.requestMeasure({
             read: function () {
@@ -895,7 +902,7 @@
     }, { passive: true });
     view.scrollDOM.addEventListener('scroll', function () {
       if (scrollFrame) return;
-      scrollFrame = requestAnimationFrame(function () {
+      scrollFrame = (view.dom.ownerDocument.defaultView || global).requestAnimationFrame(function () {
         scrollFrame = 0;
         const user = Date.now() < editorScrollIntentUntil;
         if (user) claimScroll();

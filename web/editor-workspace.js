@@ -40,6 +40,16 @@
   var toolbar, divider, editorFullscreenBtn, previewFullscreenBtn, syncInput;
   var basicWrap, basicButton, basicMenu;
   var editorModeBtn, previewModeBtn;
+  var independentButtons = [];
+  function postPreview(data) {
+    if (window.mdWorkspaceHosts) window.mdWorkspaceHosts.postPreview(data);
+    else if (previewFrame && previewFrame.contentWindow) previewFrame.contentWindow.postMessage(data, '*');
+  }
+  function queryWorkspace(selector) { return window.mdWorkspaceHosts ? window.mdWorkspaceHosts.query(selector) : document.querySelector(selector); }
+  function onWorkspaceDOM(type, listener, options) {
+    if (window.mdWorkspaceHosts) window.mdWorkspaceHosts.on(type, listener, options);
+    else document.addEventListener(type, listener, options);
+  }
   var commandButtons = [];
   var ready = false;
   var dragging = false;
@@ -416,7 +426,7 @@
   function positionBasicMenu() {
     if (!basicMenu || basicMenu.hidden) return;
     if (!basicButton.getBoundingClientRect || !basicMenu.getBoundingClientRect) return;
-    var viewport = (typeof window !== 'undefined' && window.innerWidth) || 1024;
+    var viewport = (basicButton && basicButton.ownerDocument.defaultView.innerWidth) || window.innerWidth || 1024;
     var anchor = basicButton.getBoundingClientRect();
     var rect = basicMenu.getBoundingClientRect();
     var width = basicMenu.offsetWidth || (rect && rect.width) || 360;
@@ -428,7 +438,7 @@
   function onBasicMenuKeydown(event) {
     var items = menuItems();
     if (!items.length) return;
-    var current = items.indexOf(document.activeElement);
+    var current = items.indexOf(basicMenu.ownerDocument.activeElement);
     var next = null;
     if (event.key === 'ArrowDown' || event.key === 'ArrowRight') next = current + 1;
     else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') next = current - 1;
@@ -508,7 +518,7 @@
       if (key !== 'ArrowRight' && key !== 'ArrowLeft' && key !== 'Home' && key !== 'End') return;
       var list = buttons();
       if (!list.length) return;
-      var current = list.indexOf(document.activeElement);
+      var current = list.indexOf(group.ownerDocument.activeElement);
       if (current < 0) current = 0;
       var next = key === 'ArrowRight' ? current + 1 : key === 'ArrowLeft' ? current - 1 : key === 'Home' ? 0 : list.length - 1;
       next = clamp(next, 0, list.length - 1);
@@ -629,7 +639,7 @@
 
   function sendPreviewZoom() {
     if (!previewFrame || !previewFrame.contentWindow) return;
-    try { previewFrame.contentWindow.postMessage({ type: 'md2pdf-preview-zoom', zoom: previewZoom }, '*'); }
+    try { postPreview({ type: 'md2pdf-preview-zoom', zoom: previewZoom }); }
     catch (e) { /* 跨源异常忽略 */ }
   }
 
@@ -837,6 +847,7 @@
   }
 
   function applyFullscreen(mode) {
+    if (window.mdWindowMode && (window.mdWindowMode.active || window.mdWindowMode.busy)) { window.mdWindowMode.exit(); return; }
     if (mode === fullscreenMode()) return;
     var id = ++layoutRevision;
     clearTimeout(cursorTimer);
@@ -845,7 +856,7 @@
     var anchor = lastEditorAnchor;
     pendingLayout = { id: id, mode: mode, previous: fullscreenMode(), anchor: anchor };
     if (previewFrame && previewFrame.contentWindow) {
-      previewFrame.contentWindow.postMessage({ type: 'md2pdf-capture-position', id: id }, '*');
+      postPreview({ type: 'md2pdf-capture-position', id: id });
       setTimeout(function () { finishFullscreen(id, null); }, 150);
     } else finishFullscreen(id, null);
   }
@@ -866,17 +877,18 @@
       editorFullscreenBtn.setAttribute('aria-pressed', String(editorOn));
       editorFullscreenBtn.textContent = '';
       editorFullscreenBtn.appendChild(fullscreenIcon(editorOn));
-      editorFullscreenBtn.setAttribute('aria-label', editorOn ? '退出 Markdown 全屏' : 'Markdown 全屏写作');
+      editorFullscreenBtn.setAttribute('aria-label', editorOn ? '退出全屏' : 'Markdown 全屏写作');
       editorFullscreenBtn.title = editorOn ? '退出全屏（Esc）' : '全屏写作（Esc 退出）';
     }
     if (previewFullscreenBtn) {
       previewFullscreenBtn.setAttribute('aria-pressed', String(previewOn));
       previewFullscreenBtn.textContent = '';
       previewFullscreenBtn.appendChild(fullscreenIcon(previewOn));
-      previewFullscreenBtn.setAttribute('aria-label', previewOn ? '退出预览全屏' : '预览全屏');
+      previewFullscreenBtn.setAttribute('aria-label', previewOn ? '退出全屏' : '预览全屏');
       previewFullscreenBtn.title = previewOn ? '退出全屏（Esc）' : '全屏预览（Esc 退出）';
     }
     updatePanelModeButtons();
+    independentButtons.forEach(function (button) { button.hidden = !!mode; });
     if (editorOn) focusEditor();
     requestAnimationFrame(function () { requestAnimationFrame(function () {
       if (id !== layoutRevision) return;
@@ -885,7 +897,7 @@
       if (pending.anchor && window.mdEditor.restoreViewport) window.mdEditor.restoreViewport(pending.anchor);
       // 同步开启时，退出写作全屏以最新光标为准，不能恢复旧预览锚点。
       var followsCursor = syncInput && syncInput.checked && (pending.previous !== 'preview' || pending.mode === 'editor');
-      if (!followsCursor && position && previewFrame.contentWindow) previewFrame.contentWindow.postMessage({ type: 'md2pdf-restore-position', position: position }, '*');
+      if (!followsCursor && position && previewFrame.contentWindow) postPreview({ type: 'md2pdf-restore-position', position: position });
       if (syncInput && syncInput.checked) {
         if (position && pending.previous === 'preview' && pending.mode !== 'editor' && Number.isSafeInteger(position.from) && typeof window.mdEditor.revealPosition === 'function') {
           window.mdEditor.revealPosition(position.from, position.anchorRatio, false);
@@ -924,7 +936,7 @@
   }
 
   function fileStatus(message, error) {
-    var status = document.querySelector('#status');
+    var status = queryWorkspace('#status');
     if (status) { status.textContent = message; status.setAttribute('data-error', String(!!error)); }
   }
 
@@ -975,7 +987,7 @@
     var text = window.mdEditor.getValue();
     var files = await import('./editor-files.mjs');
     var blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
-    var name = files.markdownDownloadName(text, new Date(), document.querySelector('#options')?.elements.type?.value || '');
+    var name = files.markdownDownloadName(text, new Date(), queryWorkspace('#options')?.elements.type?.value || '');
     if (window.mdAppShell && window.mdAppShell.offerFile(new File([blob], name, { type: blob.type }))) return;
     var url = URL.createObjectURL(blob);
     var link = make('a', { href: url, download: name });
@@ -989,6 +1001,10 @@
   // 预览侧追加在下载按钮之后，全屏始终位于该栏最右。
   function updatePanelModeButtons() {
     var mode = fullscreenMode();
+    if (window.mdWindowMode && window.mdWindowMode.active) {
+      [editorModeBtn, previewModeBtn].forEach(function (button) { if (button) { button.title = '交换编辑与预览窗口'; button.setAttribute('aria-label', button.textContent + '：' + button.title); } });
+      return;
+    }
     if (editorModeBtn) editorModeBtn.title = mode ? '切换到预览' : '交换面板位置';
     if (previewModeBtn) previewModeBtn.title = mode ? '切换到 Markdown' : '交换面板位置';
     if (editorModeBtn) editorModeBtn.setAttribute('aria-label', 'Markdown（M）：' + editorModeBtn.title);
@@ -996,6 +1012,7 @@
   }
 
   function switchPanelMode() {
+    if (window.mdWindowMode && window.mdWindowMode.active) { window.mdWindowMode.swap(); return; }
     var mode = fullscreenMode();
     if (mode) { applyFullscreen(mode === 'editor' ? 'preview' : 'editor'); return; }
     var anchor = hasEditor() && window.mdEditor.captureViewport ? window.mdEditor.captureViewport() : null;
@@ -1051,6 +1068,41 @@
     applyFullscreen(null); // 同步按钮初始 aria-pressed / title
   }
 
+  function buildIndependentWindows() {
+    if (!window.mdIndependentWorkspace) return;
+    window.mdWindowMode = window.mdIndependentWorkspace.create({
+      workspace: workspace, editorPanel: editorPanel, previewPanel: previewPanel, preview: previewFrame,
+      beforeMove: function () { closeBasicMenu(false); },
+      floating: function () { return [basicMenu]; },
+      onError: function (message) { fileStatus(message, true); },
+      onLayout: function () {
+        updatePanelGrids(); measureEditor();
+        requestAnimationFrame(function () { updatePanelGrids(); measureEditor(); });
+      },
+      onMode: function (state) {
+        [editorFullscreenBtn, previewFullscreenBtn].forEach(function (button, index) {
+          if (!button) return;
+          button.disabled = state.busy && !state.active;
+          button.textContent = ''; button.appendChild(fullscreenIcon(state.active));
+          button.setAttribute('aria-label', state.active ? '退出全屏' : index === 0 ? 'Markdown 全屏写作' : '预览全屏');
+          button.setAttribute('aria-pressed', String(state.active));
+          button.title = state.active ? '退出全屏（Esc）' : index === 0 ? '全屏写作（Esc 退出）' : '全屏预览（Esc 退出）';
+        });
+        independentButtons.forEach(function (button) { button.hidden = state.active || state.busy || !!fullscreenMode(); });
+        [editorModeBtn, previewModeBtn].forEach(function (button) { if (button) button.disabled = state.busy; });
+        updatePanelModeButtons();
+      }
+    });
+    [editorPanel, previewPanel].forEach(function (panel, index) {
+      var button = make('button', { type: 'button', class: 'icon-button', 'data-panel-independent': index === 0 ? 'editor' : 'preview', 'aria-label': '独立窗口', title: '将' + (index === 0 ? 'Markdown' : '预览') + '移到独立窗口' });
+      var svg = document.createElementNS(SVG_NS, 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.8'); svg.setAttribute('stroke-linejoin', 'round'); svg.setAttribute('aria-hidden', 'true');
+      var path = document.createElementNS(SVG_NS, 'path'); path.setAttribute('d', 'M9 4h11v11H9zM5 9H3v12h12v-2M12 12l5-5M13 7h4v4'); svg.appendChild(path); button.appendChild(svg);
+      button.addEventListener('click', function () { window.mdWindowMode.open(index === 0 ? 'editor' : 'preview'); });
+      panel.querySelector('[data-panel-fullscreen]').before(button);
+      independentButtons.push(button);
+    });
+  }
+
   // ---------------------------------------------------------------- 位置桥接
   function locateCurrentCursor(instant) {
     if (!hasEditor() || !previewFrame || !previewFrame.contentWindow) return;
@@ -1068,7 +1120,7 @@
 
   function postLocate(line, instant) {
     if (!previewFrame || !previewFrame.contentWindow) return;
-    try { previewFrame.contentWindow.postMessage({ type: 'md2pdf-locate', line: line, instant: instant === true }, '*'); }
+    try { postPreview({ type: 'md2pdf-locate', line: line, instant: instant === true }); }
     catch (e) { /* 跨源异常忽略 */ }
   }
 
@@ -1172,6 +1224,7 @@
     if (docAction) { event.preventDefault(); runDocumentAction(docAction); return; }
     if (event.isComposing || event.keyCode === 229) return;   // 输入法组合中不拦截
     if (event.key === 'Escape' && basicMenu && !basicMenu.hidden) { event.preventDefault(); closeBasicMenu(true); return; }
+    if (event.key === 'Escape' && window.mdWindowMode && (window.mdWindowMode.active || window.mdWindowMode.busy)) { window.mdWindowMode.exit(); return; }
     if (event.key === 'Escape' && fullscreenMode()) { applyFullscreen(null); return; }
     if (event.getModifierState && event.getModifierState('AltGraph')) return;
     if (!IS_MAC && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && (event.key || '').toLowerCase() === 'y' && inEditorTarget(event.target)) {
@@ -1192,7 +1245,7 @@
     if (action === 'save') saveMarkdown();
     else if (action === 'open' && openMarkdownInput) openMarkdownInput.click();
     else if (action === 'pdf') {
-      var download = document.querySelector('#download');
+      var download = queryWorkspace('#download');
       if (download && !download.disabled) download.click();
     }
   }
@@ -1204,6 +1257,7 @@
 
   // Escape in the sandboxed iframe cannot bubble into the parent document.
   document.addEventListener('md-preview-exit-fullscreen', function () {
+    if (window.mdWindowMode && window.mdWindowMode.active) { window.mdWindowMode.exit(); return; }
     if (fullscreenMode() === 'preview') applyFullscreen(null);
   });
 
@@ -1218,6 +1272,7 @@
   function wireEvents() {
     document.addEventListener('md-editor-ready', onReady);
     window.addEventListener('md-preview-ready', function () {
+      if (window.mdWindowMode && window.mdWindowMode.restoring) return;
       if (syncInput && syncInput.checked && fullscreenMode() !== 'editor') locateCurrentCursor();
     });
     document.addEventListener('md-editor-cursor', onCursor);
@@ -1228,7 +1283,7 @@
       var type = event.detail && event.detail.type;
       if (typeof type === 'string' && type) { currentType = type; workspace.setAttribute('data-document-type', type); }
     });
-    document.addEventListener('keydown', onKeydown, true);
+    onWorkspaceDOM('keydown', onKeydown, true);
     // 预览就绪后重新下发当前缩放：iframe 重载会丢失状态；只接受预览窗口的消息。
     window.addEventListener('message', function (event) {
       if (!previewFrame || event.source !== previewFrame.contentWindow) return;
@@ -1248,7 +1303,7 @@
     if (window.MutationObserver) new window.MutationObserver(updateSearchButton).observe(editorPanel, { childList: true, subtree: true });
     updateSearchButton();
     // 点击面板外部关闭「基础格式」面板；面板内部与触发器不触发。
-    document.addEventListener('click', function (event) {
+    onWorkspaceDOM('click', function (event) {
       if (!basicMenu || basicMenu.hidden) return;
       var target = event && event.target;
       if (basicWrap && basicWrap.contains && target && basicWrap.contains(target)) return;
@@ -1270,6 +1325,7 @@
   buildDivider();
   buildFullscreenButtons();
   buildPanelModeButtons();
+  buildIndependentWindows();
   buildZoomControls();
   restoreRatio();
   wireEvents();

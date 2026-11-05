@@ -1,5 +1,6 @@
 import { appFetch } from './runtime-request.mjs';
 let menu, trigger, catalogPromise;
+document.addEventListener('md-panel-host-change', () => close());
 const names = { general: '通用文档', paper: '学术论文', gb: '国家标准', skill: '技能文档' };
 function close(focus = false) {
   if (menu) menu.hidden = true;
@@ -8,9 +9,10 @@ function close(focus = false) {
 }
 function position() {
   if (!menu || menu.hidden) return;
-  const rect = trigger.getBoundingClientRect(), view = window.visualViewport;
+  const document = menu.ownerDocument, host = document.defaultView;
+  const rect = trigger.getBoundingClientRect(), view = host.visualViewport;
   const left = view?.offsetLeft || 0, top = view?.offsetTop || 0;
-  const width = view?.width || innerWidth, height = view?.height || innerHeight;
+  const width = view?.width || host.innerWidth, height = view?.height || host.innerHeight;
   const editor = document.querySelector('.cm-content, #markdown');
   menu.style.fontSize = Math.min(12, parseFloat(getComputedStyle(editor).fontSize) || 13) + 'px';
   menu.style.width = 'max-content';
@@ -22,6 +24,7 @@ function position() {
 export async function openCreateMenu(anchor) {
   if (menu && !menu.hidden) { close(true); return; }
   trigger = anchor;
+  const document = anchor.ownerDocument;
   if (!menu) {
     menu = document.createElement('div');
     menu.id = 'md-create-menu';
@@ -34,26 +37,34 @@ export async function openCreateMenu(anchor) {
     template.dataset.viewLink = 'templates';
     template.className = 'md-drafts-browse';
     template.textContent = '从模板库选择…';
-    template.addEventListener('click', () => close());
+    template.addEventListener('click', event => {
+      close();
+      if (menu.ownerDocument !== window.document) {
+        event.preventDefault(); window.mdWindowMode?.exit();
+        window.document.querySelector('#examples-link-top')?.click();
+      }
+    });
     menu.append(template);
     document.body.append(menu);
-    document.addEventListener('click', event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) close(); });
-    document.addEventListener('focusin', event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) close(); });
+    const on = (type, handler, options) => window.mdWorkspaceHosts ? window.mdWorkspaceHosts.on(type, handler, options) : document.addEventListener(type, handler, options);
+    on('click', event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) close(); });
+    on('focusin', event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) close(); });
     menu.addEventListener('pointerleave', event => { if (event.pointerType === 'mouse') close(); });
     menu.addEventListener('keydown', event => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(true); }
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
         const items = [...menu.querySelectorAll('button:not(:disabled), a')];
-        const index = items.indexOf(document.activeElement);
+        const index = items.indexOf(menu.ownerDocument.activeElement);
         items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
       }
     });
-    window.addEventListener('resize', position);
-    window.addEventListener('scroll', position, true);
+    on('resize', position);
+    on('scroll', position, true);
     window.visualViewport?.addEventListener('resize', position);
     window.visualViewport?.addEventListener('scroll', position);
   }
+  if (menu.ownerDocument !== document) document.body.appendChild(document.adoptNode(menu));
   const drafts = document.querySelector('#md-drafts-menu');
   if (drafts) drafts.hidden = true;
   menu.hidden = false;
@@ -83,14 +94,14 @@ export async function openCreateMenu(anchor) {
           buttons.forEach(button => { button.disabled = true; });
           try { await window.mdCreateFromTemplate(meta); close(); window.mdEditor?.focus(); }
           catch (error) {
-            const status = document.querySelector('#status');
+            const status = window.mdWorkspaceHosts?.query('#status') || document.querySelector('#status');
             if (status) { status.textContent = error.message || '模板创建失败，请重试。'; status.dataset.error = 'true'; }
           } finally { buttons.forEach(button => { button.disabled = false; }); }
         });
         menu.insertBefore(item, browse);
       }
     } catch (error) {
-      const status = document.querySelector('#status');
+      const status = window.mdWorkspaceHosts?.query('#status') || document.querySelector('#status');
       if (status) { status.textContent = error.message; status.dataset.error = 'true'; }
     } finally { browse.textContent = '从模板库选择…'; }
   }

@@ -222,6 +222,21 @@
 .workspace.md-editor-workspace.preview-focus .editor-panel { display: none; }
 .workspace.md-editor-workspace.preview-focus .md-wt-divider { display: none; }
 
+/* A panel is adopted into its own document; the other remains in the controller. */
+.workspace.md-editor-workspace.md-independent-workspace {
+  position:fixed; inset:12px; z-index:50; height:auto!important; min-height:0;
+  grid-template-columns:minmax(0,1fr)!important; grid-template-rows:minmax(0,1fr)!important;
+  gap:0!important; background:#fff; box-shadow:0 0 0 24px #f5f6f8;
+}
+.workspace.md-independent-workspace > .md-independent-pane {
+  grid-area:1/1!important; height:100%!important; min-height:0; width:100%;
+}
+.workspace.md-independent-workspace > .md-wt-divider,
+.workspace.md-independent-workspace > .md-panel-sync { display:none!important; }
+[data-panel-independent][hidden] { display:none!important; }
+.md-independent-wait { align-self:center; justify-self:center; color:#718096; font-size:14px; }
+.md-independent-cancel { position:absolute; top:8px; right:8px; }
+
 /* ---------------- 窄屏：纵向堆叠，隐藏分隔条，避免横向溢出 ---------------- */
 @media (max-width: 900px) {
   .workspace.md-editor-workspace { grid-template-columns: 1fr; column-gap: 0; height: auto; min-height: 0; }

@@ -18,6 +18,7 @@ test('content bridge rejects stale, unready, invalid and out-of-range positions'
     window: { __MD2PDF_PREVIEW_READY__: true },
     preview: { contentWindow: { postMessage: data => sent.push(data) } },
   });
+  vm.runInContext(app.slice(app.indexOf('function postPreview('), app.indexOf('function workspaceQuery(')), context);
   vm.runInContext(app.slice(app.indexOf('function contentPosition('), app.indexOf("window.addEventListener('message', event => {\n  if (event.source !== preview.contentWindow")), context);
   listener({ detail: { from: 2, to: 6, reason: 'cursor', ratio: .3 } });
   assert.equal(sent.length, 1);
