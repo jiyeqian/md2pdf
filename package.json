@@ -53,6 +53,7 @@
     "test:independent-window-browser": "node tests/independent-window-browser-checks.mjs",
     "test:independent-static-browser": "node tests/independent-static-browser-checks.mjs",
     "test:content-sync-browser": "node tests/content-sync-browser-checks.mjs",
+    "test:outline-viewport-browser": "node tests/outline-viewport-browser-checks.mjs",
     "test:preview-mode-browser": "node tests/preview-mode-browser-checks.mjs",
     "test:workspace-browser": "node tests/workspace-navigation-browser-checks.mjs",
     "test:editor-fold-browser": "node tests/editor-structured-fold-browser-checks.mjs",

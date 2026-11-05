@@ -157,6 +157,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   }
 
   // A fixed overlay does not change line wrapping, pagination, or text selection.
+  let outlineFrom = null;
   let overlay, overlayTimer, selectedRange = null, paintFrame = 0, selectionGuardUntil = 0;
   function highlight(from, to, anchor) {
     overlay?.remove(); clearTimeout(overlayTimer);
@@ -200,17 +201,23 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     });
   }
   addEventListener('resize', repaintSelection);
+  addEventListener('resize', () => {
+    if (outlineFrom !== null) requestAnimationFrame(() => {
+      if (outlineFrom !== null && document.documentElement.clientWidth && innerHeight) locate({from:outlineFrom,to:outlineFrom,reason:'outline',ratio:0,instant:true});
+    });
+  });
   addEventListener('scroll', repaintSelection, { passive: true });
 
   function locate(data) {
     if (!Number.isSafeInteger(data.from) || data.from < 0) return;
+    outlineFrom = data.reason === 'outline' ? data.from : null;
+    beforeLocate(data);
     const anchor = atSource(data.from);
     if (!anchor) return;
     if (data.reason === 'cursor' && data.to > data.from) {
       const selection = getSelection();
       if (selection?.rangeCount && activeScope()?.contains(selection.anchorNode)) { selectionGuardUntil = Date.now() + 1000; selection.removeAllRanges(); }
     }
-    beforeLocate();
     userScroll = false; programmaticUntil = Date.now() + 200;
     const ratio = Number.isFinite(data.ratio) ? Math.max(0, Math.min(1, data.ratio)) : .3;
     const rect = anchor.rect;
@@ -265,6 +272,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     const mapped = node.closest('[data-md2pdf-source-id]') || node.querySelector('[data-md2pdf-source-id]');
     const line = Number(node.dataset.md2pdfSourceLine || node.closest('[data-md2pdf-source-line]')?.dataset.md2pdfSourceLine);
     const item = byId.get(mapped?.dataset.md2pdfSourceId) || source.find(item => item.kind === 'heading' && item.line === line);
+    if (item) outlineFrom = item.from;
     if (item) send('outline', { from: item.from, to: item.to, rect: { top: 0 } });
   }
   function selectionSource() {
@@ -309,13 +317,13 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     if (event.data.type === 'md2pdf-transfer-capture') selectionGuardUntil = Date.now() + 1000;
     if (event.data.type === 'md2pdf-content-locate') locate(event.data);
   });
-  document.addEventListener('keydown', () => { selectionGuardUntil = 0; });
+  document.addEventListener('keydown', () => { selectionGuardUntil = 0; outlineFrom = null; });
   document.addEventListener('dblclick', event => {
     if (event.target.closest('a,button,input') || !activeScope()?.contains(event.target)) return;
     send('activate', atPoint(event.clientX, event.clientY));
   });
   for (const name of ['wheel', 'touchmove', 'pointerdown']) addEventListener(name, () => {
-    userScroll = true; programmaticUntil = 0; selectionGuardUntil = 0;
+    userScroll = true; programmaticUntil = 0; selectionGuardUntil = 0; outlineFrom = null;
   }, { passive: true });
   addEventListener('scroll', () => {
     if (!userScroll || Date.now() < programmaticUntil || pending) return;
