@@ -59,7 +59,7 @@ try {
   await browser.send('Page.navigate',{url});await wait('window.mdEditor && window.mdWindowMode');
   const rootTarget=(await browser.send('Target.getTargets')).targetInfos.find(target=>target.type==='page'&&target.url.startsWith(url));
   await evaluate(`window.frameProbes=[];window.addEventListener('message',event=>{if(event.data?.type==='md2pdf-test-frame-probe'&&event.source===mdWorkspaceHosts.query('#preview')?.contentWindow)frameProbes.push(event.data.probe)})`);
-  const fixture='# 后台主标签页\n\n## 第一章\n\n'+('正文用于检查独立预览。\n\n'.repeat(80))+'## 目标章\n\nTARGET_CONTENT';
+  const fixture='# 后台主标签页\n\n## 第一章\n\n'+('正文用于检查独立预览。\n\n'.repeat(80))+'## 目标章\n\nTARGET_CONTENT\n\n'+('目标章正文。\n\n'.repeat(80));
   await evaluate('mdEditor.setValue('+JSON.stringify(fixture)+')');await ready();
   // A normal tab rather than popup features reproduces the browser's actual
   // hidden-opener scheduling; do not fake visibility or resume its RAF queue.
@@ -78,11 +78,41 @@ try {
   await evaluate('mdEditor.setValue('+JSON.stringify(fixture+'\n\nBACKGROUND_EDIT')+')');
   await ready();await wait('!mdWindowMode.restoring');
   assert.notEqual(await evaluate(`mdWorkspaceHosts.query('#preview').style.opacity`),'0');
+  await evaluate(`window.tabRenderTasks=0;new MutationObserver(()=>{if(new DOMParser().parseFromString(mdWorkspaceHosts.query('#preview').srcdoc,'text/html').querySelector('script[src]'))tabRenderTasks++}).observe(mdWorkspaceHosts.query('#preview'),{attributes:true,attributeFilter:['srcdoc']})`);
+  // Keep one browser tab active: its M/P must work repeatedly, without visiting its peer.
+  for(const controller of [{targetId:popup.targetId,sessionId:popup.sessionId},{targetId:rootTarget.targetId}]) {
+    await browser.send('Target.activateTarget',{targetId:controller.targetId});
+    for(let turn=0;turn<6;turn++) {
+      const previous=await evaluate('mdWindowMode.role');
+      await evaluate(`document.querySelector('.md-panel-mode').click()`,controller.sessionId);
+      await wait('mdWindowMode.role!=='+JSON.stringify(previous));
+      await wait('!mdWindowMode.busy');
+      assert.equal(await evaluate(`document.querySelector('.md-panel-mode').disabled`,controller.sessionId),false,'same active tab can toggle again');
+      if(await evaluate(`!!document.querySelector('.preview-panel')`,controller.sessionId)) {
+        await ready();await wait('!mdWindowMode.restoring');
+        assert.notEqual(await evaluate(`document.querySelector('#preview').style.opacity`,controller.sessionId),'0');
+      }
+    }
+  }
+  assert.equal(await evaluate('tabRenderTasks'),0,'unchanged document swaps reuse completed pagination');
+  await evaluate(`(()=>{if(document.querySelector('#editor-assistant').hidden)document.querySelector('#editor-assistant-toggle').click();[...document.querySelectorAll('.md-pro-outline-item')].find(n=>n.textContent.includes('目标章')).click()})()`);
+  await evaluate(`document.querySelector('.md-panel-mode').click()`);await ready();await wait('!mdWindowMode.restoring');
+  const navigationFrame=await targetSession('iframe');
+  const headingTop=await evaluate(`[...document.querySelectorAll('.pagedjs_pages h2')].find(n=>n.textContent.includes('目标章')).getBoundingClientRect().top`,navigationFrame.sessionId);
+  assert.ok(Math.abs(headingTop)<8,'background source outline supersedes the cached reading position');
+  assert.equal(await evaluate('tabRenderTasks'),0,'background outline keeps computed pagination');
+  await evaluate(`document.querySelector('.md-panel-mode').click()`);await wait('!mdWindowMode.busy');
+  // Editing while preview is hidden must also allow switching to the latest document.
+  await evaluate('mdEditor.setValue('+JSON.stringify(fixture+'\n\nBACKGROUND_EDIT\n\nHIDDEN_RENDER_EDIT')+')');
+  await evaluate(`document.querySelector('.md-panel-mode').click()`);
+  await wait(`document.querySelector('.preview-panel')`);await ready();await wait('!mdWindowMode.restoring');
+  const updated=await targetSession('iframe');
+  assert.ok(await evaluate(`document.body.textContent.includes('HIDDEN_RENDER_EDIT')`,updated.sessionId),'visible preview has the latest source');
   // Closing the preview tab returns the original editor and keeps its source.
   await browser.send('Target.closeTarget',{targetId:popup.targetId});
   await browser.send('Target.activateTarget',{targetId:rootTarget.targetId});
   await normal();await ready();await wait('!mdWindowMode.restoring');
   assert.ok(await evaluate(`mdEditor.getValue().includes('BACKGROUND_EDIT')`));
   assert.notEqual(await evaluate(`document.querySelector('#preview').style.opacity`),'0');
-  console.log('PASS: real hidden opener tab, visible restored preview, background edit and close recovery');
+  console.log('PASS: real hidden opener tab, visible restored preview, continuous same-tab swaps, hidden-preview edit and close recovery');
 } finally {await browser.stop();if(app)await app.close();await rm(temp,{recursive:true,force:true});}

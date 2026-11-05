@@ -23,11 +23,24 @@
     let cached = null, position = null, pendingRestore = null, restoring = false;
     let opacity = null, restoreTicket = null;
     function showPreview() { const wasRestoring = restoring; if (opacity !== null) preview.style.opacity = opacity; opacity = null; restoreTicket = null; restoring = false; if (wasRestoring) changed(); }
-    let positionRevision = -1;
+    let positionRevision = -1, editorMoveRevision = 0;
     const state = () => window.mdPreviewController?.state() || { revision: -1, previewRevision: -1, ready: false, empty: true };
+    function previewHidden() { return preview.ownerDocument.visibilityState !== 'visible'; }
+    function isBusy() { return busy || (restoring && !previewHidden()); }
+    function backgroundSnapshot() {
+      const current = state();
+      if (current.empty) return fallback();
+      if (cached?.revision === current.previewRevision && current.previewRevision === current.revision) {
+        const desired = positionRevision === cached.revision ? position : pendingRestore || cached.position;
+        return { ...cached, position: desired };
+      }
+      // An unfinished layout can resume in the visible destination. Do not use
+      // an older document's computed snapshot or reading offsets as the new one.
+      return { html: preview.getAttribute('srcdoc') || '', revision: current.previewRevision, position: null };
+    }
     function error(message) { onError(message); }
     function changed() {
-      onMode({ active, busy: busy || restoring, role });
+      onMode({ active, busy: isBusy(), role });
       document.dispatchEvent(new CustomEvent('md-window-layout'));
     }
     function validPopup() { try { return popup && !popup.closed && popup.document === popupDoc && popup.opener === window; } catch { return false; } }
@@ -88,11 +101,13 @@
         pendingRestore = snapshot?.position || position;
         restoring = true;
         window.mdPreviewController?.rehost(snapshot?.revision);
+        if (state().empty && !snapshot?.html) { pendingRestore = null; showPreview(); }
       } else {
+        const editorMove = ++editorMoveRevision;
         window.mdEditor?.setDocumentRoot?.(owner);
         for (const node of floating?.() || []) if (node && !panel.contains(node)) owner.body.appendChild(owner.adoptNode(node));
         owner.defaultView.requestAnimationFrame(() => owner.defaultView.requestAnimationFrame(() => {
-          if (panel.ownerDocument !== owner) return;
+          if (panel.ownerDocument !== owner || editorMove !== editorMoveRevision) return;
           window.mdEditor?.requestMeasure?.();
           const outline = snapshot?.position?.outline;
           if (Number.isSafeInteger(outline)) window.mdEditor?.revealPosition?.(outline, 0, false);
@@ -207,12 +222,13 @@
       }
     }
     async function swap() {
-      if (!active || busy || restoring || !validPopup()) return;
+      if (!active || isBusy() || !validPopup()) return;
       busy = true; changed();
       const id = ++operation;
-      const snapshot = await capture();
+      const background = previewHidden();
+      const snapshot = background && !state().ready ? backgroundSnapshot() : await capture();
       if (operation !== id || !validPopup()) return;
-      if ((!snapshot || !state().ready || snapshot.revision !== state().previewRevision) && !state().empty) { busy = false; changed(); error('预览正在更新，请稍后交换窗口。'); return; }
+      if ((!snapshot || (!state().ready && !background) || snapshot.revision !== state().previewRevision) && !state().empty) { busy = false; changed(); error('预览正在更新，请稍后交换窗口。'); return; }
       const next = role === 'editor' ? 'preview' : 'editor';
       const detached = next === 'editor' ? editorPanel : previewPanel;
       const local = next === 'editor' ? previewPanel : editorPanel;
@@ -255,11 +271,26 @@
       } else showPreview();
       if (popup) capture();
     }, true);
+    document.addEventListener('md-preview-locate', event => {
+      const data = event.detail, current = state();
+      if (!active || !data || !Number.isSafeInteger(data.from) || current.revision !== current.previewRevision) return;
+      position = { ...(positionRevision === current.previewRevision ? position : {}),
+        revision: current.previewRevision, from: data.from, anchorRatio: data.ratio, offset: 0, ratio: 0, line: 0 };
+      if (data.reason === 'outline') position.outline = data.from;
+      else if (data.reason === 'cursor') {
+        position.outline = null; position.selection = null;
+        position.highlight = data.to > data.from ? {from:data.from,to:data.to} : null;
+      } else position.outline = null;
+      positionRevision = current.previewRevision;
+      if (restoring) pendingRestore = position;
+    });
     window.addEventListener('pagehide', () => { if (popup) finishExit(fallback(), true); });
+    document.addEventListener('visibilitychange', () => { if (active) changed(); });
     document.addEventListener('md-window-layout', () => {
+      if (active) onMode({ active, busy: isBusy(), role });
       if (popup && state().ready) postFrame(preview, { type: 'md2pdf-capture-position', id: 'window-position' });
     });
-    return { open, swap, exit: () => exit(), get active() { return active; }, get busy() { return busy || restoring; }, get restoring() { return restoring; },
+    return { open, swap, exit: () => exit(), get active() { return active; }, get busy() { return isBusy(); }, get restoring() { return restoring; },
       get popup() { return popup; }, get role() { return role; }, get preparing() { return !!popup && !active; } };
   }
   window.mdIndependentWorkspace = { create };
