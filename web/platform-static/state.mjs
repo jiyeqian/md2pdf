@@ -1,4 +1,5 @@
 import { createCacheReadinessGate } from './cache-readiness.mjs';
+import { bindManualUpdate } from './manual-update.mjs';
 
 const footer = window.mdFooterStatus;
 const base = window.__MD2PDF_STATIC_BASE__;
@@ -42,3 +43,7 @@ async function check() {
 window.addEventListener('online',check);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check();});
 createCacheReadinessGate({ window, document, start:prepare });
+bindManualUpdate({
+  getRegistration: async () => { if (!registration) await prepare(); return registration; },
+  statusType: 'APP_CACHE_STATUS', applyUpdate, activation: true,
+});

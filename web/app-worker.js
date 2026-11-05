@@ -65,7 +65,7 @@ self.addEventListener('message', event => {
     const name = await pinned(event.source.id);
     await pin(event.source.id, name);
     const ready = Boolean(await (await caches.open(name)).match('/__ready'));
-    event.source.postMessage({ type:'APP_STATUS', version:APP_VERSION, pinned:name, cache:CURRENT, ready });
+    (event.ports?.[0] || event.source).postMessage({ type:'APP_STATUS', version:APP_VERSION, pinned:name, cache:CURRENT, ready });
   })());
 });
 self.addEventListener('fetch', event => {

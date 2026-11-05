@@ -3,9 +3,10 @@
   const states = new Map();
   const labels = {
     preparing:'准备离线资源…', update:'保存并更新', retry:'重试离线准备',
-    saveError:'保存失败请重试', checkError:'检查更新', unsupported:'不支持离线启动',
+    saveError:'保存失败请重试', checkError:'检查更新失败，点击重试', unsupported:'不支持离线启动',
+    checking:'正在检查更新…', latest:'已是最新版本',
   };
-  const priority = {saveError:6, retry:5, update:4, checkError:3, preparing:2, unsupported:1};
+  const priority = {saveError:8, checking:7, checkError:6, latest:6, retry:5, update:4, preparing:2, unsupported:1};
   let busy = false;
   function render() {
     const node = document.querySelector('#app-resource-status');
