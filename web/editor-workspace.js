@@ -64,6 +64,7 @@
   var lastEditorAnchor = null;
   var lastPreviewPosition = null;
   var outlineAnchor = null;
+  var previewSelection = null;
   import('./workspace-navigation.mjs').then(function (module) { documentShortcut = module.documentShortcut; }).catch(function () { console.warn('文档快捷键模块加载失败'); });
   var cmEditor = null;                     // CodeMirror 根元素；缩放只改它的 font-size，不动渲染字号
   var markdownZoom = ZOOM_DEFAULT;         // 百分比
@@ -460,7 +461,7 @@
     var button = iconButton('sync', '同步定位', '同步定位：按正文内容双向联动（点击开启 / 关闭）');
     button.setAttribute('id', 'md-wt-sync');
     function updateSync(on) {
-      if (!on) outlineAnchor = null;
+      if (!on) { outlineAnchor = null; previewSelection = null; }
       button.setAttribute('aria-pressed', String(on));
       button.textContent = '';
       button.appendChild(iconSvg(on ? 'sync' : 'unsync'));
@@ -918,6 +919,16 @@
         postContentLocate(outlineAnchor, outlineAnchor, 'outline', 0, true);
         return;
       }
+      // The hidden editor could not measure this range at its final viewport size.
+      if (syncInput && syncInput.checked && mode !== 'preview' && previewSelection) {
+        window.mdEditor.revealPosition(previewSelection.from, previewSelection.ratio, false);
+        window.mdEditor.highlightRange(previewSelection.from, previewSelection.to);
+        if (position) {
+          postPreview({ type: 'md2pdf-restore-position', position: position });
+          postPreview({ type: 'md2pdf-restore-selection', revision: position.revision, selection: position.selection, highlight: position.highlight });
+        }
+        return;
+      }
       // A layout change must not replace a user's selection with the old cursor.
       if (position && ((position.selection && position.selection.anchor !== position.selection.focus) || position.highlight)) {
         postPreview({ type: 'md2pdf-restore-position', position: position });
@@ -1162,6 +1173,7 @@
     var anchor = event.detail;
     if (!anchor || anchor.user !== true || !Number.isSafeInteger(anchor.from)) return;
     outlineAnchor = null;
+    previewSelection = null;
     if (fullscreenMode()) return;
     suppressUntil = 0; // Explicit editor scrolling takes ownership immediately.
     clearTimeout(cursorTimer);
@@ -1172,7 +1184,8 @@
     var source = event.detail;
     if (!hasEditor() || !source || !Number.isSafeInteger(source.from)) return;
     if (source.reason !== 'activate' && (!syncInput || !syncInput.checked || fullscreenMode() === 'editor')) return;
-    if (source.reason === 'outline') outlineAnchor = source.from;
+    if (source.reason === 'outline') { outlineAnchor = source.from; previewSelection = null; }
+    if (source.reason === 'selection') previewSelection = source.to > source.from ? {from:source.from,to:source.to,ratio:source.ratio} : null;
     else if (source.reason === 'scroll' || source.reason === 'activate' || (source.reason === 'selection' && source.to > source.from)) outlineAnchor = null;
     suppressUntil = Date.now() + 600;
     clearTimeout(cursorTimer);
@@ -1191,19 +1204,21 @@
     suppressUntil = Date.now() + 600;
     clearTimeout(cursorTimer);
     window.mdEditor.revealPosition(from, 0, false);
+    previewSelection = null;
     outlineAnchor = syncInput && syncInput.checked ? from : null;
     if (syncInput && syncInput.checked) postContentLocate(from, from, 'outline', 0, true);
   }
 
   function onCursor(event) {
     if (!ready || !syncInput || !syncInput.checked) return;
-    if (fullscreenMode() === 'editor' && !(event.detail && event.detail.from < event.detail.to)) { outlineAnchor = null; return; }
+    if (fullscreenMode() === 'editor' && !(event.detail && event.detail.from < event.detail.to)) { if (Date.now() >= suppressUntil) previewSelection = null; outlineAnchor = null; return; }
     if (Date.now() < suppressUntil && !(event.detail && event.detail.from < event.detail.to)) return; // A new source selection takes ownership immediately.
     var line = event.detail && event.detail.line;
     if (!Number.isFinite(line)) return;
     outlineAnchor = null;
     clearTimeout(cursorTimer);
     if (event.detail.from < event.detail.to) {
+      previewSelection = null;
       lastPreviewPosition = null; // A new source range supersedes the saved preview selection.
       locateCurrentCursor(true);
       return;
@@ -1326,8 +1341,8 @@
 
   function wireEvents() {
     document.addEventListener('md-editor-ready', onReady);
-    document.addEventListener('md-editor-change', function () { outlineAnchor = null; });
-    document.addEventListener('md-editor-reset', function () { outlineAnchor = null; });
+    document.addEventListener('md-editor-change', function () { outlineAnchor = null; previewSelection = null; });
+    document.addEventListener('md-editor-reset', function () { outlineAnchor = null; previewSelection = null; });
     window.addEventListener('md-preview-ready', function () {
       if (window.mdWindowMode && window.mdWindowMode.restoring) return;
       if (syncInput && syncInput.checked && fullscreenMode() !== 'editor') locateCurrentCursor();

@@ -210,6 +210,24 @@ try {
     await new Promise(r=>setTimeout(r,200));
   }
 
+  // Outline -> preview selection -> M/P must reveal the mirrored range, even immediately.
+  for(const pause of [0,150]) {
+    await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('preview-focus')`);
+    await new Promise(r=>setTimeout(r,150));
+    await evaluate(`(()=>{[...document.querySelectorAll('.md-preview-outline button[data-outline-index]')].find(n=>n.textContent.includes('一个长章')).click()})()`);
+    await new Promise(r=>setTimeout(r,150));
+    await evaluate(`(()=>{const node=[...document.querySelectorAll('#md2pdf-preview-flow p')].find(n=>n.textContent==='重复段落。');node.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));const range=document.createRange();range.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));})()`,session);
+    if(pause) await new Promise(r=>setTimeout(r,pause));
+    await evaluate(`document.querySelector('.preview-panel .md-panel-mode').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('editor-focus')`);
+    await new Promise(r=>setTimeout(r,300));
+    const visible=await evaluate(`(()=>{const mark=document.querySelector('.md-sync-highlight'),box=document.querySelector('.cm-scroller').getBoundingClientRect(),r=mark?.getBoundingClientRect();return {text:mark?.textContent,visible:!!r&&r.top>=box.top&&r.bottom<=box.bottom};})()`);
+    assert.ok(visible.visible&&visible.text==='重复段落。',JSON.stringify({pause,visible}));
+    await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
+    await new Promise(r=>setTimeout(r,150));
+  }
+
   const gb = '---\ntype: gb\ngb-cover: false\n---\n# 名称\n\n## 范围\n\n:::gb-important\nRepeated\n:::\n\nRepeated\n\n甲[^@n]乙。\n\nH_{2}O and m^{2}\n\n[^@n]: 注内容\n';
   await evaluate('mdEditor.setValue(' + JSON.stringify(gb) + ')');
   await wait('window.__MD2PDF_PREVIEW_READY__ && document.querySelector("#preview").srcdoc.includes("gb-important-paragraph") && document.querySelector("#status").textContent.includes("预览已更新")');

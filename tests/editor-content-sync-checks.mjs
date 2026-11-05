@@ -62,8 +62,10 @@ test('incoming scroll reveals without moving cursor, activation works with sync 
   context.syncInput.checked = true;
   context.onPreviewContentSource({ detail: { from: 4, to: 7, ratio: .2, reason: 'selection' } });
   assert.deepEqual(calls.slice(-2), [['reveal', 4, .2, false], ['highlight', 4, 7]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.previewSelection)),{from:4,to:7,ratio:.2},'remember mapped selection for the newly visible editor');
   context.onPreviewContentSource({ detail: { from: 3, to: 9, reason: 'outline' } });
   assert.equal(context.outlineAnchor, 3, 'remember outline without moving the old caret');
+  assert.equal(context.previewSelection,null,'new outline navigation supersedes the old preview range');
   context.onPreviewContentSource({ detail: { from: 8, reason: 'scroll' } });
   assert.equal(context.outlineAnchor, null, 'explicit scrolling supersedes outline');
 
@@ -186,7 +188,7 @@ test('restored preview selection does not echo as new user navigation', async ()
   const node = {}, sent = [];
   const selection = {rangeCount:1,isCollapsed:false,anchorNode:node,anchorOffset:0,focusNode:node,focusOffset:5,
     getRangeAt:()=>({startContainer:node,endContainer:node,intersectsNode:()=>true})};
-  const context=vm.createContext({getSelection:()=>selection,restoredSelection:null,selectionGuardUntil:0,Date,
+  const context=vm.createContext({getSelection:()=>selection,restoredSelection:null,reportedSelection:null,selectionGuardUntil:0,Date,
     activeScope:()=>({contains:()=>true}),refresh:()=>[{atomic:true,item:{from:30,to:40},node:{getBoundingClientRect:()=>({top:20})}}],
     selectedRange:null,overlay:null,overlayTimer:0,clearTimeout(){},send:(reason,range)=>sent.push({reason,range})});
   vm.runInContext(runtime.slice(runtime.indexOf('  function suppressSelectionEcho('),runtime.indexOf('  let selectionTimer;')),context);
@@ -194,7 +196,8 @@ test('restored preview selection does not echo as new user navigation', async ()
   assert.equal(sent.length,0,'repeated events for the restored range stay silent');
   selection.focusOffset=6;context.selectionSource();
   assert.equal(sent.length,1,'a different selection still navigates');
-  context.suppressSelectionEcho();context.restoredSelection=null;context.selectionSource();
+  context.selectionSource();assert.equal(sent.length,1,'flushing an already reported range does not navigate again');
+  context.suppressSelectionEcho();context.restoredSelection=null;context.reportedSelection=null;context.selectionSource();
   assert.equal(sent.length,2,'real pointer/keyboard ownership can select the same range');
 });
 

@@ -305,7 +305,7 @@ function runtimeScript(type) {
     "    if (event.source !== parent || !event.data) return;",
     "    if (event.data.type === 'md2pdf-restore-selection') { restoreSelectionState(event.data); return; }",
     "    if (event.data.type === 'md2pdf-capture-position') {",
-    "      nativeSelection.protect();",
+    "      nativeSelection.protect(); if (contentSync && contentSync.flushSelection) contentSync.flushSelection();",
     "      parent.postMessage({type:'md2pdf-position',id:event.data.id,revision:MD2PDF_PREVIEW_REVISION,position:capturePosition()}, '*');",
     "    } else if (event.data.type === 'md2pdf-restore-position') {",
     "      var position = event.data.position;",
