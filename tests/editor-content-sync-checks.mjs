@@ -62,6 +62,10 @@ test('incoming scroll reveals without moving cursor, activation works with sync 
   context.syncInput.checked = true;
   context.onPreviewContentSource({ detail: { from: 4, to: 7, ratio: .2, reason: 'selection' } });
   assert.deepEqual(calls.slice(-2), [['reveal', 4, .2, false], ['highlight', 4, 7]]);
+  context.onPreviewContentSource({ detail: { from: 3, to: 9, reason: 'outline' } });
+  assert.equal(context.outlineAnchor, 3, 'remember outline without moving the old caret');
+  context.onPreviewContentSource({ detail: { from: 8, reason: 'scroll' } });
+  assert.equal(context.outlineAnchor, null, 'explicit scrolling supersedes outline');
 
 });
 

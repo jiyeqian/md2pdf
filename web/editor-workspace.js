@@ -63,6 +63,7 @@
   var pendingLayout = null;
   var lastEditorAnchor = null;
   var lastPreviewPosition = null;
+  var outlineAnchor = null;
   import('./workspace-navigation.mjs').then(function (module) { documentShortcut = module.documentShortcut; }).catch(function () { console.warn('文档快捷键模块加载失败'); });
   var cmEditor = null;                     // CodeMirror 根元素；缩放只改它的 font-size，不动渲染字号
   var markdownZoom = ZOOM_DEFAULT;         // 百分比
@@ -459,6 +460,7 @@
     var button = iconButton('sync', '同步定位', '同步定位：按正文内容双向联动（点击开启 / 关闭）');
     button.setAttribute('id', 'md-wt-sync');
     function updateSync(on) {
+      if (!on) outlineAnchor = null;
       button.setAttribute('aria-pressed', String(on));
       button.textContent = '';
       button.appendChild(iconSvg(on ? 'sync' : 'unsync'));
@@ -911,6 +913,11 @@
       measureEditor();
       if (pending.anchor && window.mdEditor.restoreViewport) window.mdEditor.restoreViewport(pending.anchor);
       if (position && Number.isSafeInteger(position.revision) && window.mdPreviewController && position.revision !== window.mdPreviewController.state().previewRevision) position = null;
+      if (syncInput && syncInput.checked && outlineAnchor !== null) {
+        window.mdEditor.revealPosition(outlineAnchor, 0, false);
+        postContentLocate(outlineAnchor, outlineAnchor, 'outline', 0, true);
+        return;
+      }
       // A layout change must not replace a user's selection with the old cursor.
       if (position && ((position.selection && position.selection.anchor !== position.selection.focus) || position.highlight)) {
         postPreview({ type: 'md2pdf-restore-position', position: position });
@@ -1151,9 +1158,11 @@
   }
 
   function onEditorScroll(event) {
-    if (!ready || !syncInput || !syncInput.checked || fullscreenMode()) return;
+    if (!ready || !syncInput || !syncInput.checked) return;
     var anchor = event.detail;
     if (!anchor || anchor.user !== true || !Number.isSafeInteger(anchor.from)) return;
+    outlineAnchor = null;
+    if (fullscreenMode()) return;
     suppressUntil = 0; // Explicit editor scrolling takes ownership immediately.
     clearTimeout(cursorTimer);
     postContentLocate(anchor.from, anchor.from, 'scroll', anchor.ratio, true);
@@ -1163,6 +1172,8 @@
     var source = event.detail;
     if (!hasEditor() || !source || !Number.isSafeInteger(source.from)) return;
     if (source.reason !== 'activate' && (!syncInput || !syncInput.checked || fullscreenMode() === 'editor')) return;
+    if (source.reason === 'outline') outlineAnchor = source.from;
+    else if (source.reason === 'scroll' || source.reason === 'activate' || (source.reason === 'selection' && source.to > source.from)) outlineAnchor = null;
     suppressUntil = Date.now() + 600;
     clearTimeout(cursorTimer);
     if (source.reason === 'selection' && source.from === source.to) { window.mdEditor.highlightRange(source.from, source.to); return; }
@@ -1180,15 +1191,17 @@
     suppressUntil = Date.now() + 600;
     clearTimeout(cursorTimer);
     window.mdEditor.revealPosition(from, 0, false);
+    outlineAnchor = syncInput && syncInput.checked ? from : null;
     if (syncInput && syncInput.checked) postContentLocate(from, from, 'outline', 0, true);
   }
 
   function onCursor(event) {
     if (!ready || !syncInput || !syncInput.checked) return;
-    if (fullscreenMode() === 'editor' && !(event.detail && event.detail.from < event.detail.to)) return;
+    if (fullscreenMode() === 'editor' && !(event.detail && event.detail.from < event.detail.to)) { outlineAnchor = null; return; }
     if (Date.now() < suppressUntil && !(event.detail && event.detail.from < event.detail.to)) return; // A new source selection takes ownership immediately.
     var line = event.detail && event.detail.line;
     if (!Number.isFinite(line)) return;
+    outlineAnchor = null;
     clearTimeout(cursorTimer);
     cursorTimer = setTimeout(function () { locateCurrentCursor(); }, CURSOR_DEBOUNCE);
   }
@@ -1308,6 +1321,8 @@
 
   function wireEvents() {
     document.addEventListener('md-editor-ready', onReady);
+    document.addEventListener('md-editor-change', function () { outlineAnchor = null; });
+    document.addEventListener('md-editor-reset', function () { outlineAnchor = null; });
     window.addEventListener('md-preview-ready', function () {
       if (window.mdWindowMode && window.mdWindowMode.restoring) return;
       if (syncInput && syncInput.checked && fullscreenMode() !== 'editor') locateCurrentCursor();

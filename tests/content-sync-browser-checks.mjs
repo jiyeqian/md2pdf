@@ -113,8 +113,10 @@ try {
   for (let round=0;round<3;round++) {
     await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
     await wait(`document.querySelector('.workspace').classList.contains('editor-focus')`);
+    await new Promise(resolve=>setTimeout(resolve,150));
     await evaluate(`document.querySelector('.editor-panel .md-panel-mode').click()`);
     await wait(`document.querySelector('.workspace').classList.contains('preview-focus')`);
+    await new Promise(resolve=>setTimeout(resolve,150));
     await new Promise(resolve=>setTimeout(resolve,250));
     assert.equal(await evaluate('getSelection().toString()',session),'value84','native preview selection survives M/P fullscreen swap');
     await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
@@ -131,8 +133,10 @@ try {
   for(let round=0;round<2;round++) {
     await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
     await wait(`document.querySelector('.workspace').classList.contains('editor-focus')`);
+    await new Promise(resolve=>setTimeout(resolve,150));
     await evaluate(`document.querySelector('.editor-panel .md-panel-mode').click()`);
     await wait(`document.querySelector('.workspace').classList.contains('preview-focus')`);
+    await new Promise(resolve=>setTimeout(resolve,150));
     await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
     await new Promise(resolve=>setTimeout(resolve,250));
     assert.deepEqual(await evaluate('mdEditor.getSelection()'),selectedSource,'source selection survives fullscreen round trip');
@@ -164,6 +168,25 @@ try {
   await evaluate(`document.querySelector('#md-wt-sync').checked=true`);
   await evaluate(`(()=>{const rows=[...document.querySelectorAll('.md-pro-outline-item')];rows.find(node=>node.textContent.includes('一个长章')).click();})()`);
   await wait(`(()=>{const h=[...document.querySelectorAll('#md2pdf-preview-flow h2')].find(node=>node.textContent.includes('一个长章'));return h&&Math.abs(h.getBoundingClientRect().top)<5;})()`,session);
+
+  // Outline navigation owns subsequent M/P fullscreen positioning, not the old caret.
+  await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
+  await wait(`document.querySelector('.workspace').classList.contains('editor-focus')`);
+    await new Promise(resolve=>setTimeout(resolve,150));
+  for(let round=0;round<2;round++) {
+    await evaluate(`(()=>{const rows=[...document.querySelectorAll('.md-pro-outline-item')];rows.find(node=>node.textContent.includes('一个长章')).click();})()`);
+    await wait(`(()=>{const coords=mdEditor.coordsAtPos(${chapterOffset});const box=document.querySelector('.cm-scroller').getBoundingClientRect();return coords&&Math.abs(coords.top-box.top)<5;})()`);
+    await evaluate(`document.querySelector('.editor-panel .md-panel-mode').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('preview-focus')`);
+    await new Promise(resolve=>setTimeout(resolve,150));
+    await wait(`(()=>{const h=[...document.querySelectorAll('#md2pdf-preview-flow h2')].find(node=>node.textContent.includes('一个长章'));return h&&Math.abs(h.getBoundingClientRect().top)<5;})()`,session);
+    await evaluate(`(()=>{const rows=[...document.querySelectorAll('.md-preview-outline button[data-outline-index]')];rows.find(node=>node.textContent.includes('一个长章')).click();})()`);
+    await evaluate(`document.querySelector('.preview-panel .md-panel-mode').click()`);
+    await wait(`document.querySelector('.workspace').classList.contains('editor-focus')`);
+    await new Promise(resolve=>setTimeout(resolve,150));
+    await wait(`(()=>{const coords=mdEditor.coordsAtPos(${chapterOffset});const box=document.querySelector('.cm-scroller').getBoundingClientRect();return coords&&Math.abs(coords.top-box.top)<5;})()`);
+  }
+  await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
 
   const gb = '---\ntype: gb\ngb-cover: false\n---\n# 名称\n\n## 范围\n\n:::gb-important\nRepeated\n:::\n\nRepeated\n\n甲[^@n]乙。\n\nH_{2}O and m^{2}\n\n[^@n]: 注内容\n';
   await evaluate('mdEditor.setValue(' + JSON.stringify(gb) + ')');
