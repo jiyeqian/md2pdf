@@ -77,7 +77,13 @@
       stages:
         - name: build & push
           script: |
-            IMG=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_TAG}
+            # 确保 git 可用（cnb 默认构建镜像未必含 git）
+            if ! command -v git >/dev/null 2>&1; then
+              (command -v apt-get >/dev/null && apt-get update -qq && apt-get install -y -qq git) || (command -v apk >/dev/null && apk add --no-cache git) || true
+            fi
+            # 取当前 tag（tag_push 下 HEAD 即被推送的 tag），回退到短 commit 避免空 tag 致镜像名非法
+            TAG=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
+            IMG=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${TAG}
             docker build -t $IMG .
             docker push $IMG
 
