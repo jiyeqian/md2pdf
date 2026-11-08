@@ -1,14 +1,24 @@
 /* md2pdf web editor — 图片插入与 base64 折叠（web/editor-images.js 的样式）。 */
 
-/* 图片插入状态提示（工具栏内，随状态行联动）。 */
+/* 提示浮在编辑区上方，不参与工具栏排列。 */
+.md-wt-toolbar { position: relative; }
 .md-image-status {
-  margin-left: auto;
+  position: absolute;
+  top: 100%;
+  right: 8px;
+  z-index: 5;
+  max-width: calc(100% - 16px);
+  padding: 6px 10px;
+  border: 1px solid #dbe4f0;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(35, 62, 96, .12);
   font-size: 12px;
   line-height: 1.4;
   color: #42648b;
-  max-width: 100%;
   overflow-wrap: anywhere;
 }
+.md-image-status:empty { display: none; }
 
 .md-image-status[data-error="true"] {
   color: #a1382f;

@@ -235,6 +235,7 @@
   let doc = null;
   let picker = null;
   let statusEl = null;
+  let statusTimer = null;
   let toolbarMounted = false;
 
   function fileName(file) { return file && file.name ? String(file.name) : '图片'; }
@@ -245,7 +246,12 @@
 
   function setStatus(message, error) {
     const text = message ? String(message) : '';
-    if (statusEl) { statusEl.textContent = text; statusEl.dataset.error = String(!!error); }
+    clearTimeout(statusTimer);
+    if (statusEl) {
+      statusEl.textContent = text;
+      statusEl.dataset.error = String(!!error);
+      if (text) statusTimer = setTimeout(function () { statusEl.textContent = ''; }, error ? 10000 : 5000);
+    }
     if (error && global.console && global.console.warn) global.console.warn('[md2pdf] 图片插入：' + text);
   }
 
@@ -482,12 +488,7 @@
       api.replaceRange(from, to, plan.insert); // one transaction => one undo step
       api.setSelection(plan.selection);
 
-      const parts = ['已插入 ' + plan.count + ' 张图片'];
-      if (compressed) parts.push('其中 ' + compressed + ' 张已压缩');
-      if (cancelled) parts.push('取消 ' + cancelled + ' 张');
-      if (rejected) parts.push('跳过 ' + rejected + ' 张');
-      if (notes.length) parts.push(notes.join(' '));
-      setStatus(parts.join('；'), false);
+      setStatus(notes.join(' '), rejected > 0);
     } catch (error) {
       setStatus('插入图片失败：' + (error && error.message ? error.message : error), true);
     } finally {
