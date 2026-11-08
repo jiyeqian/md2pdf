@@ -85,11 +85,22 @@
             TAG=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
             IMG=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${TAG}
             LATEST=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
-            docker build -t $IMG .
-            docker push $IMG
-            # 同时打 latest 别名，支持 `docker pull docker.cnb.cool/jiyeqian/md2pdf`（不带版本号）
-            docker tag $IMG $LATEST
-            docker push $LATEST
+
+            # 多架构支持：注册 QEMU 模拟器 + 创建 buildx 构建器（amd64 + arm64）
+            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+            docker buildx create --name multiarch --driver docker-container --use 2>/dev/null \
+              || docker buildx use multiarch 2>/dev/null || true
+            docker buildx inspect --bootstrap
+
+            # 同时构建并推送 amd64 + arm64（--push 直接推送到制品库，无需本地 tag）
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              -t $IMG \
+              --push .
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              -t $LATEST \
+              --push .
 
 main:
   push:
