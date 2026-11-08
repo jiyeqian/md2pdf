@@ -1,0 +1,12 @@
+# 构建上下文排除项：缩小 docker build 传输体积，且绝对不能误杀构建所需文件。
+# 注意：不要写 `*.md` 或裸 `examples` —— 静态构建需要 web/examples/*.md。
+
+.git
+.gitignore
+node_modules
+tests
+docs
+research
+.workbuddy
+.wbapp_*.genie
+dist

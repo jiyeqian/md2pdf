@@ -1,0 +1,54 @@
+name: docker
+
+# 静态版 Docker 镜像构建与推送（GitHub Actions → GHCR）
+# 仅在打 vX.Y.Z 版本标签时自动触发；也可手动触发以重建已有版本。
+# 公开仓库走 Actions + GHCR 无限免费，CI 侧零额外凭证（内置 GITHUB_TOKEN）。
+# 镜像名 md2pdf-static 用于区分未来可能的服务端版镜像。
+# 注意：Dockerfile 不含版本号，版本只体现在镜像 tag（如 ghcr.io/jiyeqian/md2pdf-static:v1.17.2）。
+#
+# 首次推送后，请到 GitHub Packages 将该包设为 Public，
+# 否则内网机器拉取需带 PAT（read:packages）。
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '已有版本 tag 重建（留空则用触发的 tag）'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v6
+        with:
+          ref: '${{ inputs.tag || github.ref }}'
+
+      - name: 设置 Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 登录 GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: '${{ github.actor }}'
+          password: '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: 构建并推送镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/jiyeqian/md2pdf-static:${{ inputs.tag || github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

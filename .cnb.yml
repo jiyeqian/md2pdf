@@ -69,6 +69,17 @@
           script: |
             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
             npm publish --access public
+    - name: 构建静态镜像
+      # 用 DinD 构建静态版镜像并推送到 cnb 自带 Docker 制品库（非同名制品：仓库路径/static）。
+      # 推送到本仓库自己的制品库由流水线自动鉴权，无需显式 docker login。
+      services:
+        - docker
+      stages:
+        - name: build & push
+          script: |
+            IMG=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}/static:${CNB_TAG}
+            docker build -t $IMG .
+            docker push $IMG
 
 main:
   push:
