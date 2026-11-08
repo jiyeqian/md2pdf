@@ -9,6 +9,9 @@ import { analyticsConfig } from './analytics-config.mjs';
 import { createHash } from 'node:crypto';
 import { exampleCatalog, findExample } from './web-examples.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+export function normalizeModuleNewlines(source) {
+  return source.replace(/\r\n/g, '\n');
+}
 export async function buildStatic() {
 const directory = path.join(root, 'dist/static');
 const out = path.join(root, 'dist/.static-build-' + process.pid);
@@ -31,7 +34,7 @@ async function include(file) {
 }
 for(const file of ['render.mjs','web-input.mjs','web-options.mjs','web-document.mjs','editor-position.mjs','doi.mjs','gb-blocks.mjs']) await include(file);
 for (const file of modules) {
-  let source = await readFile(path.join(root, 'src', file), 'utf8');
+  let source = normalizeModuleNewlines(await readFile(path.join(root, 'src', file), 'utf8'));
   if (file === 'render.mjs') {
     source = source.replace(/^import .* from 'node:[^']+';\n/gm, '');
     source = `import { path, readFile, existsSync, readdirSync, fileURLToPath, pathToFileURL } from '../resources.mjs';\nimport { Marked } from '../vendor/marked.esm.js';\nimport hljs from '../vendor/highlight/highlight.mjs';\n` + source;
