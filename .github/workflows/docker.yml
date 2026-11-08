@@ -4,7 +4,7 @@ name: docker
 # 仅在打 vX.Y.Z 版本标签时自动触发；也可手动触发以重建已有版本。
 # 公开仓库走 Actions + GHCR 无限免费，CI 侧零额外凭证（内置 GITHUB_TOKEN）。
 # 镜像名为 md2pdf（GHCR：ghcr.io/jiyeqian/md2pdf；cnb 制品库：docker.cnb.cool/jiyeqian/md2pdf）。
-# 注意：Dockerfile 不含版本号，版本只体现在镜像 tag（如 ghcr.io/jiyeqian/md2pdf:v1.17.3）。
+# 注意：Dockerfile 不含版本号，版本只体现在镜像 tag（如 ghcr.io/jiyeqian/md2pdf:v1.17.4）；发版时额外推送 latest 别名。
 #
 # 首次推送后，请到 GitHub Packages 将该包设为 Public，
 # 否则内网机器拉取需带 PAT（read:packages）。
@@ -28,6 +28,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # 镜像版本 tag：手动触发时用输入的 tag，否则用触发的 tag 名（vX.Y.Z）
+      TAG: ${{ inputs.tag || github.ref_name }}
+      # latest 别名：仅在「推版本标签」或「手动指定 tag 重建」时生成，
+      # 以支持 `docker pull ghcr.io/jiyeqian/md2pdf`（不带版本号）。
+      # 若手动重建却未指定 tag（默认当前分支），则不覆盖 latest，避免回退。
+      LATEST: ${{ ((github.event_name == 'push' && github.ref_type == 'tag') || (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')) && 'latest' || '' }}
     steps:
       - name: 检出代码
         uses: actions/checkout@v6
@@ -53,6 +60,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/jiyeqian/md2pdf:${{ inputs.tag || github.ref_name }}
+          # 始终推送版本 tag；发版或指定 tag 重建时额外推送 latest
+          tags: ghcr.io/jiyeqian/md2pdf:${{ env.TAG }}${{ env.LATEST != '' && format(',ghcr.io/jiyeqian/md2pdf:{0}', env.LATEST) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

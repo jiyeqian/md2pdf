@@ -84,8 +84,12 @@
             # 取当前 tag（tag_push 下 HEAD 即被推送的 tag），回退到短 commit 避免空 tag 致镜像名非法
             TAG=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
             IMG=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${TAG}
+            LATEST=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
             docker build -t $IMG .
             docker push $IMG
+            # 同时打 latest 别名，支持 `docker pull docker.cnb.cool/jiyeqian/md2pdf`（不带版本号）
+            docker tag $IMG $LATEST
+            docker push $LATEST
 
 main:
   push:
