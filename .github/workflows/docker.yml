@@ -24,6 +24,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: docker-md2pdf-release
+  queue: max
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,12 +38,17 @@ jobs:
       # latest 别名：仅在「推版本标签」或「手动指定 tag 重建」时生成，
       # 以支持 `docker pull ghcr.io/jiyeqian/md2pdf`（不带版本号）。
       # 若手动重建却未指定 tag（默认当前分支），则不覆盖 latest，避免回退。
-      LATEST: ${{ ((github.event_name == 'push' && github.ref_type == 'tag') || (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')) && 'latest' || '' }}
     steps:
       - name: 检出代码
         uses: actions/checkout@v6
         with:
           ref: '${{ inputs.tag || github.ref }}'
+
+      - name: 校验版本标签
+        shell: bash
+        run: |
+          [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          test "$(node -p "require('./package.json').version")" = "${TAG#v}"
 
       - name: 设置 QEMU（多架构模拟，支持 arm64）
         uses: docker/setup-qemu-action@v3
@@ -61,6 +70,16 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           # 始终推送版本 tag；发版或指定 tag 重建时额外推送 latest
-          tags: ghcr.io/jiyeqian/md2pdf:${{ env.TAG }}${{ env.LATEST != '' && format(',ghcr.io/jiyeqian/md2pdf:{0}', env.LATEST) || '' }}
+          tags: ghcr.io/jiyeqian/md2pdf:${{ env.TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: 更新 latest（仅最高稳定版本）
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo 'Invalid release tag'; exit 1; }
+          latest=$(git ls-remote --tags --refs origin | awk '{sub("refs/tags/", "", $2); print $2}' | grep -E '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' | sort -V | tail -1)
+          if [ "$TAG" = "$latest" ]; then
+            docker buildx imagetools create -t ghcr.io/jiyeqian/md2pdf:latest ghcr.io/jiyeqian/md2pdf:"$TAG"
+          fi

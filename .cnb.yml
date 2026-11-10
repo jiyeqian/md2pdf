@@ -70,6 +70,10 @@
             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
             npm publish --access public
     - name: 构建静态镜像
+      lock:
+        key: docker-md2pdf-release
+        wait: true
+        timeout: 3600
       # 用 DinD 构建静态版镜像并推送到 cnb 自带 Docker 制品库（同名镜像：仓库路径）。
       # 推送到本仓库自己的制品库由流水线自动鉴权，无需显式 docker login。
       services:
@@ -77,12 +81,16 @@
       stages:
         - name: build & push
           script: |
+            set -eu
             # 确保 git 可用（cnb 默认构建镜像未必含 git）
             if ! command -v git >/dev/null 2>&1; then
               (command -v apt-get >/dev/null && apt-get update -qq && apt-get install -y -qq git) || (command -v apk >/dev/null && apk add --no-cache git) || true
             fi
-            # 取当前 tag（tag_push 下 HEAD 即被推送的 tag），回退到短 commit 避免空 tag 致镜像名非法
-            TAG=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
+            # 仅发布稳定版本标签，且标签须匹配 package.json。
+            TAG=${CNB_BRANCH:?missing tag}
+            printf '%s\n' "$TAG" | grep -Eq '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' || { echo "Skipping non-release tag: $TAG"; exit 0; }
+            VERSION=$(sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' package.json | head -1)
+            [ "v$VERSION" = "$TAG" ] || { echo "Version does not match $TAG"; exit 1; }
             IMG=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${TAG}
             LATEST=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
 
@@ -97,10 +105,13 @@
               --platform linux/amd64,linux/arm64 \
               -t $IMG \
               --push .
-            docker buildx build \
-              --platform linux/amd64,linux/arm64 \
-              -t $LATEST \
-              --push .
+            if sh scripts/docker-latest.sh "$TAG" origin; then
+              docker buildx imagetools create -t "$LATEST" "$IMG"
+            else
+              result=$?
+              [ "$result" -eq 1 ] || exit "$result"
+              echo "Not the latest stable tag: $TAG"
+            fi
 
 main:
   push:

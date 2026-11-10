@@ -20,6 +20,8 @@ COPY src /app/src
 COPY assets /app/assets
 COPY vendor /app/vendor
 COPY web /app/web
+# 候选图形只供研发对照，不属于静态应用资源；在生成离线清单之前排除。
+RUN rm -rf /app/assets/candidates
 # 直接调用 buildStatic() 生成 dist/static 后立即退出。
 # （不要用 `webapp --static`，它会常驻启动静态服务器、卡住构建。）
 RUN node -e "import('./src/static-build.mjs').then(m=>m.buildStatic()).catch(e=>{console.error(e);process.exit(1)})"
