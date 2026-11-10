@@ -94,10 +94,7 @@
             IMG=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${TAG}
             LATEST=${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
 
-            # 多架构支持：注册 QEMU 模拟器 + 创建 buildx 构建器（amd64 + arm64）
-            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-            docker buildx create --name multiarch --driver docker-container --use 2>/dev/null \
-              || docker buildx use multiarch 2>/dev/null || true
+            # CNB 的 Docker 服务内置多架构支持，不运行特权容器注册模拟器。
             docker buildx inspect --bootstrap
 
             # 同时构建并推送 amd64 + arm64（--push 直接推送到制品库，无需本地 tag）
