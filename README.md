@@ -29,7 +29,7 @@
 | **文档处理** | 在本机处理 | 排版请求发送到服务端；服务不保存文档 | 在浏览器本地处理，文档不离开当前设备 |
 | **PDF 导出** | 本机生成 PDF | 服务端生成并下载 PDF | 打开浏览器打印窗口，由用户保存 PDF |
 | **字体方案** | 使用运行 CLI 的设备上已安装的字体 | 预览使用浏览器设备的字体；PDF 使用服务器的字体，两端需分别配置 | 预览与 PDF 均使用浏览器设备的字体；托管服务器安装字体不会自动提供给浏览器 |
-| **开始使用** | `md2pdf 文档.md --open` | `md2pdf webapp`（[在线试用](https://md2pdf.app.workbuddy.host/)） | `md2pdf webapp --static`（[在线试用](https://md2pdf.qianjiye.de/)） |
+| **开始使用** | `md2pdf 文档.md --open` | `md2pdf webapp`（[在线试用](https://md2pdf.app.workbuddy.host/?sharecode=YD24U7EHBM)） | `md2pdf webapp --static`（[在线试用](https://md2pdf.qianjiye.de/)） |
 
 各模板可通过 frontmatter 的 `fonts` 映射设置正文、标题、西文及代码字体，CLI 也可用对应选项覆盖，详见[自定义字体](docs/fonts.md)。
 
@@ -62,20 +62,58 @@ WebApp 只记录软件使用情况，不上传用户文档；可选统计可在�
 
 ## 开始使用
 
-安装 CLI（需要 Node.js 18 或更高版本，以及 Chrome、Edge 或 Chromium）：
+### npm 安装
+
+需要 Node.js 18 或更高版本及 Bash；CLI 导出和服务器版 PDF 还需要 Chrome、Edge 或 Chromium。Windows 用户可在支持 Bash 的环境中使用。
 
 ```bash
 npm install -g @jiyeqian/md2pdf
 md2pdf 你的文档.md --open
 ```
 
-启动本地 Web 工作台：
+启动本地服务器版或静态版工作台（二选一）：
 
 ```bash
 md2pdf webapp
+# 或：md2pdf webapp --static
 ```
 
-然后打开 `http://127.0.0.1:3000`。也可直接体验上方的服务器版或静态版。
+打开 <http://127.0.0.1:3000>，按 `Ctrl+C` 停止。两种模式默认占用同一端口；可用 `--port 3001` 指定其他端口。静态版在浏览器打印窗口选择“保存为 PDF”。
+
+### 源码运行
+
+需要 Git、Node.js 18 或更高版本及 Bash；生成 PDF 还需要本机 Chrome、Edge 或 Chromium。
+
+```bash
+git clone https://github.com/jiyeqian/md2pdf.git
+cd md2pdf
+./bin/md2pdf 你的文档.md --open
+./bin/md2pdf webapp
+```
+
+也可用 `./bin/md2pdf webapp --static` 启动静态版。源码中的依赖已随仓库提供，以上命令无需先执行 `npm install`；Windows 用户可在支持 Bash 的环境中运行。
+
+### Docker 部署静态版
+
+需要 Docker；镜像支持 `amd64` 和 `arm64`。任选一个镜像源：
+
+```bash
+docker run -d --name md2pdf -p 127.0.0.1:3000:3000 ghcr.io/jiyeqian/md2pdf:latest
+# 或使用 CNB：docker run -d --name md2pdf -p 127.0.0.1:3000:3000 docker.cnb.cool/jiyeqian/md2pdf:latest
+```
+
+打开 <http://127.0.0.1:3000>，在浏览器打印窗口保存 PDF。此镜像是静态版，不提供服务端 PDF 生成；预览和打印使用访问设备上的字体。`latest` 是滚动版本，也可将其替换为具体版本标签，例如 `v1.17.7`。
+
+停止服务：`docker stop md2pdf`；重新启动：`docker start md2pdf`。更新时先下载 Markdown 备份，再拉取新镜像并重新创建容器（以 GHCR 为例）：
+
+```bash
+docker pull ghcr.io/jiyeqian/md2pdf:latest
+docker stop md2pdf
+docker rm md2pdf
+docker run -d --name md2pdf -p 127.0.0.1:3000:3000 ghcr.io/jiyeqian/md2pdf:latest
+```
+
+浏览器草稿按访问地址保存在浏览器中；更换域名或端口后不会自动迁移。
 
 ## 继续了解
 
