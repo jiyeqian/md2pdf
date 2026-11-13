@@ -7,3 +7,6 @@ dist/
 !examples/*.pdf
 .workbuddy/
 .wbapp_*.genie
+
+# 本机 OneDrive 公共客户端配置，不随源码发布
+/web/onedrive-config.json

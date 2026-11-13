@@ -10,3 +10,7 @@ research
 .workbuddy
 .wbapp_*.genie
 dist
+
+# 不把本机 OneDrive 配置送入 Docker 构建上下文
+
+web/onedrive-config.json

@@ -20,8 +20,9 @@ try {
 await mkdir(path.join(out, 'src'), { recursive:true });
 for (const dir of ['assets','vendor']) await cp(path.join(root, dir),path.join(out,dir),{recursive:true});
 for (const entry of await readdir(path.join(root,'web'), {withFileTypes:true})) {
-  if (entry.name !== 'platform-static') await cp(path.join(root,'web',entry.name),path.join(out,entry.name),{recursive:true});
+  if (!['platform-static', '.npmignore', 'onedrive-config.json', 'onedrive-config.example.json'].includes(entry.name)) await cp(path.join(root,'web',entry.name),path.join(out,entry.name),{recursive:true});
 }
+await cp(path.join(root, 'web/onedrive-config.example.json'), path.join(out, 'onedrive-config.json'));
 for (const file of await readdir(path.join(root,'web/platform-static'))) {
   if (file !== 'cache.js') await cp(path.join(root,'web/platform-static',file),path.join(out,file));
 }
