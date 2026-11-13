@@ -1,9 +1,9 @@
-import { browserYaml } from './browser-yaml.mjs';
 import http from 'node:http';
 import { versionInfo } from './version.mjs';
 import { analyticsConfig } from './analytics-config.mjs';
 import { createOperationalMetrics } from './operational-metrics.mjs';
-import { appCacheScript } from './app-cache.mjs';
+import { appCacheScript, readStaticAsset } from './app-cache.mjs';
+import { pageCsp } from './page-csp.mjs';
 import { isIP } from 'node:net';
 import { gbFontDiagnostic, withGbFontFallback } from './gb-fonts.mjs';
 import path from 'node:path';
@@ -24,8 +24,6 @@ import { createDocumentAssetCache } from '../web/platform-static/document-asset-
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LIMIT = 24 * 1024 * 1024;
-// srcdoc inherits the parent policy, so trusted in-document scripts/styles must also be allowed here.
-const PAGE_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' data:; style-src 'self' 'unsafe-inline'; frame-src 'self' about:; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 const assetFiles = ['vendor/mathjax/tex-svg.js', 'vendor/mermaid/mermaid.min.js', 'vendor/pagedjs/paged.polyfill.min.js'];
 const documentAssetCache = createDocumentAssetCache(4);
 const assetBoundary = versionInfo('node');
@@ -75,7 +73,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   const productInfo = versionInfo('node');
   const analytics = analyticsConfig();
   const metrics = createOperationalMetrics({ enabled: operationalMetrics ?? Boolean(publicHost), file: metricsFile });
-  const pageCsp = analytics.enabled ? PAGE_CSP.replace("connect-src 'self'", "connect-src 'self' " + new URL(analytics.endpoint).origin) : PAGE_CSP;
+
   let browser, tmpRoot, closed = false, queued = 0, tail = Promise.resolve();
   let doiRequests = 0;
   // 公网部署时由反向代理转发，Host 为沙箱内部域名；本地开发保持仅本机可访问。
@@ -141,9 +139,9 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Content-Security-Policy', pageCsp);
     const json = (status, body) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(body)); };
     try {
+      res.setHeader('Content-Security-Policy', pageCsp(analytics, { callback: new URL(req.url, 'http://localhost').pathname === '/onedrive-callback.html' }));
       const port = server.address()?.port;
       if (!publicHost) {
         // 本地模式：仅信任回环地址，Host 与 Origin 都必须匹配本机。
@@ -176,7 +174,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
           bootstrap.push(['/api/example?id=' + encodeURIComponent(id), { md: example.md, type: example.type, title: example.title }]);
         }
         res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
-        res.end(await appCacheScript(ROOT, staticRoutes, bootstrap)); return;
+        res.end(await appCacheScript(ROOT, staticRoutes, bootstrap, pageCsp(analytics) + pageCsp(analytics, { callback: true }))); return;
       }
       // 推广参数只用于来源分类，不改变静态资源路由。
       const staticPath = new URL(req.url, 'http://localhost').pathname;
@@ -184,7 +182,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         const [file, type] = staticRoutes.get(staticPath);
         const target = path.join(ROOT, file);
         if (!existsSync(target)) { json(404, { error: '页面不存在' }); return; }
-        res.writeHead(200, { 'Content-Type': type.startsWith('image/') ? type : `${type}; charset=utf-8` }); res.end(file === 'vendor/yaml/yaml.mjs' ? browserYaml(await readFile(target,'utf8')) : await readFile(target)); return;
+        res.writeHead(200, { 'Content-Type': type.startsWith('image/') ? type : `${type}; charset=utf-8` }); res.end(await readStaticAsset(ROOT, file)); return;
       }
       // UI 页面由前端工作流后续补齐：仅在文件已存在时提供，缺失时按 404 处理而非 500。
       if (req.method === 'GET' && (req.url === '/examples' || req.url === '/examples/')) {

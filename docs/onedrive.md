@@ -33,3 +33,9 @@ cd /Users/jiyeqian/.codex/worktrees/onedrive/md2pdf
 两种入口均需先启动对应服务；源码或配置变更后应重启。端口被占用时请更换端口，并相应注册和配置回调地址。
 
 已通过 OneDrive 认证、Graph 和快捷键针对性测试，Node 与静态嵌套路径的模拟浏览器测试，以及 `npm run check:consistency`。既有 `tests/workspace-actions-browser-checks.mjs` 在第 59 行等待返回编辑器时超时，main 工作树同样复现。模拟测试不能代替真实微软账户授权、应用文件夹权限、上传提交与碰撞行为验收；独立窗口也仍待验收。
+
+## 部署时的内容安全策略
+
+Node 服务对编辑器使用限制性的 CSP，允许 Microsoft 登录服务 `https://login.microsoftonline.com`、Graph `https://graph.microsoft.com`、个人 OneDrive 下载 `https://*.files.1drv.com` 和上传 `https://*.up.1drv.com` 的连接；隐藏登录 iframe 也需要允许 `https://login.microsoftonline.com`，回调页面需允许同源页面嵌入。静态目录和 Docker 镜像本身未新增 CSP；若部署者在代理或托管平台设置 CSP，需在现有策略中加入这些地址，同时保留已有功能所需的源（例如静态 DOI 查询的 `https://api.crossref.org` 和 `https://api.datacite.org`）。不要使用宽泛的 `https:` 或 `*` 作为替代。
+
+上述下载域名见 [OneDrive 个人版网络要求](https://learn.microsoft.com/en-us/sharepoint/required-urls-and-ports)，上传域名见 [Graph 上传会话示例](https://learn.microsoft.com/en-us/graph/api/driveitem-createuploadsession?view=graph-rest-1.0)，iframe 回调要求见 [MSAL 登录文档](https://learn.microsoft.com/en-us/entra/msal/javascript/browser/login-user)。实际个人账户返回的预认证地址仍需在真实验收时确认。
