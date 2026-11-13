@@ -173,3 +173,5 @@ main.editor-main{width:100%;max-width:none;margin:0 auto;padding:10px var(--app-
 
 /* 国家标准固定排版，预览工具栏仅保留打开文件与模板选择。 */
 .preview-toolbar[data-document-type="gb"] > .toolbar-field:not([data-control="type"]) { display: none !important; }
+
+.static-print-frame{position:fixed;left:0;top:0;width:900px;height:600px;border:0;opacity:0;z-index:-1;pointer-events:none}

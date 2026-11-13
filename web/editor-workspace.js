@@ -1096,18 +1096,19 @@
     editorFullscreenBtn.addEventListener('click', function () { toggleFullscreen('editor'); });
     if (editorActions) {
       var saveButton = makeFileButton('下载 Markdown', 'save', function () {
+        if (saveButton._closeSaveMenu) { saveButton._closeSaveMenu(true); return; }
         var doc = saveButton.ownerDocument, menu = doc.createElement('div');
-        function closeMenu(restore) { menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('focusin', focusOutside, true); if (restore) saveButton.focus(); }
+        function closeMenu(restore) { saveButton._closeSaveMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('focusin', focusOutside, true); if (restore) saveButton.focus(); }
         function outside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
         function focusOutside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
         menu.className = 'md-drafts-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '保存 Markdown');
         var rect = saveButton.getBoundingClientRect(); menu.style.left = rect.left + 'px'; menu.style.top = (rect.bottom + 4) + 'px';
-        [['下载到本地', saveMarkdown], ['保存到 OneDrive（' + (IS_MAC ? '⌘⌥S' : 'Ctrl+Alt+S') + '）', function () { return window.mdOneDrive?.save(); }], ['另存到 OneDrive…', function () { return window.mdOneDrive?.save(true); }]].forEach(function (item) {
+        [['下载到本地（' + (IS_MAC ? '⌘S' : 'Ctrl+S') + '）', saveMarkdown], ['保存到 OneDrive…（' + (IS_MAC ? '⌘⌥S' : 'Ctrl+Alt+S') + '）', function () { return window.mdOneDrive?.save(); }]].forEach(function (item) {
           var choice = doc.createElement('button'); choice.type = 'button'; choice.textContent = item[0];
           choice.addEventListener('click', function () { closeMenu(true); item[1](); }); menu.appendChild(choice);
         });
         menu.addEventListener('keydown', function (event) { if (event.key === 'Escape') { closeMenu(true); } });
-        doc.body.appendChild(menu); menu.firstChild.focus();
+        doc.body.appendChild(menu); saveButton._closeSaveMenu = closeMenu; menu.firstChild.focus();
         doc.addEventListener('pointerdown', outside, true); doc.addEventListener('focusin', focusOutside, true);
       });
       editorActions.appendChild(saveButton);
@@ -1120,7 +1121,7 @@
     previewFullscreenBtn.addEventListener('click', function () { toggleFullscreen('preview'); });
     if (previewActions) previewActions.appendChild(previewFullscreenBtn);
     var download = document.querySelector('#download');
-    if (download) download.title = '下载 PDF（' + (IS_MAC ? '⌘P' : 'Ctrl+P') + '）';
+    if (download) download.title = '打印或下载 PDF';
     applyFullscreen(null); // 同步按钮初始 aria-pressed / title
   }
 
@@ -1331,15 +1332,13 @@
     if (action === 'cloud-save') window.mdOneDrive?.save();
     else if (action === 'save') saveMarkdown();
     else if (action === 'open' && openMarkdownInput) openMarkdownInput.click();
-    else if (action === 'pdf') {
-      var download = queryWorkspace('#download');
-      if (download && !download.disabled) download.click();
-    }
+    else if (action === 'pdf') window.mdPrintDocument?.();
+    else if (action === 'pdf-download') window.mdDownloadPdf?.();
   }
   window.addEventListener('message', function (event) {
     if (!previewFrame || event.source !== previewFrame.contentWindow || !event.data) return;
     if (event.data.type === 'md2pdf-position' && pendingLayout && event.data.id === pendingLayout.id) finishFullscreen(event.data.id, event.data.position);
-    if (event.data.type === 'md2pdf-document-action' && ['save', 'open', 'pdf', 'cloud-save'].indexOf(event.data.action) >= 0) runDocumentAction(event.data.action);
+    if (event.data.type === 'md2pdf-document-action' && ['save', 'open', 'pdf', 'pdf-download', 'cloud-save'].indexOf(event.data.action) >= 0) runDocumentAction(event.data.action);
   });
 
   // Escape in the sandboxed iframe cannot bubble into the parent document.

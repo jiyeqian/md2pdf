@@ -381,7 +381,7 @@ function setDownloadState(loading) {
   if (!download) return;
   download.dataset.state = loading ? 'loading' : 'idle';
   download.setAttribute('aria-busy', loading ? 'true' : 'false');
-  if (downloadLabel) downloadLabel.textContent = loading ? '正在导出…' : '下载 PDF';
+  if (downloadLabel) downloadLabel.textContent = loading ? '正在导出…' : '打印或下载 PDF';
 }
 
 // ---------- 选项策略 ----------
@@ -1095,7 +1095,19 @@ async function downloadNameFor(md, ext) {
   } catch { return ''; }
 }
 
-download.addEventListener('click', async () => {
+async function exportDocument(mode) {
+  if (downloading || download.disabled || !editor.value.trim()) return;
+  if (mode === 'download' && window.__MD2PDF_STATIC_BASE__) {
+    const doc = window.mdWorkspaceHosts?.activeDocument() || document;
+    if (doc.querySelector('#md-static-pdf-notice')) return;
+    const dialog = doc.createElement('dialog'); dialog.id = 'md-static-pdf-notice'; dialog.className = 'template-confirm';
+    dialog.setAttribute('aria-label', '无法直接下载 PDF');
+    const message = doc.createElement('p'); message.textContent = '静态版不支持直接下载 PDF，请使用服务器版。';
+    const actions = doc.createElement('div'); actions.className = 'template-confirm-actions';
+    const button = doc.createElement('button'); button.type = 'button'; button.className = 'template-confirm-cancel'; button.textContent = '关闭';
+    button.addEventListener('click', () => dialog.close()); dialog.addEventListener('close', () => dialog.remove(), {once:true});
+    actions.append(button); dialog.append(message, actions); doc.body.append(dialog); dialog.showModal(); button.focus(); return;
+  }
   if (!window.__MD2PDF_STATIC_BASE__ && !navigator.onLine) {
     setStatus('PDF 导出需要联网。'); return;
   }
@@ -1106,7 +1118,7 @@ download.addEventListener('click', async () => {
     return;
   }
   if (!form.reportValidity()) return;
-  const exportMethod = window.__MD2PDF_STATIC_BASE__ ? 'browser-print' : 'server-pdf';
+  const exportMethod = mode === 'print' ? 'browser-print' : 'server-pdf';
   trackUsage('export_started', { method: exportMethod });
   downloading = true;
   updateCount();
@@ -1128,10 +1140,14 @@ download.addEventListener('click', async () => {
     exportName = await downloadNameFor(exportMd, 'pdf');
     const pdfBody = { md: exportMd, opts: exportOptions };
     if (exportName) pdfBody.filename = exportName;
-    if (window.__MD2PDF_STATIC_BASE__) {
-      const runtime = await import('./runtime-request.mjs');
-      await window.mdExportWithFontConsent(allowFontFallback => runtime.exportPdf({ md:exportMd, opts:exportOptions, filename:exportName, allowFontFallback }));
-      setStatus('已打开打印，请另存为 PDF。');
+    if (mode === 'print') {
+      await window.mdExportWithFontConsent(async allowFontFallback => {
+        const body = { md:exportMd, opts:exportOptions, filename:exportName, allowFontFallback };
+        if (window.__MD2PDF_STATIC_BASE__) return (await import('./runtime-request.mjs')).exportPdf(body);
+        const { printDocument } = await import('./print-document.mjs');
+        return printDocument(body, async input => (await request('/api/render', { ...input, printDocument:true })).json(), html => html);
+      });
+      setStatus(revision === exportRevision ? '已打开文档打印。' : '已打开文档打印（期间编辑未包含）。');
       return;
     }
     const response = await window.mdExportWithFontConsent(allowFontFallback => request('/api/pdf', { ...pdfBody, allowFontFallback }));
@@ -1156,7 +1172,7 @@ download.addEventListener('click', async () => {
     if (revision !== exportRevision) setStatus('PDF 已生成并开始下载（导出的是开始导出时的版本，期间编辑未包含）。');
     else setStatus('PDF 已生成，下载已开始。');
   } catch (error) {
-    if (error.code === 'EXPORT_CANCELLED') { setStatus('已取消 PDF 下载。'); return; }
+    if (error.code === 'EXPORT_CANCELLED') { setStatus(mode === 'print' ? '已取消打印。' : '已取消 PDF 下载。'); return; }
     // 下载请求同样可能因文档配置错误被拒：提示行号并禁用后续导出，Markdown 下载不受影响。
     trackUsage('export_failed', { method: exportMethod, code: error.status === 504 ? 'timeout' : error.status === 503 ? 'unavailable' : 'failed' });
     if (Array.isArray(error.configErrors) && error.configErrors.length) {
@@ -1170,6 +1186,29 @@ download.addEventListener('click', async () => {
     setDownloadState(false);
     updateCount();
   }
+}
+window.mdPrintDocument = () => exportDocument('print');
+window.mdDownloadPdf = () => exportDocument('download');
+download.addEventListener('click', () => {
+  if (download._closePdfMenu) { download._closePdfMenu(true); return; }
+  const doc = download.ownerDocument, menu = doc.createElement('div');
+  menu.className = 'md-drafts-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '打印或下载 PDF');
+  const rect = download.getBoundingClientRect();
+  function close(focus = false) { download._closePdfMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('focusin', blur, true); if (focus) download.focus(); }
+  function outside(event) { if (!menu.contains(event.target) && event.target !== download) close(); }
+  function blur(event) { if (!menu.contains(event.target) && event.target !== download) close(); }
+  const mac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || '');
+  for (const [label, action] of [[`打印…（${mac ? '⌘P' : 'Ctrl+P'}）`, window.mdPrintDocument], [`下载 PDF（${mac ? '⌘⌥P' : 'Ctrl+Alt+P'}）`, window.mdDownloadPdf]]) {
+    const button = doc.createElement('button'); button.type = 'button'; button.textContent = label;
+    button.addEventListener('click', () => { close(true); action(); }); menu.append(button);
+  }
+  doc.body.append(menu); download._closePdfMenu = close;
+  const view = doc.defaultView.visualViewport, left = view?.offsetLeft || 0, top = view?.offsetTop || 0;
+  const width = view?.width || doc.defaultView.innerWidth, height = view?.height || doc.defaultView.innerHeight;
+  menu.style.left = Math.max(left + 8, Math.min(rect.left, left + width - menu.offsetWidth - 8)) + 'px';
+  menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
+  menu.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); close(true); } });
+  menu.firstElementChild.focus(); doc.addEventListener('pointerdown', outside, true); doc.addEventListener('focusin', blur, true);
 });
 
 // 纯函数出口：供前端测试在 vm 内真实执行后读取选项模型（只读、无副作用）。

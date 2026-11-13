@@ -41,7 +41,7 @@ try {
   await evaluate(`new Promise(resolve=>setTimeout(resolve,500))`);
   await evaluate(`window.downloads=[];document.addEventListener('click',e=>{if(e.target.tagName==='A'&&e.target.download){downloads.push(e.target.download);e.preventDefault()}},true);
     window.opens=0;document.querySelector('input[type=file]').addEventListener('click',e=>{opens++;e.preventDefault()});
-    window.pdfClicks=0;document.querySelector('#download').addEventListener('click',e=>{pdfClicks++;e.stopImmediatePropagation()},true);`);
+    window.pdfClicks=0;window.mdPrintDocument=()=>{pdfClicks++};`);
   for (const [key, counter] of [['s','downloads.length'],['o','opens'],['p','pdfClicks']]) {
     assert.equal(await evaluate(`(()=>{const e=new KeyboardEvent('keydown',{key:'${key}',ctrlKey:true,bubbles:true,cancelable:true});document.dispatchEvent(e);return e.defaultPrevented})()`),true);
     await wait(counter + '>0');
@@ -61,7 +61,7 @@ try {
   const fullPosition = await evaluate(`positionNode.getBoundingClientRect().top/document.documentElement.clientWidth`,executionContextId);
   assert.ok(Math.abs(fullPosition-position)<0.05, 'preview logical anchor preserved on fullscreen entry');
   assert.equal(await evaluate(`document.querySelector('.md-panel-sync').getAttribute('aria-pressed')`),'false');
-  await evaluate(`document.querySelector('.preview-panel button[aria-label="退出预览全屏"]').click()`);
+  await evaluate(`document.querySelector('.preview-panel button[aria-label="退出全屏"]').click()`);
   await wait('!document.querySelector(".workspace").classList.contains("preview-focus")');
   await evaluate(`new Promise(resolve=>setTimeout(resolve,400))`);
   const restored = await evaluate(`positionNode.getBoundingClientRect().top/document.documentElement.clientWidth`,executionContextId);
@@ -73,7 +73,7 @@ try {
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('.md-panel-sync')).display`),'none');
   await evaluate(`mdEditor.goToLine(33)`);
   await evaluate(`new Promise(resolve=>setTimeout(resolve,700))`);
-  await evaluate(`document.querySelector('.editor-panel button[aria-label="退出 Markdown 全屏"]').click()`);
+  await evaluate(`document.querySelector('.editor-panel button[aria-label="退出全屏"]').click()`);
   await wait('!document.querySelector(".workspace").classList.contains("editor-focus")');
   await evaluate(`new Promise(resolve=>setTimeout(resolve,500))`);
   assert.equal(await evaluate('mdEditor.getCursorLine()'),33);
@@ -169,13 +169,13 @@ try {
   await evaluate(`document.querySelector('.editor-panel button[aria-label="Markdown 全屏写作"]').click()`);
   await wait('document.querySelector(".workspace").classList.contains("editor-focus")');
   assert.equal(await evaluate(`document.querySelector('.workspace').classList.contains('md-wt-stack-scroll')`),false,'fullscreen must bypass stacked panel sizing');
-  await evaluate(`document.querySelector('.editor-panel button[aria-label="退出 Markdown 全屏"]').click()`);
+  await evaluate(`document.querySelector('.editor-panel button[aria-label="退出全屏"]').click()`);
   await wait('!document.querySelector(".workspace").classList.contains("editor-focus")');
   assert.ok(await evaluate(`document.querySelector('.workspace').classList.contains('md-wt-stack-scroll')`),'exit fullscreen should restore visible-height mode');
   await evaluate(`document.querySelector('.preview-panel button[aria-label="预览全屏"]').click()`);
   await wait('document.querySelector(".workspace").classList.contains("preview-focus")');
   assert.equal(await evaluate(`document.querySelector('.workspace').classList.contains('md-wt-stack-scroll')`),false);
-  await evaluate(`document.querySelector('.preview-panel button[aria-label="退出预览全屏"]').click()`);
+  await evaluate(`document.querySelector('.preview-panel button[aria-label="退出全屏"]').click()`);
   await wait('!document.querySelector(".workspace").classList.contains("preview-focus")');
 
   await browser.send('Emulation.setDeviceMetricsOverride',{width:1200,height:800,deviceScaleFactor:1,mobile:false});

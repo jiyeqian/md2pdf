@@ -67,7 +67,7 @@ try {
   assert.equal(await evaluate('mdEditor.getValue()'),'# 主屏恢复验收');
   await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
   // Markdown uses the same export content, offering a fresh user gesture for sharing.
-  await evaluate(`document.querySelector('button[aria-label="下载 Markdown"]').click()`);
+  await evaluate(`document.querySelector('button[aria-label="下载 Markdown"]').click(); document.querySelector('[aria-label="保存 Markdown"] button').click()`);
   await wait(`document.querySelector('dialog[aria-label="保存或分享文件"][open]')`);
   assert.match(await evaluate(`document.querySelector('dialog .app-file-name').textContent`),/^主屏恢复验收_.*\.md$/);
   assert.equal(await evaluate(`!!document.querySelector('dialog a[download]')`),true);
@@ -76,7 +76,7 @@ try {
   assert.match(await evaluate('sharedName'),/\.md$/);
   // Server-rendered PDF is also offered through the same explicit share/download dialog.
   await wait(`!document.querySelector('#download').disabled`);
-  await evaluate(`document.querySelector('#download').click()`);
+  await evaluate(`document.querySelector('#download').click(); document.querySelectorAll('div[aria-label="打印或下载 PDF"] button')[1].click()`);
   await wait(`document.querySelector('dialog[aria-label="保存或分享文件"][open]')`);
   assert.match(await evaluate(`document.querySelector('dialog .app-file-name').textContent`),/\.pdf$/);
   await evaluate(`document.querySelector('dialog .template-confirm-cancel').click()`);

@@ -8,10 +8,12 @@ test('document shortcuts cover Mac and Windows/Linux without consuming navigatio
   }
   for (const modifier of ['metaKey','ctrlKey']) {
     assert.equal(documentShortcut({key:'s',[modifier]:true,altKey:true}), 'cloud-save');
+    assert.equal(documentShortcut({key:'p',code:'KeyP',[modifier]:true,altKey:true}), 'pdf-download');
     assert.equal(documentShortcut({key:'s',[modifier]:true,altKey:true,isComposing:true}), null);
     assert.equal(documentShortcut({key:'s',[modifier]:true,altKey:true,getModifierState:()=>true}), null);
   }
   assert.equal(documentShortcut({key:'ß',code:'KeyS',metaKey:true,altKey:true}), 'cloud-save');
+  assert.equal(documentShortcut({key:'π',code:'KeyP',metaKey:true,altKey:true}), 'pdf-download');
   assert.equal(documentShortcut({key:'ß',code:'KeyS',metaKey:true,altKey:true,isComposing:true}), null);
   for (const key of ['l','t','w','r','f']) assert.equal(documentShortcut({key,ctrlKey:true}), null);
 });

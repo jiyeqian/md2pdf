@@ -111,7 +111,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     try { return await task; } finally { queued--; }
   }
   const staticRoutes = new Map([['/', ['web/index.html', 'text/html']], ['/app.js', ['web/app.js', 'text/javascript']], ['/app.css', ['web/app.css', 'text/css']], ['/examples.js', ['web/examples.js', 'text/javascript']], ['/examples.css', ['web/examples.css', 'text/css']], ['/visible-time-budget.js', ['web/visible-time-budget.js', 'text/javascript']]]);
-  for (const file of ['workspace-hosts.js', 'independent-window.js', 'editor-gutter.js', 'editor-gutter.css', 'panel-sidebars.js', 'preview-thumbnails.js', 'panel-sidebars.css', 'template-confirm.js', 'editor-vendor.js', 'editor-vendor.LICENSE.txt', 'editor-core.js', 'editor-images.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-quick-actions.mjs', 'editor-files.mjs', 'workspace-navigation.mjs', 'draft-store.mjs', 'local-drafts.mjs', 'document-create.mjs', 'cache-readiness.mjs', 'manual-update.mjs', 'app-shell.js', 'footer-status.js', 'app-shell.css', 'local-drafts.css', 'editor-core.css', 'editor-images.css', 'editor-pro.css', 'editor-workspace.css', 'editor-doi.js', 'editor-doi-helpers.mjs', 'editor-doi.css', 'onedrive-ui.mjs', 'onedrive-auth.mjs', 'onedrive-graph.mjs', 'onedrive-callback.js']) {
+  for (const file of ['workspace-hosts.js', 'independent-window.js', 'editor-gutter.js', 'editor-gutter.css', 'panel-sidebars.js', 'preview-thumbnails.js', 'panel-sidebars.css', 'template-confirm.js', 'editor-vendor.js', 'editor-vendor.LICENSE.txt', 'editor-core.js', 'editor-images.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-quick-actions.mjs', 'editor-files.mjs', 'workspace-navigation.mjs', 'draft-store.mjs', 'local-drafts.mjs', 'document-create.mjs', 'cache-readiness.mjs', 'manual-update.mjs', 'app-shell.js', 'footer-status.js', 'app-shell.css', 'local-drafts.css', 'editor-core.css', 'editor-images.css', 'editor-pro.css', 'editor-workspace.css', 'editor-doi.js', 'editor-doi-helpers.mjs', 'editor-doi.css', 'onedrive-ui.mjs', 'onedrive-auth.mjs', 'onedrive-graph.mjs', 'onedrive-callback.js', 'print-document.mjs']) {
     staticRoutes.set('/' + file, ['web/' + file, file.endsWith('.css') ? 'text/css' : file.endsWith('.txt') ? 'text/plain' : 'text/javascript']);
   }
   staticRoutes.set('/onedrive-callback.html', ['web/onedrive-callback.html', 'text/html']);
@@ -223,7 +223,10 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       }
       if (!['/api/preview', '/api/render', '/api/pdf', '/api/resolve'].includes(req.url)) { json(404, { error: '页面不存在' }); return; }
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); json(405, { error: '请使用 POST' }); return; }
-      const { md, opts, filename, allowFontFallback, type, effective, policy, authorDiagnostics, parsedFrontmatter, resetOptions } = resolveWebInput(await readBody(req), { autoPreview: req.url === '/api/preview' });
+      const body = await readBody(req);
+      const printing = req.url === '/api/render' && body?.printDocument === true;
+      const input = printing ? Object.fromEntries(Object.entries(body).filter(([key]) => key !== 'printDocument')) : body;
+      const { md, opts, filename, allowFontFallback, type, effective, policy, authorDiagnostics, parsedFrontmatter, resetOptions } = resolveWebInput(input, { autoPreview: req.url === '/api/preview' });
       if (req.url === '/api/resolve') { json(200, { type, policy, authorDiagnostics }); return; }
       if (req.url === '/api/render' || req.url === '/api/preview') {
         const controller = new AbortController();
@@ -234,7 +237,8 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         try {
           const rendered = await render(md, opts, { webSafe: true, signal:controller.signal, parsedFrontmatter });
           controller.signal.throwIfAborted();
-          const html = await webDocument(attachSourcePositions(rendered.pagedHtml, md, {type:rendered.type,referenceKeys:rendered.referenceKeys}), true, rendered.type, controller.signal);
+          const source = printing ? (rendered.pagedHtml || rendered.html) : attachSourcePositions(rendered.pagedHtml, md, {type:rendered.type,referenceKeys:rendered.referenceKeys});
+          const html = await webDocument(printing && allowFontFallback ? withGbFontFallback(source) : source, !printing, rendered.type, controller.signal);
           controller.signal.throwIfAborted();
           json(200, { html, type:rendered.type, policy:policyForType(rendered.type, effective), effective, resetOptions, authorDiagnostics });
         } finally {

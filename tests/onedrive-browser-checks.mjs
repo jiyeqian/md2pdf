@@ -133,18 +133,20 @@ try {
     await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,bubbles:true,cancelable:true}))`);
     await wait('mockGraph.downloads===1');
     await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,altKey:true,bubbles:true,cancelable:true}))`);
-    await wait(`document.querySelector('.md-cloud-error')?.textContent.includes('不能安全覆盖')`);
+    await wait(`document.querySelector('dialog[aria-label="保存到 OneDrive"]')`);
+    assert.match(await evaluate(`document.querySelector('dialog[aria-label="保存到 OneDrive"] input').value`), /\.md$/);
+    await evaluate(`[...document.querySelectorAll('dialog[aria-label="保存到 OneDrive"] button')].find(x=>x.textContent==='取消').click()`);
+    await wait(`!document.querySelector('dialog[aria-label="保存到 OneDrive"]')`);
     for (const mode of ['conflict','offline','ok']) {
       await evaluate(`mockGraph.mode=${JSON.stringify(mode)}; document.querySelector('button[aria-label="下载 Markdown"]').click()`);
       await wait(`document.querySelector('[aria-label="保存 Markdown"]')`);
-      await evaluate(`[...document.querySelectorAll('[aria-label="保存 Markdown"] button')].find(x=>x.textContent.includes('另存')).click()`);
-      if (mode === 'offline') { await wait(`document.querySelector('.md-cloud-error')?.textContent.includes('网络')`); continue; }
-      await wait(`document.querySelector('dialog[aria-label="另存到 OneDrive"]')`);
-      assert.match(await evaluate(`document.querySelector('dialog[aria-label="另存到 OneDrive"] input').value`), /^云端原稿_\d{8}_\d{6}\.md$/, 'cloud default follows local download naming');
-      assert.ok(await evaluate(`document.querySelector('dialog[aria-label="另存到 OneDrive"] p').textContent.startsWith('OneDrive / Apps / md2pdf · ')`));
-      if(mode==='conflict') await screenshot(url.includes('/nested/')?'static-save':'node-save','dialog[aria-label="另存到 OneDrive"]');
-      await evaluate(`document.querySelector('dialog[aria-label="另存到 OneDrive"] input').value='new.md'; [...document.querySelectorAll('dialog[aria-label="另存到 OneDrive"] button')].find(x=>x.textContent==='保存').click()`);
-      await wait(mode === 'conflict' ? `document.querySelector('.md-cloud-error')?.textContent.includes('同名')` : `document.querySelector('.md-cloud-status')?.textContent.includes('已保存')`);
+      await evaluate(`[...document.querySelectorAll('[aria-label="保存 Markdown"] button')].find(x=>x.textContent.includes('保存到 OneDrive')).click()`);
+      await wait(`document.querySelector('dialog[aria-label="保存到 OneDrive"]')`);
+      assert.match(await evaluate(`document.querySelector('dialog[aria-label="保存到 OneDrive"] input').value`), /^云端原稿_\d{8}_\d{6}\.md$/, 'cloud default follows local download naming');
+      assert.ok(await evaluate(`document.querySelector('dialog[aria-label="保存到 OneDrive"] p').textContent.startsWith('OneDrive / Apps / md2pdf · ')`));
+      if(mode==='conflict') await screenshot(url.includes('/nested/')?'static-save':'node-save','dialog[aria-label="保存到 OneDrive"]');
+      await evaluate(`document.querySelector('dialog[aria-label="保存到 OneDrive"] input').value='new.md'; [...document.querySelectorAll('dialog[aria-label="保存到 OneDrive"] button')].find(x=>x.textContent==='保存').click()`);
+      await wait(mode === 'conflict' ? `document.querySelector('.md-cloud-error')?.textContent.includes('同名')` : mode === 'offline' ? `document.querySelector('.md-cloud-error')?.textContent.includes('网络')` : `document.querySelector('.md-cloud-status')?.textContent.includes('已保存')`);
       assert.equal(await evaluate('mdEditor.getValue()'),'# 云端原稿');
     }
     assert.ok(await evaluate(`mockGraph.calls.filter(x=>(x.url.startsWith('https://test-transfer.example/') || x.url.startsWith('https://public-sn3302.files.1drv.com/'))).every(x=>!x.headers.Authorization)`));

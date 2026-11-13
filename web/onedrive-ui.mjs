@@ -36,7 +36,7 @@ export function initializeOneDrive() {
     const doc = window.mdWorkspaceHosts?.activeDocument() || document;
     const dialog = doc.createElement('dialog'); dialog.className = 'template-confirm md-draft-confirm md-onedrive-dialog';
     dialog.setAttribute('aria-label', '连接 OneDrive');
-    const info = doc.createElement('p'); info.textContent = '登录个人 Microsoft 账户以访问应用文件夹。文件将直接保存到你的 OneDrive。'; dialog.append(info);
+    const info = doc.createElement('p'); info.textContent = '登录个人 Microsoft 账户以访问应用文件夹。Markdown 文件将直接保存到你的 OneDrive。'; dialog.append(info);
     const actions = doc.createElement('div'); actions.className = 'template-confirm-actions';
     const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.className = 'template-confirm-cancel'; cancel.textContent = '取消'; cancel.addEventListener('click', () => dialog.close());
     const button = doc.createElement('button'); button.type = 'button'; button.className = 'primary'; button.textContent = '连接 OneDrive';
@@ -58,7 +58,7 @@ export function initializeOneDrive() {
   async function filenameDialog(initial) {
     const doc = window.mdWorkspaceHosts?.activeDocument() || document;
     const dialog = doc.createElement('dialog'); dialog.className = 'template-confirm md-draft-confirm md-onedrive-dialog';
-    dialog.setAttribute('aria-label', '另存到 OneDrive');
+    dialog.setAttribute('aria-label', '保存到 OneDrive');
     const info = doc.createElement('p'); info.textContent = 'OneDrive / Apps / md2pdf · ' + (auth?.account() || 'Microsoft 账户'); dialog.append(info);
     const label = doc.createElement('label'); label.className = 'md-onedrive-label'; label.textContent = '文件名';
     const input = doc.createElement('input'); input.value = initial; label.append(input); dialog.append(label);
@@ -108,29 +108,25 @@ export function initializeOneDrive() {
       status('OneDrive · 已打开');
     });
   }
-  async function save(asNew = false) {
+  async function save() {
     await perform(async () => {
       if (!window.mdDrafts) throw new Error('本地草稿不可用，无法安全保存到 OneDrive。');
       await window.mdDrafts.flush();
       const draftId = current(), text = window.mdEditor.getValue(), operation = generation;
-      const existing = !asNew && binding?.draftId === draftId ? binding : null;
-      if (existing) throw new Error('暂不能安全覆盖已有云端文件，请选择另存；本地草稿仍保留。');
+      const existing = binding?.draftId === draftId ? binding : null;
       status('正在保存到 OneDrive…');
       const client = await service();
       if (!await connect()) return;
       if (current() !== draftId || generation !== operation) return;
-      let rootId = existing?.rootId, name = existing?.name;
-      if (!existing) {
-        rootId = (await client.list()).rootId;
-        if (current() !== draftId || generation !== operation) return;
-        const files = await import('./editor-files.mjs');
-        const options = window.mdWorkspaceHosts?.query('#options') || document.querySelector('#options');
-        name = await filenameDialog(files.markdownDownloadName(text, new Date(), options?.elements.type?.value || ''));
-        if (current() !== draftId || generation !== operation) return;
-        if (!name) { status(''); return; }
-        if (!/\.(md|markdown|mdown)$/i.test(name)) name += '.md';
-      }
-      const result = await client.save({ id: existing?.id, eTag: existing?.eTag, rootId, name, text });
+      const rootId = existing?.rootId || (await client.list()).rootId;
+      if (current() !== draftId || generation !== operation) return;
+      const files = await import('./editor-files.mjs');
+      const options = window.mdWorkspaceHosts?.query('#options') || document.querySelector('#options');
+      let name = await filenameDialog(files.markdownDownloadName(text, new Date(), options?.elements.type?.value || ''));
+      if (current() !== draftId || generation !== operation) return;
+      if (!name) { status(''); return; }
+      if (!/\.(md|markdown|mdown)$/i.test(name)) name += '.md';
+      const result = await client.save({ rootId, name, text });
       if (current() !== draftId || generation !== operation) return;
       binding = { id: result.id, eTag: result.eTag, name: result.name || name, rootId, draftId, savedText: text };
       status(window.mdEditor.getValue() === text ? 'OneDrive · 已保存' : 'OneDrive · 有未保存更改');

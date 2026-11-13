@@ -82,7 +82,7 @@ try {
   await evaluate(`window.mdEditor.setValue(${JSON.stringify(source)}); document.querySelector('#markdown').dispatchEvent(new Event('input',{bubbles:true})); const field=document.querySelector('#options').elements.type;field.value='paper';field.dispatchEvent(new Event('change',{bubbles:true}));`);
   await wait('document.querySelector("#preview").srcdoc.includes("PRIVATE_DOCUMENT_TITLE")');
   await wait('!document.querySelector("#download").disabled');
-  await evaluate('document.querySelector("#download").click()');
+  await evaluate(`document.querySelector('#download').click(); document.querySelectorAll('div[aria-label="打印或下载 PDF"] button')[1].click()`);
   await wait('document.querySelector("#download").dataset.state === "idle"');
   await evaluate('new Promise(resolve=>setTimeout(resolve,150))');
   assert.ok(events.some(entry => entry.body.event === 'template_selected'));
