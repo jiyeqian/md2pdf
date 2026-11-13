@@ -1,15 +1,31 @@
 import { createOneDriveAuth } from './onedrive-auth.mjs';
 import { createOneDriveGraph } from './onedrive-graph.mjs';
 
+export function formatOneDriveSize(size) {
+  if (!Number.isSafeInteger(size) || size < 0) return '大小未知';
+  if (size === 0) return '0 B · 空文件';
+  if (size < 1024) return `${size} B`;
+  const units = ['KiB', 'MiB', 'GiB', 'TiB'];
+  let value = size / 1024, index = 0;
+  while (value >= 1024 && index < units.length - 1) { value /= 1024; index++; }
+  return `${Number(value.toFixed(1))} ${units[index]}`;
+}
+
 export function initializeOneDrive() {
   let graph, auth, binding = null, busy = false, generation = 0;
   const current = () => window.mdDrafts?.current();
-  const status = message => {
+  const status = (message, error = false) => {
     const title = window.mdWorkspaceHosts?.query('.editor-panel .panel-heading') || document.querySelector('.editor-panel .panel-heading');
     if (!title) return;
     let node = title.querySelector('.md-cloud-status');
     if (!node) { node = document.createElement('span'); node.className = 'md-cloud-status'; node.setAttribute('role', 'status'); title.append(node); }
-    node.textContent = message;
+    node.textContent = error ? 'OneDrive · 操作失败' : message;
+    node.title = message;
+    const panel = title.parentElement;
+    let detail = panel.querySelector('.md-cloud-error');
+    if (!detail) { detail = title.ownerDocument.createElement('div'); detail.className = 'md-cloud-error'; detail.setAttribute('role', 'alert'); detail.hidden = true; title.after(detail); }
+    detail.textContent = error ? message + ' 本地草稿仍保留。' : '';
+    detail.hidden = !error;
   };
   async function service() {
     if (!graph) { auth = await createOneDriveAuth(); graph = createOneDriveGraph({ token: () => auth.token() }); }
@@ -18,12 +34,12 @@ export function initializeOneDrive() {
   async function connect() {
     if (auth.connected()) return true;
     const doc = window.mdWorkspaceHosts?.activeDocument() || document;
-    const dialog = doc.createElement('dialog'); dialog.className = 'template-confirm md-draft-confirm';
+    const dialog = doc.createElement('dialog'); dialog.className = 'template-confirm md-draft-confirm md-onedrive-dialog';
     dialog.setAttribute('aria-label', '连接 OneDrive');
     const info = doc.createElement('p'); info.textContent = '登录个人 Microsoft 账户以访问应用文件夹。文件将直接保存到你的 OneDrive。'; dialog.append(info);
     const actions = doc.createElement('div'); actions.className = 'template-confirm-actions';
-    const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.textContent = '取消'; cancel.addEventListener('click', () => dialog.close());
-    const button = doc.createElement('button'); button.type = 'button'; button.textContent = '连接 OneDrive';
+    const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.className = 'template-confirm-cancel'; cancel.textContent = '取消'; cancel.addEventListener('click', () => dialog.close());
+    const button = doc.createElement('button'); button.type = 'button'; button.className = 'primary'; button.textContent = '连接 OneDrive';
     button.addEventListener('click', () => { button.disabled = true; cancel.disabled = true; auth.connect().then(() => dialog.close('connected')).catch(error => { info.textContent = errorMessage(error); button.disabled = false; cancel.disabled = false; }); });
     dialog.addEventListener('cancel', event => { if (cancel.disabled) event.preventDefault(); });
     actions.append(cancel, button); dialog.append(actions); doc.body.append(dialog); dialog.showModal(); button.focus();
@@ -35,20 +51,20 @@ export function initializeOneDrive() {
   async function perform(action) {
     if (busy) { status('OneDrive 操作进行中'); return; }
     busy = true;
-    try { await action(); } catch (error) { status(errorMessage(error)); }
+    try { await action(); } catch (error) { status(errorMessage(error), true); }
     finally { busy = false; }
   }
   async function logout() { generation++; const previous = auth; auth = graph = binding = null; await previous?.logout(); status('已退出 OneDrive'); }
   async function filenameDialog(initial) {
     const doc = window.mdWorkspaceHosts?.activeDocument() || document;
-    const dialog = doc.createElement('dialog'); dialog.className = 'template-confirm md-draft-confirm';
+    const dialog = doc.createElement('dialog'); dialog.className = 'template-confirm md-draft-confirm md-onedrive-dialog';
     dialog.setAttribute('aria-label', '另存到 OneDrive');
     const info = doc.createElement('p'); info.textContent = '应用文件夹 · ' + (auth?.account() || 'Microsoft 账户'); dialog.append(info);
-    const label = doc.createElement('label'); label.textContent = '文件名';
+    const label = doc.createElement('label'); label.className = 'md-onedrive-label'; label.textContent = '文件名';
     const input = doc.createElement('input'); input.value = initial; label.append(input); dialog.append(label);
     const actions = doc.createElement('div'); actions.className = 'template-confirm-actions';
     for (const [text, value] of [['取消', false], ['保存', true]]) {
-      const button = doc.createElement('button'); button.type = 'button'; button.textContent = text;
+      const button = doc.createElement('button'); button.type = 'button'; button.className = value ? 'primary' : 'template-confirm-cancel'; button.textContent = text;
       button.addEventListener('click', () => dialog.close(value ? input.value : '')); actions.append(button);
     }
     dialog.append(actions); doc.body.append(dialog); dialog.showModal(); input.focus(); input.select();
@@ -65,17 +81,22 @@ export function initializeOneDrive() {
       if (current() !== start || generation !== operation) return;
       const doc = window.mdWorkspaceHosts?.activeDocument() || document;
       const dialog = doc.createElement('dialog');
-      dialog.className = 'template-confirm md-draft-confirm';
+      dialog.className = 'template-confirm md-draft-confirm md-onedrive-dialog';
       dialog.setAttribute('aria-label', '从 OneDrive 打开 Markdown');
-      const heading = doc.createElement('p'); heading.textContent = '从 OneDrive 打开 · ' + (auth.account() || 'Microsoft 账户'); dialog.append(heading);
-      const signout = doc.createElement('button'); signout.type = 'button'; signout.textContent = '退出账户';
-      signout.addEventListener('click', () => { dialog.close(); logout().catch(error => status(errorMessage(error))); }); dialog.append(signout);
-      if (!list.items.length) { const empty = doc.createElement('p'); empty.textContent = '应用文件夹中没有 Markdown 文件。'; dialog.append(empty); }
+      const heading = doc.createElement('h2'); heading.textContent = '从 OneDrive 打开'; dialog.append(heading);
+      const account = doc.createElement('p'); account.className = 'md-onedrive-account'; account.textContent = '应用文件夹 · ' + (auth.account() || 'Microsoft 账户'); dialog.append(account);
+      const signout = doc.createElement('button'); signout.type = 'button'; signout.className = 'template-confirm-cancel'; signout.textContent = '退出账户';
+      signout.addEventListener('click', () => { dialog.close(); logout().catch(error => status(errorMessage(error))); });
+      const files = doc.createElement('div'); files.className = 'md-onedrive-files'; dialog.append(files);
+      if (!list.items.length) { const empty = doc.createElement('p'); empty.textContent = '应用文件夹中没有 Markdown 文件。'; files.append(empty); }
       for (const item of list.items) {
-        const button = doc.createElement('button'); button.type = 'button'; button.textContent = item.name;
-        button.addEventListener('click', () => { dialog.close(item.id); }); dialog.append(button);
+        const button = doc.createElement('button'); button.type = 'button'; button.className = 'md-onedrive-file';
+        const name = doc.createElement('span'); name.className = 'md-onedrive-name'; name.textContent = item.name;
+        const size = doc.createElement('span'); size.className = 'md-onedrive-size'; size.textContent = formatOneDriveSize(item.size);
+        button.append(name, size); button.addEventListener('click', () => { dialog.close(item.id); }); files.append(button);
       }
-      const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.textContent = '取消'; cancel.addEventListener('click', () => dialog.close()); dialog.append(cancel);
+      const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.className = 'template-confirm-cancel'; cancel.textContent = '取消'; cancel.addEventListener('click', () => dialog.close());
+      const actions = doc.createElement('div'); actions.className = 'template-confirm-actions'; actions.append(signout, cancel); dialog.append(actions);
       doc.body.append(dialog); dialog.showModal(); cancel.focus();
       const chosen = await new Promise(resolve => dialog.addEventListener('close', () => { const value = dialog.returnValue; dialog.remove(); resolve(value); }, { once: true }));
       if (!chosen || current() !== start) { status(''); return; }

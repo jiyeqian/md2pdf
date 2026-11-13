@@ -11,7 +11,7 @@ test('Node response CSP and every cached asset match the actual response', async
   const base = `http://127.0.0.1:${app.server.address().port}`;
   try {
     const page = await fetch(base + '/'); const csp = page.headers.get('content-security-policy');
-    for (const host of ['https://login.microsoftonline.com','https://graph.microsoft.com','https://*.files.1drv.com','https://*.up.1drv.com']) assert.ok(csp.includes(host),host);
+    for (const host of ['https://login.microsoftonline.com','https://graph.microsoft.com','https://*.files.1drv.com','https://*.up.1drv.com','https://my.microsoftpersonalcontent.com']) assert.ok(csp.includes(host),host);
     assert.match(csp, /frame-ancestors 'none'/); assert.doesNotMatch(csp, /connect-src[^;]*\shttps:\s/);
     assert.match((await fetch(base+'/onedrive-callback.html')).headers.get('content-security-policy'), /frame-ancestors 'self'/);
     const worker = await (await fetch(base+'/service-worker.js')).text();

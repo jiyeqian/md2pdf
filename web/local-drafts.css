@@ -35,3 +35,16 @@
 .md-drafts-menu .md-drafts-browse { border-top: 1px solid #e5e9ef; margin-top: 4px; font: inherit; color: inherit; }
 
 .md-cloud-status { color: #617386; font: 11px/16px system-ui, sans-serif; margin-left: 8px; }
+
+.md-cloud-error { padding: 5px 10px; color: #9e3434; background: #fff1f1; font: 12px/1.4 system-ui, sans-serif; overflow-wrap: anywhere; }
+.md-cloud-error[hidden] { display: none; }
+
+.md-onedrive-dialog { font: 14px/1.5 system-ui, sans-serif; max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; }
+.md-onedrive-dialog .template-confirm-actions { flex-wrap: wrap; }
+.md-onedrive-account { overflow-wrap: anywhere; }
+.md-onedrive-files { display: grid; gap: 4px; max-height: min(40vh, 320px); margin-top: 16px; overflow-y: auto; }
+.md-onedrive-file { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; width: 100%; padding: 9px 10px; border: 1px solid #dfe5ed; border-radius: 7px; background: #fff; color: #26394f; font: inherit; text-align: left; }
+.md-onedrive-file:hover, .md-onedrive-file:focus-visible { background: #f3f6fa; }
+.md-onedrive-name { min-width: 0; overflow-wrap: anywhere; }
+.md-onedrive-size { flex: 0 0 auto; color: #677389; font-size: 12px; white-space: nowrap; }
+.md-onedrive-label { display: grid; gap: 6px; margin-top: 16px; color: #677389; font-size: 13px; }

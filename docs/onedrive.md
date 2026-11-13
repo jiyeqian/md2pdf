@@ -10,7 +10,7 @@
 
 打开 Markdown 菜单提供 OneDrive 打开；下载菜单提供保存和另存。Cmd+Alt+S 或 Ctrl+Alt+S 触发云端保存，原有 Cmd+S 或 Ctrl+S 仍下载到本地。仅按需登录，认证信息保存在当前浏览器会话中；浏览器本地草稿继续独立保存。云端文件关联仅在当前页面会话中保留，切换或恢复草稿后请重新打开云端文件。文件位于 OneDrive 的应用专属文件夹，不支持选择任意目录或企业账户。
 
-此功能尚未通过真实个人账户验收。当前禁止覆盖已有云端文件，请使用另存并指定不同文件名；空文件也暂不支持云端保存。最终提交的条件检查、权限覆盖、碰撞及网络中断行为仍需真实账户验证。失败时保留本地草稿；请求超时后请先检查云端是否已创建文件，避免误以为一定失败。
+此功能尚未通过真实个人账户验收。当前禁止覆盖已有云端文件，请使用另存并指定不同文件名；空文件也暂不支持云端保存。新文件采用普通上传会话并要求同名冲突失败；只有返回文件信息、字节数与无凭据读回内容均匹配时才显示保存成功。实际权限、碰撞及网络中断行为仍需真实账户验证。失败时保留本地草稿；请求超时后请先检查云端是否已创建文件，避免误以为一定失败。
 
 Microsoft 参考：[SPA 授权码与 PKCE](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow)、[应用专属文件夹](https://learn.microsoft.com/en-us/graph/onedrive-sharepoint-appfolder)、[上传会话](https://learn.microsoft.com/en-us/graph/api/driveitem-createuploadsession?view=graph-rest-1.0)。
 
@@ -36,6 +36,6 @@ cd /Users/jiyeqian/.codex/worktrees/onedrive/md2pdf
 
 ## 部署时的内容安全策略
 
-Node 服务对编辑器使用限制性的 CSP，允许 Microsoft 登录服务 `https://login.microsoftonline.com`、Graph `https://graph.microsoft.com`、个人 OneDrive 下载 `https://*.files.1drv.com` 和上传 `https://*.up.1drv.com` 的连接；隐藏登录 iframe 也需要允许 `https://login.microsoftonline.com`，回调页面需允许同源页面嵌入。静态目录和 Docker 镜像本身未新增 CSP；若部署者在代理或托管平台设置 CSP，需在现有策略中加入这些地址，同时保留已有功能所需的源（例如静态 DOI 查询的 `https://api.crossref.org` 和 `https://api.datacite.org`）。不要使用宽泛的 `https:` 或 `*` 作为替代。
+Node 服务对编辑器使用限制性的 CSP，允许 Microsoft 登录服务 `https://login.microsoftonline.com`、Graph `https://graph.microsoft.com`、个人 OneDrive 下载 `https://*.files.1drv.com` 、上传 `https://*.up.1drv.com` 以及实际返回的 `https://my.microsoftpersonalcontent.com` 的连接；隐藏登录 iframe 也需要允许 `https://login.microsoftonline.com`，回调页面需允许同源页面嵌入。静态目录和 Docker 镜像本身未新增 CSP；若部署者在代理或托管平台设置 CSP，需在现有策略中加入这些地址，同时保留已有功能所需的源（例如静态 DOI 查询的 `https://api.crossref.org` 和 `https://api.datacite.org`）。不要使用宽泛的 `https:` 或 `*` 作为替代。
 
-上述下载域名见 [OneDrive 个人版网络要求](https://learn.microsoft.com/en-us/sharepoint/required-urls-and-ports)，上传域名见 [Graph 上传会话示例](https://learn.microsoft.com/en-us/graph/api/driveitem-createuploadsession?view=graph-rest-1.0)，iframe 回调要求见 [MSAL 登录文档](https://learn.microsoft.com/en-us/entra/msal/javascript/browser/login-user)。实际个人账户返回的预认证地址仍需在真实验收时确认。
+上述下载域名见 [OneDrive 个人版网络要求](https://learn.microsoft.com/en-us/sharepoint/required-urls-and-ports)，上传域名见 [Graph 上传会话示例](https://learn.microsoft.com/en-us/graph/api/driveitem-createuploadsession?view=graph-rest-1.0)，iframe 回调要求见 [MSAL 登录文档](https://learn.microsoft.com/en-us/entra/msal/javascript/browser/login-user)。实际个人账户返回的预认证地址仍需在真实验收时确认；`my.microsoftpersonalcontent.com` 有 [Microsoft Q&A 实际返回示例](https://learn.microsoft.com/en-us/answers/questions/1691263/some-accounts-cannot-upload-files)，并非完整域名规范。
