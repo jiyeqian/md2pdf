@@ -59,7 +59,7 @@ export function initializeOneDrive() {
     const doc = window.mdWorkspaceHosts?.activeDocument() || document;
     const dialog = doc.createElement('dialog'); dialog.className = 'template-confirm md-draft-confirm md-onedrive-dialog';
     dialog.setAttribute('aria-label', '另存到 OneDrive');
-    const info = doc.createElement('p'); info.textContent = '应用文件夹 · ' + (auth?.account() || 'Microsoft 账户'); dialog.append(info);
+    const info = doc.createElement('p'); info.textContent = 'OneDrive / Apps / md2pdf · ' + (auth?.account() || 'Microsoft 账户'); dialog.append(info);
     const label = doc.createElement('label'); label.className = 'md-onedrive-label'; label.textContent = '文件名';
     const input = doc.createElement('input'); input.value = initial; label.append(input); dialog.append(label);
     const actions = doc.createElement('div'); actions.className = 'template-confirm-actions';
@@ -84,7 +84,7 @@ export function initializeOneDrive() {
       dialog.className = 'template-confirm md-draft-confirm md-onedrive-dialog';
       dialog.setAttribute('aria-label', '从 OneDrive 打开 Markdown');
       const heading = doc.createElement('h2'); heading.textContent = '从 OneDrive 打开'; dialog.append(heading);
-      const account = doc.createElement('p'); account.className = 'md-onedrive-account'; account.textContent = '应用文件夹 · ' + (auth.account() || 'Microsoft 账户'); dialog.append(account);
+      const account = doc.createElement('p'); account.className = 'md-onedrive-account'; account.textContent = 'OneDrive / Apps / md2pdf · ' + (auth.account() || 'Microsoft 账户'); dialog.append(account);
       const signout = doc.createElement('button'); signout.type = 'button'; signout.className = 'template-confirm-cancel'; signout.textContent = '退出账户';
       signout.addEventListener('click', () => { dialog.close(); logout().catch(error => status(errorMessage(error))); });
       const files = doc.createElement('div'); files.className = 'md-onedrive-files'; dialog.append(files);
@@ -123,7 +123,9 @@ export function initializeOneDrive() {
       if (!existing) {
         rootId = (await client.list()).rootId;
         if (current() !== draftId || generation !== operation) return;
-        name = await filenameDialog('document.md');
+        const files = await import('./editor-files.mjs');
+        const options = window.mdWorkspaceHosts?.query('#options') || document.querySelector('#options');
+        name = await filenameDialog(files.markdownDownloadName(text, new Date(), options?.elements.type?.value || ''));
         if (current() !== draftId || generation !== operation) return;
         if (!name) { status(''); return; }
         if (!/\.(md|markdown|mdown)$/i.test(name)) name += '.md';
