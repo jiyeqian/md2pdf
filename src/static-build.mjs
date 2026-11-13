@@ -82,7 +82,7 @@ async function files(dir) {
   for (const entry of await readdir(dir, { withFileTypes:true })) {
     const target = path.join(dir, entry.name);
     if (entry.isDirectory()) result.push(...await files(target));
-    else if (!['service-worker.js', 'build-info.json'].includes(entry.name)) result.push(target);
+    else if (!['service-worker.js', 'build-info.json', 'onedrive-config.json'].includes(entry.name)) result.push(target);
   }
   return result.sort();
 }
@@ -91,6 +91,7 @@ await writeFile(path.join(out, 'version-data.json'), JSON.stringify(product));
 const entries = [];
 let bytes = 0;
 for (const file of await files(out)) {
+  if (file.startsWith(path.join(out, 'vendor/msal') + path.sep)) continue;
   const data = await readFile(file); bytes += data.length;
   entries.push({ url:path.relative(out, file).split(path.sep).join('/'), hash:createHash('sha256').update(data).digest('hex') });
 }

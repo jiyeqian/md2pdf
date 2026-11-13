@@ -65,6 +65,7 @@
   var lastPreviewPosition = null;
   var outlineAnchor = null;
   var previewSelection = null;
+  import('./onedrive-ui.mjs').then(function (module) { window.mdOneDrive = module.initializeOneDrive(); }).catch(function () { console.warn('OneDrive 模块加载失败'); });
   import('./workspace-navigation.mjs').then(function (module) { documentShortcut = module.documentShortcut; }).catch(function () { console.warn('文档快捷键模块加载失败'); });
   var cmEditor = null;                     // CodeMirror 根元素；缩放只改它的 font-size，不动渲染字号
   var markdownZoom = ZOOM_DEFAULT;         // 百分比
@@ -1094,7 +1095,22 @@
     editorFullscreenBtn = makeFullscreenButton('Markdown 全屏写作', '全屏写作（Esc 退出）');
     editorFullscreenBtn.addEventListener('click', function () { toggleFullscreen('editor'); });
     if (editorActions) {
-      editorActions.appendChild(makeFileButton('下载 Markdown', 'save', saveMarkdown));
+      var saveButton = makeFileButton('下载 Markdown', 'save', function () {
+        var doc = saveButton.ownerDocument, menu = doc.createElement('div');
+        function closeMenu(restore) { menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('focusin', focusOutside, true); if (restore) saveButton.focus(); }
+        function outside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
+        function focusOutside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
+        menu.className = 'md-drafts-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '保存 Markdown');
+        var rect = saveButton.getBoundingClientRect(); menu.style.left = rect.left + 'px'; menu.style.top = (rect.bottom + 4) + 'px';
+        [['下载到本地', saveMarkdown], ['保存到 OneDrive（' + (IS_MAC ? '⌘⌥S' : 'Ctrl+Alt+S') + '）', function () { return window.mdOneDrive?.save(); }], ['另存到 OneDrive…', function () { return window.mdOneDrive?.save(true); }]].forEach(function (item) {
+          var choice = doc.createElement('button'); choice.type = 'button'; choice.textContent = item[0];
+          choice.addEventListener('click', function () { closeMenu(true); item[1](); }); menu.appendChild(choice);
+        });
+        menu.addEventListener('keydown', function (event) { if (event.key === 'Escape') { closeMenu(true); } });
+        doc.body.appendChild(menu); menu.firstChild.focus();
+        doc.addEventListener('pointerdown', outside, true); doc.addEventListener('focusin', focusOutside, true);
+      });
+      editorActions.appendChild(saveButton);
       editorActions.appendChild(editorFullscreenBtn);
     }
     var privacySave = document.querySelector('#privacy-save');
@@ -1312,7 +1328,8 @@
   }
 
   function runDocumentAction(action) {
-    if (action === 'save') saveMarkdown();
+    if (action === 'cloud-save') window.mdOneDrive?.save();
+    else if (action === 'save') saveMarkdown();
     else if (action === 'open' && openMarkdownInput) openMarkdownInput.click();
     else if (action === 'pdf') {
       var download = queryWorkspace('#download');
@@ -1322,7 +1339,7 @@
   window.addEventListener('message', function (event) {
     if (!previewFrame || event.source !== previewFrame.contentWindow || !event.data) return;
     if (event.data.type === 'md2pdf-position' && pendingLayout && event.data.id === pendingLayout.id) finishFullscreen(event.data.id, event.data.position);
-    if (event.data.type === 'md2pdf-document-action' && ['save', 'open', 'pdf'].indexOf(event.data.action) >= 0) runDocumentAction(event.data.action);
+    if (event.data.type === 'md2pdf-document-action' && ['save', 'open', 'pdf', 'cloud-save'].indexOf(event.data.action) >= 0) runDocumentAction(event.data.action);
   });
 
   // Escape in the sandboxed iframe cannot bubble into the parent document.

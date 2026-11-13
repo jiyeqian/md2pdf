@@ -166,7 +166,8 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
   async function renderMenu() {
     const records = await store.list();
     const visible = records.slice(0, DRAFT_LIST_LIMIT);
-    menu.replaceChildren(button('从文件打开…', () => { closeMenu(); input.click(); }));
+    menu.replaceChildren(button('从文件打开…', () => { closeMenu(); input.click(); }),
+      button('从 OneDrive 打开…', () => { closeMenu(); return window.mdOneDrive?.open(); }));
     const heading = document.createElement('div');
     heading.className = 'md-drafts-heading';
     heading.textContent = `已保存草稿 · ${records.length}`;

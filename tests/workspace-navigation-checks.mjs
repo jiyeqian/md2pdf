@@ -4,8 +4,15 @@ import { documentShortcut, currentTemplateType } from '../web/workspace-navigati
 test('document shortcuts cover Mac and Windows/Linux without consuming navigation or IME', () => {
   for (const modifier of ['metaKey','ctrlKey']) for (const [key, action] of [['s','save'],['o','open'],['p','pdf']]) {
     assert.equal(documentShortcut({key,[modifier]:true}), action);
-    for (const flag of ['repeat','isComposing','altKey','shiftKey']) assert.equal(documentShortcut({key,[modifier]:true,[flag]:true}), null);
+    for (const flag of ['repeat','isComposing','shiftKey']) assert.equal(documentShortcut({key,[modifier]:true,[flag]:true}), null);
   }
+  for (const modifier of ['metaKey','ctrlKey']) {
+    assert.equal(documentShortcut({key:'s',[modifier]:true,altKey:true}), 'cloud-save');
+    assert.equal(documentShortcut({key:'s',[modifier]:true,altKey:true,isComposing:true}), null);
+    assert.equal(documentShortcut({key:'s',[modifier]:true,altKey:true,getModifierState:()=>true}), null);
+  }
+  assert.equal(documentShortcut({key:'ß',code:'KeyS',metaKey:true,altKey:true}), 'cloud-save');
+  assert.equal(documentShortcut({key:'ß',code:'KeyS',metaKey:true,altKey:true,isComposing:true}), null);
   for (const key of ['l','t','w','r','f']) assert.equal(documentShortcut({key,ctrlKey:true}), null);
 });
 test('template association resolves effective type; only explicit type is forwarded', async () => {

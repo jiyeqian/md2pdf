@@ -8,6 +8,7 @@ const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 export async function appCacheScript(root, routes, bootstrap) {
   const entries = [];
   for (const [url, [file]] of routes) {
+    if (url === '/onedrive-config.json' || url.startsWith('/vendor/msal/')) continue;
     const body = await readFile(path.join(root, file));
     entries.push({ url, hash: digest(body) });
   }

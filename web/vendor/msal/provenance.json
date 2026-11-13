@@ -1,0 +1,10 @@
+{
+  "name": "@azure/msal-browser",
+  "version": "5.29.1",
+  "source": "https://registry.npmjs.org/@azure/msal-browser/-/msal-browser-5.29.1.tgz",
+  "license": "MIT",
+  "sha256": {
+    "msal-browser.min.js": "d7b0c4d87df2981c75abc78ecaad08fc0332c8778bcc3d6c2cca03056869592d",
+    "msal-redirect-bridge.min.js": "4fedc942982e44a145e61de30995e7a53fb1076a2018f8aa03d2eae764cdb692"
+  }
+}

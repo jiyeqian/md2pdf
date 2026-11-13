@@ -33,3 +33,5 @@
 .md-drafts-menu a:hover, .md-drafts-menu a:focus-visible { background: #eef3f8; }
 
 .md-drafts-menu .md-drafts-browse { border-top: 1px solid #e5e9ef; margin-top: 4px; font: inherit; color: inherit; }
+
+.md-cloud-status { color: #617386; font: 11px/16px system-ui, sans-serif; margin-left: 8px; }
