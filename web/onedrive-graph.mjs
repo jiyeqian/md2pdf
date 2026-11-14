@@ -47,22 +47,29 @@ export function createOneDriveGraph({ token, fetch: request = globalThis.fetch }
   }
   const idPath = id => '/me/drive/items/' + encodeURIComponent(id);
   return {
-    async list() {
+    async getRoot() {
       const root = await graph('/me/drive/special/approot?$select=id', {}, '读取应用文件夹');
-      let path = idPath(root.id) + '/children?$select=id,name,eTag,file,size&$top=200';
-      const items = [];
-      let pages = 0;
-      do {
-        if (++pages > 100) throw new OneDriveError('云端文件列表过长，请整理应用文件夹。');
-        const result = await graph(path, {}, '读取文件列表');
-        items.push(...result.value.filter(item => item.file && /\.(md|markdown|mdown)$/i.test(item.name)));
-        if (result['@odata.nextLink']) {
-          const next = new URL(result['@odata.nextLink']);
-          if (next.origin !== 'https://graph.microsoft.com' || !next.pathname.startsWith('/v1.0/')) throw new OneDriveError('OneDrive 返回了无效的分页地址。');
-          path = next.pathname.slice('/v1.0'.length) + next.search;
-        } else path = '';
-      } while (path);
-      return { rootId: root.id, items };
+      if (typeof root.id !== 'string' || !root.id) throw new OneDriveError('无法取得应用文件夹。');
+      return root.id;
+    },
+    async listPage(rootId, nextLink = '') {
+      let page = idPath(rootId) + '/children?$select=id,name,eTag,file,size&$top=100';
+      if (nextLink) {
+        if (typeof nextLink !== 'string') throw new OneDriveError('OneDrive 返回了无效的分页地址。');
+        let next;
+        try { next = new URL(nextLink); } catch { throw new OneDriveError('OneDrive 返回了无效的分页地址。'); }
+        if (next.origin !== 'https://graph.microsoft.com' || next.username || next.password || next.hash || !next.pathname.startsWith('/v1.0/')) throw new OneDriveError('OneDrive 返回了无效的分页地址。');
+        page = next.pathname.slice('/v1.0'.length) + next.search;
+      }
+      const result = await graph(page, {}, '读取文件列表');
+      if (!Array.isArray(result.value)) throw new OneDriveError('OneDrive 返回了无效的文件列表。');
+      const next = result['@odata.nextLink'];
+      if (next != null && typeof next !== 'string') throw new OneDriveError('OneDrive 返回了无效的分页地址。');
+      return { items: result.value.filter(item => item.file && typeof item.id === 'string' && item.id && typeof item.name === 'string' && /\.(md|markdown|mdown)$/i.test(item.name)), nextLink: next || '' };
+    },
+    async list() {
+      const rootId = await this.getRoot();
+      return { rootId, ...await this.listPage(rootId) };
     },
     async readContent(id) {
       let item = await graph(idPath(id) + '?$select=id,name,eTag,file,folder,package,size,@microsoft.graph.downloadUrl', {}, '获取文件信息');

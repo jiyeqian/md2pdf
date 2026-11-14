@@ -25,20 +25,23 @@ export async function createOneDriveAuth({ base = new URL('.', import.meta.url),
     system: { telemetry: { client: { enableTelemetry: false } } }
   });
   await client.initialize();
-  let account = null;
+  let account = null, generation = 0;
   return {
     account: () => account?.username || '',
     connected: () => !!account,
-    async connect() { const result = await client.acquireTokenPopup({ scopes }); account = result.account; return result.accessToken; },
+    async connect() {
+      const started = generation;
+      const result = await client.acquireTokenPopup({ scopes });
+      if (started !== generation) { await client.clearCache(); throw new Error('连接已取消。'); }
+      account = result.account; return result.accessToken;
+    },
     async token() {
       if (account) {
-        try { return (await client.acquireTokenSilent({ scopes, account })).accessToken; }
+        try { const started = generation; const result = await client.acquireTokenSilent({ scopes, account }); if (started !== generation) throw new Error('连接已取消。'); return result.accessToken; }
         catch (error) { if (!(error instanceof globalThis.msal.InteractionRequiredAuthError)) throw error; account = null; throw new Error('OneDrive 登录已过期，请重新连接；本地草稿仍保留。'); }
       }
-      const result = await client.acquireTokenPopup({ scopes, ...(account ? { account } : {}) });
-      account = result.account;
-      return result.accessToken;
+      throw new Error('请先连接 OneDrive。');
     },
-    async logout() { account = null; await client.clearCache(); }
+    async logout() { generation++; account = null; await client.clearCache(); }
   };
 }

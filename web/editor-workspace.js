@@ -1103,7 +1103,7 @@
         function focusOutside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
         menu.className = 'md-drafts-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '保存 Markdown');
         var rect = saveButton.getBoundingClientRect(); menu.style.left = rect.left + 'px'; menu.style.top = (rect.bottom + 4) + 'px';
-        [['下载到本地（' + (IS_MAC ? '⌘S' : 'Ctrl+S') + '）', saveMarkdown], ['保存到 OneDrive…（' + (IS_MAC ? '⌘⌥S' : 'Ctrl+Alt+S') + '）', function () { return window.mdOneDrive?.save(); }]].forEach(function (item) {
+        [['保存到本地（' + (IS_MAC ? '⌘S' : 'Ctrl+S') + '）', saveMarkdown], ['保存到 OneDrive…（' + (IS_MAC ? '⌘⌥S' : 'Ctrl+Alt+S') + '）', function () { return window.mdOneDrive?.save(); }]].forEach(function (item) {
           var choice = doc.createElement('button'); choice.type = 'button'; choice.textContent = item[0];
           choice.addEventListener('click', function () { closeMenu(true); item[1](); }); menu.appendChild(choice);
         });

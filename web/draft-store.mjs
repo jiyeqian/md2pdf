@@ -41,14 +41,21 @@ export function openDraftStore(factory = globalThis.indexedDB) {
         get: id => transact('readonly', (drafts, meta, done) => { drafts.get(id).onsuccess = event => done(withTitle(event.target.result)); }),
         active: () => transact('readonly', (drafts, meta, done) => { meta.get('active').onsuccess = event => done(event.target.result); }),
         activate: id => transact('readwrite', (drafts, meta) => { meta.put(id, 'active'); }),
-        save: record => transact('readwrite', (drafts, meta, done, fail) => {
+        activateIf: (expected, next) => transact('readwrite', (drafts, meta, done) => {
+          meta.get('active').onsuccess = event => {
+            if (event.target.result !== expected) { done(false); return; }
+            if (next === undefined) meta.delete('active'); else meta.put(next, 'active');
+            done(true);
+          };
+        }),
+        save: (record, { activate = true } = {}) => transact('readwrite', (drafts, meta, done, fail) => {
           drafts.get(record.id).onsuccess = event => {
             const previous = event.target.result;
             if (record.version ? !previous || previous.version !== record.version : previous) { fail(new DraftConflict()); return; }
             const next = { ...record, version: (previous?.version || 0) + 1, savedAt: Date.now() };
             next.title = draftTitle(next);
             drafts.put(next);
-            meta.put(next.id, 'active');
+            if (activate) meta.put(next.id, 'active');
             done(next);
           };
         }),

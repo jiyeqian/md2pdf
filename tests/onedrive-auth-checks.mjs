@@ -36,3 +36,22 @@ test('login library load failure gives an actionable error', async () => {
     await assert.rejects(createOneDriveAuth({base:new URL('https://example.test/'),fetch:async()=>new Response(JSON.stringify({clientId:'test',redirectUri:'https://example.test/onedrive-callback.html'}))}), /无法加载/);
   } finally { globalThis.location = oldLocation; globalThis.isSecureContext = oldSecure; globalThis.document = oldDocument; }
 });
+
+test('background token requests never open a popup and late login cannot reconnect', async () => {
+  const oldLocation=globalThis.location, oldSecure=globalThis.isSecureContext, oldMsal=globalThis.msal;
+  let popups=0, release, clears=0;
+  try {
+    globalThis.location={origin:'https://example.test'}; globalThis.isSecureContext=true;
+    globalThis.msal={InteractionRequiredAuthError:class extends Error {},PublicClientApplication:class {
+      async initialize() {} acquireTokenPopup() { popups++; return new Promise(resolve=>{release=resolve;}); }
+      async acquireTokenSilent() { throw new globalThis.msal.InteractionRequiredAuthError(); }
+      async clearCache() { clears++; }
+    }};
+    const auth=await createOneDriveAuth({base:new URL('https://example.test/'),fetch:async()=>new Response(JSON.stringify({clientId:'test',redirectUri:'https://example.test/onedrive-callback.html'}))});
+    await assert.rejects(auth.token(),/请先连接/); assert.equal(popups,0);
+    const pending=auth.connect(); await auth.logout(); release({account:{username:'test'},accessToken:'token'});
+    await assert.rejects(pending,/取消/); assert.equal(auth.connected(),false); assert.equal(clears,2);
+    const connected=auth.connect(); release({account:{username:'test'},accessToken:'token'}); await connected;
+    await assert.rejects(auth.token(),/已过期/); assert.equal(auth.connected(),false); assert.equal(popups,2);
+  } finally { globalThis.location=oldLocation; globalThis.isSecureContext=oldSecure; globalThis.msal=oldMsal; }
+});

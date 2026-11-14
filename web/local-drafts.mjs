@@ -61,6 +61,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     pending = !!record && signature(snapshot()) !== savedSignature;
     syncMirror();
     state(pending ? '正在保存草稿…' : record ? '草稿已保存到此浏览器' : '');
+    document.dispatchEvent(new CustomEvent('md-draft-active-change'));
   }
   async function saveNow() {
     clearTimeout(timer);
@@ -93,12 +94,19 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     apply({ md: '', opts: {}, templateId: '', previewType: '' });
     adopt(null);
   }
-  async function replace(record) {
+  async function replace(record, guard) {
     return enqueue(async () => {
       await saveNow();
+      const previousActive = guard ? await store.active() : undefined;
+      if (guard && !guard()) throw new DOMException('操作已取消', 'AbortError');
       const emptyOptions = Object.fromEntries(Object.keys(capture().opts).map(key => [key, '']));
       const saved = await store.save({ ...record, opts: { ...emptyOptions, ...record.opts },
-        filename: record.filename || '', id: newId(), version: 0 });
+        filename: record.filename || '', id: newId(), version: 0 }, guard ? { activate: false } : undefined);
+      if (guard) {
+        if (!guard()) throw new DOMException('操作已取消', 'AbortError');
+        if (!await store.activateIf(previousActive, saved.id)) throw new DOMException('操作已取消', 'AbortError');
+        if (!guard()) { await store.activateIf(saved.id, previousActive); throw new DOMException('操作已取消', 'AbortError'); }
+      }
       apply(saved);
       adopt(saved);
       notify();
@@ -170,11 +178,11 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       button('从 OneDrive 打开…', () => { closeMenu(); return window.mdOneDrive?.open(); }));
     const heading = document.createElement('div');
     heading.className = 'md-drafts-heading';
-    heading.textContent = `已保存草稿 · ${records.length}`;
+    heading.textContent = `已保存本地草稿 · ${records.length}`;
     menu.append(heading);
     if (!visible.length) {
       const empty = document.createElement('p');
-      empty.textContent = '暂无已保存草稿';
+      empty.textContent = '暂无已保存本地草稿';
       menu.append(empty);
     }
     for (const record of visible) {
@@ -298,7 +306,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
   filename = restored?.filename || '';
   savedSignature = restored ? signature(restored) : '';
   return { restored, blank, schedule, flush: () => enqueue(saveNow), openMenu,
-    openFile: (md, name) => replace({ md, filename: name, opts: {}, templateId: '', previewType: '' }),
+    openFile: (md, name, guard) => replace({ md, filename: name, opts: {}, templateId: '', previewType: '' }, guard),
     createBlank: () => enqueue(async () => { await saveNow(); await store.activate(null); reset(); }),
     replace, store, current: () => active?.id || null };
 }

@@ -18,7 +18,7 @@ try {
   await browser.send('Page.navigate',{url:base+'/'}); await wait('window.mdEditor && window.md2pdfConfigErrors && !document.querySelector("#download").disabled');
   await evaluate(`mdEditor.setValue('# PDF PRINT MARKER'); mdDrafts?.schedule()`); await wait('!document.querySelector("#download").disabled');
   await evaluate(`document.querySelector('#download').click()`); await wait(`document.querySelector('div[aria-label="打印或下载 PDF"]')`);
-  assert.deepEqual(await evaluate(`[...document.querySelectorAll('div[aria-label="打印或下载 PDF"] button')].map(x=>x.textContent.replace(/（.*）/,''))`),['打印…','下载 PDF']);
+  assert.deepEqual(await evaluate(`[...document.querySelectorAll('div[aria-label="打印或下载 PDF"] button')].map(x=>x.textContent.replace(/（.*）/,''))`),['打印 PDF','下载 PDF']);
   await mkdir('/private/tmp/md2pdf-pdf-menu',{recursive:true}); const shot=await browser.send('Page.captureScreenshot',{format:'png'}); await writeFile(`/private/tmp/md2pdf-pdf-menu/${label}.png`,Buffer.from(shot.data,'base64'));
   await evaluate(`document.querySelectorAll('div[aria-label="打印或下载 PDF"] button')[1].click()`);
   if(label==='static') { await wait(`document.querySelector('#md-static-pdf-notice')`); await evaluate(`document.querySelector('#md-static-pdf-notice button').click()`); }

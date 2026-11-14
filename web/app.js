@@ -1201,7 +1201,7 @@ download.addEventListener('click', () => {
   function outside(event) { if (!menu.contains(event.target) && event.target !== download) close(); }
   function blur(event) { if (!menu.contains(event.target) && event.target !== download) close(); }
   const mac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || '');
-  for (const [label, action] of [[`打印…（${mac ? '⌘P' : 'Ctrl+P'}）`, window.mdPrintDocument], [`下载 PDF（${mac ? '⌘⌥P' : 'Ctrl+Alt+P'}）`, window.mdDownloadPdf]]) {
+  for (const [label, action] of [[`打印 PDF（${mac ? '⌘P' : 'Ctrl+P'}）`, window.mdPrintDocument], [`下载 PDF（${mac ? '⌘⌥P' : 'Ctrl+Alt+P'}）`, window.mdDownloadPdf]]) {
     const button = doc.createElement('button'); button.type = 'button'; button.textContent = label;
     button.addEventListener('click', () => { close(true); action(); }); menu.append(button);
   }

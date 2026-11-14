@@ -130,3 +130,19 @@ test('list requests and retains file sizes including empty files', async () => {
   assert.match(calls[1], /\$select=id,name,eTag,file,size/);
   assert.deepEqual(list.items.map(item=>item.size),[0,5652]);
 });
+
+test('pagination is explicit, validates next links and never sends bearer to another origin', async () => {
+  const calls=[];
+  const next='https://graph.microsoft.com/v1.0/me/drive/items/root/children?$skiptoken=next';
+  const graph=createOneDriveGraph({token:async()=> 'secret',fetch:async (url,options)=>{
+    calls.push({url,options});
+    if(url.includes('/special/approot')) return json({id:'root'});
+    if(url===next) return json({value:[{id:'second',name:'second.md',file:{},size:0}]});
+    return json({value:[{id:'ignored',name:'other.txt',file:{},size:2}], '@odata.nextLink':next});
+  }});
+  const page=await graph.list();
+  assert.equal(calls.length,2); assert.match(calls[1].url,/\$top=100/); assert.deepEqual(page.items,[]); assert.equal(page.nextLink,next);
+  assert.equal((await graph.listPage('root',next)).items[0].id,'second');
+  for(const invalid of ['https://graph.microsoft.com.evil.test/v1.0/x','https://graph.microsoft.com/v2.0/x','https://user@graph.microsoft.com/v1.0/x',{},42]) await assert.rejects(graph.listPage('root',invalid));
+  assert.equal(calls.length,3);
+});

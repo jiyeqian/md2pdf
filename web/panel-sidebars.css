@@ -35,3 +35,16 @@
 .md-pro-outline .md-pro-outline-item:hover{background:#e9eff7;color:inherit}
 .md-pro-outline .md-pro-outline-disclosure{padding:5px 0;line-height:18px;text-align:center}
 .md-sidebar-view>.md-pro-section{margin:0;padding:0;border:0}
+
+.md-cloud-panel { color: #354a63; font: 12px/1.5 system-ui, sans-serif; }
+.md-cloud-panel-account { margin: 4px 6px 8px; color: #677b92; overflow-wrap: anywhere; }
+.md-cloud-panel-actions { display: flex; gap: 6px; margin-bottom: 8px; }
+.md-cloud-panel-button { padding: 5px 8px; border: 1px solid #d6dfea; border-radius: 5px; background: #fff; color: #42648b; font: inherit; cursor: pointer; }
+.md-cloud-panel-button:hover:not(:disabled) { background: #edf2f8; }
+.md-cloud-panel-button:disabled { opacity: .55; cursor: default; }
+.md-cloud-panel-error { margin: 6px; color: #a53434; overflow-wrap: anywhere; }
+.md-cloud-panel-list { display: grid; gap: 3px; margin: 8px 0; }
+.md-cloud-panel-file { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; min-width: 0; width: 100%; padding: 6px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.md-cloud-panel-file:hover, .md-cloud-panel-file.is-current { background: #e1eaf5; }
+.md-cloud-panel-name { min-width: 0; overflow-wrap: anywhere; }
+.md-cloud-panel-size { flex: none; color: #718096; font-size: 11px; white-space: nowrap; }

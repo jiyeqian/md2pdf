@@ -450,6 +450,8 @@ function buildPanel() {
   const sidebar = window.mdPanelSidebars.create({panel: editorPanel, title: '编辑侧栏', id: 'editor-assistant', width: 280});
   sidebar.addView({key: 'outline', label: '文档大纲', icon: window.mdPanelSidebars.icons.outline, content: outlineSection});
   sidebar.addView({key: 'assistant', label: '专业助手', icon: window.mdPanelSidebars.icons.assistant, content: details});
+  window.mdEditorSidebar = sidebar;
+  document.dispatchEvent(new CustomEvent('md-editor-sidebar-ready'));
 
   panel = details;
   refs = {
