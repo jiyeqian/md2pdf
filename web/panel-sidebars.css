@@ -48,3 +48,10 @@
 .md-cloud-panel-file:hover, .md-cloud-panel-file.is-current { background: #e1eaf5; }
 .md-cloud-panel-name { min-width: 0; overflow-wrap: anywhere; }
 .md-cloud-panel-size { flex: none; color: #718096; font-size: 11px; white-space: nowrap; }
+
+.md-cloud-panel-row { display:flex; min-width:0; align-items:start; gap:3px; }
+.md-cloud-panel-row .md-cloud-panel-file { flex:1; }
+.md-cloud-delete-confirm { overflow-wrap:anywhere; padding:6px; }
+.md-cloud-delete-confirm button { margin:5px 4px 0 0; }
+.md-cloud-panel-actions { flex-wrap:wrap; }
+.md-cloud-panel-actions input { min-width:0; max-width:100%; }
