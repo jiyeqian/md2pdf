@@ -53,7 +53,7 @@ try {
     await evaluate(`mdEditor.setValue('# 保留原稿'); mdDrafts.flush()`);
     const id = await evaluate('mdDrafts.current()');
     await evaluate(`document.querySelector('button[aria-label="打开 Markdown"]').click()`);
-    await wait(`document.querySelector('#md-drafts-menu:not([hidden])')`);
+    await wait(`[...document.querySelectorAll('#md-drafts-menu:not([hidden]) button')].some(x=>x.textContent.includes('OneDrive'))`);
     await evaluate(`[...document.querySelectorAll('#md-drafts-menu button')].find(x=>x.textContent.includes('OneDrive')).click()`);
     await wait(`document.querySelector('.md-cloud-error')?.textContent.includes('尚未配置')`);
     assert.equal(await evaluate('mdEditor.getValue()'),'# 保留原稿');
@@ -97,7 +97,7 @@ try {
     await evaluate(`mdEditor.setValue('# 本地原稿'); mdDrafts.flush()`);
     const local = await evaluate('mdDrafts.current()');
     await evaluate(`document.querySelector('button[aria-label="打开 Markdown"]').click()`);
-    await wait(`document.querySelector('#md-drafts-menu:not([hidden])')`);
+    await wait(`[...document.querySelectorAll('#md-drafts-menu:not([hidden]) button')].some(x=>x.textContent.includes('OneDrive'))`);
     await evaluate(`[...document.querySelectorAll('#md-drafts-menu button')].find(x=>x.textContent.includes('OneDrive')).click()`);
     await wait(`document.querySelector('dialog[aria-label="连接 OneDrive"]')`);
     await screenshot(url.includes('/nested/')?'static-connect':'node-connect','dialog[aria-label="连接 OneDrive"]');
@@ -117,14 +117,14 @@ try {
     assert.equal(await evaluate('mdEditor.getValue()'),'# 本地原稿');
     assert.equal(await evaluate('mdDrafts.current()'),local);
     await evaluate(`mockGraph.mode='ok'; document.querySelector('button[aria-label="打开 Markdown"]').click()`);
-    await wait(`document.querySelector('#md-drafts-menu:not([hidden])')`);
+    await wait(`[...document.querySelectorAll('#md-drafts-menu:not([hidden]) button')].some(x=>x.textContent.includes('OneDrive'))`);
     await evaluate(`[...document.querySelectorAll('#md-drafts-menu button')].find(x=>x.textContent.includes('OneDrive')).click()`);
     await wait(`document.querySelector('dialog[aria-label="从 OneDrive 打开 Markdown"]')`);
     await evaluate(`[...document.querySelectorAll('dialog[aria-label="从 OneDrive 打开 Markdown"] button')].find(x=>x.textContent==='取消').click()`);
     assert.equal(await evaluate('mdEditor.getValue()'),'# 本地原稿');
     await wait(`!document.querySelector('dialog[aria-label="从 OneDrive 打开 Markdown"]')`);
     await evaluate(`document.querySelector('button[aria-label="打开 Markdown"]').click()`);
-    await wait(`document.querySelector('#md-drafts-menu:not([hidden])')`);
+    await wait(`[...document.querySelectorAll('#md-drafts-menu:not([hidden]) button')].some(x=>x.textContent.includes('OneDrive'))`);
     await evaluate(`[...document.querySelectorAll('#md-drafts-menu button')].find(x=>x.textContent.includes('OneDrive')).click()`);
     await wait(`document.querySelector('dialog[aria-label="从 OneDrive 打开 Markdown"]')`);
     await evaluate(`[...document.querySelectorAll('dialog[aria-label="从 OneDrive 打开 Markdown"] button')].find(x=>x.querySelector('.md-onedrive-name')?.textContent==='cloud.md').click()`);

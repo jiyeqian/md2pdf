@@ -15,17 +15,28 @@ export function initializeOneDrive() {
   let graph, auth, binding = null, busy = false, generation = 0;
   const current = () => window.mdDrafts?.current();
   const status = (message, error = false) => {
-    const title = window.mdWorkspaceHosts?.query('.editor-panel .panel-heading') || document.querySelector('.editor-panel .panel-heading');
-    if (!title) return;
-    let node = title.querySelector('.md-cloud-status');
-    if (!node) { node = document.createElement('span'); node.className = 'md-cloud-status'; node.setAttribute('role', 'status'); title.append(node); }
+    const panel = window.mdWorkspaceHosts?.query('.editor-panel') || document.querySelector('.editor-panel');
+    if (!panel) return;
+    let notice = panel.querySelector('.md-cloud-notice');
+    if (!notice) {
+      const doc = panel.ownerDocument;
+      notice = doc.createElement('div'); notice.className = 'md-cloud-notice';
+      const body = doc.createElement('div'); body.className = 'md-cloud-notice-body';
+      const node = doc.createElement('span'); node.className = 'md-cloud-status'; node.setAttribute('role', 'status');
+      const detail = doc.createElement('div'); detail.className = 'md-cloud-error'; detail.setAttribute('role', 'alert'); detail.hidden = true;
+      const close = doc.createElement('button'); close.type = 'button'; close.className = 'md-cloud-close'; close.setAttribute('aria-label', '关闭 OneDrive 提示'); close.textContent = '×';
+      close.addEventListener('click', () => { notice.hidden = true; panel.querySelector('button[aria-label="打开 Markdown"]')?.focus(); });
+      body.append(node, detail); notice.append(body, close);
+      const anchor = panel.querySelector('.md-wt-toolbar') || panel.querySelector('.panel-heading');
+      if (anchor) anchor.after(notice); else panel.append(notice);
+    }
+    const node = notice.querySelector('.md-cloud-status'), detail = notice.querySelector('.md-cloud-error');
     node.textContent = error ? 'OneDrive · 操作失败' : message;
     node.title = message;
-    const panel = title.parentElement;
-    let detail = panel.querySelector('.md-cloud-error');
-    if (!detail) { detail = title.ownerDocument.createElement('div'); detail.className = 'md-cloud-error'; detail.setAttribute('role', 'alert'); detail.hidden = true; title.after(detail); }
     detail.textContent = error ? message + ' 本地草稿仍保留。' : '';
     detail.hidden = !error;
+    notice.dataset.error = String(error);
+    notice.hidden = !message;
   };
   async function service() {
     if (!graph) { auth = await createOneDriveAuth(); graph = createOneDriveGraph({ token: () => auth.token() }); }

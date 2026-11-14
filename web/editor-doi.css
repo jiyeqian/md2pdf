@@ -122,7 +122,11 @@
   font-size: 11px;
   line-height: 1.5;
   color: #677389;
+  min-width: 0;
   max-width: 50%;
+  max-height: 100%;
+  overflow: auto;
+  overflow-wrap: anywhere;
   text-align: right;
 }
 .md-doi-status:empty { display: none; }
