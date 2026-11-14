@@ -15,17 +15,34 @@ try{
  await evalJS('window.mdOneDrive.open()');await wait(`document.querySelector('#editor-assistant-tab-cloud[aria-selected="true"]')`);await wait(`[...document.querySelectorAll('.md-cloud-panel-button')].some(x=>x.textContent==='连接 OneDrive'&&!x.disabled)`);
  const connectSelector='.md-cloud-panel-button';assert.equal(await evalJS(`document.querySelector(${JSON.stringify(connectSelector)}).textContent`),'连接 OneDrive');await click(connectSelector);
  await wait(`document.querySelectorAll('.md-cloud-panel-file').length===2`);assert.equal(await evalJS(`fakeCalls.find(x=>x.popup).gesture`),true);
+ await browser.send('Emulation.setEmulatedMedia',{features:[{name:'hover',value:'hover'}]});
+ const canHover=await evalJS(`matchMedia('(hover:hover)').matches`); assert.equal(canHover,true,'desktop hover emulation must be active');
+ if(canHover){
+  await browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:1,y:1});
+  await wait(`getComputedStyle(document.querySelector('.md-cloud-row-menu')).opacity==='0'`);
+  const point=await evalJS(`(()=>{const r=document.querySelector('.md-cloud-panel-row').getBoundingClientRect();return {x:r.left+10,y:r.top+10}})()`);
+  await browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',...point});await wait(`getComputedStyle(document.querySelector('.md-cloud-row-menu')).opacity==='1'`);
+ }
+ await evalJS(`document.querySelector('.md-cloud-row-menu').focus()`);assert.equal(await evalJS(`getComputedStyle(document.querySelector('.md-cloud-row-menu')).opacity`),'1');
+ await browser.send('Emulation.setEmulatedMedia',{features:[]});
+ await browser.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+ await browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:1,y:1});await evalJS(`document.querySelector('.md-cloud-row-menu').blur()`);
+ assert.equal(await evalJS(`matchMedia('(hover:none)').matches`),true,'touch hover emulation must be active'); assert.equal(await evalJS(`getComputedStyle(document.querySelector('.md-cloud-row-menu')).opacity`),'1');
+ await browser.send('Emulation.setEmulatedMedia',{features:[]});
+ await browser.send('Emulation.setTouchEmulationEnabled',{enabled:false});
+ console.log('Cloud menu hover, keyboard and touch visibility passed');
+ assert.equal(await evalJS(`(()=>{const b=document.querySelector('.md-cloud-crumb');return b.textContent==='md2pdf' && b.scrollWidth<=b.clientWidth+1})()`),true,'root path must not truncate md2pdf');
  assert.ok(await evalJS(`document.querySelector('.md-cloud-panel').textContent.includes('0 B · 空文件')`));await mkdir('/private/tmp/md2pdf-cloud-sidebar',{recursive:true});await writeFile('/private/tmp/md2pdf-cloud-sidebar/node-desktop.png',Buffer.from((await browser.send('Page.captureScreenshot',{format:'png'})).data,'base64'));
  const cas=await evalJS(`(async()=>{const s=mdDrafts.store;const original=await s.active();await s.activateIf(original,undefined);const absent=await s.active();const saved=await s.save({id:'cas-test',md:'test',opts:{},version:0},{activate:false});const stillAbsent=await s.active();const first=await s.activateIf(undefined,saved.id);await s.activate('other-tab');const prevented=await s.activateIf(saved.id,original);const other=await s.active();await s.activate(null);const nullResult=await s.activateIf(null,saved.id);await s.save({id:'default-test',md:'test',opts:{},version:0});const normal=await s.active();await s.activate(original);return {absent:absent===undefined,stillAbsent:stillAbsent===undefined,first,prevented,other,nullResult,normal};})()`);
  assert.deepEqual(cas,{absent:true,stillAbsent:true,first:true,prevented:false,other:'other-tab',nullResult:true,normal:'default-test'});
  await evalJS(`(async()=>{mdEditor.setValue('# 本地草稿');await mdDrafts.flush();window.beforeRace={id:mdDrafts.current(),text:mdEditor.getValue()};const store=mdDrafts.store,original=store.save.bind(store);window.raceGuard=true;store.save=async(...args)=>{const result=await original(...args);if(args[1]?.activate===false)await new Promise(resolve=>window.releaseRace=resolve);return result};window.raceResult=mdDrafts.openFile('# 迟到云端','late.md',()=>window.raceGuard).catch(e=>e.name);})()`);
  await wait('window.releaseRace');await evalJS('window.raceGuard=false;window.releaseRace()');assert.equal(await evalJS('window.raceResult'),'AbortError');
  assert.deepEqual(await evalJS(`(async()=>({id:mdDrafts.current(),active:await mdDrafts.store.active(),text:mdEditor.getValue()}))()`),{id:await evalJS('beforeRace.id'),active:await evalJS('beforeRace.id'),text:'# 本地草稿'});
- await evalJS(`window.folderTest=true;[...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='刷新').click()`);
+ await evalJS(`window.folderTest=true;document.querySelector('.md-cloud-icon-button[aria-label="刷新"]').click()`);
  await wait(`document.querySelector('[data-cloud-id="sub"]')`);
  await evalJS(`document.querySelector('[data-cloud-id="sub"]').click()`);await wait(`document.querySelector('[data-cloud-id="nested"]')`);
  assert.ok(await evalJS(`document.querySelector('.md-cloud-panel').textContent.includes('项目')`));
- await evalJS(`[...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='应用文件夹').click()`);await wait(`document.querySelector('[data-cloud-id="sub"]')`);
+ await evalJS(`[...document.querySelectorAll('.md-cloud-crumb')].find(x=>x.textContent==='md2pdf').click()`);await wait(`document.querySelector('[data-cloud-id="sub"]')`);
  await browser.send('Emulation.setDeviceMetricsOverride',{width:390,height:568,deviceScaleFactor:1,mobile:true}); await new Promise(resolve=>setTimeout(resolve,200));
  await writeFile('/private/tmp/md2pdf-cloud-sidebar/node-mobile.png',Buffer.from((await browser.send('Page.captureScreenshot',{format:'png'})).data,'base64'));
  assert.ok(await evalJS('document.documentElement.scrollWidth <= innerWidth'));

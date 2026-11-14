@@ -217,3 +217,19 @@ test('overwrite uses original id and If-Match; changed or missing targets never 
     if(mode==='changed'||mode==='deleted') assert.equal(writes.length,0);
   }
 });
+
+
+test('rename checks ancestry, original name and version and PATCHes only name', async () => {
+ for (const mode of ['ok','stale','conflict','outside','invalidResult']) {
+  const calls=[];const g=createOneDriveGraph({token:async()=> 't',fetch:async(url,options)=>{calls.push({url,options});
+   if(url.includes('/special/approot')) return json({id:'root'});
+   if(url.includes('/items/root?')) return json({id:'root',folder:{}});
+   if(options.method==='PATCH') return mode==='conflict'?json({},409):json({id:mode==='invalidResult'?'other':'file',name:'new.md',eTag:'new',file:{},parentReference:{id:'root'}});
+   return json({id:'file',name:'old.md',eTag:mode==='stale'?'changed':'old',file:{},parentReference:{id:mode==='outside'?'other':'root'}});
+  }});
+  const input={id:'file',name:'old.md',newName:'new.md',eTag:'old',parentId:'root',folder:false};
+  if(mode==='ok'){assert.equal((await g.rename(input)).eTag,'new');const patch=calls.find(x=>x.options.method==='PATCH');assert.equal(patch.options.headers['If-Match'],'old');assert.deepEqual(JSON.parse(patch.options.body),{name:'new.md'});}
+  else await assert.rejects(g.rename(input));
+  if(mode==='stale'||mode==='outside') assert.ok(!calls.some(x=>x.options.method==='PATCH'));
+ }
+});

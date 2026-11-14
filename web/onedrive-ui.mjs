@@ -45,12 +45,13 @@ export function initializeOneDrive() {
     notice.hidden = !message;
   };
   let sidebar, cloudPane, wantOpen = false, preparing, connectionPromise, initializing = false, connecting = false;
-  let rootId = '', folders = [], creatingFolder = false, confirmDelete = '', items = [], nextLink = '', loading = false, listError = '', info = '', retryPage = false, retryOpenItem = null;
-  let listGeneration = 0, openGeneration = 0, visited = new Set(), lastHighlight = '', mutationBusy = false;
+  let rootId = '', folders = [], creatingFolder = false, confirmDelete = '', renameId = '', renameDraft = '', items = [], nextLink = '', loading = false, listError = '', info = '', retryPage = false, retryOpenItem = null;
+  let listGeneration = 0, openGeneration = 0, visited = new Set(), lastHighlight = '', mutationBusy = false, closeMenu = null, closeRenameKey = null;
   function renderCloud() {
     if (!cloudPane) return;
     if (auth && !auth.connected() && (items.length || rootId || binding)) { rootId = ''; folders = []; items = []; nextLink = ''; visited.clear(); binding = null; ++openGeneration; }
     const doc = cloudPane.ownerDocument;
+    closeMenu?.(); closeRenameKey?.();
     cloudPane.replaceChildren();
     const addButton = (text, action, disabled = false) => {
       const button = doc.createElement('button'); button.type = 'button'; button.className = 'md-cloud-panel-button';
@@ -65,20 +66,31 @@ export function initializeOneDrive() {
         link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '配置说明';
         p.replaceChildren('OneDrive 尚未配置，请参照「', link, '」完成设置。');
       }
+      if (!error && text === '已移到回收站。') { const link=doc.createElement('a');link.href='https://onedrive.live.com/recycle';link.target='_blank';link.rel='noopener noreferrer';link.textContent='打开 OneDrive 回收站';p.append(' ',link); }
       cloudPane.append(p);
     };
     if (!auth?.connected()) {
-      const p = doc.createElement('p'); p.className = 'md-sidebar-empty'; p.textContent = '连接个人 OneDrive，访问应用文件夹中的 Markdown。'; cloudPane.append(p);
-      message(listError, true); message(info);
+      cloudPane.classList.add('is-disconnected'); message(listError, true); message(info);
       if (listError && !auth) addButton('重试', () => { listError = ''; void prepare(); }, initializing);
       else addButton(initializing ? '正在准备…' : connecting ? '正在连接…' : '连接 OneDrive', connectFromClick, initializing || connecting || !auth);
       return;
     }
-    const account = doc.createElement('p'); account.className = 'md-cloud-panel-account'; account.textContent = 'OneDrive / Apps / md2pdf · ' + (auth.account() || 'Microsoft 账户'); cloudPane.append(account);
+    cloudPane.classList.remove('is-disconnected');
+    const account = doc.createElement('p'); account.className = 'md-cloud-panel-account'; account.textContent = 'OneDrive 帐户 ' + (auth.account() || 'Microsoft 账户'); cloudPane.append(account);
     const actions = doc.createElement('div'); actions.className = 'md-cloud-panel-actions'; cloudPane.append(actions);
-    const action = (text, fn, disabled = false) => { const button = doc.createElement('button'); button.type = 'button'; button.className = 'md-cloud-panel-button'; button.textContent = text; button.disabled = disabled; button.addEventListener('click', fn); actions.append(button); };
-    action('刷新', () => { void refresh(); }); action('新建文件夹', () => { if (!mutationBusy && !busy) { creatingFolder = true; renderCloud(); } }, mutationBusy || busy); action('断开', () => { void logout(); });
-    if (folders.length) { const nav = doc.createElement('div'); nav.className = 'md-cloud-panel-actions'; cloudPane.append(nav); for (let i = 0; i < folders.length; i++) { const crumb = doc.createElement('button'); crumb.type = 'button'; crumb.className = 'md-cloud-panel-button'; crumb.textContent = folders[i].name; crumb.addEventListener('click', () => { folders = folders.slice(0, i + 1); items = []; nextLink = ''; confirmDelete = ''; void refresh(); }); nav.append(crumb); } }
+    const action = (label, path, fn, disabled = false) => { const button = doc.createElement('button'); button.type = 'button'; button.className = 'icon-button md-cloud-icon-button'; button.title = label; button.setAttribute('aria-label', label); button.disabled = disabled; button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg>'; button.addEventListener('click', fn); actions.append(button); };
+    action('刷新', 'M20 7v5h-5 M4 17v-5h5 M5 9a7 7 0 0 1 12-3l3 3 M19 15a7 7 0 0 1-12 3l-3-3', () => { void refresh(); });
+    action('新建文件夹', 'M3 6h7l2 2h9v11H3z M12 10v7 M8.5 13.5h7', () => { if (!mutationBusy && !busy) { creatingFolder = true; renderCloud(); } }, mutationBusy || busy);
+    action('断开', 'M10 4H5v16h5 M14 8l4 4-4 4 M8 12h10', () => { void logout(); });
+    if (folders.length) {
+      const nav = doc.createElement('nav'); nav.className = 'md-cloud-breadcrumb'; nav.setAttribute('aria-label', '云文件路径'); nav.dataset.nested = String(folders.length > 1); nav.title = ['我的文件', 'Apps', 'md2pdf', ...folders.slice(1).map(folder => folder.name)].join(' > '); cloudPane.append(nav);
+      for (const label of ['我的文件','Apps']) { const part=doc.createElement('span'); part.className=label==='Apps'?'md-cloud-prefix-apps':'md-cloud-prefix-home'; part.textContent=label; const separator=doc.createElement('span'); separator.className='md-cloud-separator'; separator.textContent=' › '; nav.append(part,separator); }
+      const crumb = (index, container) => { const part=doc.createElement('button'); part.type='button'; part.className='md-cloud-crumb'; part.textContent=index===0?'md2pdf':folders[index].name; part.title=part.textContent; part.addEventListener('click',()=>{folders=folders.slice(0,index+1);items=[];nextLink='';renameId='';void refresh();});container.append(part); };
+      crumb(0,nav);
+      if (folders.length>3) { nav.append(doc.createTextNode(' › ')); const details=doc.createElement('details'); details.className='md-cloud-path-more'; const summary=doc.createElement('summary'); summary.textContent='…'; summary.setAttribute('aria-label','展开中间路径'); details.append(summary); const contents=doc.createElement('span'); for(let i=1;i<folders.length-1;i++){crumb(i,contents);contents.append(doc.createTextNode(' › '));} details.append(contents); details.addEventListener('toggle',()=>{if(!details.open)return;const r=summary.getBoundingClientRect(),box=contents.getBoundingClientRect();contents.style.left=Math.max(4,Math.min(r.left,doc.defaultView.innerWidth-box.width-4))+'px';contents.style.top=Math.max(4,Math.min(r.bottom,doc.defaultView.innerHeight-box.height-4))+'px';}); nav.append(details); }
+      else for(let i=1;i<folders.length-1;i++){nav.append(doc.createTextNode(' › '));crumb(i,nav);}
+      if(folders.length>1){nav.append(doc.createTextNode(' › '));crumb(folders.length-1,nav);}
+    }
     if (creatingFolder) { const form = doc.createElement('form'); form.className = 'md-cloud-panel-actions'; const input = doc.createElement('input'); input.placeholder = '文件夹名称'; input.setAttribute('aria-label', '文件夹名称'); const submit = doc.createElement('button'); submit.type = 'submit'; submit.disabled = mutationBusy || busy; submit.className = 'md-cloud-panel-button'; submit.textContent = '创建'; const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.className = 'md-cloud-panel-button'; cancel.textContent = '取消'; cancel.addEventListener('click', () => { creatingFolder = false; renderCloud(); }); form.append(input, submit, cancel); form.addEventListener('submit', e => { e.preventDefault(); void createFolder(input.value); }); cloudPane.append(form); }
     message(loading ? '正在加载…' : info); message(listError, true);
     const list = doc.createElement('div'); list.className = 'md-cloud-panel-list'; cloudPane.append(list);
@@ -87,11 +99,20 @@ export function initializeOneDrive() {
       const row = doc.createElement('div'); row.className = 'md-cloud-panel-row'; list.append(row);
       const button = doc.createElement('button'); button.type = 'button'; button.className = 'md-cloud-panel-file'; button.disabled = mutationBusy && !item.folder; button.dataset.cloudId = item.id;
       if (binding?.draftId === current() && binding.id === item.id) { button.classList.add('is-current'); button.setAttribute('aria-current', 'true'); }
-      const name = doc.createElement('span'); name.className = 'md-cloud-panel-name'; name.textContent = (item.folder ? '📁 ' : '') + item.name;
+      const name = doc.createElement('span'); name.className = 'md-cloud-panel-name'; name.textContent = (item.folder ? '▸ ' : '') + item.name;
       const size = doc.createElement('span'); size.className = 'md-cloud-panel-size'; size.textContent = item.folder ? '文件夹' : formatOneDriveSize(item.size);
-      button.append(name, size); button.addEventListener('click', () => { if (item.folder) { folders.push({id:item.id,name:item.name}); items = []; nextLink = ''; confirmDelete = ''; void refresh(); } else void openItem(item); }); row.append(button);
-      { const menu = doc.createElement('button'); menu.type = 'button'; menu.className = 'md-cloud-panel-button'; menu.textContent = '⋯'; menu.disabled = mutationBusy || busy; menu.setAttribute('aria-label', '删除 ' + item.name); menu.addEventListener('click', () => { confirmDelete = item.id; renderCloud(); }); row.append(menu); }
-      if (confirmDelete === item.id) { const confirm = doc.createElement('div'); confirm.className = 'md-cloud-delete-confirm'; const text = doc.createElement('span'); text.textContent = item.folder ? '将文件夹‘' + item.name + '’及其全部内容移到 OneDrive 回收站？' : '将“' + item.name + '”移到 OneDrive 回收站？'; const yes = doc.createElement('button'); yes.type = 'button'; yes.disabled = mutationBusy || busy; yes.className = 'md-cloud-panel-button'; yes.textContent = '移到回收站'; yes.addEventListener('click', () => { void deleteFile(item); }); const no = doc.createElement('button'); no.type = 'button'; no.className = 'md-cloud-panel-button'; no.textContent = '取消'; no.addEventListener('click', () => { confirmDelete = ''; renderCloud(); }); confirm.append(text, yes, no); list.append(confirm); }
+      button.append(name, size); button.addEventListener('click', () => { if (item.folder) { folders.push({id:item.id,name:item.name}); items = []; nextLink = ''; renameId = ''; void refresh(); } else void openItem(item); }); row.append(button);
+      const menu = doc.createElement('button'); menu.type = 'button'; menu.className = 'md-cloud-row-menu'; menu.textContent = '⋯'; menu.disabled = mutationBusy || busy; menu.setAttribute('aria-label', item.name + ' 更多操作'); menu.title='更多操作'; row.append(menu);
+      menu.addEventListener('click', () => {
+        const old = row.querySelector('.md-cloud-popup'); if (old) { closeMenu?.(); return; } closeMenu?.();
+        const popup=doc.createElement('div'); popup.className='md-cloud-popup'; popup.setAttribute('role','menu');
+        const close=()=>{popup.remove();doc.removeEventListener('pointerdown',outside,true);doc.defaultView.removeEventListener('keydown',onkey,true);if(closeMenu===close)closeMenu=null;}; closeMenu=close;
+        const outside=e=>{if(!row.contains(e.target)) close();}; const onkey=e=>{if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();menu.focus();}};
+        for (const [label,fn] of [['重命名',()=>{renameId=item.id;renameDraft=item.name;renderCloud();const input=cloudPane.querySelector('.md-cloud-rename input');input?.focus();input?.select();}], [item.folder?'文件夹及内容移到回收站':'移到回收站',()=>{void deleteFile(item);} ]]) {const option=doc.createElement('button');option.type='button';option.setAttribute('role','menuitem');option.textContent=label;option.addEventListener('click',()=>{close();fn();});popup.append(option);}
+        row.append(popup); const r=menu.getBoundingClientRect(); const bounds=popup.getBoundingClientRect(); popup.style.left=Math.max(4,Math.min(r.right-bounds.width,doc.defaultView.innerWidth-bounds.width-4))+'px'; popup.style.top=Math.max(4,Math.min(r.bottom,doc.defaultView.innerHeight-bounds.height-4))+'px';doc.addEventListener('pointerdown',outside,true);doc.defaultView.addEventListener('keydown',onkey,true);popup.querySelector('button').focus();
+      });
+      if(renameId===item.id){const form=doc.createElement('form');form.className='md-cloud-rename';const input=doc.createElement('input');input.value=renameDraft;input.addEventListener('input',()=>{renameDraft=input.value;});input.setAttribute('aria-label','重命名 '+item.name);const submit=doc.createElement('button');submit.type='submit';submit.textContent='保存';submit.disabled=mutationBusy||busy;const cancel=doc.createElement('button');cancel.type='button';cancel.textContent='取消';cancel.addEventListener('click',()=>{renameId='';renameDraft='';renderCloud();});input.addEventListener('keydown',e=>{if(e.isComposing && e.key==='Enter'){e.preventDefault();return;}if(e.key==='Escape'){e.preventDefault();renameId='';renameDraft='';renderCloud();}});form.addEventListener('submit',e=>{e.preventDefault();void renameItem(item,input.value);});form.append(input,submit,cancel);list.append(form); const onEscape=e=>{if(e.key==='Escape'&&!e.isComposing){e.preventDefault();e.stopImmediatePropagation();renameId='';renameDraft='';renderCloud();}};doc.defaultView.addEventListener('keydown',onEscape,true);closeRenameKey=()=>{doc.defaultView.removeEventListener('keydown',onEscape,true);closeRenameKey=null;};}
+
     }
     lastHighlight = binding?.draftId === current() ? binding.id : '';
     if (listError && retryOpenItem) addButton('重试打开', () => { void openItem(retryOpenItem); }, loading);
@@ -100,7 +121,7 @@ export function initializeOneDrive() {
   }
   function attachSidebar(value) {
     if (sidebar || !value) return;
-    sidebar = value; cloudPane = sidebar.addView({key:'cloud', label:'云文件', icon:'M7 18h10a4 4 0 0 0 .3-8A5.5 5.5 0 0 0 6.7 9 4.5 4.5 0 0 0 7 18z', onActive: active => { if (active && !auth && !preparing) void prepare(); }});
+    sidebar = value; cloudPane = sidebar.addView({key:'cloud', label:'云文件', icon:'M7 18h10a4 4 0 0 0 .3-8A5.5 5.5 0 0 0 6.7 9 4.5 4.5 0 0 0 7 18z', onActive: active => { if (active && !auth && !preparing) void prepare(); if (!active) { closeMenu?.(); closeRenameKey?.(); renameId=''; renameDraft=''; } }});
     cloudPane.classList.add('md-cloud-panel'); renderCloud();
     if (wantOpen) showCloud();
   }
@@ -172,10 +193,23 @@ export function initializeOneDrive() {
     catch (error) { if (started === generation && request === listGeneration) { listError = errorMessage(error); renderCloud(); } }
     finally { mutationBusy = false; renderCloud(); }
   }
+  async function renameItem(item, newName) {
+    if (mutationBusy || busy) return;
+    renameDraft = newName;
+    if (!item.folder && !/\.(md|markdown|mdown)$/i.test(newName)) { listError='文件名须保留 .md、.markdown 或 .mdown 扩展名。'; renderCloud(); return; }
+    mutationBusy = true; ++openGeneration; renderCloud();
+    const started=generation, request=listGeneration, client=graph, parentId=folders.at(-1)?.id;
+    try { const result=await client.rename({id:item.id,eTag:item.eTag,name:item.name,newName,parentId,folder:!!item.folder});
+      if(started!==generation || client!==graph) return;
+      if(binding?.id===item.id) {binding.name=result.name;binding.eTag=result.eTag;}
+      if(request!==listGeneration) return;renameId='';renameDraft='';await refresh();info='已重命名。';renderCloud();
+    } catch(error) {if(started===generation && request===listGeneration){listError=errorMessage(error);renderCloud();}}
+    finally {mutationBusy=false;renderCloud();}
+  }
   async function deleteFile(item) {
     if (mutationBusy || busy) return; mutationBusy = true; ++openGeneration; info = ''; renderCloud();
     const started = generation, request = listGeneration, client = graph;
-    try { if (item.folder) await client.deleteFolder(item.id, item.eTag, item.name); else await client.deleteFile(item.id, item.eTag, item.name); if (started !== generation || client !== graph) return; if (binding?.id === item.id || item.folder && binding?.ancestors?.includes(item.id)) { binding = null; status(''); } if (request !== listGeneration) return; confirmDelete = ''; await refresh(); }
+    try { if (item.folder) await client.deleteFolder(item.id, item.eTag, item.name); else await client.deleteFile(item.id, item.eTag, item.name); if (started !== generation || client !== graph) return; if (binding?.id === item.id || item.folder && binding?.ancestors?.includes(item.id)) { binding = null; status(''); } if (request !== listGeneration) return; confirmDelete = ''; await refresh(); info = '已移到回收站。'; renderCloud(); }
     catch (error) { if (started === generation && request === listGeneration) { listError = errorMessage(error); renderCloud(); } }
     finally { mutationBusy = false; renderCloud(); }
   }
@@ -200,7 +234,7 @@ export function initializeOneDrive() {
   }
   async function logout() {
     const old = auth, oldPrepare = preparing, oldConnection = connectionPromise, started = ++generation; ++listGeneration; ++openGeneration;
-    auth = graph = binding = null; rootId = ''; folders = []; creatingFolder = false; confirmDelete = ''; items = []; nextLink = ''; visited = new Set(); loading = connecting = false; initializing = true; listError = ''; retryOpenItem = null; info = '正在断开…'; status(''); renderCloud();
+    auth = graph = binding = null; rootId = ''; folders = []; creatingFolder = false; confirmDelete = ''; renameId = ''; renameDraft = ''; items = []; nextLink = ''; visited = new Set(); loading = connecting = false; initializing = true; listError = ''; retryOpenItem = null; info = '正在断开…'; status(''); renderCloud();
     try { await old?.logout(); }
     catch { if (started === generation) listError = '无法清除本次连接，请重试。'; }
     await oldConnection?.catch(() => {});

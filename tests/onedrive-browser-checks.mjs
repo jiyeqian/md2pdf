@@ -86,10 +86,12 @@ try {
       if (url.startsWith('https://test-transfer.example/upload')) return options.method === 'DELETE' ? new Response(null,{status:204}) : ['conflict','conflictoverwrite'].includes(state.mode) ? json({},409) : json({id:'new',name:'new.md',eTag:'new',file:{},size:new TextEncoder().encode('# 云端原稿').length},201);
       if (url.includes('/special/approot')) return json({id:'root'});
       if (url.includes('/items/root?$select=id,name,eTag,folder,file,package,remoteItem,root,parentReference')) return json({id:'root',folder:{}});
+      if (state.deep && url.includes('/children?')) {const id=new URL(url).pathname.split('/').at(-2);const next={root:'deep1',deep1:'deep2',deep2:'deep3',deep3:'deep4'}[id];if(next)return json({value:[{id:next,name:'长目录名称'+next,eTag:'tag',folder:{}}]});}
       if (state.folderTest && url.includes('/items/nested?')) { if (state.holdOpen) await new Promise(resolve=>window.releaseNested=resolve); return json({id:'nested',name:'inside.md',eTag:'v1','@microsoft.graph.downloadUrl':'https://public-sn3302.files.1drv.com/download'}); }
       if (state.folderTest && url.includes('/items/sub/children?')) return json({value:[{id:'nested',name:'inside.md',eTag:'v1',file:{},size:5}]});
       if (state.folderTest && url.includes('/items/root/children?')) return json({value:[{id:'sub',name:'目录',eTag:'folder-tag',folder:{childCount:1}}]});
       if (state.folderTest && url.includes('/items/sub?$select=id,name,eTag,folder,file,package,remoteItem,root,parentReference')) return json({id:'sub',name:'目录',eTag:'folder-tag',folder:{},parentReference:{id:'root'}});
+      if (state.folderTest && url.endsWith('/items/sub') && options.method==='PATCH') return state.renameConflict ? json({},409) : json({id:'sub',name:'更名目录',eTag:'folder-new',folder:{},parentReference:{id:'root'}});
       if (state.folderTest && url.endsWith('/items/sub') && options.method==='DELETE') return state.folderDeleteSuccess ? new Response(null,{status:204}) : json({},412);
       if (state.folderTest && url.includes('/items/sub/children') && options.method==='POST') { if (state.holdCreate) await new Promise(resolve=>window.releaseCreate=resolve); return json({id:'newfolder',name:'新增',folder:{}}); }
       if (url.includes('skiptoken=next')) return json({value:[{id:'cloud',name:'cloud.md',file:{},size:5652},{id:'last',name:'last.md',file:{},size:5}]});
@@ -142,8 +144,8 @@ try {
     await wait('mockGraph.downloads===1');
     await evaluate(`mockGraph.mode='ok'; mockGraph.holdSave=true; document.dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,altKey:true,bubbles:true,cancelable:true}))`);
     await wait('window.releaseSave');
-    assert.equal(await evaluate(`document.querySelector('[aria-label="删除 cloud.md"]').disabled`),true);
-    await evaluate(`document.querySelector('[aria-label="删除 cloud.md"]').click()`); assert.equal(await evaluate(`mockGraph.calls.filter(x=>x.method==='DELETE'&&x.url.endsWith('/items/cloud')).length`),0);
+    assert.equal(await evaluate(`document.querySelector('[aria-label="cloud.md 更多操作"]').disabled`),true);
+    await evaluate(`document.querySelector('[aria-label="cloud.md 更多操作"]').click()`); assert.equal(await evaluate(`mockGraph.calls.filter(x=>x.method==='DELETE'&&x.url.endsWith('/items/cloud')).length`),0);
     await evaluate('mockGraph.holdSave=false; window.releaseSave()');
     await wait(`mockGraph.calls.some(x=>x.url.endsWith('/items/cloud/content')&&x.method==='PUT')`);
     await wait(`document.querySelector('.md-cloud-status')?.textContent.includes('已保存')`);
@@ -175,29 +177,43 @@ try {
     }
     const delayedDraft=await evaluate('mdDrafts.current()');
     await evaluate(`mockGraph.holdCloud=true;document.querySelector('[data-cloud-id="cloud"]').click()`);await wait('window.releaseCloud');
-    await evaluate(`document.querySelector('[aria-label="删除 cloud.md"]').click();[...document.querySelectorAll('.md-cloud-delete-confirm button')].find(x=>x.textContent==='移到回收站').click()`);
+    await evaluate(`document.querySelector('[aria-label="cloud.md 更多操作"]').click();[...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='移到回收站').click()`);
     await wait(`mockGraph.calls.filter(x=>x.method==='DELETE'&&x.url.endsWith('/items/cloud')).length===1`);
     await evaluate('mockGraph.holdCloud=false;window.releaseCloud()');await new Promise(resolve=>setTimeout(resolve,100));
     assert.equal(await evaluate('mdDrafts.current()'),delayedDraft);assert.equal(await evaluate(`!!document.querySelector('[data-cloud-id="cloud"][aria-current="true"]')`),false);
     await evaluate(`document.querySelector('[data-cloud-id="cloud"]').click()`); await wait(`document.querySelector('[data-cloud-id="cloud"][aria-current="true"]')`);
     const openedId=await evaluate('mdDrafts.current()');
-    await evaluate(`document.querySelector('[aria-label="删除 cloud.md"]').click()`);
-    assert.ok(await evaluate(`document.querySelector('.md-cloud-delete-confirm').textContent.includes('cloud.md')`));
-    await evaluate(`[...document.querySelectorAll('.md-cloud-delete-confirm button')].find(x=>x.textContent==='移到回收站').click()`);
+    await evaluate(`document.querySelector('[aria-label="cloud.md 更多操作"]').click()`);
+    await evaluate(`[...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='移到回收站').click()`);
     await wait(`mockGraph.calls.filter(x=>x.method==='DELETE' && x.url.endsWith('/items/cloud')).length===2`);
     await wait(`!document.querySelector('[data-cloud-id="cloud"][aria-current="true"]')`);
     assert.equal(await evaluate('mdDrafts.current()'),openedId); assert.equal(await evaluate('mdEditor.getValue()'),'# 云端原稿');
-    await evaluate(`mockGraph.folderTest=true; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='刷新').click()`);
+    await evaluate(`mockGraph.folderTest=true; document.querySelector('.md-cloud-icon-button[aria-label="刷新"]').click()`);
     await wait(`document.querySelector('[data-cloud-id="sub"]')`);
-    await evaluate(`document.querySelector('[aria-label="删除 目录"]').click()`);
-    assert.equal(await evaluate(`document.querySelector('.md-cloud-delete-confirm span').textContent`),'将文件夹‘目录’及其全部内容移到 OneDrive 回收站？');
-    await evaluate(`[...document.querySelectorAll('.md-cloud-delete-confirm button')].find(x=>x.textContent==='取消').click()`);
+    await evaluate(`document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='重命名').click()`);
+    await wait(`document.querySelector('.md-cloud-rename input')`);
+    await evaluate(`document.querySelector('.md-cloud-rename input').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`);
+    await wait(`!document.querySelector('.md-cloud-rename')`); assert.equal(await evaluate(`document.querySelector('#editor-assistant-tab-cloud').getAttribute('aria-selected')`),'true');
+    await evaluate(`document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='重命名').click();document.querySelector('.editor-panel .md-sidebar-close').click();window.escapeAfterClose=false;window.addEventListener('keydown',e=>{if(e.key==='Escape')window.escapeAfterClose=true;},{once:true});window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`);
+    assert.equal(await evaluate('window.escapeAfterClose'),true);
+    await evaluate('window.mdOneDrive.open()');await wait(`document.querySelector('[aria-label="目录 更多操作"]')`);
+    await evaluate(`mockGraph.renameConflict=true;document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='重命名').click(); document.querySelector('.md-cloud-rename input').value='冲突目录'; document.querySelector('.md-cloud-rename').requestSubmit()`);
+    await wait(`document.querySelector('.md-cloud-panel-error')?.textContent.includes('409')`);
+    assert.equal(await evaluate(`document.querySelector('.md-cloud-rename input').value`),'冲突目录');
+    await evaluate(`mockGraph.renameConflict=false;document.querySelector('.md-cloud-rename input').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`); await wait(`!document.querySelector('.md-cloud-rename')`);
+    await evaluate(`document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='重命名').click(); document.querySelector('.md-cloud-rename input').value='更名目录'; document.querySelector('.md-cloud-rename').requestSubmit()`);
+    await wait(`mockGraph.calls.some(x=>x.url.endsWith('/items/sub')&&x.method==='PATCH')`);
+    assert.equal(await evaluate(`mockGraph.calls.find(x=>x.url.endsWith('/items/sub')&&x.method==='PATCH').headers['If-Match']`),'folder-tag');
+    await wait(`document.querySelector('[aria-label="目录 更多操作"]')`);
+    await evaluate(`document.querySelector('[aria-label="目录 更多操作"]').click()`);
+    assert.ok(await evaluate(`document.querySelector('.md-cloud-popup').textContent.includes('文件夹及内容移到回收站')`));
+    await evaluate(`document.querySelector('.md-cloud-popup button').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`);await wait(`!document.querySelector('.md-cloud-popup')`);
     assert.equal(await evaluate(`mockGraph.calls.filter(x=>x.url.endsWith('/items/sub')&&x.method==='DELETE').length`),0);
-    await evaluate(`document.querySelector('[aria-label="删除 目录"]').click(); [...document.querySelectorAll('.md-cloud-delete-confirm button')].find(x=>x.textContent==='移到回收站').click()`);
+    await evaluate(`document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='文件夹及内容移到回收站').click()`);
     await wait(`document.querySelector('.md-cloud-panel-error')?.textContent.includes('412')`);
     assert.equal(await evaluate(`mockGraph.calls.find(x=>x.url.endsWith('/items/sub')&&x.method==='DELETE').headers['If-Match']`),'folder-tag');
     await evaluate(`document.querySelector('[data-cloud-id="sub"]').click()`); await wait(`document.querySelector('[data-cloud-id="nested"]')`);
-    await evaluate(`[...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='新建文件夹').click(); document.querySelector('[aria-label="文件夹名称"]').value='新增'; document.querySelector('.md-cloud-panel form').requestSubmit()`);
+    await evaluate(`document.querySelector('.md-cloud-icon-button[aria-label="新建文件夹"]').click(); document.querySelector('[aria-label="文件夹名称"]').value='新增'; document.querySelector('.md-cloud-panel form').requestSubmit()`);
     await wait(`mockGraph.calls.some(x=>x.url.includes('/items/sub/children')&&x.method==='POST')`);
     await wait(`document.querySelector('[data-cloud-id="nested"]')`);
     assert.equal(await evaluate(`document.querySelector('.md-cloud-panel').textContent.includes('目录')`),true);
@@ -209,19 +225,19 @@ try {
     }
 
     await wait(`!document.querySelector('[aria-label="文件夹名称"]')`);
-    await evaluate(`mockGraph.holdCreate=true; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='新建文件夹').click(); document.querySelector('[aria-label="文件夹名称"]').value='迟到'; document.querySelector('.md-cloud-panel form').requestSubmit()`);
+    await evaluate(`mockGraph.holdCreate=true; document.querySelector('.md-cloud-icon-button[aria-label="新建文件夹"]').click(); document.querySelector('[aria-label="文件夹名称"]').value='迟到'; document.querySelector('.md-cloud-panel form').requestSubmit()`);
     await wait('window.releaseCreate');
     const raceDraft=await evaluate('mdDrafts.current()');
     assert.equal(await evaluate(`document.querySelector('[data-cloud-id="nested"]').disabled`),true);
-    await evaluate(`[...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='应用文件夹').click()`); await wait(`document.querySelector('[data-cloud-id="sub"]')`);
+    await evaluate(`[...document.querySelectorAll('.md-cloud-crumb')].find(x=>x.textContent==='md2pdf').click()`); await wait(`document.querySelector('[data-cloud-id="sub"]')`);
     await evaluate('window.releaseCreate()'); await new Promise(resolve=>setTimeout(resolve,100));
     assert.ok(await evaluate(`document.querySelector('[data-cloud-id="sub"]')`));
     assert.equal(await evaluate('mdDrafts.current()'),raceDraft); assert.equal(await evaluate('mdEditor.getValue()'),'# 云端原稿');
     await evaluate(`mockGraph.holdOpen=false;mockGraph.holdCreate=false;document.querySelector('[data-cloud-id="sub"]').click()`); await wait(`document.querySelector('[data-cloud-id="nested"]')`);
     await evaluate(`document.querySelector('[data-cloud-id="nested"]').click()`); await wait(`document.querySelector('[data-cloud-id="nested"][aria-current="true"]')`);
     const nestedDraft=await evaluate('mdDrafts.current()');
-    await evaluate(`[...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='应用文件夹').click()`); await wait(`document.querySelector('[data-cloud-id="sub"]')`);
-    await evaluate(`mockGraph.folderDeleteSuccess=true;document.querySelector('[aria-label="删除 目录"]').click(); [...document.querySelectorAll('.md-cloud-delete-confirm button')].find(x=>x.textContent==='移到回收站').click()`);
+    await evaluate(`[...document.querySelectorAll('.md-cloud-crumb')].find(x=>x.textContent==='md2pdf').click()`); await wait(`document.querySelector('[data-cloud-id="sub"]')`);
+    await evaluate(`mockGraph.folderDeleteSuccess=true;document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='文件夹及内容移到回收站').click()`);
     await wait(`mockGraph.calls.filter(x=>x.url.endsWith('/items/sub')&&x.method==='DELETE').length===2`);
     await wait(`document.querySelector('.md-cloud-notice').hidden`);
     assert.equal(await evaluate('mdDrafts.current()'),nestedDraft);assert.equal(await evaluate('mdEditor.getValue()'),'# 云端原稿');
@@ -229,14 +245,23 @@ try {
     await wait(`document.querySelector('dialog[aria-label="保存到 OneDrive"]')`);
     await evaluate(`[...document.querySelectorAll('dialog[aria-label="保存到 OneDrive"] button')].find(x=>x.textContent==='取消').click()`); await wait(`!document.querySelector('dialog[aria-label="保存到 OneDrive"]')`);
 
-    await evaluate(`mockGraph.folderTest=false; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='刷新').click()`); await wait(`document.querySelectorAll('.md-cloud-panel-file').length===15`);
-    await evaluate(`mockGraph.mode='offline'; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='刷新').click()`);
+    await evaluate(`mockGraph.deep=true;mockGraph.folderTest=false;document.querySelector('.md-cloud-icon-button[aria-label="刷新"]').click()`);await wait(`document.querySelector('[data-cloud-id="deep1"]')`);
+    for(const id of ['deep1','deep2','deep3']) {await evaluate(`document.querySelector('[data-cloud-id="${id}"]').click()`);await wait(`document.querySelector('[data-cloud-id="${{deep1:'deep2',deep2:'deep3',deep3:'deep4'}[id]}"]')`);}
+    await browser.send('Emulation.setDeviceMetricsOverride',{width:320,height:568,deviceScaleFactor:1,mobile:false}); await new Promise(resolve=>setTimeout(resolve,500));
+    const pathGeometry=await evaluate(`(()=>{const n=document.querySelector('.md-cloud-breadcrumb'),last=n.querySelector(':scope > .md-cloud-crumb:last-child'),r=last.getBoundingClientRect();return {width:r.width,right:r.right,viewport:innerWidth,collapsed:!!n.querySelector('details')};})()`);
+    assert.ok(pathGeometry.collapsed && pathGeometry.width>=38 && pathGeometry.right<=pathGeometry.viewport,JSON.stringify(pathGeometry));
+    await evaluate(`document.querySelector('.md-cloud-path-more summary').click()`);assert.equal(await evaluate(`document.querySelector('.md-cloud-path-more').open`),true);
+    await mkdir(visualDir,{recursive:true});const deepShot=await browser.send('Page.captureScreenshot',{format:'png'});await writeFile(`${visualDir}/${url.includes('/nested/')?'static':'node'}-deep-320.png`,Buffer.from(deepShot.data,'base64'));
+    await browser.send('Emulation.clearDeviceMetricsOverride');
+    await evaluate(`mockGraph.deep=false; [...document.querySelectorAll('.md-cloud-crumb')].find(x=>x.textContent==='md2pdf').click()`);await wait(`document.querySelectorAll('.md-cloud-panel-file').length===15`);
+    await evaluate(`mockGraph.folderTest=false; document.querySelector('.md-cloud-icon-button[aria-label="刷新"]').click()`); await wait(`document.querySelectorAll('.md-cloud-panel-file').length===15`);
+    await evaluate(`mockGraph.mode='offline'; document.querySelector('.md-cloud-icon-button[aria-label="刷新"]').click()`);
     await wait(`document.querySelector('.md-cloud-panel-error')?.textContent.includes('网络')`);
     assert.ok(await evaluate(`document.querySelectorAll('.md-cloud-panel-file').length>0`));
     await evaluate(`mockGraph.mode='ok'; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='重试').click()`);
     await wait(`!document.querySelector('.md-cloud-panel-error')`);
     const currentId=await evaluate('mdDrafts.current()');
-    await evaluate(`[...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='断开').click()`);
+    await evaluate(`document.querySelector('.md-cloud-icon-button[aria-label="断开"]').click()`);
     await wait(`[...document.querySelectorAll('.md-cloud-panel-button')].some(x=>x.textContent==='连接 OneDrive'&&!x.disabled)`);
     assert.equal(await evaluate('mdDrafts.current()'),currentId); assert.equal(await evaluate('mdEditor.getValue()'),'# 云端原稿');
     assert.ok(await evaluate(`mockGraph.calls.filter(x=>(x.url.startsWith('https://test-transfer.example/') || x.url.startsWith('https://public-sn3302.files.1drv.com/'))).every(x=>!x.headers.Authorization)`));

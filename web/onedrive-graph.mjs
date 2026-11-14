@@ -93,6 +93,15 @@ export function createOneDriveGraph({ token, fetch: request = globalThis.fetch }
       await withinFolder(parentId);
       return graph(idPath(parentId) + '/children', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' }) }, '创建文件夹');
     },
+    async rename({id, eTag, name, newName, parentId, folder}) {
+      if (!id || !eTag || !parentId || !name || !newName || newName !== newName.trim() || /[\\/:*?"<>|\x00-\x1f]/.test(newName) || /[.]$/.test(newName)) throw new OneDriveError('请输入有效的名称。');
+      const item = await metadata(id);
+      if (item.id !== id || item.name !== name || item.eTag !== eTag || !!item.folder !== !!folder || !!item.file === !!folder || item.package || item.remoteItem || item.root || item.parentReference?.id !== parentId) throw new OneDriveError('云端项目已变化或类型无法确认，请刷新。', 412);
+      const root = await withinFolder(parentId); if (id === root) throw new OneDriveError('不能重命名应用文件夹。');
+      const result = await graph(idPath(id), {method:'PATCH',headers:{'Content-Type':'application/json','If-Match':eTag},body:JSON.stringify({name:newName})}, '重命名');
+      if (result?.id !== id || result.name !== newName || !result.eTag || result.parentReference?.id !== parentId || !!result.folder !== !!folder || !!result.file === !!folder) throw new OneDriveError('重命名结果无法确认，请刷新。');
+      return result;
+    },
     async deleteFolder(id, eTag, name) {
       if (!id || !eTag || !name) throw new OneDriveError('无法确认文件夹版本，未删除。');
       const item = await metadata(id);
