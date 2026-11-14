@@ -177,3 +177,5 @@ main.editor-main{width:100%;max-width:none;margin:0 auto;padding:10px var(--app-
 .static-print-frame{position:fixed;left:0;top:0;width:900px;height:600px;border:0;opacity:0;z-index:-1;pointer-events:none}
 
 .preview-footer #status { overflow: auto; overflow-wrap: anywhere; max-height: 100%; }
+
+.md-notice-link { color: #42648b; text-underline-offset: 2px; }

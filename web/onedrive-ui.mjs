@@ -1,4 +1,4 @@
-import { createOneDriveAuth } from './onedrive-auth.mjs';
+import { createOneDriveAuth, ONEDRIVE_UNCONFIGURED } from './onedrive-auth.mjs';
 import { createOneDriveGraph } from './onedrive-graph.mjs';
 
 export function formatOneDriveSize(size) {
@@ -34,6 +34,12 @@ export function initializeOneDrive() {
     node.textContent = error ? 'OneDrive · 操作失败' : message;
     node.title = message;
     detail.textContent = error ? message + ' 本地草稿仍保留。' : '';
+    if (error && message === ONEDRIVE_UNCONFIGURED) {
+      const link = panel.ownerDocument.createElement('a'); link.className = 'md-notice-link';
+      link.href = new URL('onedrive-setup.html', import.meta.url).href;
+      link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '配置说明';
+      detail.replaceChildren('OneDrive 尚未配置，请参照「', link, '」完成设置。本地草稿仍保留。');
+    }
     detail.hidden = !error;
     notice.dataset.error = String(error);
     notice.hidden = !message;

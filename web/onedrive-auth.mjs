@@ -1,3 +1,4 @@
+export const ONEDRIVE_UNCONFIGURED = 'OneDrive 尚未配置，请参照「配置说明」完成设置。';
 const scopes = ['Files.ReadWrite.AppFolder'];
 
 export async function createOneDriveAuth({ base = new URL('.', import.meta.url), fetch: request = globalThis.fetch } = {}) {
@@ -6,8 +7,8 @@ export async function createOneDriveAuth({ base = new URL('.', import.meta.url),
     const response = await request(new URL('onedrive-config.json', base), { cache: 'no-store' });
     if (!response.ok) throw new Error();
     config = await response.json();
-  } catch { throw new Error('OneDrive 尚未配置，请联系部署者设置公开客户端 ID 和回调地址。'); }
-  if (!config.clientId || !config.redirectUri) throw new Error('OneDrive 尚未配置，请联系部署者设置公开客户端 ID 和回调地址。');
+  } catch { throw new Error(ONEDRIVE_UNCONFIGURED); }
+  if (!config.clientId || !config.redirectUri) throw new Error(ONEDRIVE_UNCONFIGURED);
   const redirect = new URL(config.redirectUri, base);
   if (redirect.href !== new URL('onedrive-callback.html', base).href || redirect.origin !== location.origin) throw new Error('OneDrive 回调地址与当前部署地址不匹配。');
   if (!globalThis.isSecureContext) throw new Error('OneDrive 登录需要 HTTPS 或 localhost 安全上下文。');

@@ -56,6 +56,8 @@ try {
     await wait(`[...document.querySelectorAll('#md-drafts-menu:not([hidden]) button')].some(x=>x.textContent.includes('OneDrive'))`);
     await evaluate(`[...document.querySelectorAll('#md-drafts-menu button')].find(x=>x.textContent.includes('OneDrive')).click()`);
     await wait(`document.querySelector('.md-cloud-error')?.textContent.includes('尚未配置')`);
+    assert.equal(await evaluate(`document.querySelector('.md-cloud-error a')?.href`),new URL('onedrive-setup.html', url).href);
+    assert.equal(await evaluate(`fetch(document.querySelector('.md-cloud-error a').href).then(r=>r.ok)`),true);
     assert.equal(await evaluate('mdEditor.getValue()'),'# 保留原稿');
     assert.equal(await evaluate('mdDrafts.current()'),id);
     await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,altKey:true,bubbles:true,cancelable:true}))`);

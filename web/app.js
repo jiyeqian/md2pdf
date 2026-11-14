@@ -1102,7 +1102,10 @@ async function exportDocument(mode) {
     if (doc.querySelector('#md-static-pdf-notice')) return;
     const dialog = doc.createElement('dialog'); dialog.id = 'md-static-pdf-notice'; dialog.className = 'template-confirm';
     dialog.setAttribute('aria-label', '无法直接下载 PDF');
-    const message = doc.createElement('p'); message.textContent = '静态版不支持直接下载 PDF，请使用服务器版。';
+    const message = doc.createElement('p');
+    const link = doc.createElement('a'); link.className = 'md-notice-link'; link.textContent = '服务器版';
+    link.href = 'https://md2pdf.app.workbuddy.host/?sharecode=YD24U7EHBM'; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    message.append('静态版不支持直接下载 PDF，请使用', link, '。');
     const actions = doc.createElement('div'); actions.className = 'template-confirm-actions';
     const button = doc.createElement('button'); button.type = 'button'; button.className = 'template-confirm-cancel'; button.textContent = '关闭';
     button.addEventListener('click', () => dialog.close()); dialog.addEventListener('close', () => dialog.remove(), {once:true});

@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OneDrive 配置说明 · md2pdf</title><style>body{max-width:48rem;margin:3rem auto;padding:0 1.25rem;font:16px/1.8 system-ui;color:#26374d}h1{font-size:1.6rem}h2{font-size:1.2rem}pre{overflow-x:auto;padding:12px;background:#f3f6fa;border-radius:8px}code{font-family:ui-monospace,monospace;font-size:.9em}a{color:#42648b}</style></head>
+<body><main><h1>OneDrive 配置说明</h1><p><a href="./">返回 md2pdf</a>。此设置由部署者完成，未配置不影响本地编辑和下载。</p>
+<h2>注册微软应用</h2><p>在 Microsoft Entra 的“应用注册”中新建应用，支持个人 Microsoft 账户，平台选择“单页应用（SPA）”，添加 Microsoft Graph 委派权限 <code>Files.ReadWrite.AppFolder</code>。使用公开的应用程序（客户端）ID，无需创建客户端密钥。</p>
+<p>回调必须与实际访问地址匹配，并在微软应用中注册。例如访问 <code>http://localhost:3000/</code>，回调为 <code>http://localhost:3000/onedrive-callback.html</code>；静态站点 <code>https://example.com/md2pdf/</code> 的回调为 <code>https://example.com/md2pdf/onedrive-callback.html</code>。其他部署需要 HTTPS。</p>
+<h2>填写部署配置</h2><p>源码 Node 部署先在项目目录执行：</p><pre><code>cp web/onedrive-config.example.json web/onedrive-config.json</code></pre><p>填写配置并重启工作台：</p><pre><code>{
+  "clientId": "你的公开客户端 ID",
+  "redirectUri": "http://localhost:3000/onedrive-callback.html"
+}</code></pre>
+<p>npm 全局安装的配置位于 <code>$(npm root -g)/@jiyeqian/md2pdf/web/</code>。静态部署在构建后填写产物目录中的 <code>onedrive-config.json</code>；每次重新构建后需重新配置。Docker 可将宿主机配置文件只读挂载至 <code>/usr/share/nginx/html/onedrive-config.json</code>。不要填写密钥或令牌。</p>
+<p><code>localhost</code> 与 <code>127.0.0.1</code> 的浏览器草稿不共享，切换地址前请先下载备份。</p>
+</main></body></html>

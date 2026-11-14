@@ -128,7 +128,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
   staticRoutes.set('/src/document-content.mjs', ['src/document-content.mjs', 'text/javascript']);
   staticRoutes.set('/src/gb-sections.mjs', ['src/gb-sections.mjs', 'text/javascript']);
   staticRoutes.set('/version.mjs', ['web/version.mjs', 'text/javascript']);
-  for (const file of ['analytics.mjs', 'analytics-schema.mjs', 'analytics-bootstrap.mjs', 'analytics.css', 'privacy.html', 'gb-fonts.html']) {
+  for (const file of ['analytics.mjs', 'analytics-schema.mjs', 'analytics-bootstrap.mjs', 'analytics.css', 'privacy.html', 'gb-fonts.html', 'onedrive-setup.html']) {
     staticRoutes.set('/' + file, ['web/' + file, file.endsWith('.css') ? 'text/css' : file.endsWith('.html') ? 'text/html' : 'text/javascript']);
   }
   staticRoutes.set('/runtime-request.mjs', ['web/runtime-request.mjs', 'text/javascript']);
