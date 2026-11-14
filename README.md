@@ -78,7 +78,7 @@ md2pdf webapp
 # 或：md2pdf webapp --static
 ```
 
-打开 <http://127.0.0.1:3000>，按 `Ctrl+C` 停止。两种模式默认占用同一端口；可用 `--port 3001` 指定其他端口。静态版在浏览器打印窗口选择“保存为 PDF”。
+打开 <http://localhost:3000>，按 `Ctrl+C` 停止。两种模式默认占用同一端口；可用 `--port 3001` 指定其他端口。静态版在浏览器打印窗口选择“保存为 PDF”。
 
 ### 源码运行
 
@@ -102,7 +102,7 @@ docker run -d --name md2pdf -p 127.0.0.1:3000:3000 ghcr.io/jiyeqian/md2pdf:lates
 # 或使用 CNB：docker run -d --name md2pdf -p 127.0.0.1:3000:3000 docker.cnb.cool/jiyeqian/md2pdf:latest
 ```
 
-打开 <http://127.0.0.1:3000>，在浏览器打印窗口保存 PDF。此镜像是静态版，不提供服务端 PDF 生成；预览和打印使用访问设备上的字体。`latest` 是滚动版本，也可将其替换为具体版本标签，例如 `v1.17.7`。
+打开 <http://localhost:3000>，在浏览器打印窗口保存 PDF。此镜像是静态版，不提供服务端 PDF 生成；预览和打印使用访问设备上的字体。`latest` 是滚动版本，也可将其替换为具体版本标签，例如 `v1.17.7`。
 
 停止服务：`docker stop md2pdf`；重新启动：`docker start md2pdf`。更新时先下载 Markdown 备份，再拉取新镜像并重新创建容器（以 GHCR 为例）：
 
@@ -113,7 +113,13 @@ docker rm md2pdf
 docker run -d --name md2pdf -p 127.0.0.1:3000:3000 ghcr.io/jiyeqian/md2pdf:latest
 ```
 
-浏览器草稿按访问地址保存在浏览器中；更换域名或端口后不会自动迁移。
+浏览器草稿按访问地址保存在浏览器中；`localhost` 与 `127.0.0.1` 是不同来源，更换地址或端口前请先下载 Markdown 备份。
+
+## OneDrive 部署配置
+
+OneDrive 个人账户功能需要注册 Microsoft 单页应用（SPA），使用公开的客户端 ID，无需客户端密钥。每个实际访问地址都须精确注册对应回调，例如 `http://localhost:3000/onedrive-callback.html`；自定义端口或 HTTPS 域名、子路径也需分别注册匹配的回调。
+
+源码部署时，从 `web/onedrive-config.example.json` 复制为被 Git 忽略的 `web/onedrive-config.json`，填入公开配置后重启 Node 服务。静态版和 Docker 镜像须在构建后向产物注入对应配置；每次重建都会生成空白模板。[OneDrive 配置及 Docker 挂载说明](docs/onedrive.md)。
 
 ## 继续了解
 

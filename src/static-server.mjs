@@ -30,7 +30,7 @@ export async function startStaticServer({ directory, port }) {
     server.once('error', reject);
     server.listen(port, '127.0.0.1', resolve);
   });
-  console.log(`md2pdf 静态 WebApp：http://127.0.0.1:${server.address().port}/`);
+  console.log(`md2pdf 静态 WebApp：http://localhost:${server.address().port}/`);
   console.log(`网站目录：${directory}；修改源码后请重新启动。`);
   return server;
 }

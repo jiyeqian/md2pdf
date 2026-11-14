@@ -1,6 +1,6 @@
 const HELP = `用法：md2pdf webapp [--static] [--port <端口>]
 
-默认地址：http://127.0.0.1:3000
+默认地址：http://localhost:3000
   --static      先构建当前源码，再启动静态 WebApp
   --port <端口>  指定端口（1–65535）
   -h, --help     显示帮助

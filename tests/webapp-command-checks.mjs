@@ -23,7 +23,7 @@ test('invalid ports and unknown arguments fail before starting a service', () =>
 test('installed command help documents the default address and port flag', () => {
   const result = spawnSync(process.execPath, [cli.pathname, 'webapp', '--help'], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /127\.0\.0\.1:3000/);
+  assert.match(result.stdout, /localhost:3000/);
   assert.match(result.stdout, /--port/);
 });
 

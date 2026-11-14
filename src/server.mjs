@@ -291,7 +291,7 @@ export function startServer({ port = Number(process.env.PORT || 3000), publicHos
   const metricsFile = enabled ? (process.env.MD2PDF_METRICS_FILE || path.join(os.homedir(), '.md2pdf', 'operational-metrics.json')) : '';
   const app = createApp({ publicHost, lanHost, operationalMetrics: enabled, metricsFile });
   app.server.on('error', e => { console.error('md2pdf 服务启动失败：', e.message); process.exitCode = 1; });
-  app.server.listen(port, host, () => console.log(`md2pdf 工作台：http://${lanHost || host}:${port}${publicHost ? `（公网域名 ${publicHost}）` : ''}`));
+  app.server.listen(port, host, () => console.log(`md2pdf 工作台：http://${lanHost || (publicHost ? host : 'localhost')}:${port}${publicHost ? `（公网域名 ${publicHost}）` : ''}`));
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { app.close().catch(e => { console.error(e.message); process.exitCode = 1; }); });
   return app;
 }

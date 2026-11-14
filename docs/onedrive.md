@@ -6,6 +6,18 @@
 
 Node 部署先执行 `cp web/onedrive-config.example.json web/onedrive-config.json`，再编辑本地配置，填写 `clientId` 和 `redirectUri`。该配置被 Git 忽略，不放客户端密钥。例如 Node 本机端口 3000 的回调为 `http://localhost:3000/onedrive-callback.html`；静态部署在 `https://example.com/md2pdf/` 时为 `https://example.com/md2pdf/onedrive-callback.html`。注册中须分别添加实际使用的每个地址；HTTPS 或 localhost 安全上下文是必需的。Node 读取本地 `web/onedrive-config.json`，修改后重新启动服务。静态构建从空白模板生成 `dist/static/onedrive-config.json`，不会复制本机配置；部署者需在构建完成后、每次发布前向该产物注入相应公开配置。不要在文件中放密钥。回调页面不得设置 Cross-Origin-Opener-Policy。
 
+npm 全局安装时，可在 `$(npm root -g)/@jiyeqian/md2pdf/web/` 下从同名 example 文件复制并填写配置，然后重启工作台；写入权限取决于安装目录，升级或重装后需重新检查配置。
+
+Docker 镜像以静态目录 `/usr/share/nginx/html` 提供文件。先在宿主机准备含公开配置的 `onedrive-config.json`，再在启动容器时只读挂载：
+
+```sh
+docker run -d --name md2pdf -p 127.0.0.1:3000:3000 \
+  --mount type=bind,src="$(pwd)/onedrive-config.json",dst=/usr/share/nginx/html/onedrive-config.json,readonly \
+  ghcr.io/jiyeqian/md2pdf:latest
+```
+
+宿主机文件必须事先存在；镜像重建不会自动填入配置。
+
 ## 使用与限制
 
 打开 Markdown 菜单提供 OneDrive 打开；Markdown 保存菜单提供本地下载和 OneDrive 保存；云端保存每次创建新文件并提示文件名，同名冲突不会覆盖。Cmd+Alt+S 或 Ctrl+Alt+S 打开云端保存，Cmd+S 或 Ctrl+S 下载到本地。仅按需登录，认证信息保存在当前浏览器会话中；浏览器本地草稿继续独立保存。云端文件关联仅在当前页面会话中保留，切换或恢复草稿后请重新打开云端文件。文件位于 OneDrive 的应用专属文件夹，不支持选择任意目录或企业账户。

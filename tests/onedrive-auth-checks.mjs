@@ -20,6 +20,9 @@ test('rejects mismatched callback and insecure contexts before loading MSAL', as
     globalThis.isSecureContext = true;
     const config = redirectUri => async () => new Response(JSON.stringify({clientId:'test',redirectUri}));
     await assert.rejects(createOneDriveAuth({base:new URL('https://example.test/nested/'),fetch:config('https://other.test/onedrive-callback.html')}), /不匹配/);
+    globalThis.location = { origin:'http://127.0.0.1:3000' };
+    await assert.rejects(createOneDriveAuth({base:new URL('http://127.0.0.1:3000/'),fetch:config('http://localhost:3000/onedrive-callback.html')}), /不匹配/);
+    globalThis.location = { origin:'https://example.test' };
     globalThis.isSecureContext = false;
     await assert.rejects(createOneDriveAuth({base:new URL('https://example.test/nested/'),fetch:config('https://example.test/nested/onedrive-callback.html')}), /HTTPS/);
   } finally { globalThis.location = oldLocation; globalThis.isSecureContext = oldSecure; }
