@@ -1,6 +1,8 @@
 # OneDrive 个人账户（试验中）
 
-## 注册与配置
+## 注册与配置（仅部署者）
+
+普通使用者无需注册微软应用；访问已配置的站点时，只需登录自己的 Microsoft 账户并授权，访问的是各自的 OneDrive 应用文件夹。以下配置由站点维护者完成一次。
 
 在 Microsoft Entra 注册支持个人 Microsoft 账户的应用，添加单页应用（SPA）平台和与部署地址完全一致的重定向 URI；添加 Microsoft Graph 委派权限 `Files.ReadWrite.AppFolder`。只需要公开的应用（客户端）ID，不创建或配置客户端密钥。浏览器直接与 Microsoft 登录服务及 Graph 通信，Markdown 不通过 md2pdf 服务中转。
 

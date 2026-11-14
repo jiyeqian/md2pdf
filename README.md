@@ -117,7 +117,9 @@ docker run -d --name md2pdf -p 127.0.0.1:3000:3000 ghcr.io/jiyeqian/md2pdf:lates
 
 ## OneDrive 部署配置
 
-OneDrive 个人账户功能需要注册 Microsoft 单页应用（SPA），使用公开的客户端 ID，无需客户端密钥。每个实际访问地址都须精确注册对应回调，例如 `http://localhost:3000/onedrive-callback.html`；自定义端口或 HTTPS 域名、子路径也需分别注册匹配的回调。
+普通使用者只需登录自己的 Microsoft 账户并授权，**无需注册微软应用**。以下设置仅由部署者完成一次。
+
+部署者需要注册 Microsoft 单页应用（SPA），使用公开的客户端 ID，无需客户端密钥。每个实际访问地址都须精确注册对应回调，例如 `http://localhost:3000/onedrive-callback.html`；自定义端口或 HTTPS 域名、子路径也需分别注册匹配的回调。
 
 源码部署时，从 `web/onedrive-config.example.json` 复制为被 Git 忽略的 `web/onedrive-config.json`，填入公开配置后重启 Node 服务。静态版和 Docker 镜像须在构建后向产物注入对应配置；每次重建都会生成空白模板。[OneDrive 配置及 Docker 挂载说明](docs/onedrive.md)。
 
