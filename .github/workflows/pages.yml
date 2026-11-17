@@ -48,6 +48,16 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Check runtime consistency and build static WebApp
         run: npm run check:consistency
+      - name: Configure OneDrive for production
+        run: |
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          const config = {
+            clientId: '38235559-f68b-44ca-b19b-d70683784c70',
+            redirectUri: 'https://md2pdf.qianjiye.de/onedrive-callback.html'
+          };
+          writeFileSync('dist/static/onedrive-config.json', JSON.stringify(config, null, 2) + '\n');
+          NODE
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist/static

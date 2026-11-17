@@ -8,6 +8,8 @@
 
 Node 部署先执行 `cp web/onedrive-config.example.json web/onedrive-config.json`，再编辑本地配置，填写 `clientId` 和 `redirectUri`。该配置被 Git 忽略，不放客户端密钥。例如 Node 本机端口 3000 的回调为 `http://localhost:3000/onedrive-callback.html`；静态部署在 `https://example.com/md2pdf/` 时为 `https://example.com/md2pdf/onedrive-callback.html`。注册中须分别添加实际使用的每个地址；HTTPS 或 localhost 安全上下文是必需的。Node 读取本地 `web/onedrive-config.json`，修改后重新启动服务。静态构建从空白模板生成 `dist/static/onedrive-config.json`，不会复制本机配置；部署者需在构建完成后、每次发布前向该产物注入相应公开配置。不要在文件中放密钥。回调页面不得设置 Cross-Origin-Opener-Policy。
 
+本仓库 GitHub Pages 工作流在构建后自动注入公开客户端 ID 和 `https://md2pdf.qianjiye.de/onedrive-callback.html`，再上传部署产物。Entra 须注册该 SPA 回调；普通用户无需配置。Fork 或更换域名时，应相应修改工作流中的应用 ID、回调地址及 Entra 注册。此注入不改变本地构建或 Docker 的配置。
+
 npm 全局安装时，可在 `$(npm root -g)/@jiyeqian/md2pdf/web/` 下从同名 example 文件复制并填写配置，然后重启工作台；写入权限取决于安装目录，升级或重装后需重新检查配置。
 
 Docker 镜像以静态目录 `/usr/share/nginx/html` 提供文件。先在宿主机准备含公开配置的 `onedrive-config.json`，再在启动容器时只读挂载：
