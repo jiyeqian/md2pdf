@@ -164,14 +164,14 @@ try {
     assert.equal(await evaluate(`mdEditor.getValue()`),'# 云端原稿\n![hello image](images/helloworld.jpeg)');
     const imageResult = await evaluate(`(async()=>{const md=mdEditor.getValue();const imageAssets=await mdOneDrive.imageAssets(md);return {md,imageAssets};})()`);
     assert.match(imageResult.imageAssets['images/helloworld.jpeg'],/^data:image\/png;base64,/);
-    await evaluate(`window.cloudPrintFrames=[];window.cloudSrcdoc=Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,'srcdoc');Object.defineProperty(HTMLIFrameElement.prototype,'srcdoc',{...cloudSrcdoc,set(value){if(this.classList.contains('static-print-frame'))cloudPrintFrames.push(value);cloudSrcdoc.set.call(this,value.replace('focus();print();',\"focus();dispatchEvent(new Event('afterprint'));\"))}});true`);
+    await evaluate(`window.cloudPrintFrames=[];window.cloudPrintStarted=0;addEventListener('message',event=>{if(event.data?.type==='print-started')cloudPrintStarted++;});window.cloudSrcdoc=Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,'srcdoc');Object.defineProperty(HTMLIFrameElement.prototype,'srcdoc',{...cloudSrcdoc,set(value){if(this.classList.contains('static-print-frame'))cloudPrintFrames.push(value);cloudSrcdoc.set.call(this,value.replace('focus();print();',\"focus();dispatchEvent(new Event('afterprint'));\"))}});true`);
     await wait(`!document.querySelector('#download').disabled`);
     await evaluate(`document.querySelector('#download').click()`);
     await wait(`document.querySelector('div[aria-label="打印或下载 PDF"]')`);
     await evaluate(`document.querySelector('div[aria-label="打印或下载 PDF"] button').click()`);
     await wait(`cloudPrintFrames.some(html=>html.includes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB') && html.includes('hello image'))`);
     await evaluate(`Object.defineProperty(HTMLIFrameElement.prototype,'srcdoc',cloudSrcdoc);true`);
-    await wait(`document.querySelector('#status').textContent.includes('已打开文档打印')`);
+    await wait(`cloudPrintStarted===1`);
 
     await evaluate(`mdEditor.setValue('# 云端原稿')`);
 

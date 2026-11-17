@@ -45,17 +45,19 @@ export function createOneDriveGraph({ token, fetch: request = globalThis.fetch }
     if (download && response.url) downloadUrl(response.url);
     return response;
   }
+  let rootTask;
   const idPath = id => '/me/drive/items/' + encodeURIComponent(id);
   async function metadata(id) {
     return graph(idPath(id) + '?$select=id,name,eTag,folder,file,package,remoteItem,root,parentReference', {}, '确认云端项目');
   }
-  async function withinFolder(id) {
-    const root = await graph('/me/drive/special/approot?$select=id', {}, '读取应用文件夹');
+  async function withinFolder(id, readMetadata = metadata, readRoot = () => graph('/me/drive/special/approot?$select=id', {}, '读取应用文件夹')) {
+    const root = await readRoot();
+    // Mutation callers use fresh requests; image batches may share only their own reads.
     if (!root?.id || !id) throw new OneDriveError('无法确认应用文件夹，操作已取消。');
     const seen = new Set(); let current = id;
     for (let depth = 0; depth < 64; depth++) {
       if (seen.has(current)) break; seen.add(current);
-      const item = await metadata(current);
+      const item = await readMetadata(current);
       if (item.id !== current || !item.folder || item.file || item.package || item.remoteItem || (item.root && current !== root.id)) break;
       if (current === root.id) return root.id;
       if (typeof item.parentReference?.id !== 'string' || !item.parentReference.id) break;
@@ -65,9 +67,11 @@ export function createOneDriveGraph({ token, fetch: request = globalThis.fetch }
   }
   return {
     async getRoot() {
-      const root = await graph('/me/drive/special/approot?$select=id', {}, '读取应用文件夹');
-      if (typeof root.id !== 'string' || !root.id) throw new OneDriveError('无法取得应用文件夹。');
-      return root.id;
+      rootTask ||= graph('/me/drive/special/approot?$select=id', {}, '读取应用文件夹').then(root => {
+        if (typeof root?.id !== 'string' || !root.id) throw new OneDriveError('无法取得应用文件夹。');
+        return root.id;
+      }).catch(error => { rootTask = null; throw error; });
+      return rootTask;
     },
     async listPage(rootId, nextLink = '') {
       let page = idPath(rootId) + '/children?$select=id,name,eTag,file,folder,size&$top=100';
@@ -78,7 +82,9 @@ export function createOneDriveGraph({ token, fetch: request = globalThis.fetch }
         if (next.origin !== 'https://graph.microsoft.com' || next.username || next.password || next.hash || !next.pathname.startsWith('/v1.0/')) throw new OneDriveError('OneDrive 返回了无效的分页地址。');
         page = next.pathname.slice('/v1.0'.length) + next.search;
       }
-      const result = await graph(page, {}, '读取文件列表');
+      let result;
+      try { result = await graph(page, {}, '读取文件列表'); }
+      catch (error) { if ([401,403,404].includes(error.status)) rootTask = null; throw error; }
       if (!Array.isArray(result.value)) throw new OneDriveError('OneDrive 返回了无效的文件列表。');
       const next = result['@odata.nextLink'];
       if (next != null && typeof next !== 'string') throw new OneDriveError('OneDrive 返回了无效的分页地址。');
@@ -142,21 +148,34 @@ export function createOneDriveGraph({ token, fetch: request = globalThis.fetch }
       } else bytes = new Uint8Array(await response.arrayBuffer());
       return { id: item.id, name: item.name, eTag: item.eTag, bytes };
     },
-    async readImage(parentId, href) {
+    imageReader(parentId) {
+      const reads = new Map();
+      const once = (key, read) => {
+        if (!reads.has(key)) reads.set(key, Promise.resolve().then(read).catch(error => { reads.delete(key);throw error; }));
+        return reads.get(key);
+      };
+      const readMetadata = id => once('metadata:' + id, () => metadata(id));
+      const readRoot = () => once('root', async () => ({id:await this.getRoot()}));
+      const checked = id => once('boundary:' + id, () => withinFolder(id, readMetadata, readRoot));
+      return href => this.readImage(parentId, href, {metadata:readMetadata,withinFolder:checked,path:url => once('path:' + url, () => graph(url, {}, '查找图片'))});
+    },
+    async readImage(parentId, href, reads) {
       if (!href || href.length > 2048 || /^(?:[a-z][a-z\d+.-]*:|[/\\#])/i.test(href) || /[?#\\]/.test(href)) throw new OneDriveError('图片必须使用应用文件夹内的相对路径。');
       let parts;
       try { parts = href.split('/').map(decodeURIComponent).filter(part => part && part !== '.'); }
       catch { throw new OneDriveError('图片路径编码无效。'); }
       if (!parts.length || parts.length > 64 || parts.some(part => /[/\\:\x00-\x1f]/.test(part))) throw new OneDriveError('图片路径无效。');
-      const root = await withinFolder(parentId); let current = parentId, item;
+      const check = reads?.withinFolder || withinFolder, meta = reads?.metadata || metadata;
+      const root = await check(parentId); let current = parentId, item;
       for (let index = 0; index < parts.length; index++) {
         const part = parts[index];
         if (part === '..') {
           if (current === root || index === parts.length - 1) throw new OneDriveError('图片路径不能越出应用文件夹。');
-          current = (await metadata(current)).parentReference?.id;
-          await withinFolder(current); continue;
+          current = (await meta(current)).parentReference?.id;
+          await check(current); continue;
         }
-        item = await graph(idPath(current) + ':/' + encodeURIComponent(part) + ':?$select=id,name,eTag,file,folder,package,remoteItem,parentReference,size', {}, '查找图片');
+        const lookup = idPath(current) + ':/' + encodeURIComponent(part) + ':?$select=id,name,eTag,file,folder,package,remoteItem,parentReference,size';
+        item = await (reads?.path ? reads.path(lookup) : graph(lookup, {}, '查找图片'));
         if (!item.id || item.name !== part || item.package || item.remoteItem || item.parentReference?.id !== current) throw new OneDriveError('无法确认图片路径。');
         if (index < parts.length - 1) {
           if (!item.folder || item.file) throw new OneDriveError('图片路径包含非文件夹项目。');

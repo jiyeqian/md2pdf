@@ -1,0 +1,19 @@
+// Fixed-latency synthetic comparison; never connects to OneDrive or reads user documents.
+// node scripts/benchmark-onedrive.mjs before 54412e8
+// node scripts/benchmark-onedrive.mjs after
+import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { performance } from 'node:perf_hooks';
+import { writeFile, mkdir } from 'node:fs/promises';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+import { lexer,walkTokens } from '../vendor/marked.esm.js';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const output=process.env.MD2PDF_BENCH_OUTPUT || path.join(tmpdir(),'md2pdf-onedrive-performance');
+await mkdir(output,{recursive:true});
+const png=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==','base64'));
+const delay=20;
+async function modules(ref){const load=async file=>ref?import('data:text/javascript;base64,'+Buffer.from(execFileSync('git',['show',ref+':'+file],{cwd:root})).toString('base64')):import(pathToFileURL(root+'/'+file).href);return {...await load('web/onedrive-graph.mjs'),...await load('web/onedrive-images.mjs')};}
+function fixture(createOneDriveGraph){const count={graph:0,download:0,peak:0};let active=0;const graph=createOneDriveGraph({token:async()=>'synthetic',fetch:async(url)=>{if(url.startsWith('https://graph.microsoft.com'))count.graph++;else count.download++;active++;count.peak=Math.max(count.peak,active);await new Promise(r=>setTimeout(r,delay));active--;const json=x=>new Response(JSON.stringify(x));if(url.includes('/special/approot'))return json({id:'root'});if(url.includes('/items/root?'))return json({id:'root',folder:{}});if(url.includes('/items/root/children'))return json({value:[]});if(url.includes('/items/root:/images:'))return json({id:'images',name:'images',folder:{},parentReference:{id:'root'}});const m=url.match(/\/items\/images:\/(p\d\.png):/);if(m)return json({id:m[1],name:m[1],file:{},size:png.length,parentReference:{id:'images'}});if(url.startsWith('https://s.files.1drv.com/'))return new Response(url.endsWith('/doc')?'# Benchmark Markdown':png);const id=decodeURIComponent(new URL(url).pathname.split('/').at(-1));if(id==='doc')return json({id:'doc',name:'doc.md',eTag:'1','@microsoft.graph.downloadUrl':'https://s.files.1drv.com/doc'});if(/^p\d\.png$/.test(id))return json({id,name:id,eTag:'1',file:{},size:png.length,'@microsoft.graph.downloadUrl':'https://s.files.1drv.com/'+id});throw new Error('unexpected '+url);}});return {graph,count};}
+async function measure(api,kind){const {graph,count}=fixture(api.createOneDriveGraph);const start=performance.now();if(kind==='directory'){for(let i=0;i<3;i++)await graph.listPage(await graph.getRoot());}else if(kind==='markdown'){await graph.open('doc');}else{const resolve=api.createCloudImages({lex:lexer,walkTokens,readImage:href=>graph.readImage('root',href),...(graph.imageReader?{createReader:()=>graph.imageReader('root')}:{})});const md=Array.from({length:6},(_,i)=>`![${i}](images/p${i}.png)`).join('\n');if(kind==='overlap')await Promise.all([resolve(md),resolve(md)]);else{await resolve(md);if(kind==='warm'){const before={...count};const warm=performance.now();await resolve('# Edited text\n'+md);return {ms:performance.now()-warm,graph:count.graph-before.graph,download:count.download-before.download,peak:count.peak};}}}return {ms:performance.now()-start,...count};}
+const label=process.argv[2]||'before';const api=await modules(process.argv[3]);const result={label,delayMs:delay,rounds:5,scenarios:{}};for(const kind of ['directory','markdown','images','overlap','warm']){const runs=[];for(let i=0;i<5;i++)runs.push(await measure(api,kind));runs.sort((a,b)=>a.ms-b.ms);result.scenarios[kind]={...runs[2],ms:Math.round(runs[2].ms)};}await writeFile(output+'/'+label+'.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));

@@ -229,7 +229,7 @@ export function initializeOneDrive() {
     const parentId = target.rootId;
     target.loadImages = async () => {
       const marked = await import(new URL('vendor/marked.esm.js', import.meta.url));
-      return createCloudImages({readImage:href => client.readImage(parentId,href),lex:marked.lexer,walkTokens:marked.walkTokens});
+      return createCloudImages({readImage:href => client.readImage(parentId,href),createReader:() => client.imageReader(parentId),lex:marked.lexer,walkTokens:marked.walkTokens});
     };
   }
   async function openItem(item) {
