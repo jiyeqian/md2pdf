@@ -44,6 +44,7 @@ export function initializeOneDrive() {
     notice.dataset.error = String(error);
     notice.hidden = !message;
   };
+  const cloudSidebars = new Map();
   let sidebar, cloudPane, wantOpen = false, preparing, connectionPromise, initializing = false, connecting = false;
   let rootId = '', folders = [], creatingFolder = false, confirmDelete = '', renameId = '', renameDraft = '', items = [], nextLink = '', loading = false, listError = '', info = '', retryPage = false, retryOpenItem = null;
   let listGeneration = 0, openGeneration = 0, visited = new Set(), lastHighlight = '', mutationBusy = false, closeMenu = null, closeRenameKey = null;
@@ -120,16 +121,25 @@ export function initializeOneDrive() {
     else if (listError && !retryPage) addButton('重试', () => { void refresh(); }, loading);
     if (nextLink) addButton(listError && retryPage && !retryOpenItem ? '重试加载' : '加载更多', () => { void loadMore(); }, loading);
   }
-  function attachSidebar(value) {
-    if (sidebar || !value) return;
-    sidebar = value; cloudPane = sidebar.addView({key:'cloud', label:'云文件', icon:'M7 18h10a4 4 0 0 0 .3-8A5.5 5.5 0 0 0 6.7 9 4.5 4.5 0 0 0 7 18z', onActive: active => { if (active && !auth && !preparing) void prepare(); if (!active) { closeMenu?.(); closeRenameKey?.(); renameId=''; renameDraft=''; } }});
-    cloudPane.classList.add('md-cloud-panel'); renderCloud();
-    if (wantOpen) showCloud();
+  function attachSidebar(value, target = 'editor') {
+    if (!value || cloudSidebars.has(target)) return;
+    if (!cloudPane) { cloudPane = document.createElement('div'); cloudPane.className = 'md-cloud-panel'; }
+    const pane = value.addView({key:'cloud', label:'云文件', icon:'M7 18h10a4 4 0 0 0 .3-8A5.5 5.5 0 0 0 6.7 9 4.5 4.5 0 0 0 7 18z', onActive: active => {
+      if (active) {
+        // One cloud view follows the active panel, keeping account and folder state shared.
+        if (sidebar !== value && sidebar?.selectedView === 'cloud') sidebar.close();
+        sidebar = value; pane.append(cloudPane); renderCloud();
+        if (!auth && !preparing) void prepare();
+      } else if (sidebar === value) { closeMenu?.(); closeRenameKey?.(); renameId=''; renameDraft=''; }
+    }});
+    cloudSidebars.set(target, value);
+    if (!sidebar) { sidebar = value; pane.append(cloudPane); renderCloud(); }
+    if (wantOpen === target) showCloud(target);
   }
-  function showCloud() {
-    wantOpen = true;
-    if (!sidebar) return;
-    wantOpen = false; sidebar.selectView('cloud'); sidebar.open();
+  function showCloud(target = 'editor') {
+    const selected = cloudSidebars.get(target);
+    if (!selected) { wantOpen = target; return; }
+    wantOpen = false; selected.selectView('cloud'); selected.open();
   }
   function prepare() {
     if (auth || preparing) return preparing;
@@ -242,9 +252,11 @@ export function initializeOneDrive() {
     await oldPrepare?.catch(() => {});
     if (started === generation) { initializing = false; info = ''; renderCloud(); if (!listError && sidebar?.isOpen() && sidebar.selectedView === 'cloud') void prepare(); }
   }
-  function open() { showCloud(); }
+  function open(target) { showCloud(target); }
   if (window.mdEditorSidebar) attachSidebar(window.mdEditorSidebar);
   else document.addEventListener('md-editor-sidebar-ready', () => attachSidebar(window.mdEditorSidebar), {once:true});
+  if (window.mdPreviewSidebar) attachSidebar(window.mdPreviewSidebar, 'preview');
+  else document.addEventListener('md-preview-sidebar-ready', () => attachSidebar(window.mdPreviewSidebar, 'preview'), {once:true});
   function errorMessage(error) {
     return error?.message || 'OneDrive 操作失败，本地草稿仍保留。';
   }

@@ -4,7 +4,7 @@ import { readFile, stat } from 'node:fs/promises';
 
 const types = { '.html':'text/html', '.js':'text/javascript', '.mjs':'text/javascript', '.css':'text/css', '.json':'application/json', '.webmanifest':'application/manifest+json', '.png':'image/png', '.svg':'image/svg+xml', '.woff2':'font/woff2', '.txt':'text/plain' };
 
-export async function startStaticServer({ directory, port }) {
+export async function startStaticServer({ directory, port, onedriveConfigFile }) {
   const server = http.createServer(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -15,6 +15,15 @@ export async function startStaticServer({ directory, port }) {
       }
       if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405); res.end(); return; }
       const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+      // Local startup can use its public OAuth configuration without publishing it in build artifacts.
+      if (pathname === '/onedrive-config.json' && onedriveConfigFile) {
+        try {
+          const config = JSON.parse(await readFile(onedriveConfigFile, 'utf8'));
+          const body = JSON.stringify({ clientId:config.clientId || '', redirectUri:config.redirectUri || '' });
+          res.writeHead(200, { 'Content-Type':'application/json' });
+          res.end(req.method === 'HEAD' ? undefined : body); return;
+        } catch (error) { if (error.code !== 'ENOENT') throw error; }
+      }
       let target = path.resolve(directory, '.' + pathname);
       if (!target.startsWith(directory + path.sep) && target !== directory) { res.writeHead(403); res.end(); return; }
       if ((await stat(target)).isDirectory()) target = path.join(target, 'index.html');

@@ -89,6 +89,8 @@
   const thumbnails = document.createElement('div'); thumbnails.className = 'md-preview-thumbnails';
   const thumbnailView = window.mdPreviewThumbnails.create(thumbnails);
   outline.addView({key: 'thumbnails', label: '页面缩略图', icon: icons.thumbnails, content: thumbnails, onActive: active => thumbnailView.setActive(active)});
+  window.mdPreviewSidebar = outline;
+  document.dispatchEvent(new CustomEvent('md-preview-sidebar-ready'));
   let items = [], currentIndex = -1;
   const collapsedOutlinePaths = new Set();
   function showCurrent() {

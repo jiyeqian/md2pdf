@@ -6,7 +6,7 @@
 
 在 Microsoft Entra 注册支持个人 Microsoft 账户的应用，添加单页应用（SPA）平台和与部署地址完全一致的重定向 URI；添加 Microsoft Graph 委派权限 `Files.ReadWrite.AppFolder`。只需要公开的应用（客户端）ID，不创建或配置客户端密钥。浏览器直接与 Microsoft 登录服务及 Graph 通信，Markdown 不通过 md2pdf 服务中转。
 
-Node 部署先执行 `cp web/onedrive-config.example.json web/onedrive-config.json`，再编辑本地配置，填写 `clientId` 和 `redirectUri`。该配置被 Git 忽略，不放客户端密钥。例如 Node 本机端口 3000 的回调为 `http://localhost:3000/onedrive-callback.html`；静态部署在 `https://example.com/md2pdf/` 时为 `https://example.com/md2pdf/onedrive-callback.html`。注册中须分别添加实际使用的每个地址；HTTPS 或 localhost 安全上下文是必需的。Node 读取本地 `web/onedrive-config.json`，修改后重新启动服务。静态构建从空白模板生成 `dist/static/onedrive-config.json`，不会复制本机配置；部署者需在构建完成后、每次发布前向该产物注入相应公开配置。不要在文件中放密钥。回调页面不得设置 Cross-Origin-Opener-Policy。
+Node 部署先执行 `cp web/onedrive-config.example.json web/onedrive-config.json`，再编辑本地配置，填写 `clientId` 和 `redirectUri`。该配置被 Git 忽略，不放客户端密钥。例如 Node 本机端口 3000 的回调为 `http://localhost:3000/onedrive-callback.html`；静态部署在 `https://example.com/md2pdf/` 时为 `https://example.com/md2pdf/onedrive-callback.html`。注册中须分别添加实际使用的每个地址；HTTPS 或 localhost 安全上下文是必需的。Node 读取本地 `web/onedrive-config.json`，修改后重新启动服务。`./bin/md2pdf webapp --port 3000 --static` 在本机启动时也读取该本地配置（回调须与实际访问端口一致），无需每次手动填写产物；它仅在本地服务返回公开配置字段，不将本机配置写入发布产物。静态构建从空白模板生成 `dist/static/onedrive-config.json`，不会复制本机配置；部署者需在构建完成后、每次发布前向该产物注入相应公开配置。不要在文件中放密钥。回调页面不得设置 Cross-Origin-Opener-Policy。
 
 本仓库 GitHub Pages 工作流在构建后自动注入公开客户端 ID 和 `https://md2pdf.qianjiye.de/onedrive-callback.html`，再上传部署产物。Entra 须注册该 SPA 回调；普通用户无需配置。Fork 或更换域名时，应相应修改工作流中的应用 ID、回调地址及 Entra 注册。此注入不改变本地构建或 Docker 的配置。
 

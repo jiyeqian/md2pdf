@@ -175,7 +175,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     const records = await store.list();
     const visible = records.slice(0, DRAFT_LIST_LIMIT);
     menu.replaceChildren(button('从本地打开…', () => { closeMenu(); input.click(); }),
-      button('从 OneDrive 打开…', () => { closeMenu(); return window.mdOneDrive?.open(); }));
+      button('从 OneDrive 打开…', () => { const target = trigger?.closest('.preview-panel') ? 'preview' : 'editor'; closeMenu(); return window.mdOneDrive?.open(target); }));
     const heading = document.createElement('div');
     heading.className = 'md-drafts-heading';
     heading.textContent = `已保存本地草稿 · ${records.length}`;

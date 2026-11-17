@@ -128,6 +128,20 @@ try {
     await wait(`document.querySelectorAll('.md-cloud-panel-file').length===15`);
     assert.ok(await evaluate(`[...document.querySelectorAll('.md-cloud-panel-file')].some(x=>x.textContent.includes('空文件') && x.textContent.includes('0 B'))`));
     assert.ok(await evaluate(`[...document.querySelectorAll('.md-cloud-panel-file')].some(x=>x.textContent.includes('5.5 KiB'))`));
+    await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
+    await wait(`document.querySelector('.preview-panel [data-panel-fullscreen]').getAttribute('aria-pressed')==='true'`);
+    await evaluate(`document.querySelector('.preview-panel button[aria-label="打开 Markdown"]').click()`);
+    await wait(`document.querySelector('#md-drafts-menu:not([hidden])')`);
+    await evaluate(`[...document.querySelectorAll('#md-drafts-menu button')].find(x=>x.textContent.includes('OneDrive')).click()`);
+    await wait(`document.querySelector('#preview-outline-tab-cloud[aria-selected="true"]') && document.querySelector('#preview-outline-view-cloud .md-cloud-panel-file')`);
+    assert.equal(await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').getAttribute('aria-pressed')`),'true','cloud open stays in preview fullscreen');
+    assert.equal(await evaluate(`document.querySelector('#preview-outline .md-sidebar-tabs').lastElementChild.getAttribute('aria-label')`),'云文件');
+    assert.equal(await evaluate(`document.querySelectorAll('.md-cloud-panel').length`),1,'panels share one cloud view and account');
+    await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
+    await wait(`document.querySelector('.preview-panel [data-panel-fullscreen]').getAttribute('aria-pressed')==='false'`);
+    await evaluate(`mdOneDrive.open('editor')`);
+    await wait(`document.querySelector('#editor-assistant-view-cloud .md-cloud-panel-file')`);
+
     await evaluate(`mockGraph.mode='offline'; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='加载更多').click()`);
     await wait(`[...document.querySelectorAll('.md-cloud-panel-button')].some(x=>x.textContent==='重试加载')`);
     assert.equal(await evaluate(`document.querySelectorAll('.md-cloud-panel-file').length`),15);

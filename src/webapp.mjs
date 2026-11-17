@@ -32,7 +32,7 @@ export async function runWebapp(args) {
     const { startStaticServer } = await import('./static-server.mjs');
     const build = await buildStatic();
     console.log(`构建完成：v${build.productVersion}${build.commit ? ' · ' + build.commit : ''} · ${build.version}`);
-    return startStaticServer({ directory:build.directory, port });
+    return startStaticServer({ directory:build.directory, port, onedriveConfigFile:new URL('../web/onedrive-config.json', import.meta.url) });
   }
   const { startServer } = await import('./server.mjs');
   // The installed command is a local workbench; public deployment uses server.mjs.
