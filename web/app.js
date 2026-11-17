@@ -676,6 +676,10 @@ function collectedOptions() {
 
 // ---------- 网络 ----------
 async function request(url, body, signal) {
+  if (['/api/render', '/api/preview', '/api/pdf'].includes(url) && window.mdOneDrive?.imageAssets) {
+    const imageAssets = await window.mdOneDrive.imageAssets(body.md, signal);
+    if (Object.keys(imageAssets).length) body = { ...body, imageAssets };
+  }
   const response = await appFetch(url, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body), signal,
@@ -1146,7 +1150,10 @@ async function exportDocument(mode) {
     if (mode === 'print') {
       await window.mdExportWithFontConsent(async allowFontFallback => {
         const body = { md:exportMd, opts:exportOptions, filename:exportName, allowFontFallback };
-        if (window.__MD2PDF_STATIC_BASE__) return (await import('./runtime-request.mjs')).exportPdf(body);
+        if (window.__MD2PDF_STATIC_BASE__) {
+          const imageAssets = await window.mdOneDrive?.imageAssets(exportMd) || {};
+          return (await import('./runtime-request.mjs')).exportPdf({ ...body, imageAssets });
+        }
         const { printDocument } = await import('./print-document.mjs');
         return printDocument(body, async input => (await request('/api/render', { ...input, printDocument:true })).json(), html => html);
       });

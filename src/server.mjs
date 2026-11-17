@@ -111,9 +111,10 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
     try { return await task; } finally { queued--; }
   }
   const staticRoutes = new Map([['/', ['web/index.html', 'text/html']], ['/app.js', ['web/app.js', 'text/javascript']], ['/app.css', ['web/app.css', 'text/css']], ['/examples.js', ['web/examples.js', 'text/javascript']], ['/examples.css', ['web/examples.css', 'text/css']], ['/visible-time-budget.js', ['web/visible-time-budget.js', 'text/javascript']]]);
-  for (const file of ['workspace-hosts.js', 'independent-window.js', 'editor-gutter.js', 'editor-gutter.css', 'panel-sidebars.js', 'preview-thumbnails.js', 'panel-sidebars.css', 'template-confirm.js', 'editor-vendor.js', 'editor-vendor.LICENSE.txt', 'editor-core.js', 'editor-images.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-quick-actions.mjs', 'editor-files.mjs', 'workspace-navigation.mjs', 'draft-store.mjs', 'local-drafts.mjs', 'document-create.mjs', 'cache-readiness.mjs', 'manual-update.mjs', 'app-shell.js', 'footer-status.js', 'app-shell.css', 'local-drafts.css', 'editor-core.css', 'editor-images.css', 'editor-pro.css', 'editor-workspace.css', 'editor-doi.js', 'editor-doi-helpers.mjs', 'editor-doi.css', 'onedrive-ui.mjs', 'onedrive-auth.mjs', 'onedrive-graph.mjs', 'onedrive-callback.js', 'print-document.mjs']) {
+  for (const file of ['workspace-hosts.js', 'independent-window.js', 'editor-gutter.js', 'editor-gutter.css', 'panel-sidebars.js', 'preview-thumbnails.js', 'panel-sidebars.css', 'template-confirm.js', 'editor-vendor.js', 'editor-vendor.LICENSE.txt', 'editor-core.js', 'editor-images.js', 'editor-pro.js', 'editor-workspace.js', 'editor-analysis.mjs', 'editor-quick-actions.mjs', 'editor-files.mjs', 'workspace-navigation.mjs', 'draft-store.mjs', 'local-drafts.mjs', 'document-create.mjs', 'cache-readiness.mjs', 'manual-update.mjs', 'app-shell.js', 'footer-status.js', 'app-shell.css', 'local-drafts.css', 'editor-core.css', 'editor-images.css', 'editor-pro.css', 'editor-workspace.css', 'editor-doi.js', 'editor-doi-helpers.mjs', 'editor-doi.css', 'onedrive-ui.mjs', 'onedrive-auth.mjs', 'onedrive-graph.mjs', 'onedrive-images.mjs', 'onedrive-callback.js', 'print-document.mjs']) {
     staticRoutes.set('/' + file, ['web/' + file, file.endsWith('.css') ? 'text/css' : file.endsWith('.txt') ? 'text/plain' : 'text/javascript']);
   }
+  staticRoutes.set('/vendor/marked.esm.js', ['vendor/marked.esm.js', 'text/javascript']);
   staticRoutes.set('/onedrive-callback.html', ['web/onedrive-callback.html', 'text/html']);
   staticRoutes.set('/onedrive-config.json', ['web/onedrive-config.json', 'application/json']);
   for (const file of ['msal-browser.min.js', 'msal-redirect-bridge.min.js']) staticRoutes.set('/vendor/msal/' + file, ['web/vendor/msal/' + file, 'text/javascript']);
@@ -226,7 +227,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
       const body = await readBody(req);
       const printing = req.url === '/api/render' && body?.printDocument === true;
       const input = printing ? Object.fromEntries(Object.entries(body).filter(([key]) => key !== 'printDocument')) : body;
-      const { md, opts, filename, allowFontFallback, type, effective, policy, authorDiagnostics, parsedFrontmatter, resetOptions } = resolveWebInput(input, { autoPreview: req.url === '/api/preview' });
+      const { md, opts, filename, allowFontFallback, type, effective, policy, authorDiagnostics, parsedFrontmatter, resetOptions, imageAssets } = resolveWebInput(input, { autoPreview: req.url === '/api/preview' });
       if (req.url === '/api/resolve') { json(200, { type, policy, authorDiagnostics }); return; }
       if (req.url === '/api/render' || req.url === '/api/preview') {
         const controller = new AbortController();
@@ -235,7 +236,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         else req.once('aborted', abortOnDisconnect);
         res.once('close', abortOnDisconnect);
         try {
-          const rendered = await render(md, opts, { webSafe: true, signal:controller.signal, parsedFrontmatter });
+          const rendered = await render(md, opts, { webSafe: true, signal:controller.signal, parsedFrontmatter, imageAssets });
           controller.signal.throwIfAborted();
           const source = printing ? (rendered.pagedHtml || rendered.html) : attachSourcePositions(rendered.pagedHtml, md, {type:rendered.type,referenceKeys:rendered.referenceKeys});
           const html = await webDocument(printing && allowFontFallback ? withGbFontFallback(source) : source, !printing, rendered.type, controller.signal);
@@ -247,7 +248,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         }
         return;
       }
-      const rendered = await render(md, opts, { webSafe: true, parsedFrontmatter });
+      const rendered = await render(md, opts, { webSafe: true, parsedFrontmatter, imageAssets });
       const pdf = await pdfTask(await webDocument(allowFontFallback ? withGbFontFallback(rendered.html) : rendered.html), rendered.printOptions);
       // 与 Markdown 下载共用同一命名：客户端提交的 filename 优先（共享浏览器时间戳），
       // 否则服务端按同一 helper 从正文推导，保证直接调用 API 的命名同样合理。

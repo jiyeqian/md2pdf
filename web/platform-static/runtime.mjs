@@ -71,7 +71,7 @@ export async function renderDocument(body, preview = true, signal, autoPreview =
   signal?.throwIfAborted();
   const resolved = resolveWebInput(body, { autoPreview });
   signal?.throwIfAborted();
-  const rendered = await render(resolved.md, resolved.opts, {webSafe:true,signal,parsedFrontmatter:resolved.parsedFrontmatter});
+  const rendered = await render(resolved.md, resolved.opts, {webSafe:true,signal,parsedFrontmatter:resolved.parsedFrontmatter,imageAssets:resolved.imageAssets});
   signal?.throwIfAborted();
   const html = rendered.pagedHtml || rendered.html;
   const scripts = await documentAssets(html, signal);

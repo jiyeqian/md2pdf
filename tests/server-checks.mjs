@@ -96,8 +96,8 @@ test('serves UI/example; refuses traversal, foreign host/origin and wrong method
   const legacyTemplatePage = await fetch(app.url + '/examples');
   assert.equal(legacyTemplatePage.status, 200);
   assert.match(await legacyTemplatePage.text(), /__MD2PDF_INITIAL_VIEW__="templates"/);
-  for (const route of ['/app.js', '/app.css', '/api/example']) assert.equal((await fetch(app.url + route)).status, 200);
-  for (const route of ['/src/render.mjs', '/vendor/marked.esm.js', '/%2e%2e/package.json']) assert.equal((await fetch(app.url + route)).status, 404);
+  for (const route of ['/app.js', '/app.css', '/api/example', '/onedrive-images.mjs', '/vendor/marked.esm.js']) assert.equal((await fetch(app.url + route)).status, 200);
+  for (const route of ['/src/render.mjs', '/vendor/marked.cjs', '/%2e%2e/package.json']) assert.equal((await fetch(app.url + route)).status, 404);
   assert.equal((await app.post('/api/render', doc, { Origin: 'https://evil.example' })).status, 403);
   assert.equal((await app.post('/api/render', doc, { Origin: 'null' })).status, 403);
   assert.equal((await fetch(app.url + '/api/render')).status, 405);

@@ -107,10 +107,25 @@ export function imageBudget(md) {
 const formatMiB = bytes => (bytes / (1024 * 1024)).toFixed(1); // 仅用于错误提示的粗略显示
 
 export function validateInput(body) {
-  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(k => !['md', 'opts', 'filename', 'allowFontFallback'].includes(k))) throw error(400, '请求必须包含 md 和可选 opts');
+  if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(k => !['md', 'opts', 'filename', 'allowFontFallback', 'imageAssets'].includes(k))) throw error(400, '请求必须包含 md 和可选 opts');
   if (typeof body.md !== 'string' || !body.md.trim()) throw error(400, '请输入 Markdown 正文');
   // 合法内嵌图片的 Data URL 不计入正文字符预算；其余（含代码内假图片、非图片/非法 Data URL）照常计入。
+  const imageAssets = Object.create(null);
+  if (body.imageAssets !== undefined) {
+    if (!body.imageAssets || typeof body.imageAssets !== 'object' || Array.isArray(body.imageAssets) || Object.keys(body.imageAssets).length > 100) throw error(400, '云端图片资源无效');
+    for (const [href, data] of Object.entries(body.imageAssets)) {
+      if (!href || href.length > 2048 || typeof data !== 'string' || !IMAGE_DATA_URL.test(data)) throw error(400, '云端图片资源无效');
+      const payload = data.slice(data.indexOf(',') + 1);
+      if (payload.length % 4) throw error(400, '云端图片资源无效');
+      imageAssets[href] = data;
+    }
+  }
   const images = imageBudget(body.md);
+  for (const data of Object.values(imageAssets)) {
+    const payload = data.slice(data.indexOf(',') + 1);
+    const size = payload.length / 4 * 3 - (payload.endsWith('==') ? 2 : payload.endsWith('=') ? 1 : 0);
+    images.totalBytes += size; images.largestBytes = Math.max(images.largestBytes, size);
+  }
   if (images.largestBytes > IMAGE_SINGLE_BYTES) throw error(413, `单张图片约 ${formatMiB(images.largestBytes)} MiB，超过 10 MiB 上限，请压缩或降低分辨率后重试`);
   if (images.totalBytes > IMAGE_TOTAL_BYTES) throw error(413, `内嵌图片合计约 ${formatMiB(images.totalBytes)} MiB，超过 16 MiB 上限，请删减或压缩图片后重试`);
   const bodyChars = body.md.length - images.excluded;
@@ -138,13 +153,13 @@ export function validateInput(body) {
     if (!filename) throw error(400, 'filename 非法');
   }
   if (body.allowFontFallback !== undefined && typeof body.allowFontFallback !== 'boolean') throw error(400, 'allowFontFallback 必须是布尔值');
-  return { allowFontFallback: body.allowFontFallback === true, md: body.md, opts: { ...opts, pagedHtml: true }, filename };
+  return { allowFontFallback: body.allowFontFallback === true, md: body.md, imageAssets, opts: { ...opts, pagedHtml: true }, filename };
 }
 
 
 // 在线接口与静态适配器共用解析、优先级及可调选项校验。
 export function resolveWebInput(body, { autoPreview = false } = {}) {
-  const { md, opts, filename, allowFontFallback } = validateInput(body);
+  const { md, opts, filename, allowFontFallback, imageAssets } = validateInput(body);
   const parsedFrontmatterResult = parseFrontmatter(md);
   const { fm, positions, warnings = [] } = parsedFrontmatterResult;
   const explicitType = opts.type ?? fm.type;
@@ -164,5 +179,5 @@ export function resolveWebInput(body, { autoPreview = false } = {}) {
   }
   const effective = effectiveOptions(opts, type, fm, positions);
   assertOptionsAllowed(opts, type, frontmatterOverrides(fm));
-  return { md, opts, filename, allowFontFallback, type, effective, resetOptions: [...new Set(resetOptions)], parsedFrontmatter: { source: md, parsed: parsedFrontmatterResult }, authorDiagnostics: warnings.filter(message => message.includes('未被任何作者引用')).map(message => ({ severity:'warning', message, line:positions.affiliations?.line })), policy:policyForType(type, effective) };
+  return { md, opts, filename, allowFontFallback, imageAssets, type, effective, resetOptions: [...new Set(resetOptions)], parsedFrontmatter: { source: md, parsed: parsedFrontmatterResult }, authorDiagnostics: warnings.filter(message => message.includes('未被任何作者引用')).map(message => ({ severity:'warning', message, line:positions.affiliations?.line })), policy:policyForType(type, effective) };
 }

@@ -1,5 +1,6 @@
 import { createOneDriveAuth, ONEDRIVE_UNCONFIGURED } from './onedrive-auth.mjs';
 import { createOneDriveGraph } from './onedrive-graph.mjs';
+import { createCloudImages } from './onedrive-images.mjs';
 
 export function formatOneDriveSize(size) {
   if (!Number.isSafeInteger(size) || size < 0) return '大小未知';
@@ -224,6 +225,13 @@ export function initializeOneDrive() {
     catch (error) { if (started === generation && request === listGeneration) { listError = errorMessage(error); renderCloud(); } }
     finally { mutationBusy = false; renderCloud(); }
   }
+  function attachImages(target, client) {
+    const parentId = target.rootId;
+    target.loadImages = async () => {
+      const marked = await import(new URL('vendor/marked.esm.js', import.meta.url));
+      return createCloudImages({readImage:href => client.readImage(parentId,href),lex:marked.lexer,walkTokens:marked.walkTokens});
+    };
+  }
   async function openItem(item) {
     if (mutationBusy) return;
     if (!window.mdDrafts || !graph) { listError = '本地草稿不可用，无法安全打开云端文件。'; renderCloud(); return; }
@@ -238,7 +246,8 @@ export function initializeOneDrive() {
       if (!valid()) return;
       await window.mdDrafts.openFile(file.text, file.name, valid);
       if (started !== generation || request !== openGeneration || client !== graph) return;
-      binding = { ...file, draftId: current(), rootId: folders.at(-1)?.id || rootId, ancestors: folders.map(folder => folder.id), savedText: file.text }; info = ''; renderCloud(); status('OneDrive · 已打开');
+      binding = { ...file, draftId: current(), rootId: folders.at(-1)?.id || rootId, ancestors: folders.map(folder => folder.id), savedText: file.text };
+      attachImages(binding, client); info = ''; renderCloud(); status('OneDrive · 已打开');
       const owner = sidebar?.element.ownerDocument.defaultView;
       if (owner?.matchMedia('(max-width: 600px)').matches) sidebar.close();
     } catch (error) { if (started === generation && request === openGeneration && error.name !== 'AbortError') { info = ''; listError = errorMessage(error); retryOpenItem = item; renderCloud(); } }
@@ -339,6 +348,8 @@ export function initializeOneDrive() {
       }
       if (current() !== draftId || generation !== operation) return;
       binding = { id: result.id, eTag: result.eTag, name: result.name || name, rootId: existing && result.id === existing.id ? existing.rootId : targetRootId, ancestors: existing && result.id === existing.id ? existing.ancestors : targetAncestors, draftId, savedText: text };
+      attachImages(binding, client);
+      if (existing?.id === binding.id && existing.rootId === binding.rootId) binding.images = existing.images;
       status(window.mdEditor.getValue() === text ? 'OneDrive · 已保存' : 'OneDrive · 有未保存更改');
       if (sidebar?.isOpen() && sidebar.selectedView === 'cloud') void refresh();
     });
@@ -357,5 +368,15 @@ export function initializeOneDrive() {
   }
   document.addEventListener('md-editor-change', syncCloudState);
   document.addEventListener('md-draft-active-change', syncCloudState);
-  return { open, save, logout };
+  async function imageAssets(md, signal) {
+    const selected = binding, operation = generation;
+    if (!selected || selected.draftId !== current()) return {};
+    selected.images ||= selected.loadImages?.();
+    if (!selected.images) return {};
+    const images = await (await selected.images)(md, signal);
+    signal?.throwIfAborted();
+    if (binding !== selected || operation !== generation || selected.draftId !== current()) throw new DOMException('云端文档已切换', 'AbortError');
+    return images;
+  }
+  return { open, save, logout, imageAssets };
 }

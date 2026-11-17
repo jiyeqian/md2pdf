@@ -118,7 +118,7 @@ export function createOneDriveGraph({ token, fetch: request = globalThis.fetch }
       if (id === root) throw new OneDriveError('不能删除应用文件夹。');
       return graph(idPath(id), { method: 'DELETE', headers: { 'If-Match': eTag } }, '移到回收站');
     },
-    async readContent(id) {
+    async readContent(id, maxBytes) {
       let item = await graph(idPath(id) + '?$select=id,name,eTag,file,folder,package,size,@microsoft.graph.downloadUrl', {}, '获取文件信息');
       if (typeof item.id === 'string' && item.id && typeof item.eTag === 'string' && item.eTag && !item['@microsoft.graph.downloadUrl']) {
         const full = await graph(idPath(id), {}, '获取完整文件信息');
@@ -131,8 +131,41 @@ export function createOneDriveGraph({ token, fetch: request = globalThis.fetch }
         const size = Number.isSafeInteger(item.size) && item.size >= 0 ? String(item.size) : '未知';
         throw new OneDriveError(`获取文件信息失败：缺少 ${missing.join('、')}；类型 ${facets.join('/') || '未知'}；大小 ${size} 字节。`);
       }
+      if (maxBytes && item.size > maxBytes) throw new OneDriveError('图片超过 10 MiB。');
       const response = await transfer(item['@microsoft.graph.downloadUrl'], {}, { download: true });
-      return { id: item.id, name: item.name, eTag: item.eTag, bytes: new Uint8Array(await response.arrayBuffer()) };
+      let bytes;
+      if (maxBytes && response.body) {
+        const reader = response.body.getReader(), chunks = [];let length = 0;
+        try { while (true) { const {done,value} = await reader.read();if (done) break;length += value.length;if (length > maxBytes) { await reader.cancel();throw new OneDriveError('图片超过 10 MiB。'); } chunks.push(value); } }
+        finally { reader.releaseLock(); }
+        bytes = new Uint8Array(length);let offset = 0;for (const chunk of chunks) {bytes.set(chunk,offset);offset += chunk.length;}
+      } else bytes = new Uint8Array(await response.arrayBuffer());
+      return { id: item.id, name: item.name, eTag: item.eTag, bytes };
+    },
+    async readImage(parentId, href) {
+      if (!href || href.length > 2048 || /^(?:[a-z][a-z\d+.-]*:|[/\\#])/i.test(href) || /[?#\\]/.test(href)) throw new OneDriveError('图片必须使用应用文件夹内的相对路径。');
+      let parts;
+      try { parts = href.split('/').map(decodeURIComponent).filter(part => part && part !== '.'); }
+      catch { throw new OneDriveError('图片路径编码无效。'); }
+      if (!parts.length || parts.length > 64 || parts.some(part => /[/\\:\x00-\x1f]/.test(part))) throw new OneDriveError('图片路径无效。');
+      const root = await withinFolder(parentId); let current = parentId, item;
+      for (let index = 0; index < parts.length; index++) {
+        const part = parts[index];
+        if (part === '..') {
+          if (current === root || index === parts.length - 1) throw new OneDriveError('图片路径不能越出应用文件夹。');
+          current = (await metadata(current)).parentReference?.id;
+          await withinFolder(current); continue;
+        }
+        item = await graph(idPath(current) + ':/' + encodeURIComponent(part) + ':?$select=id,name,eTag,file,folder,package,remoteItem,parentReference,size', {}, '查找图片');
+        if (!item.id || item.name !== part || item.package || item.remoteItem || item.parentReference?.id !== current) throw new OneDriveError('无法确认图片路径。');
+        if (index < parts.length - 1) {
+          if (!item.folder || item.file) throw new OneDriveError('图片路径包含非文件夹项目。');
+          current = item.id;
+        }
+      }
+      if (!item?.file || item.folder || !Number.isSafeInteger(item.size) || item.size < 0 || item.size > 10 * 1024 * 1024) throw new OneDriveError('图片无效或超过 10 MiB。');
+      const file = await this.readContent(item.id, 10 * 1024 * 1024);
+      return file.bytes;
     },
     async open(id) {
       const file = await this.readContent(id);

@@ -20,7 +20,7 @@ const staticServer = http.createServer(async (req,res) => {
 });
 const app = createApp(), temp = await mkdtemp(path.join(os.tmpdir(),'md2pdf-onedrive-')), browser = new Chrome(findChrome(), temp);
 const evaluate = async expression => {
-  const result = await browser.send('Runtime.evaluate', { expression, returnByValue:true, awaitPromise:true });
+  const result = await browser.send('Runtime.evaluate', { expression, returnByValue:true, awaitPromise:true }).catch(error => { throw new Error(error.message + ': ' + expression.slice(0,240)); });
   assert.equal(result.exceptionDetails, undefined, JSON.stringify(result.exceptionDetails)); return result.result.value;
 };
 const visualDir='/private/tmp/md2pdf-onedrive-ui';
@@ -82,6 +82,10 @@ try {
       state.calls.push({url,method:options.method || 'GET',headers:options.headers || {}});
       if (state.mode === 'offline') throw new TypeError('offline');
       const json = (body, status = 200) => new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
+      if (url === 'https://public-sn3302.files.1drv.com/image') return new Response(Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg=='),c=>c.charCodeAt(0)));
+      if (url.includes('/items/root:/images:')) return json({id:'images',name:'images',folder:{},parentReference:{id:'root'}});
+      if (url.includes('/items/images:/helloworld.jpeg:')) return json({id:'picture',name:'helloworld.jpeg',file:{},size:68,parentReference:{id:'images'}});
+      if (url.includes('/items/picture?')) return json({id:'picture',name:'helloworld.jpeg',file:{},size:68,eTag:'picture-v1','@microsoft.graph.downloadUrl':'https://public-sn3302.files.1drv.com/image'});
       if (url.startsWith('https://public-sn3302.files.1drv.com/download')) return new Response('# 云端原稿');
       if (url.startsWith('https://test-transfer.example/upload')) return options.method === 'DELETE' ? new Response(null,{status:204}) : ['conflict','conflictoverwrite'].includes(state.mode) ? json({},409) : json({id:'new',name:'new.md',eTag:'new',file:{},size:new TextEncoder().encode('# 云端原稿').length},201);
       if (url.includes('/special/approot')) return json({id:'root'});
@@ -155,6 +159,22 @@ try {
     await evaluate(`mockGraph.mode='ok'; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='重试打开').click()`);
     await wait(`mdEditor.getValue()==='# 云端原稿'`);
     assert.equal(await evaluate(`mdDrafts.store.get(${JSON.stringify(local)}).then(x=>x.md)`),'# 本地原稿');
+    await evaluate(`mdEditor.setValue('# 云端原稿\\n![hello image](images/helloworld.jpeg)')`);
+    await wait(`document.querySelector('#preview').srcdoc.includes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB') && document.querySelector('#preview').srcdoc.includes('hello image')`);
+    assert.equal(await evaluate(`mdEditor.getValue()`),'# 云端原稿\n![hello image](images/helloworld.jpeg)');
+    const imageResult = await evaluate(`(async()=>{const md=mdEditor.getValue();const imageAssets=await mdOneDrive.imageAssets(md);return {md,imageAssets};})()`);
+    assert.match(imageResult.imageAssets['images/helloworld.jpeg'],/^data:image\/png;base64,/);
+    await evaluate(`window.cloudPrintFrames=[];window.cloudSrcdoc=Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,'srcdoc');Object.defineProperty(HTMLIFrameElement.prototype,'srcdoc',{...cloudSrcdoc,set(value){if(this.classList.contains('static-print-frame'))cloudPrintFrames.push(value);cloudSrcdoc.set.call(this,value.replace('focus();print();',\"focus();dispatchEvent(new Event('afterprint'));\"))}});true`);
+    await wait(`!document.querySelector('#download').disabled`);
+    await evaluate(`document.querySelector('#download').click()`);
+    await wait(`document.querySelector('div[aria-label="打印或下载 PDF"]')`);
+    await evaluate(`document.querySelector('div[aria-label="打印或下载 PDF"] button').click()`);
+    await wait(`cloudPrintFrames.some(html=>html.includes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB') && html.includes('hello image'))`);
+    await evaluate(`Object.defineProperty(HTMLIFrameElement.prototype,'srcdoc',cloudSrcdoc);true`);
+    await wait(`document.querySelector('#status').textContent.includes('已打开文档打印')`);
+
+    await evaluate(`mdEditor.setValue('# 云端原稿')`);
+
     await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,bubbles:true,cancelable:true}))`);
     await wait('mockGraph.downloads===1');
     await evaluate(`mockGraph.mode='ok'; mockGraph.holdSave=true; document.dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,altKey:true,bubbles:true,cancelable:true}))`);
