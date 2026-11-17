@@ -44,9 +44,10 @@
 .md-cloud-panel-button:disabled { opacity: .55; cursor: default; }
 .md-cloud-panel-error { margin: 6px; color: #a53434; overflow-wrap: anywhere; }
 .md-cloud-panel-list { display: grid; gap: 3px; margin: 8px 0; }
-.md-cloud-panel-file { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; min-width: 0; width: 100%; padding: 6px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.md-cloud-panel-file:hover, .md-cloud-panel-file.is-current { background: #e1eaf5; }
-.md-cloud-panel-name { min-width: 0; overflow-wrap: anywhere; }
+.md-cloud-panel-file { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-width: 0; width: 100%; padding: 6px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.md-cloud-panel-row:hover,.md-cloud-panel-row:has(.is-current) { background: #e1eaf5; border-radius:4px; }
+.md-cloud-panel-row:has(.md-cloud-popup) { background:transparent; }
+.md-cloud-panel-name { flex:1; min-width: 0; overflow-wrap: anywhere; }
 .md-cloud-panel-size { flex: none; color: #718096; font-size: 11px; white-space: nowrap; }
 
 .md-cloud-panel-row { display:flex; min-width:0; align-items:start; gap:3px; }
@@ -62,8 +63,8 @@
 .md-cloud-icon-button svg { width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round; }
 .md-cloud-icon-button:disabled { opacity:.5; }
 .md-cloud-breadcrumb { display:flex;align-items:center;min-width:0;width:100%;max-width:100%;box-sizing:border-box;white-space:nowrap;overflow:visible;gap:2px;color:#677b92;font:inherit; }
-.md-cloud-crumb { flex:0 1 auto;min-width:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:transparent;color:#42648b;font:inherit;text-align:left;padding:2px;cursor:pointer; }
-.md-cloud-breadcrumb > .md-cloud-crumb:first-of-type:not(:last-child) { max-width:48px; }
+.md-cloud-crumb { flex:0 1 auto;min-width:0;max-width:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:transparent;color:#42648b;font:inherit;text-align:left;padding:2px;cursor:pointer; }
+.md-cloud-breadcrumb > .md-cloud-crumb:first-of-type:not(:last-child) { max-width:none;flex-shrink:0; }
 .md-cloud-prefix-home,.md-cloud-prefix-apps,.md-cloud-separator { flex:none; }
 .md-cloud-breadcrumb > .md-cloud-crumb:last-child { flex:1 1 auto; min-width:38px; }
 .md-cloud-path-more { position:relative;flex:none; }
@@ -75,7 +76,7 @@
 @media (hover:none) { .md-cloud-row-menu { opacity:1; } }
 .md-cloud-popup { position:fixed;z-index:5;min-width:140px;background:#fff;border:1px solid #d6dfea;border-radius:5px;box-shadow:0 3px 10px #0002;padding:4px; }
 .md-cloud-popup button { display:block;width:100%;border:0;background:transparent;color:inherit;font:inherit;text-align:left;padding:6px;cursor:pointer; }
-.md-cloud-popup button:hover,.md-cloud-popup button:focus { background:#edf2f8; }
+.md-cloud-popup button:hover,.md-cloud-popup button:focus-visible { background:#edf2f8; }
 .md-cloud-rename { display:flex;gap:3px;min-width:0; }
 .md-cloud-rename input { min-width:0;flex:1; }
 
@@ -84,4 +85,11 @@
 
 .md-cloud-separator { padding:0 2px; }
 .md-cloud-breadcrumb[data-nested="false"] > .md-cloud-crumb { flex:none;max-width:none; }
-@media(max-width:360px) { .md-cloud-breadcrumb { font-size:11px;gap:1px; } .md-cloud-separator { padding:0; } }
+@media(max-width:360px) { .md-cloud-breadcrumb { gap:1px; } .md-cloud-separator { padding:0; } }
+
+.md-cloud-item-icon { flex:none;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round; }
+.md-cloud-extension { align-self:center;color:#677b92; }
+.md-cloud-breadcrumb { flex-wrap:wrap;white-space:normal; }
+.md-cloud-breadcrumb > .md-cloud-crumb:last-child { overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere; }
+
+.md-cloud-popup:has(button:hover) button:focus-visible:not(:hover) { background:transparent; }

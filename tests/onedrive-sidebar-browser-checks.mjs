@@ -32,6 +32,22 @@ try{
  await browser.send('Emulation.setTouchEmulationEnabled',{enabled:false});
  console.log('Cloud menu hover, keyboard and touch visibility passed');
  assert.equal(await evalJS(`(()=>{const b=document.querySelector('.md-cloud-crumb');return b.textContent==='md2pdf' && b.scrollWidth<=b.clientWidth+1})()`),true,'root path must not truncate md2pdf');
+
+ assert.equal(await evalJS(`document.querySelectorAll('.md-cloud-item-icon').length`),2);
+ await evalJS(`document.querySelector('.md-cloud-row-menu').click()`);
+ const menuPoint=await evalJS(`(()=>{const r=document.querySelectorAll('.md-cloud-popup button')[1].getBoundingClientRect();return {x:r.left+10,y:r.top+10}})()`);
+ await browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',...menuPoint});
+ assert.equal(await evalJS(`getComputedStyle(document.querySelector('.md-cloud-popup button')).backgroundColor`),'rgba(0, 0, 0, 0)');
+ assert.notEqual(await evalJS(`getComputedStyle(document.querySelectorAll('.md-cloud-popup button')[1]).backgroundColor`),'rgba(0, 0, 0, 0)');
+ await evalJS(`document.querySelector('.md-cloud-popup button').click()`);
+
+ assert.equal(await evalJS(`document.querySelector('.md-cloud-rename input').value`),'示例文件');
+ assert.equal(await evalJS(`document.querySelector('.md-cloud-extension').textContent`),'.md');
+ assert.equal(await evalJS(`document.querySelectorAll('.md-cloud-rename button').length`),0);
+ await browser.send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,x:1,y:1});
+ await browser.send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,x:1,y:1});
+ await wait(`!document.querySelector('.md-cloud-rename')`);
+ assert.equal(await evalJS(`fakeCalls.some(x=>x.method==='PATCH')`),false,'outside click must cancel rename');
  assert.ok(await evalJS(`document.querySelector('.md-cloud-panel').textContent.includes('0 B · 空文件')`));await mkdir('/private/tmp/md2pdf-cloud-sidebar',{recursive:true});await writeFile('/private/tmp/md2pdf-cloud-sidebar/node-desktop.png',Buffer.from((await browser.send('Page.captureScreenshot',{format:'png'})).data,'base64'));
  const cas=await evalJS(`(async()=>{const s=mdDrafts.store;const original=await s.active();await s.activateIf(original,undefined);const absent=await s.active();const saved=await s.save({id:'cas-test',md:'test',opts:{},version:0},{activate:false});const stillAbsent=await s.active();const first=await s.activateIf(undefined,saved.id);await s.activate('other-tab');const prevented=await s.activateIf(saved.id,original);const other=await s.active();await s.activate(null);const nullResult=await s.activateIf(null,saved.id);await s.save({id:'default-test',md:'test',opts:{},version:0});const normal=await s.active();await s.activate(original);return {absent:absent===undefined,stillAbsent:stillAbsent===undefined,first,prevented,other,nullResult,normal};})()`);
  assert.deepEqual(cas,{absent:true,stillAbsent:true,first:true,prevented:false,other:'other-tab',nullResult:true,normal:'default-test'});

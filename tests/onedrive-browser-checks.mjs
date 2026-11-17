@@ -101,6 +101,7 @@ try {
       if (url.includes('/items/same?$select=id,name,eTag,folder,file,package,remoteItem,root,parentReference')) return json({id:'same',name:'new.md',eTag:'old',file:{},parentReference:{id:'root'}});
       if (url.endsWith('/items/same/content') && options.method==='PUT') return json({id:'same',name:'new.md',eTag:'new',file:{},size:new TextEncoder().encode('# 云端原稿').length});
       if (url.includes('/items/same?')) return json({id:'same',name:'new.md',eTag:'new','@microsoft.graph.downloadUrl':'https://public-sn3302.files.1drv.com/download'});
+      if (url.endsWith('/items/cloud') && options.method==='PATCH') {state.renamedBody=JSON.parse(options.body);return json({id:'cloud',name:state.renamedBody.name,eTag:'renamed',file:{},parentReference:{id:'root'}});}
       if (url.includes('/items/cloud') && options.method==='DELETE') return new Response(null,{status:204});
       if (url.includes('/items/cloud?$select=id,name,eTag,folder,file,package,remoteItem,root,parentReference')) return json({id:'cloud',name:'cloud.md',eTag:'old',file:{},parentReference:{id:'root'}});
       if (url.includes('/items/cloud?')) { if (state.holdCloud) await new Promise(resolve=>window.releaseCloud=resolve); return json(state.mode === 'missing' ? {id:'cloud',name:'cloud.md',file:{},size:4} : {id:'cloud',name:'cloud.md',eTag:'old','@microsoft.graph.downloadUrl':'https://public-sn3302.files.1drv.com/download'}); }
@@ -188,6 +189,11 @@ try {
     await wait(`mockGraph.calls.filter(x=>x.method==='DELETE' && x.url.endsWith('/items/cloud')).length===2`);
     await wait(`!document.querySelector('[data-cloud-id="cloud"][aria-current="true"]')`);
     assert.equal(await evaluate('mdDrafts.current()'),openedId); assert.equal(await evaluate('mdEditor.getValue()'),'# 云端原稿');
+    await evaluate(`document.querySelector('[aria-label="cloud.md 更多操作"]').click(); document.querySelector('.md-cloud-popup button').click()`);
+    assert.equal(await evaluate(`document.querySelector('.md-cloud-rename input').value`),'cloud');
+    assert.equal(await evaluate(`document.querySelector('.md-cloud-extension').textContent`),'.md');
+    await evaluate(`document.querySelector('.md-cloud-rename input').value='report.v2';document.querySelector('.md-cloud-rename').requestSubmit()`);
+    await wait(`mockGraph.renamedBody?.name==='report.v2.md' && !document.querySelector('.md-cloud-rename')`);
     await evaluate(`mockGraph.folderTest=true; document.querySelector('.md-cloud-icon-button[aria-label="刷新"]').click()`);
     await wait(`document.querySelector('[data-cloud-id="sub"]')`);
     await evaluate(`document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='重命名').click()`);
@@ -206,10 +212,10 @@ try {
     assert.equal(await evaluate(`mockGraph.calls.find(x=>x.url.endsWith('/items/sub')&&x.method==='PATCH').headers['If-Match']`),'folder-tag');
     await wait(`document.querySelector('[aria-label="目录 更多操作"]')`);
     await evaluate(`document.querySelector('[aria-label="目录 更多操作"]').click()`);
-    assert.ok(await evaluate(`document.querySelector('.md-cloud-popup').textContent.includes('文件夹及内容移到回收站')`));
+    assert.ok(await evaluate(`document.querySelector('.md-cloud-popup').textContent.includes('移到回收站')`));
     await evaluate(`document.querySelector('.md-cloud-popup button').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`);await wait(`!document.querySelector('.md-cloud-popup')`);
     assert.equal(await evaluate(`mockGraph.calls.filter(x=>x.url.endsWith('/items/sub')&&x.method==='DELETE').length`),0);
-    await evaluate(`document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='文件夹及内容移到回收站').click()`);
+    await evaluate(`document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='移到回收站').click()`);
     await wait(`document.querySelector('.md-cloud-panel-error')?.textContent.includes('412')`);
     assert.equal(await evaluate(`mockGraph.calls.find(x=>x.url.endsWith('/items/sub')&&x.method==='DELETE').headers['If-Match']`),'folder-tag');
     await evaluate(`document.querySelector('[data-cloud-id="sub"]').click()`); await wait(`document.querySelector('[data-cloud-id="nested"]')`);
@@ -237,7 +243,7 @@ try {
     await evaluate(`document.querySelector('[data-cloud-id="nested"]').click()`); await wait(`document.querySelector('[data-cloud-id="nested"][aria-current="true"]')`);
     const nestedDraft=await evaluate('mdDrafts.current()');
     await evaluate(`[...document.querySelectorAll('.md-cloud-crumb')].find(x=>x.textContent==='md2pdf').click()`); await wait(`document.querySelector('[data-cloud-id="sub"]')`);
-    await evaluate(`mockGraph.folderDeleteSuccess=true;document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='文件夹及内容移到回收站').click()`);
+    await evaluate(`mockGraph.folderDeleteSuccess=true;document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='移到回收站').click()`);
     await wait(`mockGraph.calls.filter(x=>x.url.endsWith('/items/sub')&&x.method==='DELETE').length===2`);
     await wait(`document.querySelector('.md-cloud-notice').hidden`);
     assert.equal(await evaluate('mdDrafts.current()'),nestedDraft);assert.equal(await evaluate('mdEditor.getValue()'),'# 云端原稿');
