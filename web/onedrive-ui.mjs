@@ -68,7 +68,6 @@ export function initializeOneDrive() {
         link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '配置说明';
         p.replaceChildren('OneDrive 尚未配置，请参照「', link, '」完成设置。');
       }
-      if (!error && text === '已移到回收站。') { const link=doc.createElement('a');link.href='https://onedrive.live.com/recycle';link.target='_blank';link.rel='noopener noreferrer';link.textContent='打开 OneDrive 回收站';p.append(' ',link); }
       cloudPane.append(p);
     };
     if (!auth?.connected()) {
@@ -221,7 +220,7 @@ export function initializeOneDrive() {
   async function deleteFile(item) {
     if (mutationBusy || busy) return; mutationBusy = true; ++openGeneration; info = ''; renderCloud();
     const started = generation, request = listGeneration, client = graph;
-    try { if (item.folder) await client.deleteFolder(item.id, item.eTag, item.name); else await client.deleteFile(item.id, item.eTag, item.name); if (started !== generation || client !== graph) return; if (binding?.id === item.id || item.folder && binding?.ancestors?.includes(item.id)) { binding = null; status(''); } if (request !== listGeneration) return; confirmDelete = ''; await refresh(); info = '已移到回收站。'; renderCloud(); }
+    try { if (item.folder) await client.deleteFolder(item.id, item.eTag, item.name); else await client.deleteFile(item.id, item.eTag, item.name); if (started !== generation || client !== graph) return; if (binding?.id === item.id || item.folder && binding?.ancestors?.includes(item.id)) { binding = null; status(''); } if (request !== listGeneration) return; confirmDelete = ''; await refresh(); info = '已移到 OneDrive 回收站。'; renderCloud(); }
     catch (error) { if (started === generation && request === listGeneration) { listError = errorMessage(error); renderCloud(); } }
     finally { mutationBusy = false; renderCloud(); }
   }
