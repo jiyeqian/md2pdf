@@ -234,7 +234,7 @@ test('图片模块源码契约：真实折叠、无 confirm、插入单事务', 
   assert.ok(!/\.innerHTML\s*=/.test(src), '无 innerHTML 赋值');
   assert.ok(!/\beval\s*\(/.test(src), '无 eval');
   assert.ok(!/\.setValue\(/.test(src), '绝不调用 setValue（保护撤销历史）');
-  assert.match(src, /api\.replaceRange\(from, to, plan\.insert\)/, '整次插入为单个事务');
+  assert.match(src, /api\.replaceRange\(from, to, plan\.insert, plan\.selection\)/, '整次插入为单个事务');
   assert.match(src, /md-editor-transaction/, '异步读取期间用事务映射保持光标');
   assert.match(src, /readAsDataURL/, '通过 FileReader 本地编码');
   assert.match(src, /image\/webp/, '接受 WebP');
@@ -319,7 +319,7 @@ test('图片按钮挂到插入组挂载点并图标化，点击真正打开 pick
   assert.match(src, /ensurePicker\(\)\.click\(\)/, '点击按钮真正触发文件选择');
   assert.match(src, /installToolbarButton\(mount\)/, '挂载到插入组挂载点');
   // 导入管线未被改动
-  assert.match(src, /api\.replaceRange\(from, to, plan\.insert\)/);
+  assert.match(src, /api\.replaceRange\(from, to, plan\.insert, plan\.selection\)/);
   assert.match(src, /planImageInsertion/);
 });
 

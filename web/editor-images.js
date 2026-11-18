@@ -485,8 +485,8 @@
 
       const plan = H.planImageInsertion({ text: api.getValue(), from: from, to: to, images: images });
       if (!plan.insert) return;
-      api.replaceRange(from, to, plan.insert); // one transaction => one undo step
-      api.setSelection(plan.selection);
+      api.replaceRange(from, to, plan.insert, plan.selection); // one transaction => one undo step
+      api.focus();
 
       setStatus(notes.join(' '), rejected > 0);
     } catch (error) {
