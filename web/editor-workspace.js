@@ -1199,21 +1199,29 @@
     editorFullscreenBtn = makeFullscreenButton('Markdown 全屏写作', '全屏写作（Esc 退出）');
     editorFullscreenBtn.addEventListener('click', function () { toggleFullscreen('editor'); });
     if (editorActions) {
-      var saveButton = makeFileButton('下载 Markdown', 'save', function () {
+      var saveButton = makeFileButton('下载 Markdown', 'save', function (activation) {
         if (saveButton._closeSaveMenu) { saveButton._closeSaveMenu(true); return; }
-        var doc = saveButton.ownerDocument, menu = doc.createElement('div');
-        function closeMenu(restore) { saveButton._closeSaveMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('focusin', focusOutside, true); if (restore) saveButton.focus(); }
+        var doc = saveButton.ownerDocument, menu = doc.createElement('div'), timer;
+        function cancelClose() { clearTimeout(timer); }
+        function scheduleClose(event) { if (event.pointerType !== 'mouse') return; cancelClose(); timer = setTimeout(function () { if (!menu.contains(doc.activeElement)) closeMenu(false); }, 180); }
+        function closeMenu(restore) { cancelClose(); saveButton._closeSaveMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('keydown', escape, true); saveButton.removeEventListener('pointerleave', scheduleClose); saveButton.removeEventListener('pointerenter', cancelClose); if (restore) saveButton.focus(); }
         function outside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
-        function focusOutside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
-        menu.className = 'md-drafts-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '保存 Markdown');
-        var rect = saveButton.getBoundingClientRect(); menu.style.left = rect.left + 'px'; menu.style.top = (rect.bottom + 4) + 'px';
-        [['保存到本地（' + (IS_MAC ? '⌘S' : 'Ctrl+S') + '）', saveMarkdown], ['保存到 OneDrive…（' + (IS_MAC ? '⌘⌥S' : 'Ctrl+Alt+S') + '）', function () { return window.mdOneDrive?.save(); }]].forEach(function (item) {
-          var choice = doc.createElement('button'); choice.type = 'button'; choice.textContent = item[0];
-          choice.addEventListener('click', function () { closeMenu(true); item[1](); }); menu.appendChild(choice);
+        function escape(event) { if (event.key === 'Escape' && (menu.contains(event.target) || event.target === saveButton)) { event.preventDefault(); event.stopPropagation(); closeMenu(true); } }
+        menu.className = 'md-drafts-menu md-action-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '保存 Markdown');
+        [['保存到本地', IS_MAC ? '⌘S' : 'Ctrl+S', saveMarkdown], ['保存到 OneDrive', IS_MAC ? '⌘⌥S' : 'Ctrl+Alt+S', function () { return window.mdOneDrive?.save(); }]].forEach(function (item) {
+          var choice = doc.createElement('button'), label = doc.createElement('span'), shortcut = doc.createElement('span'); choice.type = 'button'; label.textContent = item[0]; shortcut.textContent = '（' + item[1] + '）'; choice.append(label, shortcut);
+          choice.addEventListener('click', function () { closeMenu(true); item[2](); }); menu.appendChild(choice);
         });
-        menu.addEventListener('keydown', function (event) { if (event.key === 'Escape') { closeMenu(true); } });
-        doc.body.appendChild(menu); saveButton._closeSaveMenu = closeMenu; menu.firstChild.focus();
-        doc.addEventListener('pointerdown', outside, true); doc.addEventListener('focusin', focusOutside, true);
+        menu.addEventListener('keydown', function (event) { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeMenu(true); } });
+        menu.addEventListener('pointerenter', cancelClose); menu.addEventListener('pointerleave', scheduleClose);
+        saveButton.addEventListener('pointerenter', cancelClose); saveButton.addEventListener('pointerleave', scheduleClose);
+        doc.body.appendChild(menu); saveButton._closeSaveMenu = closeMenu;
+        var rect = saveButton.getBoundingClientRect(), view = doc.defaultView.visualViewport, left = view?.offsetLeft || 0, top = view?.offsetTop || 0, width = view?.width || doc.defaultView.innerWidth, height = view?.height || doc.defaultView.innerHeight;
+        menu.style.maxWidth = Math.max(0, width - 16) + 'px'; menu.style.maxHeight = Math.max(0, height - 16) + 'px';
+        menu.style.left = Math.max(left + 8, Math.min(rect.right - menu.offsetWidth, left + width - menu.offsetWidth - 8)) + 'px';
+        menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
+        doc.addEventListener('pointerdown', outside, true); doc.addEventListener('keydown', escape, true);
+        if (activation.detail === 0) menu.firstElementChild.focus();
       });
       editorActions.appendChild(saveButton);
       editorActions.appendChild(editorFullscreenBtn);
@@ -1414,6 +1422,7 @@
     var docAction = documentShortcut && documentShortcut(event);
     if (docAction) { event.preventDefault(); runDocumentAction(docAction); return; }
     if (event.isComposing || event.keyCode === 229) return;   // 输入法组合中不拦截
+    if (event.key === 'Escape' && (event.target.closest('.md-action-menu') || event.target._closeSaveMenu || event.target._closePdfMenu)) return;
     if (event.key === 'Escape' && basicMenu && !basicMenu.hidden) { event.preventDefault(); closeBasicMenu(true); return; }
     if (event.key === 'Escape' && window.mdWindowMode && (window.mdWindowMode.active || window.mdWindowMode.busy)) { window.mdWindowMode.exit(); return; }
     if (event.key === 'Escape' && fullscreenMode()) { applyFullscreen(null); return; }

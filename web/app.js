@@ -1199,26 +1199,32 @@ async function exportDocument(mode) {
 }
 window.mdPrintDocument = () => exportDocument('print');
 window.mdDownloadPdf = () => exportDocument('download');
-download.addEventListener('click', () => {
+download.addEventListener('click', activation => {
   if (download._closePdfMenu) { download._closePdfMenu(true); return; }
   const doc = download.ownerDocument, menu = doc.createElement('div');
-  menu.className = 'md-drafts-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '打印或下载 PDF');
-  const rect = download.getBoundingClientRect();
-  function close(focus = false) { download._closePdfMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('focusin', blur, true); if (focus) download.focus(); }
+  let timer;
+  const cancelClose = () => clearTimeout(timer);
+  function scheduleClose(event) { if (event.pointerType !== 'mouse') return; cancelClose(); timer = setTimeout(() => { if (!menu.contains(doc.activeElement)) close(); }, 180); }
+  function close(focus = false) { cancelClose(); download._closePdfMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('keydown', escape, true); download.removeEventListener('pointerleave', scheduleClose); download.removeEventListener('pointerenter', cancelClose); if (focus) download.focus(); }
   function outside(event) { if (!menu.contains(event.target) && event.target !== download) close(); }
-  function blur(event) { if (!menu.contains(event.target) && event.target !== download) close(); }
+  function escape(event) { if (event.key === 'Escape' && (menu.contains(event.target) || event.target === download)) { event.preventDefault(); event.stopPropagation(); close(true); } }
+  menu.className = 'md-drafts-menu md-action-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '打印或下载 PDF');
   const mac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || '');
-  for (const [label, action] of [[`打印 PDF（${mac ? '⌘P' : 'Ctrl+P'}）`, window.mdPrintDocument], [`下载 PDF（${mac ? '⌘⌥P' : 'Ctrl+Alt+P'}）`, window.mdDownloadPdf]]) {
-    const button = doc.createElement('button'); button.type = 'button'; button.textContent = label;
+  for (const [label, shortcut, action] of [['打印 PDF', mac ? '⌘P' : 'Ctrl+P', window.mdPrintDocument], ['下载 PDF', mac ? '⌘⌥P' : 'Ctrl+Alt+P', window.mdDownloadPdf]]) {
+    const button = doc.createElement('button'), name = doc.createElement('span'), key = doc.createElement('span'); button.type = 'button'; name.textContent = label; key.textContent = `（${shortcut}）`; button.append(name, key);
     button.addEventListener('click', () => { close(true); action(); }); menu.append(button);
   }
+  menu.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(true); } });
+  menu.addEventListener('pointerenter', cancelClose); menu.addEventListener('pointerleave', scheduleClose);
+  download.addEventListener('pointerenter', cancelClose); download.addEventListener('pointerleave', scheduleClose);
   doc.body.append(menu); download._closePdfMenu = close;
-  const view = doc.defaultView.visualViewport, left = view?.offsetLeft || 0, top = view?.offsetTop || 0;
+  const rect = download.getBoundingClientRect(), view = doc.defaultView.visualViewport, left = view?.offsetLeft || 0, top = view?.offsetTop || 0;
   const width = view?.width || doc.defaultView.innerWidth, height = view?.height || doc.defaultView.innerHeight;
-  menu.style.left = Math.max(left + 8, Math.min(rect.left, left + width - menu.offsetWidth - 8)) + 'px';
+  menu.style.maxWidth = Math.max(0, width - 16) + 'px'; menu.style.maxHeight = Math.max(0, height - 16) + 'px';
+  menu.style.left = Math.max(left + 8, Math.min(rect.right - menu.offsetWidth, left + width - menu.offsetWidth - 8)) + 'px';
   menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
-  menu.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); close(true); } });
-  menu.firstElementChild.focus(); doc.addEventListener('pointerdown', outside, true); doc.addEventListener('focusin', blur, true);
+  doc.addEventListener('pointerdown', outside, true); doc.addEventListener('keydown', escape, true);
+  if (activation.detail === 0) menu.firstElementChild.focus();
 });
 
 // 纯函数出口：供前端测试在 vm 内真实执行后读取选项模型（只读、无副作用）。

@@ -17,6 +17,38 @@ try {
   await browser.send('Page.addScriptToEvaluateOnNewDocument',{source:`if(window===top){window.testPrintStarted=0;window.testFrames=[];window.testDownloads=0;window.testRequests=[];addEventListener('message',e=>{if(e.data?.type==='print-started')testPrintStarted++});new MutationObserver(()=>{for(const f of document.querySelectorAll('.static-print-frame'))if(!f.dataset.captured){f.dataset.captured='true';testFrames.push(f.srcdoc)}}).observe(document,{childList:true,subtree:true});const native=window.fetch.bind(window);window.fetch=(url,opts)=>{testRequests.push(String(url));return native(url,opts)};const click=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){if(this.download){testDownloads++;return;}return click.call(this)};}`});
   await browser.send('Page.navigate',{url:base+'/'}); await wait('window.mdEditor && window.md2pdfConfigErrors && !document.querySelector("#download").disabled');
   await evaluate(`mdEditor.setValue('# PDF PRINT MARKER'); mdDrafts?.schedule()`); await wait('!document.querySelector("#download").disabled');
+  for (const [trigger, labelText] of [['#download', '打印或下载 PDF'], ['button[aria-label="下载 Markdown"]', '保存 Markdown']]) {
+    await evaluate(`document.querySelector('${trigger}').dispatchEvent(new MouseEvent('click',{bubbles:true,detail:1}))`);
+    const menu = `div[aria-label="${labelText}"]`;
+    await wait(`document.querySelector('${menu}')`);
+    if (labelText === '保存 Markdown') assert.deepEqual(await evaluate(`[...document.querySelectorAll('${menu} button span:first-child')].map(x=>x.textContent)`),['保存到本地','保存到 OneDrive']);
+    assert.ok(await evaluate(`(()=>{const m=document.querySelector('${menu}'),r=m.getBoundingClientRect(),v=visualViewport;return r.left>=v.offsetLeft&&r.right<=v.offsetLeft+v.width&&r.top>=v.offsetTop&&r.bottom<=v.offsetTop+v.height})()`));
+    await evaluate(`document.querySelector('${trigger}').dispatchEvent(new PointerEvent('pointerleave',{pointerType:'mouse'}));document.querySelector('${menu}').dispatchEvent(new PointerEvent('pointerenter',{pointerType:'mouse'}))`);
+    await new Promise(resolve=>setTimeout(resolve,220)); assert.ok(await evaluate(`document.querySelector('${menu}')`));
+    await evaluate(`document.querySelector('${menu}').dispatchEvent(new PointerEvent('pointerleave',{pointerType:'mouse'}))`);
+    await new Promise(resolve=>setTimeout(resolve,220)); assert.equal(await evaluate(`!!document.querySelector('${menu}')`),false);
+    await evaluate(`document.querySelector('${trigger}').click();document.querySelector('${menu}').dispatchEvent(new PointerEvent('pointerleave',{pointerType:'mouse'}))`);
+    await new Promise(resolve=>setTimeout(resolve,220)); assert.ok(await evaluate(`document.querySelector('${menu}')`));
+    await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`); assert.equal(await evaluate(`!!document.querySelector('${menu}')`),false);
+    await evaluate(`document.querySelector('${trigger}').dispatchEvent(new MouseEvent('click',{bubbles:true,detail:1}));document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}))`); assert.equal(await evaluate(`!!document.querySelector('${menu}')`),false);
+  }
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:110,height:600,deviceScaleFactor:1,mobile:false});
+  for (const [trigger, labelText] of [['#download', '打印或下载 PDF'], ['button[aria-label="下载 Markdown"]', '保存 Markdown']]) {
+    await evaluate(`document.querySelector('${trigger}').click()`);
+    const result=await evaluate(`(()=>{const m=document.querySelector('div[aria-label="${labelText}"]'),r=m.getBoundingClientRect();return {left:r.left,right:r.right,rows:[...m.querySelectorAll('button')].map(b=>{const [name,key]=b.querySelectorAll('span'),n=name.getBoundingClientRect(),k=key.getBoundingClientRect();return {wrapped:k.top>n.top,visible:n.left>=r.left&&n.right<=r.right&&k.left>=r.left&&k.right<=r.right,overflow:b.scrollWidth>b.clientWidth}})}})()`);
+    assert.ok(result.left>=0&&result.right<=110&&result.rows.every(x=>x.visible&&!x.overflow),JSON.stringify(result));
+    if (labelText === '保存 Markdown') assert.ok(result.rows.some(x=>x.wrapped),JSON.stringify(result));
+    await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
+  }
+  await browser.send('Emulation.clearDeviceMetricsOverride');
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:390,height:700,deviceScaleFactor:1,mobile:false});
+  await wait(`document.querySelector('.editor-panel .md-wt-overflow-trigger:not([hidden])')`);
+  await evaluate(`document.querySelector('.editor-panel .md-wt-overflow-trigger').click()`);
+  assert.equal(await evaluate(`document.querySelector('.editor-panel .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'true');
+  await evaluate(`document.querySelector('#download').click()`);
+  assert.ok(await evaluate(`!!document.querySelector('div[aria-label="打印或下载 PDF"]')`));
+  await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
+  await browser.send('Emulation.clearDeviceMetricsOverride');
   await evaluate(`document.querySelector('#download').click()`); await wait(`document.querySelector('div[aria-label="打印或下载 PDF"]')`);
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('div[aria-label="打印或下载 PDF"] button')].map(x=>x.textContent.replace(/（.*）/,''))`),['打印 PDF','下载 PDF']);
   await mkdir('/private/tmp/md2pdf-pdf-menu',{recursive:true}); const shot=await browser.send('Page.captureScreenshot',{format:'png'}); await writeFile(`/private/tmp/md2pdf-pdf-menu/${label}.png`,Buffer.from(shot.data,'base64'));

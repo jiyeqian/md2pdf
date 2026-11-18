@@ -102,6 +102,12 @@ try {
   await ready();
   let popup = await targetSession('page');
   assert.equal(await evaluate('!!document.querySelector(".preview-panel") && !document.querySelector(".editor-panel")', popup.sessionId), true);
+  await evaluate(`document.querySelector('#download').click()`, popup.sessionId);
+  assert.ok(await evaluate(`!!document.querySelector('div[aria-label="打印或下载 PDF"]')`, popup.sessionId), 'print menu opens in independent preview');
+  assert.ok(await evaluate(`(()=>{const m=document.querySelector('div[aria-label="打印或下载 PDF"]'),r=m.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()`, popup.sessionId));
+  await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`, popup.sessionId);
+  assert.equal(await evaluate(`!!document.querySelector('div[aria-label="打印或下载 PDF"]')`, popup.sessionId), false);
+
   assert.equal(await evaluate('mdEditor===sameEditor && mdWorkspaceHosts.query("#preview")===sameFrame'), true);
   assert.equal(await evaluate('renderTasks'), 0, 'opening uses an already-computed result');
   let frame = await targetSession('iframe');
