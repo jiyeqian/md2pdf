@@ -72,7 +72,7 @@ try {
     console.log(`✓ ${type}: CLI HTML、共用核心、Node API、静态预览与配置一致`);
   }
   for (const mode of ['continuous', 'page', 'odd-page']) {
-    const md = `---\nchapter-start: ${mode}\n---\n# Pagination\n\n## First\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\n<!-- pagebreak -->\n\nAfter manual break\n\n## Second\n\nEnd`;
+    const md = `---\nchapter-start: ${mode}\n---\n# Pagination\n\n## First\n\n| A<br>B<br/>C<br />D | \`<br>\` |\n| --- | --- |\n| 1 | 2 |\n\n<!-- pagebreak -->\n\nAfter manual break\n\n## Second\n\nEnd`;
     const body = {md, opts:{}};
     const online = await (await nativeFetch(base+'/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
     const offline = await (await browser.appFetch('/api/render',{body:JSON.stringify(body)})).json();
@@ -80,6 +80,11 @@ try {
     assert.equal(online.effective.chapterStart, mode);
     assert.deepEqual(offline.effective, online.effective);
     const core = await render(md, {pagedHtml:true}, {webSafe:true});
+    assert.match(core.pagedHtml, /<th>A<br>B<br>C<br>D<\/th>/);
+    assert.match(core.pagedHtml, /<th><code>&lt;br&gt;<\/code><\/th>/);
+    const safe = await render('| A<br title="x">B |\n| --- |\n| C<br>D |', {pagedHtml:true}, {webSafe:true});
+    assert.match(safe.pagedHtml, /<th>A&lt;br title=&quot;x&quot;&gt;B<\/th>/);
+    assert.match(safe.pagedHtml, /C&lt;br&gt;D/);
     const input=path.join(tmp,'pagination.md'), output=path.join(tmp,'pagination.html');
     await writeFile(input,md);
     execFileSync(process.execPath,['src/md2pdf.mjs',input,'--html-only','--paged-html=','-o',output],{cwd:root,stdio:'pipe'});

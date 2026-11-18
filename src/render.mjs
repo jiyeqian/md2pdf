@@ -575,6 +575,7 @@ export async function render(src, options = {}, context = {}) {
   const { Marked } = await import(pathToFileURL(path.join(ROOT, 'vendor', 'marked.esm.js')).href);
   throwIfAborted();
   const marked = new Marked({ gfm: true });
+  let inTableHeader = false;
   installInlineScripts(marked);
   const require = createRequire(import.meta.url);
   const hljs = require(path.join(ROOT, 'vendor', 'highlight', 'highlight.cjs'));
@@ -591,7 +592,23 @@ export async function render(src, options = {}, context = {}) {
       },
       renderer() { return '<div class="md2pdf-pagebreak" aria-hidden="true"></div>\n'; },
     }],
-    renderer: { html(token) { return context.webSafe ? esc(token.text) : token.text; } },
+    renderer: {
+      tablecell(token) {
+        if (!token.header) return false;
+        inTableHeader = true;
+        try {
+          const content = this.parser.parseInline(token.tokens);
+          const align = token.align ? ` align="${token.align}"` : '';
+          return `<th${align}>${content}</th>\n`;
+        } finally {
+          inTableHeader = false;
+        }
+      },
+      html(token) {
+        if (inTableHeader && /^<br ?\/?>$/i.test(token.text)) return '<br>';
+        return context.webSafe ? esc(token.text) : token.text;
+      },
+    },
   });
   if (context.webSafe) marked.use({ renderer: {
     image(token) {
