@@ -435,7 +435,10 @@
     var width = basicMenu.offsetWidth || (rect && rect.width) || 360;
     var left = Math.max(8, Math.min(anchor.left, viewport - width - 8));
     basicMenu.style.left = left + 'px';
-    basicMenu.style.top = (anchor.bottom + 6) + 'px';
+    var view = basicButton.ownerDocument.defaultView;
+    var top = anchor.bottom + 6;
+    if (top + rect.height > view.innerHeight - 8) top = Math.max(8, anchor.top - rect.height - 6);
+    basicMenu.style.top = top + 'px';
   }
 
   function onBasicMenuKeydown(event) {
@@ -660,6 +663,107 @@
     if (!heading || !control) return;
     var actions = heading.querySelector('.panel-actions');
     heading.insertBefore(control.root, actions || null);
+  }
+
+  function setupOverflow(bar, panel, editor) {
+    var more = make('button', { type: 'button', class: 'md-wt-overflow-trigger', 'aria-label': '更多工具', 'aria-expanded': 'false', 'aria-haspopup': 'true', title: '更多工具' });
+    more.textContent = '⋯';
+    var background = make('div', { class: 'md-wt-overflow-background', hidden: '' });
+    bar.appendChild(more); bar.appendChild(background);
+    var open = false, overflow = [], boundDocument = null, boundView = null, panelObserver = null;
+    var watchedDetails = new WeakSet();
+    function controls() {
+      if (!editor) return Array.from(bar.children).filter(function (node) { return node.matches('.toolbar-field, button:not(.md-wt-overflow-trigger)'); });
+      var result = [];
+      bar.querySelectorAll('.md-wt-group').forEach(function (group) {
+        Array.from(group.children).forEach(function (node) {
+          if (node.matches('.md-wt-mount')) result.push.apply(result, Array.from(node.children));
+          else if (node.matches('button, a.md-wt-button, .md-wt-basic')) result.push(node);
+        });
+      });
+      return result;
+    }
+    function close(restore) {
+      open = false; more.setAttribute('aria-expanded', 'false'); background.hidden = true;
+      overflow.forEach(function (node) { node.classList.remove('md-wt-overflow-open'); node.querySelectorAll('[data-overflow-tabindex]').forEach(function (el) { el.tabIndex = Number(el.dataset.overflowTabindex); delete el.dataset.overflowTabindex; }); if (node.hasAttribute('data-overflow-tabindex')) { node.tabIndex = Number(node.dataset.overflowTabindex); delete node.dataset.overflowTabindex; } });
+      if (restore && !more.hidden) more.focus();
+    }
+    function position() {
+      if (!open) return;
+      var view = bar.ownerDocument.defaultView, rect = more.getBoundingClientRect(), width = 44, height = 36, margin = 8;
+      var rows = Math.max(1, Math.floor((view.innerHeight - margin * 2 - 8) / height));
+      var boxHeight = Math.min(rows, overflow.length) * height + 8, boxWidth = Math.ceil(overflow.length / rows) * width + 8;
+      var left = Math.max(margin, Math.min(rect.right - boxWidth, view.innerWidth - boxWidth - margin));
+      var top = rect.bottom + 6;
+      if (top + boxHeight > view.innerHeight - margin) top = Math.max(margin, rect.top - boxHeight - 6);
+      Object.assign(background.style, { left: left + 'px', top: top + 'px', width: boxWidth + 'px', height: boxHeight + 'px' });
+      overflow.forEach(function (node, i) {
+        node.style.setProperty('--md-overflow-left', (left + 8 + Math.floor(i / rows) * width) + 'px');
+        node.style.setProperty('--md-overflow-top', (top + 4 + (i % rows) * height) + 'px');
+      });
+    }
+    function update() {
+      bindDocument();
+      bar.querySelectorAll('details.range-pop').forEach(function (details) {
+        if (watchedDetails.has(details)) return;
+        watchedDetails.add(details);
+        details.addEventListener('toggle', function () {
+          var popup = details.querySelector('.range-popover');
+          if (!popup || !details.open) return;
+          popup.style.top = '';
+          var rect = popup.getBoundingClientRect(), anchor = details.getBoundingClientRect(), view = details.ownerDocument.defaultView;
+          if (rect.bottom > view.innerHeight - 8) popup.style.top = Math.max(8 - anchor.top, -rect.height - 6) + 'px';
+        });
+      });
+      var items = controls(), visible = items.filter(function (node) { return !node.hidden && getComputedStyle(node).display !== 'none'; });
+      var columns = parseInt(panel.style.getPropertyValue('--panel-columns'), 10) || 1;
+      var next = visible.length > columns ? visible.slice(Math.max(0, columns - 1)) : [];
+      if (open && (next.length !== overflow.length || next.some(function (item, i) { return item !== overflow[i]; }))) close(false);
+      items.forEach(function (node) { node.classList.remove('md-wt-overflow-item', 'md-wt-overflow-open'); });
+      overflow = next;
+      overflow.forEach(function (node) { node.classList.add('md-wt-overflow-item'); if (open) node.classList.add('md-wt-overflow-open'); });
+      if (more.hidden !== !overflow.length) more.hidden = !overflow.length;
+      position();
+    }
+    more.addEventListener('click', function () {
+      if (open) { close(true); return; }
+      open = true; more.setAttribute('aria-expanded', 'true'); background.hidden = false;
+      overflow.forEach(function (node) { node.classList.add('md-wt-overflow-open'); var targets = node.matches('button, a, summary') ? [node] : Array.from(node.querySelectorAll('button, a, summary')); targets.forEach(function (el) { if (el.tabIndex < 0 && !el.disabled) { el.dataset.overflowTabindex = String(el.tabIndex); el.tabIndex = 0; } }); }); position();
+    });
+    function onPointer(event) { if (open && !bar.contains(event.target)) close(false); }
+    function onKey(event) {
+      if (open && event.key === 'Escape' && !event.target.closest('details[open], .md-wt-basic-menu:not([hidden])')) { event.preventDefault(); close(true); }
+    }
+    function bindDocument() {
+      var doc = bar.ownerDocument;
+      if (boundDocument === doc) return;
+      if (boundDocument) { boundDocument.removeEventListener('pointerdown', onPointer); boundDocument.removeEventListener('keydown', onKey); }
+      if (boundView) boundView.removeEventListener('resize', schedule);
+      if (panelObserver) panelObserver.disconnect();
+      boundDocument = doc; boundView = doc.defaultView;
+      doc.addEventListener('pointerdown', onPointer); doc.addEventListener('keydown', onKey);
+      boundView.addEventListener('resize', schedule);
+      if (boundView.ResizeObserver) { panelObserver = new boundView.ResizeObserver(schedule); panelObserver.observe(panel); }
+    }
+    bar.addEventListener('click', function (event) {
+      if (!open || more.contains(event.target)) return;
+      var item = event.target.closest('.md-wt-overflow-item');
+      if (item && !item.matches('.md-wt-basic') && !item.querySelector('details') && !event.target.closest('details')) close(false);
+    });
+    var scheduled = false;
+    function schedule() {
+      if (scheduled) return;
+      scheduled = true;
+      var view = bar.ownerDocument.defaultView;
+      view.requestAnimationFrame(function () { scheduled = false; updatePanelGrid(panel); update(); });
+    }
+    panel.addEventListener('md-panel-owner-change', function () {
+      scheduled = false;
+      updatePanelGrid(panel);
+      update();
+    });
+    if (window.MutationObserver) new MutationObserver(schedule).observe(bar, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'data-document-type'] });
+    schedule();
   }
 
   // 标题和工具条使用同一列节奏；只更新几何量，不重新创建控件。
@@ -1420,6 +1524,8 @@
   restoreRatio();
   wireEvents();
   observePanelGrids();
+  setupOverflow(toolbar, editorPanel, true);
+  setupOverflow(previewPanel.querySelector('.preview-toolbar'), previewPanel, false);
   observeStackLayout();
   setEnabled(ready);
 })();

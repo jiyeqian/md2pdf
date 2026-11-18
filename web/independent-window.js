@@ -94,6 +94,7 @@
       owner.adoptNode(panel);
       if (target === workspace) homes[panels.indexOf(panel)].after(panel);
       else target.appendChild(panel);
+      panel.dispatchEvent(new owner.defaultView.Event('md-panel-owner-change'));
       if (isPreview) {
         owner.adoptNode(preview);
         preview.setAttribute('srcdoc', snapshot?.html || '');

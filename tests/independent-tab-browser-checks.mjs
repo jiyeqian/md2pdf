@@ -71,6 +71,16 @@ try {
   await wait('!mdWindowMode.restoring && !mdWindowMode.busy');
   const state=await evaluate(`({root:document.visibilityState,popup:mdWindowMode.popup.document.visibilityState,opacity:mdWorkspaceHosts.query('#preview').style.opacity,outline:mdWindowMode.popup.document.querySelectorAll('.md-preview-outline button').length})`);
   assert.equal(state.root,'hidden');assert.equal(state.popup,'visible');assert.notEqual(state.opacity,'0');assert.ok(state.outline>=2);
+  // The opener stays hidden while the adopted panel is resized and swapped.
+  await send('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:false},popup.sessionId);
+  await wait(`!document.querySelector('.preview-toolbar .md-wt-overflow-trigger').hidden`,popup.sessionId);
+  await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-trigger').click()`,popup.sessionId);
+  assert.equal(await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`,popup.sessionId),'true');
+  await evaluate(`document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))`,popup.sessionId);
+  assert.equal(await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`,popup.sessionId),'false');
+  await send('Emulation.setDeviceMetricsOverride',{width:1000,height:800,deviceScaleFactor:1,mobile:false},popup.sessionId);
+  await wait(`document.querySelector('.preview-toolbar .md-wt-overflow-trigger').hidden`,popup.sessionId);
+  await send('Emulation.clearDeviceMetricsOverride',{},popup.sessionId);
   const frame=await targetSession('iframe');
   assert.ok(await evaluate(`document.querySelectorAll('.pagedjs_page').length>0`,frame.sessionId));
   assert.ok(await evaluate(`document.body.textContent.includes('TARGET_CONTENT')`,frame.sessionId));

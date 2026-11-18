@@ -17,7 +17,7 @@
 //   * Plain-text paste keeps its default behaviour (files.length === 0 => false).
 //   * Long base64 data URLs are folded to a short expandable placeholder purely as
 //     a view decoration — the underlying text (textarea / copy / export) is never
-//     modified. A selection that touches a folded range reveals the raw text.
+//     modified. The raw data remains hidden when the thumbnail is expanded.
 //
 // The file is a classic script (IIFE, no import/export) and also a valid ES
 // module so the pure helpers can be unit-tested under Node.
@@ -31,7 +31,7 @@
 
   const MAX_IMAGE_BYTES = 10 * 1024 * 1024;   // hard per-image limit
   const LARGE_IMAGE_BYTES = 2 * 1024 * 1024;  // prompt threshold (never auto-compress)
-  const FOLD_THRESHOLD = 160;                 // min data-URL length worth folding
+  const FOLD_THRESHOLD = 0;                   // fold every embedded image data URL
   const SUPPORTED_MIME = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
   const EXT_MIME = {
     png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', jfif: 'image/jpeg',
@@ -485,8 +485,8 @@
 
       const plan = H.planImageInsertion({ text: api.getValue(), from: from, to: to, images: images });
       if (!plan.insert) return;
-      api.replaceRange(from, to, plan.insert); // one transaction => one undo step
-      api.setSelection(plan.selection);
+      api.replaceRange(from, to, plan.insert, plan.selection); // one transaction => one undo step
+      api.focus();
 
       setStatus(notes.join(' '), rejected > 0);
     } catch (error) {
@@ -521,66 +521,94 @@
 
   function createExtensions(Vend, api) {
     class FoldWidget extends Vend.WidgetType {
-      constructor(from, to) { super(); this.from = from; this.to = to; }
-      eq(other) { return other.from === this.from && other.to === this.to; }
+      constructor(url) { super(); this.url = url; }
+      eq(other) { return other.url === this.url; }
       toDOM() {
-        const widget = this;
-        const span = doc.createElement('span');
-        span.className = 'md-image-fold';
-        span.textContent = foldPlaceholder(this);
-        span.title = '点击展开原始数据';
-        span.setAttribute('role', 'button');
-        span.setAttribute('tabindex', '0');
-        span.setAttribute('aria-label', '已折叠的图片数据，共 ' + (this.to - this.from) + ' 字符，点击展开');
-        function reveal(event) {
-          if (event && typeof event.preventDefault === 'function') event.preventDefault();
-          if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
-          api.focus();
-          api.setSelection(widget.from);
-        }
-        span.addEventListener('mousedown', reveal);
-        span.addEventListener('keydown', function (event) {
-          if (event.key === 'Enter' || event.key === ' ') reveal(event);
+        const button = doc.createElement('button');
+        button.type = 'button';
+        button.contentEditable = 'false';
+        button.className = 'md-image-fold';
+        button.setAttribute('aria-expanded', 'false');
+        button.tabIndex = 0;
+        button.setAttribute('aria-label', '展开图片缩略图');
+        const label = doc.createElement('span');
+        label.textContent = '图片 ▸';
+        const image = doc.createElement('img');
+        image.className = 'md-image-fold-thumbnail';
+        image.alt = '';
+        image.hidden = true;
+        button.append(label, image);
+        button.addEventListener('click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          const expanded = button.getAttribute('aria-expanded') === 'true';
+          button.setAttribute('aria-expanded', String(!expanded));
+          button.setAttribute('aria-label', expanded ? '展开图片缩略图' : '收起图片缩略图');
+          label.textContent = expanded ? '图片 ▸' : '图片 ▾';
+          if (!expanded && !image.src) image.src = this.url;
+          image.hidden = expanded;
+        }.bind(this));
+        button.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); button.click(); }
         });
-        return span;
+        return button;
       }
-      ignoreEvent() { return true; } // the module fully owns interaction on the widget
-    }
-
-    function selectionTouches(state, from, to) {
-      for (const range of state.selection.ranges) {
-        if (range.from <= to && from <= range.to) return true;
-      }
-      return false;
+      ignoreEvent() { return true; }
     }
 
     function buildDecorations(state) {
       const text = state.doc.toString();
-      const ranges = H.findFoldRanges(text, H.FOLD_THRESHOLD);
       const specs = [];
-      for (const range of ranges) {
-        if (selectionTouches(state, range.from, range.to)) continue; // reveal when selected
-        specs.push(Vend.Decoration.replace({ widget: new FoldWidget(range.from, range.to) }).range(range.from, range.to));
+      const fenced = [];
+      let fence = null, offset = 0;
+      for (const line of text.split('\n')) {
+        const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+        if (marker && !fence) fence = { char: marker[1][0], length: marker[1].length, from: offset };
+        else if (marker && fence && marker[1][0] === fence.char && marker[1].length >= fence.length) {
+          fenced.push({ from: fence.from, to: offset + line.length }); fence = null;
+        }
+        offset += line.length + 1;
+      }
+      if (fence) fenced.push({ from: fence.from, to: text.length });
+      const tree = Vend.syntaxTree(state);
+      for (const range of H.findFoldRanges(text, H.FOLD_THRESHOLD)) {
+        if (fenced.some(function (block) { return block.from <= range.from && range.from <= block.to; })) continue;
+        if (range.to <= tree.length) {
+          let node = tree.resolveInner(range.from, 1);
+          while (node && node.name !== 'Image') node = node.parent;
+          if (!node || node.to < range.to) continue;
+        } else {
+          // Parsing may lag behind a large paste. Hide likely image URLs until
+          // the syntax tree catches up, without blocking the input thread.
+          const line = state.doc.lineAt(range.from);
+          const before = text.slice(line.from, range.from);
+          if (!/!\[[^\]\n]*\]\(<?$/.test(before) || !/^>?\)/.test(text.slice(range.to, range.to + 2))) continue;
+          if ((before.match(/(?<!\\)`+/g) || []).length % 2) continue;
+        }
+        specs.push(Vend.Decoration.replace({ widget: new FoldWidget(text.slice(range.from, range.to)) }).range(range.from, range.to));
       }
       return Vend.Decoration.set(specs, true);
     }
 
-    const foldPlugin = Vend.ViewPlugin.fromClass(class {
-      constructor(view) { this.decorations = buildDecorations(view.state); }
-      update(update) {
-        if (update.docChanged || update.selectionSet || update.viewportChanged ||
-            update.transactions.some(function (tr) { return tr.reconfigured; })) {
-          this.decorations = buildDecorations(update.state);
-        }
-      }
-    }, { decorations: function (value) { return value.decorations; } });
+    const decorationCache = new WeakMap();
+    function decorationsFor(state) {
+      const tree = Vend.syntaxTree(state);
+      let cached = decorationCache.get(state.doc);
+      if (!cached || cached.tree !== tree) { cached = { tree: tree, decorations: buildDecorations(state) }; decorationCache.set(state.doc, cached); }
+      return cached.decorations;
+    }
+    // Direct state decorations inform the height map before the viewport is laid out.
+    const foldPlugin = Vend.EditorView.decorations.compute(['doc', Vend.markdownLanguage.constructor.state], decorationsFor);
+    const atomicImages = Vend.EditorView.atomicRanges.of(function (view) {
+      return decorationsFor(view.state);
+    });
 
     const interactionExtension = Vend.EditorView.domEventHandlers({
       paste: function (event) { return handleFilesEvent(event, event.clipboardData, null); },
       drop: function (event, view) { return handleFilesEvent(event, event.dataTransfer, view); },
     });
 
-    return { foldPlugin: foldPlugin, interactionExtension: interactionExtension };
+    return { foldPlugin: foldPlugin, atomicImages: atomicImages, interactionExtension: interactionExtension };
   }
 
   function installStatus(toolbar) {
@@ -708,6 +736,7 @@
     doc = global.document;
     const extensions = createExtensions(Vend, api);
     api.addExtension(extensions.foldPlugin);
+    api.addExtension(extensions.atomicImages);
     api.addExtension(extensions.interactionExtension);
     waitForToolbar();
     ensurePicker();

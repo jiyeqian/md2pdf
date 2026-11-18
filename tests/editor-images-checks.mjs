@@ -211,47 +211,30 @@ test('vendor 导出折叠所需的最小编解码能力', async () => {
   assert.equal(typeof V.ViewPlugin.fromClass, 'function');
 });
 
-test('真实 CodeMirror 装饰：默认折叠，选区触及则展开', async () => {
-  const src = await readFile(path.join(ROOT, 'web/editor-vendor.js'), 'utf8');
-  const sandbox = { window: {}, self: {}, console: { warn() {} } };
-  sandbox.globalThis = sandbox;
-  vm.createContext(sandbox);
-  vm.runInContext(src, sandbox, { filename: 'editor-vendor.js' });
-  const V = sandbox.MDEditorVendor;
-
-  const text = '前 ' + 'data:image/png;base64,' + 'A'.repeat(200);
-  const ranges = H.findFoldRanges(text, H.FOLD_THRESHOLD);
-  assert.equal(ranges.length, 1);
-
-  class W extends V.WidgetType {
-    toDOM() { return null; }
-    eq() { return true; }
-  }
-  function build(state) {
-    const specs = [];
-    for (const r of H.findFoldRanges(state.doc.toString(), H.FOLD_THRESHOLD)) {
-      const hit = state.selection.ranges.some(s => s.from <= r.to && r.from <= s.to);
-      if (hit) continue;
-      specs.push(V.Decoration.replace({ widget: new W() }).range(r.from, r.to));
-    }
-    return V.Decoration.set(specs, true);
-  }
-
-  assert.equal(build(V.EditorState.create({ doc: text })).size, 1, '无选区时折叠');
-  const inside = V.EditorState.create({ doc: text, selection: { anchor: ranges[0].from + 2 } });
-  assert.equal(build(inside).size, 0, '光标/选区在范围内时展开');
+test('图片数据始终折叠，使用原子范围与可访问的缩略图控件', async () => {
+  const src = await readFile(path.join(ROOT, 'web/editor-images.js'), 'utf8');
+  const css = await readFile(path.join(ROOT, 'web/editor-images.css'), 'utf8');
+  assert.equal(H.FOLD_THRESHOLD, 0);
+  assert.equal(H.findFoldRanges('data:image/png;base64,AAAA').length, 1);
+  assert.match(src, /EditorView\.atomicRanges\.of/);
+  assert.doesNotMatch(src, /selectionTouches|点击展开原始数据/);
+  assert.match(src, /createElement\('button'\)/);
+  assert.match(src, /aria-expanded/);
+  assert.match(src, /image\.src = this\.url/);
+  assert.match(css, /max-height: 180px/);
+  assert.match(css, /max-width: min\(100%, 320px\)/);
 });
 
 test('图片模块源码契约：真实折叠、无 confirm、插入单事务', async () => {
   const src = await readFile(path.join(ROOT, 'web/editor-images.js'), 'utf8');
   assert.match(src, /Decoration\.replace/, '用 Decoration.replace 折叠（非 CSS 截断）');
-  assert.match(src, /ViewPlugin\.fromClass/, '折叠由 ViewPlugin 提供');
+  assert.match(src, /EditorView\.decorations\.compute\(\['doc', Vend\.markdownLanguage\.constructor\.state\], decorationsFor\)/, '折叠装饰直接参与布局高度计算');
   assert.match(src, /showModal/, '使用原生 <dialog>');
   assert.ok(!/window\.confirm|\bconfirm\(/.test(src), '不使用阻塞式 confirm');
   assert.ok(!/\.innerHTML\s*=/.test(src), '无 innerHTML 赋值');
   assert.ok(!/\beval\s*\(/.test(src), '无 eval');
   assert.ok(!/\.setValue\(/.test(src), '绝不调用 setValue（保护撤销历史）');
-  assert.match(src, /api\.replaceRange\(from, to, plan\.insert\)/, '整次插入为单个事务');
+  assert.match(src, /api\.replaceRange\(from, to, plan\.insert, plan\.selection\)/, '整次插入为单个事务');
   assert.match(src, /md-editor-transaction/, '异步读取期间用事务映射保持光标');
   assert.match(src, /readAsDataURL/, '通过 FileReader 本地编码');
   assert.match(src, /image\/webp/, '接受 WebP');
@@ -336,7 +319,7 @@ test('图片按钮挂到插入组挂载点并图标化，点击真正打开 pick
   assert.match(src, /ensurePicker\(\)\.click\(\)/, '点击按钮真正触发文件选择');
   assert.match(src, /installToolbarButton\(mount\)/, '挂载到插入组挂载点');
   // 导入管线未被改动
-  assert.match(src, /api\.replaceRange\(from, to, plan\.insert\)/);
+  assert.match(src, /api\.replaceRange\(from, to, plan\.insert, plan\.selection\)/);
   assert.match(src, /planImageInsertion/);
 });
 

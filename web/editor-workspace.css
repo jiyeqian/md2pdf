@@ -400,3 +400,11 @@
 .workspace.md-editor-workspace .preview-toolbar .icon-button{width:var(--panel-button,28px);height:var(--panel-button,28px)}
 
 .workspace.md-editor-workspace .panel-heading .panel-actions > .icon-button { flex: 0 0 var(--panel-button, 28px); }
+
+.workspace.md-editor-workspace .md-wt-toolbar,
+.workspace.md-editor-workspace .preview-toolbar { grid-auto-flow: column; grid-auto-columns: var(--panel-button, 28px); grid-template-rows: var(--panel-button, 28px); }
+.workspace.md-editor-workspace .md-wt-overflow-trigger[hidden], .workspace.md-editor-workspace .md-wt-overflow-background[hidden] { display: none; }
+.workspace.md-editor-workspace .md-wt-overflow-trigger { width: var(--panel-button, 28px); height: var(--panel-button, 28px); padding: 0; border: 1px solid #dbe2ec; border-radius: 6px; background: #fff; color: #33465e; font-size: 20px; line-height: 1; }
+.workspace.md-editor-workspace .md-wt-overflow-background { position: fixed; z-index: 49; background: #fff; border: 1px solid #dbe2ec; border-radius: 8px; box-shadow: 0 10px 30px rgba(36,51,72,.16); }
+.workspace.md-editor-workspace .md-wt-overflow-item { position: fixed; left: var(--md-overflow-left); top: var(--md-overflow-top); z-index: 50; visibility: hidden; pointer-events: none; }
+.workspace.md-editor-workspace .md-wt-overflow-item.md-wt-overflow-open { visibility: visible; pointer-events: auto; }

@@ -839,9 +839,15 @@
         const range = view.state.selection.main;
         view.dispatch({ changes: { from: range.from, to: range.to, insert: String(text == null ? '' : text) } });
       },
-      replaceRange: function (from, to, text) {
+      replaceRange: function (from, to, text, selection) {
         const range = normalizeRange(view.state.doc.length, from, to);
-        view.dispatch({ changes: { from: range.from, to: range.to, insert: String(text == null ? '' : text) } });
+        const insert = String(text == null ? '' : text);
+        const transaction = { changes: { from: range.from, to: range.to, insert: insert } };
+        if (selection !== undefined) {
+          transaction.selection = { anchor: clamp(Number(selection), 0, view.state.doc.length - (range.to - range.from) + insert.length) };
+          transaction.scrollIntoView = true;
+        }
+        view.dispatch(transaction);
       },
       replaceRanges: function (changes) {
         view.dispatch({ changes: changes.map(function (change) {
