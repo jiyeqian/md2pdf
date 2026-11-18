@@ -590,17 +590,17 @@
       return Vend.Decoration.set(specs, true);
     }
 
-    const foldPlugin = Vend.ViewPlugin.fromClass(class {
-      constructor(view) { this.decorations = buildDecorations(view.state); }
-      update(update) {
-        if (update.docChanged || update.viewportChanged || update.transactions.some(function (tr) { return tr.reconfigured; })) {
-          this.decorations = buildDecorations(update.state);
-        }
-      }
-    }, { decorations: function (value) { return value.decorations; } });
+    const decorationCache = new WeakMap();
+    function decorationsFor(state) {
+      const tree = Vend.syntaxTree(state);
+      let cached = decorationCache.get(state.doc);
+      if (!cached || cached.tree !== tree) { cached = { tree: tree, decorations: buildDecorations(state) }; decorationCache.set(state.doc, cached); }
+      return cached.decorations;
+    }
+    // Direct state decorations inform the height map before the viewport is laid out.
+    const foldPlugin = Vend.EditorView.decorations.compute(['doc', Vend.markdownLanguage.constructor.state], decorationsFor);
     const atomicImages = Vend.EditorView.atomicRanges.of(function (view) {
-      const plugin = view.plugin(foldPlugin);
-      return plugin ? plugin.decorations : Vend.Decoration.none;
+      return decorationsFor(view.state);
     });
 
     const interactionExtension = Vend.EditorView.domEventHandlers({

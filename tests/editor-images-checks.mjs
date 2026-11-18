@@ -228,7 +228,7 @@ test('图片数据始终折叠，使用原子范围与可访问的缩略图控�
 test('图片模块源码契约：真实折叠、无 confirm、插入单事务', async () => {
   const src = await readFile(path.join(ROOT, 'web/editor-images.js'), 'utf8');
   assert.match(src, /Decoration\.replace/, '用 Decoration.replace 折叠（非 CSS 截断）');
-  assert.match(src, /ViewPlugin\.fromClass/, '折叠由 ViewPlugin 提供');
+  assert.match(src, /EditorView\.decorations\.compute\(\['doc', Vend\.markdownLanguage\.constructor\.state\], decorationsFor\)/, '折叠装饰直接参与布局高度计算');
   assert.match(src, /showModal/, '使用原生 <dialog>');
   assert.ok(!/window\.confirm|\bconfirm\(/.test(src), '不使用阻塞式 confirm');
   assert.ok(!/\.innerHTML\s*=/.test(src), '无 innerHTML 赋值');
