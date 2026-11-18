@@ -41,7 +41,13 @@
 
 /* 长 base64 折叠后的占位（CodeMirror 内联 widget）。 */
 .md-editor-host .md-image-fold {
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  vertical-align: middle;
+  max-width: 100%;
+  font-family: inherit;
+  line-height: inherit;
   padding: 0 6px;
   margin: 0 1px;
   border: 1px solid #dbe4f0;
@@ -61,6 +67,17 @@
 .md-editor-host .md-image-fold:focus-visible {
   outline: 2px solid #6f93bc;
   outline-offset: 1px;
+}
+
+.md-editor-host .md-image-fold-thumbnail {
+  display: block;
+  max-width: min(100%, 320px);
+  max-height: 180px;
+  object-fit: contain;
+}
+
+.md-editor-host .md-image-fold-thumbnail[hidden] {
+  display: none;
 }
 
 /* 大图确认对话框（原生 <dialog>，非阻塞）。 */
