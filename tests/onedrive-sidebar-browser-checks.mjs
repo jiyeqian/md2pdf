@@ -15,15 +15,25 @@ try{
  await evalJS('window.mdOneDrive.open()');await wait(`document.querySelector('#editor-assistant-tab-cloud[aria-selected="true"]')`);await wait(`[...document.querySelectorAll('.md-cloud-panel-button')].some(x=>x.textContent==='连接 OneDrive'&&!x.disabled)`);
  const connectSelector='.md-cloud-panel-button';assert.equal(await evalJS(`document.querySelector(${JSON.stringify(connectSelector)}).textContent`),'连接 OneDrive');await click(connectSelector);
  await wait(`document.querySelectorAll('.md-cloud-panel-file').length===2`);assert.equal(await evalJS(`fakeCalls.find(x=>x.popup).gesture`),true);
+ assert.deepEqual(await evalJS(`[...document.querySelectorAll('.md-cloud-icon-button')].map(b=>b.dataset.tooltip)`),['刷新','保存到 OneDrive','新建文件夹','断开']);
+ await evalJS(`document.querySelector('.md-cloud-icon-button').focus()`);
+ assert.equal(await evalJS(`document.querySelector('.md-cloud-tooltip')?.textContent`),'刷新');
  await browser.send('Emulation.setEmulatedMedia',{features:[{name:'hover',value:'hover'}]});
  const canHover=await evalJS(`matchMedia('(hover:hover)').matches`); assert.equal(canHover,true,'desktop hover emulation must be active');
  if(canHover){
+  const tool=await evalJS(`(()=>{const r=document.querySelector('.md-cloud-icon-button[aria-label="保存到 OneDrive"]').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+  await browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',...tool});
+  assert.equal(await evalJS(`document.querySelector('.md-cloud-tooltip')?.textContent`),'保存到 OneDrive');
   await browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:1,y:1});
   await wait(`getComputedStyle(document.querySelector('.md-cloud-row-menu')).opacity==='0'`);
   const point=await evalJS(`(()=>{const r=document.querySelector('.md-cloud-panel-row').getBoundingClientRect();return {x:r.left+10,y:r.top+10}})()`);
   await browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',...point});await wait(`getComputedStyle(document.querySelector('.md-cloud-row-menu')).opacity==='1'`);
  }
- await evalJS(`document.querySelector('.md-cloud-row-menu').focus()`);assert.equal(await evalJS(`getComputedStyle(document.querySelector('.md-cloud-row-menu')).opacity`),'1');
+ await evalJS(`document.querySelector('.md-cloud-row-menu').focus()`);
+ assert.equal(await evalJS(`document.querySelector('.md-cloud-tooltip')?.textContent`),'更多操作');
+ const tipWithinViewport=async selector=>{await evalJS(`document.querySelector(${JSON.stringify(selector)}).focus()`);return evalJS(`(()=>{const r=document.querySelector('.md-cloud-tooltip').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()`);};
+ for(const selector of ['.md-cloud-icon-button[aria-label="保存到 OneDrive"]','.md-cloud-icon-button[aria-label="断开"]','.md-cloud-row-menu']) assert.equal(await tipWithinViewport(selector),true,selector);
+ assert.equal(await evalJS(`getComputedStyle(document.querySelector('.md-cloud-row-menu')).opacity`),'1');
  await browser.send('Emulation.setEmulatedMedia',{features:[]});
  await browser.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
  await browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:1,y:1});await evalJS(`document.querySelector('.md-cloud-row-menu').blur()`);
@@ -60,6 +70,12 @@ try{
  assert.ok(await evalJS(`document.querySelector('.md-cloud-panel').textContent.includes('项目')`));
  await evalJS(`[...document.querySelectorAll('.md-cloud-crumb')].find(x=>x.textContent==='md2pdf').click()`);await wait(`document.querySelector('[data-cloud-id="sub"]')`);
  await browser.send('Emulation.setDeviceMetricsOverride',{width:390,height:568,deviceScaleFactor:1,mobile:true}); await new Promise(resolve=>setTimeout(resolve,200));
+ for(const selector of ['.md-cloud-icon-button[aria-label="保存到 OneDrive"]','.md-cloud-icon-button[aria-label="断开"]','.md-cloud-row-menu']) {
+  assert.equal(await tipWithinViewport(selector),true,`narrow focus: ${selector}`);
+  const point=await evalJS(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+  await evalJS(`document.activeElement.blur()`); await browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',...point});
+  assert.equal(await evalJS(`(()=>{const t=document.querySelector('.md-cloud-tooltip');if(!t)return false;const r=t.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight&&t.parentElement===document.body})()`),true,`narrow hover: ${selector}`);
+ }
  await writeFile('/private/tmp/md2pdf-cloud-sidebar/node-mobile.png',Buffer.from((await browser.send('Page.captureScreenshot',{format:'png'})).data,'base64'));
  assert.ok(await evalJS('document.documentElement.scrollWidth <= innerWidth'));
  console.log('OneDrive sidebar Node connection and screenshots passed');

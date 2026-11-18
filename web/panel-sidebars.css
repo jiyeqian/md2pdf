@@ -59,7 +59,8 @@
 
 .md-cloud-panel.is-disconnected { text-align:center; }
 .md-cloud-panel.is-disconnected > .md-cloud-panel-button { margin:8px auto; }
-.md-cloud-icon-button { cursor:pointer; }
+.md-cloud-icon-button { position:relative; cursor:pointer; }
+.md-cloud-tooltip { position:fixed; z-index:1000; padding:3px 6px; border-radius:4px; background:#354a63; color:#fff; font:12px/1.4 system-ui,sans-serif; white-space:nowrap; pointer-events:none; }
 .md-cloud-icon-button svg { width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round; }
 .md-cloud-icon-button:disabled { opacity:.5; }
 .md-cloud-breadcrumb { display:flex;align-items:center;min-width:0;width:100%;max-width:100%;box-sizing:border-box;white-space:nowrap;overflow:visible;gap:2px;color:#677b92;font:inherit; }

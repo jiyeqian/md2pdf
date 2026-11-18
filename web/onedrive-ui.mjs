@@ -49,11 +49,28 @@ export function initializeOneDrive() {
   let sidebar, cloudPane, wantOpen = false, preparing, connectionPromise, initializing = false, connecting = false;
   let rootId = '', folders = [], creatingFolder = false, confirmDelete = '', renameId = '', renameDraft = '', items = [], nextLink = '', loading = false, listError = '', info = '', retryPage = false, retryOpenItem = null;
   let listGeneration = 0, openGeneration = 0, visited = new Set(), lastHighlight = '', mutationBusy = false, closeMenu = null, closeRenameKey = null;
+  let cloudTooltip;
+  function hideTooltip() { cloudTooltip?.remove(); cloudTooltip = null; }
+  function addTooltip(button, label) {
+    button.dataset.tooltip = label;
+    const show = () => {
+      hideTooltip();
+      const doc = button.ownerDocument, tip = doc.createElement('div');
+      tip.className = 'md-cloud-tooltip'; tip.textContent = label; tip.setAttribute('role', 'tooltip');
+      doc.body.append(tip); cloudTooltip = tip;
+      const rect = button.getBoundingClientRect(), box = tip.getBoundingClientRect(), win = doc.defaultView;
+      tip.style.left = Math.max(4, Math.min(rect.left, win.innerWidth - box.width - 4)) + 'px';
+      tip.style.top = (rect.bottom + box.height + 4 <= win.innerHeight ? rect.bottom + 4 : Math.max(4, rect.top - box.height - 4)) + 'px';
+    };
+    button.addEventListener('mouseenter', show); button.addEventListener('focus', show);
+    button.addEventListener('mouseleave', () => { if (button.ownerDocument.activeElement !== button) hideTooltip(); });
+    button.addEventListener('blur', hideTooltip);
+  }
   function renderCloud() {
     if (!cloudPane) return;
     if (auth && !auth.connected() && (items.length || rootId || binding)) { rootId = ''; folders = []; items = []; nextLink = ''; visited.clear(); binding = null; ++openGeneration; }
     const doc = cloudPane.ownerDocument;
-    closeMenu?.(); closeRenameKey?.();
+    hideTooltip(); closeMenu?.(); closeRenameKey?.();
     cloudPane.replaceChildren();
     const addButton = (text, action, disabled = false) => {
       const button = doc.createElement('button'); button.type = 'button'; button.className = 'md-cloud-panel-button';
@@ -80,8 +97,9 @@ export function initializeOneDrive() {
     cloudPane.classList.remove('is-disconnected');
     const account = doc.createElement('p'); account.className = 'md-cloud-panel-account'; account.textContent = 'OneDrive 帐户 ' + (auth.account() || 'Microsoft 账户'); cloudPane.append(account);
     const actions = doc.createElement('div'); actions.className = 'md-cloud-panel-actions'; cloudPane.append(actions);
-    const action = (label, path, fn, disabled = false) => { const button = doc.createElement('button'); button.type = 'button'; button.className = 'icon-button md-cloud-icon-button'; button.title = label; button.setAttribute('aria-label', label); button.disabled = disabled; button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg>'; button.addEventListener('click', fn); actions.append(button); };
+    const action = (label, path, fn, disabled = false) => { const button = doc.createElement('button'); button.type = 'button'; button.className = 'icon-button md-cloud-icon-button'; addTooltip(button, label); button.setAttribute('aria-label', label); button.disabled = disabled; button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg>'; button.addEventListener('click', fn); actions.append(button); };
     action('刷新', 'M20 7v5h-5 M4 17v-5h5 M5 9a7 7 0 0 1 12-3l3 3 M19 15a7 7 0 0 1-12 3l-3-3', () => { void refresh(); });
+    action('保存到 OneDrive', 'M5 3h12l3 3v15H4V3z M8 3v6h8V3 M8 21v-8h8v8', () => { void save(); }, mutationBusy || busy);
     action('新建文件夹', 'M3 6h7l2 2h9v11H3z M12 10v7 M8.5 13.5h7', () => { if (!mutationBusy && !busy) { creatingFolder = true; renderCloud(); } }, mutationBusy || busy);
     action('断开', 'M10 4H5v16h5 M14 8l4 4-4 4 M8 12h10', () => { void logout(); });
     if (folders.length) {
@@ -105,7 +123,7 @@ export function initializeOneDrive() {
       const icon=doc.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.classList.add('md-cloud-item-icon');const path=doc.createElementNS(icon.namespaceURI,'path');path.setAttribute('d',item.folder?'M3 6h7l2 2h9v11H3z':'M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6');icon.append(path);
       const size = doc.createElement('span'); size.className = 'md-cloud-panel-size'; size.textContent = item.folder ? '文件夹' : formatOneDriveSize(item.size);
       button.append(icon, name, size); button.addEventListener('click', () => { if (item.folder) { folders.push({id:item.id,name:item.name}); items = []; nextLink = ''; renameId = ''; void refresh(); } else void openItem(item); }); row.append(button);
-      const menu = doc.createElement('button'); menu.type = 'button'; menu.className = 'md-cloud-row-menu'; menu.textContent = '⋯'; menu.disabled = mutationBusy || busy; menu.setAttribute('aria-label', item.name + ' 更多操作'); menu.title='更多操作'; row.append(menu);
+      const menu = doc.createElement('button'); menu.type = 'button'; menu.className = 'md-cloud-row-menu'; menu.textContent = '⋯'; menu.disabled = mutationBusy || busy; menu.setAttribute('aria-label', item.name + ' 更多操作'); addTooltip(menu, '更多操作'); row.append(menu);
       menu.addEventListener('click', () => {
         const old = row.querySelector('.md-cloud-popup'); if (old) { closeMenu?.(); return; } closeMenu?.();
         const popup=doc.createElement('div'); popup.className='md-cloud-popup'; popup.setAttribute('role','menu');
