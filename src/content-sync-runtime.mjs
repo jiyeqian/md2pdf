@@ -3,7 +3,6 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   const metadata = document.querySelector('script[data-md2pdf-content-map]');
   let source = [];
   try { source = JSON.parse(metadata?.textContent || '[]'); } catch { /* Legacy preview. */ }
-  if (!source.length) return { bind() {}, refresh() { return []; }, capture() { return null; }, suppress() {}, locate() {}, outline() {}, flushSelection() {}, suppressSelectionEcho() {}, captureOutline() { return null; }, captureHighlight() { return null; }, restoreHighlight() {} };
   const byId = new Map(source.map(item => [String(item.id), item]));
   let fragments = [], scoped = null, dirty = true, programmaticUntil = 0, userScroll = false, pending = 0;
   const tags = 'p,li,td,th,pre,h1,h2,h3,h4,h5,h6,caption,figcaption,.gb-important-paragraph,.keywords > .summary-content';
@@ -312,6 +311,68 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
       reportedSelection = {anchor:selection.anchorNode,anchorOffset:selection.anchorOffset,focus:selection.focusNode,focusOffset:selection.focusOffset};
     }
   }
+  let formatMenuTicket = 0, formatFallbackTimer, formatFallback;
+  function closeFormatFallback() {
+    clearTimeout(formatFallbackTimer);
+    formatFallback?.remove(); formatFallback = null;
+  }
+  function showFormatFallback(x, y) {
+    closeFormatFallback();
+    const menu = document.createElement('div');
+    menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', '预览格式'); menu.tabIndex = -1;
+    menu.style.cssText = 'position:fixed;z-index:2147483647;padding:8px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 30px rgba(36,51,72,.14);font:13px sans-serif;color:#64748b';
+    for (const label of ['加粗', '斜体', '删除线']) {
+      const button = document.createElement('button'); button.textContent = label; button.disabled = true;
+      button.style.cssText = 'display:block;border:0;background:none;padding:6px;color:#94a3b8'; menu.appendChild(button);
+    }
+    const note = document.createElement('div'); note.textContent = '当前预览不可编辑'; menu.appendChild(note);
+    document.body.appendChild(menu); formatFallback = menu;
+    menu.style.left = Math.max(4, Math.min(x, innerWidth - menu.offsetWidth - 4)) + 'px';
+    menu.style.top = Math.max(4, Math.min(y, innerHeight - menu.offsetHeight - 4)) + 'px';
+    menu.focus({ preventScroll: true });
+    menu.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeFormatFallback(); } });
+  }
+  document.addEventListener('pointerdown', event => { if (formatFallback && !formatFallback.contains(event.target)) closeFormatFallback(); }, true);
+  // Formatting requires exact boundaries in one mapped fragment, not the
+  // approximate ranges used for scroll synchronisation.
+  document.addEventListener('contextmenu', event => {
+    const selection = getSelection(), scope = activeScope();
+    if (!selection || selection.isCollapsed || selection.rangeCount !== 1 || !scope?.contains(event.target)) return;
+    const range = selection.getRangeAt(0);
+    const parts = refresh();
+    const candidates = parts.filter(part => !part.atomic
+      && parts.filter(other => other.item.id === part.item.id).length === 1
+      && part.start === 0 && part.points.length === part.item.text.length
+      && part.node.dataset.md2pdfFormatSourceId === String(part.item.id)
+      && !part.node.closest('[data-repeated-header]')
+      && part.node.contains(range.startContainer) && part.node.contains(range.endContainer));
+    let mapped = null;
+    if (candidates.length === 1) {
+      const part = candidates[0], selected = [];
+      for (let i = 0; i < part.points.length; i++) {
+        const point = part.points[i];
+        if (range.comparePoint(point.node, point.offset) === 0 && range.comparePoint(point.node, point.offset + 1) === 0) selected.push(i);
+      }
+      if (selected.length && selected.every((index, i) => index === selected[0] + i)) {
+        const first = part.points[selected[0]], last = part.points[selected.at(-1)];
+        const exact = document.createRange();
+        exact.setStart(first.node, first.offset); exact.setEnd(last.node, last.offset + 1);
+        const text = selected.map(index => part.points[index].char).join('');
+        if (range.compareBoundaryPoints(Range.START_TO_START, exact) === 0
+          && range.compareBoundaryPoints(Range.END_TO_END, exact) === 0 && range.toString() === text) {
+          const from = part.item.positions[part.start + selected[0]], to = part.item.positions[part.start + selected.at(-1)] + 1;
+          if (Number.isSafeInteger(from) && Number.isSafeInteger(to) && to > from) mapped = { id: part.item.id, from, to };
+        }
+      }
+    }
+    event.preventDefault();
+    closeFormatFallback();
+    const ticket = ++formatMenuTicket;
+    const anchor = capture();
+    parent.postMessage({ type: 'md2pdf-format-menu', revision: revision(), mapped, x: event.clientX, y: event.clientY, ticket,
+      position: { from: anchor?.from, anchorRatio: anchor?.anchorRatio, offset: 0, ratio: scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight) } }, '*');
+    formatFallbackTimer = setTimeout(() => { if (ticket === formatMenuTicket) showFormatFallback(event.clientX, event.clientY); }, 300);
+  });
   let selectionTimer;
   document.addEventListener('selectionchange', () => {
     clearTimeout(selectionTimer);
@@ -324,9 +385,24 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   }
   addEventListener('message', event => {
     if (event.source !== parent || !event.data) return;
+    if (event.data.type === 'md2pdf-format-menu-ack' && event.data.revision === revision() && event.data.ticket === formatMenuTicket) closeFormatFallback();
     if (event.data.type === 'md2pdf-capture-position' || event.data.type === 'md2pdf-restore-position' || event.data.type === 'md2pdf-restore-selection') selectionGuardUntil = Date.now() + 1000;
     if (event.data.revision !== revision()) return;
     if (event.data.type === 'md2pdf-transfer-capture') selectionGuardUntil = Date.now() + 1000;
+    if (event.data.type === 'md2pdf-format-select') {
+      const { from, to } = event.data;
+      if (!Number.isSafeInteger(from) || !Number.isSafeInteger(to) || to <= from) return;
+      const parts = refresh();
+      const matches = parts.filter(part => !part.atomic && part.start === 0 && part.points.length === part.item.text.length
+        && part.node.dataset.md2pdfFormatSourceId === String(part.item.id)
+        && parts.filter(other => other.item.id === part.item.id).length === 1
+        && part.item.positions.includes(from) && part.item.positions.includes(to - 1));
+      if (matches.length !== 1) return;
+      const part = matches[0], first = part.points[part.item.positions.indexOf(from)], last = part.points[part.item.positions.indexOf(to - 1)];
+      if (!first || !last) return;
+      const selection = getSelection();
+      try { selection.setBaseAndExtent(first.node, first.offset, last.node, last.offset + 1); suppressSelectionEcho(); } catch { /* Layout changed before restoration. */ }
+    }
     if (event.data.type === 'md2pdf-content-locate') locate(event.data);
   });
   document.addEventListener('keydown', () => { selectionGuardUntil = 0; outlineFrom = null; restoredSelection = null; reportedSelection = null; });

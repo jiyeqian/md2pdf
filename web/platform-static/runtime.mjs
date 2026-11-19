@@ -71,7 +71,7 @@ export async function renderDocument(body, preview = true, signal, autoPreview =
   signal?.throwIfAborted();
   const resolved = resolveWebInput(body, { autoPreview });
   signal?.throwIfAborted();
-  const rendered = await render(resolved.md, resolved.opts, {webSafe:true,signal,parsedFrontmatter:resolved.parsedFrontmatter,imageAssets:resolved.imageAssets});
+  const rendered = await render(resolved.md, resolved.opts, {webSafe:true,formatProvenance:preview,signal,parsedFrontmatter:resolved.parsedFrontmatter,imageAssets:resolved.imageAssets});
   signal?.throwIfAborted();
   const html = rendered.pagedHtml || rendered.html;
   const scripts = await documentAssets(html, signal);
@@ -80,7 +80,7 @@ export async function renderDocument(body, preview = true, signal, autoPreview =
   const logo = rendered.type === 'gb' ? { logoUrl, logoData:await dataUrl(logoUrl, 'image/svg+xml', await assetBoundary(), signal) } : {};
   signal?.throwIfAborted();
   const prepared = prepareWebDocument(preview ? attachSourcePositions(html, resolved.md, {type:rendered.type,referenceKeys:rendered.referenceKeys}) : html, {...scripts,...logo,preview,type:rendered.type});
-  return { html:prepared, type:rendered.type, effective:resolved.effective, policy:resolved.policy, resetOptions:resolved.resetOptions, authorDiagnostics:resolved.authorDiagnostics, outline:rendered.printOptions.outline };
+  return { html:prepared, formatSourceIds:rendered.formatSourceIds, type:rendered.type, effective:resolved.effective, policy:resolved.policy, resetOptions:resolved.resetOptions, authorDiagnostics:resolved.authorDiagnostics, outline:rendered.printOptions.outline };
 }
 export async function appFetch(input, init = {}) {
   const url = new URL(input, base);

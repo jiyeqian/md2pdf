@@ -157,6 +157,15 @@ let downloading = false;
 let initialized = false;
 let previewTimer;
 let previewRevision = -1;
+let previewFormatMap = [];
+let previewFormatSource = '';
+let previewFormatIds = new Set();
+let previewFormatRestore = null;
+let previewFormatCover = null;
+let previewFormatCoverTimer = null;
+function clearPreviewFormatCover() { clearTimeout(previewFormatCoverTimer); previewFormatCover?.remove(); previewFormatCover = null; }
+window.addEventListener('resize', clearPreviewFormatCover);
+document.addEventListener('md-window-layout', clearPreviewFormatCover);
 let previewWait = null;
 
 function previewVisible() {
@@ -717,6 +726,7 @@ function schedulePreview() {
   window.__MD2PDF_PREVIEW_READY__ = false;
   window.__MD2PDF_PREVIEW_ERROR__ = false;
   revision++;
+  if (previewFormatRestore && previewFormatRestore.revision !== revision) { previewFormatRestore = null; clearPreviewFormatCover(); }
   previewRevision = -1;
   previewWait = null;
   try { previewClock.clearTimeout(timer); } catch { /* The previous editor host closed. */ }
@@ -783,6 +793,13 @@ async function renderPreview() {
     // 成功渲染：清除上次的配置错误提示并恢复导出按钮（修正后自动恢复）。
     hasPreview = true;
     clearConfigErrors();
+    try {
+      const doc = new DOMParser().parseFromString(result.html, 'text/html');
+      const map = JSON.parse(doc.querySelector('script[data-md2pdf-content-map]')?.textContent || '[]');
+      previewFormatMap = Array.isArray(map) ? map : [];
+      previewFormatIds = new Set(Array.isArray(result.formatSourceIds) ? result.formatSourceIds.filter(Number.isSafeInteger) : []);
+      previewFormatSource = editor.value;
+    } catch { previewFormatMap = []; previewFormatIds = new Set(); previewFormatSource = ''; }
     previewRevision = current;
     window.__MD2PDF_PREVIEW_READY__ = false;
     preview.srcdoc = injectRevision(result.html, current);
@@ -790,6 +807,7 @@ async function renderPreview() {
     setStatus('正在加载公式、图表与分页…');
     armPreviewWait(current);
   } catch (error) {
+    if (previewFormatRestore?.revision === current) { previewFormatRestore = null; clearPreviewFormatCover(); }
     // 乱序响应：已被更新的请求取代（Abort 或 revision 落后）时直接忽略，不让陈旧失败覆盖新成功。
     if (error.name === 'AbortError' || current !== revision) return;
     finishPreviewTelemetry(false);
@@ -815,7 +833,7 @@ document.addEventListener('md-preview-locate', event => {
     from: data.from, to: data.to ?? data.from, ratio: data.ratio, reason: data.reason, instant: data.instant === true });
 });
 
-window.addEventListener('message', event => {
+window.addEventListener('message', async event => {
   if (event.source !== preview.contentWindow || !event.data || event.data.revision !== previewRevision) return;
   // 跨 sandbox iframe 预览的 pointerdown 不会冒泡到父文档：预览内按下指针时由其上报，关闭已打开的调整浮层。
   if (event.data.type === 'md2pdf-preview-pointerdown') { closeRangePopovers(); document.dispatchEvent(new CustomEvent('md-preview-selection-intent')); return; }
@@ -841,11 +859,47 @@ window.addEventListener('message', event => {
     return;
   }
   if (previewRevision !== revision) return;
+  if (event.data.type === 'md2pdf-position-restored' && event.data.id === 'format-position' && previewFormatRestore?.revision === revision) {
+    postPreview({ type: 'md2pdf-format-select', revision, ...previewFormatRestore.selection });
+    previewFormatRestore = null;
+    requestAnimationFrame(clearPreviewFormatCover);
+    return;
+  }
+  if (event.data.type === 'md2pdf-format-menu') {
+    if (!window.__MD2PDF_PREVIEW_READY__ || preview.ownerDocument !== document) return;
+    const { mapped, x, y } = event.data;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    const item = mapped && previewFormatMap.filter(entry => entry.id === mapped.id);
+    const valid = item?.length === 1 && previewFormatIds.has(mapped.id) && Number.isSafeInteger(mapped.from) && Number.isSafeInteger(mapped.to)
+      && mapped.from >= item[0].from && mapped.to <= item[0].to && mapped.to > mapped.from;
+    postPreview({ type: 'md2pdf-format-menu-ack', revision, ticket: event.data.ticket });
+    const current = revision;
+    const selection = valid ? { from: mapped.from, to: mapped.to, item: item[0] } : null;
+    let available = {};
+    if (selection) {
+      try {
+        const { formatPreviewSelection } = await import('./preview-format.mjs');
+        available = Object.fromEntries(['bold', 'italic', 'strike'].map(format => [format, !!formatPreviewSelection(previewFormatSource, selection, format)]));
+      } catch { /* An unavailable formatter must never enable editing. */ }
+    }
+    if (current !== revision || previewRevision !== revision || preview.ownerDocument !== document) return;
+    const rect = preview.getBoundingClientRect();
+    document.dispatchEvent(new CustomEvent('md-preview-format-menu', { detail: {
+      revision, mapped: selection, available, position: event.data.position,
+      x: rect.left + x * (rect.width / (preview.clientWidth || rect.width)),
+      y: rect.top + y * (rect.height / (preview.clientHeight || rect.height))
+    } }));
+    return;
+  }
   if (event.data.type === 'md2pdf-ready') {
     previewMissingFonts = Array.isArray(event.data.fonts) ? event.data.fonts.filter(font => typeof font === 'string') : [];
     sendPreviewMode();
     window.__MD2PDF_PREVIEW_READY__ = true;
     window.dispatchEvent(new Event('md-preview-ready'));
+    if (previewFormatRestore?.revision === revision) {
+      postPreview({ type: 'md2pdf-restore-position', id: 'format-position', revision, position: previewFormatRestore.position });
+      previewFormatCoverTimer = setTimeout(clearPreviewFormatCover, 3000);
+    }
     finishPreviewTelemetry(true);
     clearTimeout(previewTimer);
     previewWait = null;
@@ -1240,3 +1294,65 @@ window.md2pdfConfigErrors = {
 boot();
 
 window.addEventListener('online', () => { if (initialized) schedulePreview(); });
+
+// Freeze the already paginated preview while its replacement is rendered.
+async function coverPreview(expectedRevision) {
+  clearPreviewFormatCover();
+  const id = 'format-cover-' + expectedRevision + '-' + Date.now();
+  const snapshot = await new Promise(resolve => {
+    const timer = setTimeout(() => { window.removeEventListener('message', receive); resolve(null); }, 2500);
+    function receive(event) {
+      if (event.source !== preview.contentWindow || event.data?.id !== id || event.data.revision !== expectedRevision
+        || !['md2pdf-transfer-snapshot', 'md2pdf-transfer-error'].includes(event.data.type)) return;
+      clearTimeout(timer); window.removeEventListener('message', receive);
+      resolve(event.data.type === 'md2pdf-transfer-snapshot' && typeof event.data.html === 'string' ? event.data.html : null);
+    }
+    window.addEventListener('message', receive);
+    postPreview({ type: 'md2pdf-transfer-capture', id, revision: expectedRevision });
+  });
+  if (!snapshot || revision !== expectedRevision || preview.ownerDocument !== document) return false;
+  const rect = preview.getBoundingClientRect(), shield = document.createElement('div'), cover = document.createElement('iframe');
+  cover.setAttribute('sandbox', preview.getAttribute('sandbox') || 'allow-scripts');
+  cover.setAttribute('aria-hidden', 'true'); shield.setAttribute('data-md2pdf-format-cover', ''); cover.tabIndex = -1;
+  shield.style.cssText = `position:fixed;z-index:100;opacity:0;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px`;
+  cover.style.cssText = 'display:block;pointer-events:none;border:0;width:100%;height:100%';
+  previewFormatCover = shield; shield.appendChild(cover); document.body.appendChild(shield);
+  const ready = new Promise(resolve => {
+    const timer = setTimeout(() => { window.removeEventListener('message', receive); resolve(false); }, 4000);
+    function receive(event) {
+      if (event.source !== cover.contentWindow || event.data?.type !== 'md2pdf-ready' || event.data.revision !== expectedRevision) return;
+      clearTimeout(timer); window.removeEventListener('message', receive); resolve(true);
+    }
+    window.addEventListener('message', receive);
+  });
+  cover.addEventListener('load', () => cover.contentWindow?.postMessage({ type: 'md2pdf-visibility', revision: expectedRevision, visible: true }, '*'), { once: true });
+  cover.srcdoc = snapshot;
+  if (!await ready || previewFormatCover !== shield || revision !== expectedRevision || preview.ownerDocument !== document) { clearPreviewFormatCover(); return false; }
+  shield.style.opacity = '1';
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  return previewFormatCover === shield && revision === expectedRevision;
+}
+// A menu can outlive its originating preview; check the snapshot again on use.
+document.addEventListener('md-preview-format-apply', async event => {
+  const data = event.detail;
+  if (!data || data.revision !== revision || previewRevision !== revision || !window.__MD2PDF_PREVIEW_READY__
+    || preview.ownerDocument !== document || editor.value !== previewFormatSource || !data.mapped) return;
+  const matches = previewFormatMap.filter(item => item.id === data.mapped.item?.id);
+  if (matches.length !== 1 || matches[0] !== data.mapped.item) return;
+  const current = revision;
+  const { formatPreviewSelection } = await import('./preview-format.mjs');
+  if (current !== revision || previewRevision !== revision || editor.value !== previewFormatSource) return;
+  const change = formatPreviewSelection(previewFormatSource, data.mapped, data.format);
+  if (change && window.mdEditor) {
+    if (!await coverPreview(current) || current !== revision || editor.value !== previewFormatSource) { clearPreviewFormatCover(); if (current === revision) setStatus('预览未能准备完成，请稍后重试格式操作。', true); return; }
+    const position = data.position;
+    if (position && Number.isFinite(position.ratio)) {
+      let from = position.from;
+      if (Number.isSafeInteger(from)) from = from <= change.from ? from : from >= change.to ? from + change.insert.length - (change.to - change.from) : change.from;
+      previewFormatRestore = { revision: revision + 1, position: { from, anchorRatio: position.anchorRatio, offset: 0, ratio: position.ratio }, selection: { from: change.selectionFrom, to: change.selectionTo } };
+    }
+    if (!previewFormatRestore) { clearPreviewFormatCover(); return; }
+    previewFormatCoverTimer = setTimeout(clearPreviewFormatCover, 15000);
+    window.mdEditor.replaceRange(change.from, change.to, change.insert);
+  }
+});

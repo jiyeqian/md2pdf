@@ -408,3 +408,9 @@
 .workspace.md-editor-workspace .md-wt-overflow-background { position: fixed; z-index: 49; background: #fff; border: 1px solid #dbe2ec; border-radius: 8px; box-shadow: 0 10px 30px rgba(36,51,72,.16); }
 .workspace.md-editor-workspace .md-wt-overflow-item { position: fixed; left: var(--md-overflow-left); top: var(--md-overflow-top); z-index: 50; visibility: hidden; pointer-events: none; }
 .workspace.md-editor-workspace .md-wt-overflow-item.md-wt-overflow-open { visibility: visible; pointer-events: auto; }
+
+.md-preview-format-menu { gap: 2px; padding: 5px; animation: none; }
+.md-preview-format-menu .md-wt-menu-item { display: flex; align-items: center; gap: 8px; width: 110px; height: 32px; padding: 0 8px; border: 0; border-radius: 5px; background: transparent; color: #33465e; font: inherit; text-align: left; cursor: pointer; }
+.md-preview-format-menu .md-wt-menu-item:not(:disabled):is(:hover, :focus-visible) { background: #eef3f8; }
+.md-preview-format-menu .md-wt-menu-item:disabled { opacity: .4; }
+.md-preview-format-note { padding: 4px 8px; color: #64748b; font-size: 12px; white-space: nowrap; }

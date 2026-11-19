@@ -113,6 +113,11 @@ try {
   let frame = await targetSession('iframe');
   await wait('getSelection().toString()==='+JSON.stringify(selectedText),frame.sessionId);
   assert.equal(await evaluate('getSelection().toString()',frame.sessionId),selectedText,'native preview selection survives independent-window transfer');
+  await evaluate(`(()=>{const node=document.querySelector('.pagedjs_pages p[data-md2pdf-source-id]');node.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:20,clientY:20}));})()`, frame.sessionId);
+  await wait(`document.querySelector('[role=menu][aria-label="预览格式"]')`, frame.sessionId);
+  assert.equal(await evaluate(`document.querySelectorAll('[role=menu][aria-label="预览格式"] button:disabled').length`, frame.sessionId), 3, 'independent preview editing is disabled');
+  await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`, frame.sessionId);
+  assert.equal(await evaluate(`!!document.querySelector('[role=menu][aria-label="预览格式"]')`, frame.sessionId), false, 'disabled menu closes on Escape');
   for(let round=0;round<2;round++) {
     await evaluate('mdWindowMode.swap()'); await idle(); await ready();
     frame = await targetSession('iframe');

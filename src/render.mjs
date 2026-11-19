@@ -1,3 +1,4 @@
+import { buildContentSourceMap } from './content-source-map.mjs';
 import { installInlineScripts } from './inline-scripts.mjs';
 import {prepareDocumentContent,prepareContentHeadings,finalizeContentNavigation,finalizeHeadingSubtitles} from './document-content.mjs';
 import { gbSectionCatalog, gbSectionDiagnostics,HEADING_ATTRIBUTES,decodeHeadingText,protectHeadingAttributes } from './gb-sections.mjs';
@@ -673,7 +674,45 @@ export async function render(src, options = {}, context = {}) {
 
   if (gbNotes) marked.use({extensions:[gbNotes.extension]});
   const gbBlocks = profile.gbDoc ? prepareGbContent(bodyProtected) : null;
-  let html = marked.parse(gbBlocks ? gbBlocks.body : bodyProtected, { gfm: true, breaks: false, async: false });
+  let html;
+  let formatSourceIds = [];
+  // Provenance is issued only for unchanged top-level paragraphs, from the
+  // actual token objects subsequently passed to the parser.
+  const canIdentifyParagraphs = context.webSafe && context.formatProvenance === true && !profile.gbDoc
+    && !src.includes('\r') && src.endsWith(sourceBody)
+    && sourceBody === rawBody && rawBody === body && body === headingAttributes.body
+    && headingAttributes.body === bodyWithRefs && bodyWithRefs === bodyProtected;
+  if (canIdentifyParagraphs) {
+    const tokens = marked.lexer(bodyProtected);
+    const inlineSafe = list => list.every(token => ['text', 'strong', 'em', 'del'].includes(token.type)
+      && (!token.tokens || inlineSafe(token.tokens)));
+    const safe = tokens.every(token => token.type === 'space'
+      || ((token.type === 'paragraph' || token.type === 'heading') && inlineSafe(token.tokens || [])));
+    if (safe && tokens.map(token => token.raw).join('') === bodyProtected) {
+      const map = buildContentSourceMap(src, { type: profile.type });
+      const byRange = new Map();
+      for (const item of map) {
+        const key = item.from + ':' + item.to;
+        byRange.set(key, byRange.has(key) ? null : item);
+      }
+      const identities = new WeakMap(), candidateIds = [];
+      let offset = src.length - sourceBody.length;
+      for (const token of tokens) {
+        const item = byRange.get(offset + ':' + (offset + token.raw.length));
+        if (token.type === 'paragraph' && item?.kind === 'text' && item.tag === 'p') { identities.set(token, item.id); candidateIds.push(item.id); }
+        offset += token.raw.length;
+      }
+      const baseline = marked.parser(tokens);
+      marked.use({ renderer: { paragraph(token) {
+        const id = identities.get(token);
+        return id === undefined ? false : '<p data-md2pdf-format-source-id="' + id + '">' + this.parser.parseInline(token.tokens) + '</p>\n';
+      } } });
+      const identified = marked.parser(tokens);
+      if (identified.replace(/ data-md2pdf-format-source-id="\d+"/g, '') === baseline) { html = identified; formatSourceIds = candidateIds; }
+      else html = baseline;
+    }
+  }
+  if (html === undefined) html = marked.parse(gbBlocks ? gbBlocks.body : bodyProtected, { gfm: true, breaks: false, async: false });
   if (gbBlocks) html = gbBlocks.restore(html, marked);
   html=headingAttributes.restore(html);
 
@@ -1060,6 +1099,7 @@ export async function render(src, options = {}, context = {}) {
 
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
   return { title, warnings, html: assetHtml(usePaged && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
+    formatSourceIds,
     referenceKeys: orderedFootnotes.map(footnote => footnote.id),
     printOptions: { ...(profile.gbDoc ? {requireGbFonts:true} : {}), ...(fontChecks.length ? {requireFonts:true,waitFonts:true} : {}), footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
       landscape: eff.landscape, outline: eff.outline !== false, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };

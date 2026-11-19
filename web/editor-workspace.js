@@ -1460,6 +1460,54 @@
     if (fullscreenMode() === 'preview') applyFullscreen(null);
   });
 
+  var previewFormatMenu = null;
+  function closePreviewFormatMenu() {
+    if (previewFormatMenu) previewFormatMenu.remove();
+    previewFormatMenu = null;
+  }
+  function openPreviewFormatMenu(event) {
+    closePreviewFormatMenu();
+    var data = event.detail;
+    if (!data) return;
+    var menu = make('div', { class: 'md-wt-basic-menu md-preview-format-menu', role: 'menu', 'aria-label': '预览格式', tabindex: '-1' });
+    previewFormatMenu = menu;
+    [['bold', 'bold', '加粗'], ['italic', 'italic', '斜体'], ['strike', 'strikethrough', '删除线']].forEach(function (entry) {
+      var button = make('button', { type: 'button', class: 'md-wt-button md-wt-menu-item', role: 'menuitem', 'aria-label': entry[2], title: entry[2] });
+      button.appendChild(iconSvg(entry[1]));
+      button.appendChild(make('span', null, entry[2]));
+      button.disabled = !data.available || !data.available[entry[0]];
+      button.addEventListener('click', function () {
+        closePreviewFormatMenu();
+        document.dispatchEvent(new CustomEvent('md-preview-format-apply', { detail: { revision: data.revision, mapped: data.mapped, position: data.position, format: entry[0] } }));
+      });
+      menu.appendChild(button);
+    });
+    if (!Object.values(data.available || {}).some(Boolean)) {
+      menu.title = '此选区无法安全映射到 Markdown';
+      menu.appendChild(make('div', { class: 'md-preview-format-note' }, '此选区无法安全编辑'));
+    }
+    document.body.appendChild(menu);
+    menu.style.left = Math.max(4, Math.min(data.x, window.innerWidth - menu.offsetWidth - 4)) + 'px';
+    menu.style.top = Math.max(4, Math.min(data.y, window.innerHeight - menu.offsetHeight - 4)) + 'px';
+    var first = menu.querySelector('button:not(:disabled)');
+    if (first) first.focus({ preventScroll: true }); else menu.focus({ preventScroll: true });
+    menu.addEventListener('keydown', function (key) {
+      if (key.key === 'Escape') { key.preventDefault(); key.stopPropagation(); closePreviewFormatMenu(); previewFrame.focus({ preventScroll: true }); return; }
+      if (key.key !== 'ArrowDown' && key.key !== 'ArrowUp') return;
+      var items = Array.prototype.slice.call(menu.querySelectorAll('button:not(:disabled)'));
+      if (!items.length) return;
+      key.preventDefault();
+      var index = items.indexOf(document.activeElement);
+      items[(index + (key.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus({ preventScroll: true });
+    });
+  }
+  document.addEventListener('md-preview-format-menu', openPreviewFormatMenu);
+  document.addEventListener('md-editor-change', closePreviewFormatMenu);
+  document.addEventListener('md-preview-selection-intent', closePreviewFormatMenu);
+  onWorkspaceDOM('pointerdown', function (event) {
+    if (previewFormatMenu && !previewFormatMenu.contains(event.target)) closePreviewFormatMenu();
+  }, true);
+
   // ---------------------------------------------------------------- 事件装配
   function onReady() {
     if (ready) return;
