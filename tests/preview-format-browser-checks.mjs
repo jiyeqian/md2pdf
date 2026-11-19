@@ -88,10 +88,12 @@ try {
   await wait('window.__MD2PDF_PREVIEW_READY__');
   session = await frame();
   await evaluate(`(()=>{const nodes=[...document.querySelectorAll('.pagedjs_pages p[data-md2pdf-source-id]')].filter(n=>n.textContent==='重复文字');const r=document.createRange();r.setStart(nodes[0].firstChild,0);r.setEnd(nodes[1].firstChild,2);getSelection().removeAllRanges();getSelection().addRange(r);nodes[1].dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:20,clientY:20}));})()`, session);
-  await wait('document.querySelector(".md-preview-format-menu")');
-  assert.equal(await evaluate('document.querySelectorAll(".md-preview-format-menu button:disabled").length'), 3, 'cross-paragraph selection cannot authorize writes');
-  await evaluate('document.querySelector(".md-preview-format-menu").dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}))');
-  assert.equal(await evaluate('!!document.querySelector(".md-preview-format-menu")'), false);
+  await assertNoFormatMenu('cross-paragraph selection');
+  async function assertNoFormatMenu(label) {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    assert.equal(await evaluate('!!document.querySelector(".md-preview-format-menu")'), false, label);
+    assert.equal(await evaluate('!!document.querySelector(' + JSON.stringify('[aria-label="预览格式"]') + ')', session), false, label + ' iframe');
+  }
   const fixtures = [
     ['bold', 'abc', '<strong>abc</strong>', 0, 'abc'], ['italic', 'abc', '<em>abc</em>', 1, 'abc'], ['strike', 'abc', '<del>abc</del>', 2, 'abc'],
     ['nested', '**abc**', '<strong><em>abc</em></strong>', 1, '<strong>abc</strong>'],
@@ -149,13 +151,12 @@ try {
     await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
     session = await frame();
     await evaluate(`(()=>{const atom=document.querySelector('.pagedjs_pages p[data-md2pdf-format-source-id] ${selector}');if(!atom)throw Error('missing ${label}');const p=atom.closest('p'),r=document.createRange();if('${mode}'==='paragraph')r.selectNodeContents(p);else if('${mode}'==='before'){const n=p.firstChild;r.setStart(n,0);r.setEnd(n,Math.min(4,n.length));}else{const w=document.createTreeWalker(atom,NodeFilter.SHOW_TEXT),n=w.nextNode();r.setStart(n,0);r.setEnd(n,'${mode}'==='partial'?1:n.length);}getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
-    await wait('document.querySelector(".md-preview-format-menu")');
-    assert.equal(await evaluate('!document.querySelector(".md-preview-format-menu button").disabled'), expected, label);
     if (expected) {
+      await wait('document.querySelector(".md-preview-format-menu button:not(:disabled)")');
       const original = label === 'text before footnote' ? '仿生机械' : label === 'whole footnote' ? '[^hogan1985]' : '抓取过程的状态转移如图 \\ref{fig:flow} 所示：';
       await evaluate('document.querySelector(".md-preview-format-menu button").click()');
       await wait('mdEditor.getValue()===' + JSON.stringify(referenceDoc.replace(label === 'text before footnote' ? '\n\n' + original : original, label === 'text before footnote' ? '\n\n<strong>' + original + '</strong>' : '<strong>' + original + '</strong>')));
-    } else await evaluate('document.querySelector(".md-preview-format-menu").dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}))');
+    } else await assertNoFormatMenu(label);
   }
   for (const [label, source] of [
     ['equation reference outside selection', '普通文字 $\\eqref{eq:test}$ 后续文字。\n\n$$\nx=1\\label{eq:test}\n$$'],
@@ -208,8 +209,7 @@ try {
     await wait('window.__MD2PDF_PREVIEW_READY__');
     session = await frame();
     await evaluate(`(()=>{let node;if(${JSON.stringify(label)}==='forged'){const w=document.createTreeWalker(document.querySelector('.pagedjs_pages'),NodeFilter.SHOW_TEXT);while((node=w.nextNode())&&!node.data.includes('data-md2pdf-format-source-id')){}}else node=[...document.querySelectorAll(${JSON.stringify(selector)})].find(node=>node.textContent.trim());if(!node)throw Error('test target missing');const r=document.createRange();r.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(r);(node.nodeType===3?node.parentElement:node).dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
-    await wait('document.querySelector(".md-preview-format-menu")');
-    assert.equal(await evaluate('document.querySelectorAll(".md-preview-format-menu button:disabled").length'), 3, label + ' is disabled');
+    await assertNoFormatMenu(label);
     assert.equal(await evaluate('mdEditor.getValue()'), source);
   }
   await evaluate('mdEditor.setValue("abc")');

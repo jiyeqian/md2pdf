@@ -311,32 +311,6 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
       reportedSelection = {anchor:selection.anchorNode,anchorOffset:selection.anchorOffset,focus:selection.focusNode,focusOffset:selection.focusOffset};
     }
   }
-  let formatMenuTicket = 0, formatFallbackTimer, formatFallback;
-  function closeFormatFallback() {
-    clearTimeout(formatFallbackTimer);
-    formatFallback?.remove(); formatFallback = null;
-  }
-  function showFormatFallback(x, y) {
-    closeFormatFallback();
-    const menu = document.createElement('div');
-    menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', '预览格式'); menu.tabIndex = -1;
-    menu.style.cssText = 'position:fixed;z-index:2147483647;padding:3px;background:#fff;border:1px solid #d7dce2;border-radius:6px;box-shadow:0 2px 8px #0002;font:13px sans-serif;color:#64748b';
-    const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:2px';
-    for (const [label, pathData] of [['粗体','M7 4h6a4 4 0 010 8H7zm0 8h7a4 4 0 010 8H7z'], ['斜体','M10 4h8M6 20h8M15 4L9 20'], ['删除线','M5 12h14M17 6c-6-5-14 4-6 6 8 2 4 11-3 6']]) {
-      const button = document.createElement('button'); button.disabled = true; button.setAttribute('aria-label', label); button.title = label;
-      button.style.cssText = 'width:28px;height:28px;display:grid;place-items:center;padding:4px;border:0;border-radius:3px;background:transparent;color:#94a3b8';
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'), path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('aria-hidden','true'); svg.style.cssText='width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round'; path.setAttribute('d',pathData); svg.appendChild(path); button.appendChild(svg); row.appendChild(button);
-    }
-    menu.appendChild(row);
-    const note = document.createElement('div'); note.textContent = '当前预览不可编辑'; menu.appendChild(note);
-    document.body.appendChild(menu); formatFallback = menu;
-    menu.style.left = Math.max(4, Math.min(x, innerWidth - menu.offsetWidth - 4)) + 'px';
-    menu.style.top = Math.max(4, Math.min(y, innerHeight - menu.offsetHeight - 4)) + 'px';
-    menu.focus({ preventScroll: true });
-    menu.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeFormatFallback(); } });
-  }
-  document.addEventListener('pointerdown', event => { if (formatFallback && !formatFallback.contains(event.target)) closeFormatFallback(); }, true);
   // Formatting requires exact boundaries in one mapped fragment, not the
   // approximate ranges used for scroll synchronisation.
   document.addEventListener('contextmenu', event => {
@@ -424,14 +398,12 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
         }
       }
     }
+    if (!mapped || parent === window) return;
     event.preventDefault();
-    closeFormatFallback();
-    const ticket = ++formatMenuTicket;
     const selectionRect = range.getClientRects()[0] || range.getBoundingClientRect();
     const anchor = capture();
-    parent.postMessage({ type: 'md2pdf-format-menu', revision: revision(), mapped, x: selectionRect.left, y: selectionRect.top, bottom: selectionRect.bottom, ticket,
+    parent.postMessage({ type: 'md2pdf-format-menu', revision: revision(), mapped, x: selectionRect.left, y: selectionRect.top, bottom: selectionRect.bottom,
       position: { from: anchor?.from, anchorRatio: anchor?.anchorRatio, offset: 0, ratio: scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight) } }, '*');
-    formatFallbackTimer = setTimeout(() => { if (ticket === formatMenuTicket) showFormatFallback(selectionRect.left, selectionRect.top); }, 300);
   });
   let selectionTimer;
   document.addEventListener('selectionchange', () => {
@@ -445,7 +417,6 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
   }
   addEventListener('message', event => {
     if (event.source !== parent || !event.data) return;
-    if (event.data.type === 'md2pdf-format-menu-ack' && event.data.revision === revision() && event.data.ticket === formatMenuTicket) closeFormatFallback();
     if (event.data.type === 'md2pdf-capture-position' || event.data.type === 'md2pdf-restore-position' || event.data.type === 'md2pdf-restore-selection') selectionGuardUntil = Date.now() + 1000;
     if (event.data.revision !== revision()) return;
     if (event.data.type === 'md2pdf-transfer-capture') selectionGuardUntil = Date.now() + 1000;

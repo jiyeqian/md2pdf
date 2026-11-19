@@ -1468,7 +1468,7 @@
   function openPreviewFormatMenu(event) {
     closePreviewFormatMenu();
     var data = event.detail;
-    if (!data) return;
+    if (!Object.values(data?.available || {}).some(Boolean)) return;
     var menu = make('div', { class: 'md-quick-actions md-preview-format-menu', role: 'menu', 'aria-label': '预览格式', tabindex: '-1' });
     previewFormatMenu = menu;
     var row = make('div', { class: 'md-preview-format-row' });
@@ -1488,10 +1488,6 @@
       row.appendChild(button);
     });
     menu.appendChild(row);
-    if (!Object.values(data.available || {}).some(Boolean)) {
-      menu.title = '此选区无法安全映射到 Markdown';
-      menu.appendChild(make('div', { class: 'md-preview-format-note' }, '此选区无法安全编辑'));
-    }
     document.body.appendChild(menu);
     var viewport = window.visualViewport;
     var left = viewport ? viewport.offsetLeft : 0, top = viewport ? viewport.offsetTop : 0;

@@ -412,4 +412,3 @@
 .md-preview-format-menu { position: fixed; flex-direction: column; }
 .md-preview-format-row { display: flex; gap: 2px; }
 .md-preview-format-menu button:disabled { opacity: .4; cursor: default; }
-.md-preview-format-note { padding: 4px 8px; color: #64748b; font-size: 12px; white-space: nowrap; }

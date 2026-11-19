@@ -872,7 +872,6 @@ window.addEventListener('message', async event => {
     const item = mapped && previewFormatMap.filter(entry => entry.id === mapped.id);
     const valid = item?.length === 1 && previewFormatIds.has(mapped.id) && Number.isSafeInteger(mapped.from) && Number.isSafeInteger(mapped.to)
       && mapped.from >= item[0].from && mapped.to <= item[0].to && mapped.to > mapped.from;
-    postPreview({ type: 'md2pdf-format-menu-ack', revision, ticket: event.data.ticket });
     const current = revision;
     const selection = valid ? { from: mapped.from, to: mapped.to, item: item[0] } : null;
     let available = {};
