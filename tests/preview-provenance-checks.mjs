@@ -176,3 +176,22 @@ test('ordinary text around equation and GB notes retains paragraph identity', as
     assert.ok(result.formatSourceIds.includes(item.id), md);
   }
 });
+
+test('formatting complete equations and GB footnote calls keeps the rendered targets', async () => {
+  const samples = [
+    ['前文 $\\eqref{eq:a}$ 后文。', '\n\n$$\nx=1\\label{eq:a}\n$$', ''],
+    ['前文[^@a]后文。', '\n\n[^@a]: 注释', '---\ntype: gb\n---\n# 标准\n\n'],
+  ];
+  for (const [paragraph, suffix, prefix] of samples) {
+    const original = await render(prefix + paragraph + suffix, {});
+    const renderedParagraph = result => result.html.match(/<p[^>]*>(?:<(?:strong|em|del)>)?前文[\s\S]*?<\/p>/)?.[0].replace(marker, '');
+    assert.ok(renderedParagraph(original));
+    for (const tag of ['strong', 'em', 'del']) {
+      const source = prefix + '<' + tag + '>' + paragraph + '</' + tag + '>' + suffix;
+      const [cli, web] = await Promise.all([render(source, {}), render(source, {}, {webSafe:true, formatProvenance:true})]);
+      assert.equal(renderedParagraph(web), renderedParagraph(cli));
+      assert.ok(renderedParagraph(cli)?.includes('<' + tag + '>'));
+      assert.equal(renderedParagraph(cli).replace('<' + tag + '>', '').replace('</' + tag + '>', ''), renderedParagraph(original));
+    }
+  }
+});

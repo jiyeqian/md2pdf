@@ -64,7 +64,6 @@ export function formatPreviewSelection(source, selection, format) {
     for (let i = 0; i < atoms.length; i++) {
       const atom = atoms[i], raw = source.slice(atom.from, atom.to);
       if (!(atom.kind === 'ref' && /^\\ref\{[\w:.-]+\}$/.test(raw) || atom.kind === 'footnote' && /^\[\^[^\]]+\]$/.test(raw) || atom.kind === 'gbFootnote' && /^\[\^@[^\]\s]+\]$/.test(raw) || atom.kind === 'math' && /^(?:\$\$[\s\S]*?\$\$|\$[^$\n]+\$|\\eqref\{[\w:.-]+\})$/.test(raw))) return null;
-      if (['math', 'gbFootnote'].includes(atom.kind) && from < atom.to && to > atom.from) return null;
       if (item.positions.some(position => position >= atom.from && position < atom.to)) return null;
       const char = String.fromCharCode(0xe000 + i);
       if (source.includes(char)) return null;

@@ -53,10 +53,17 @@ try {
   await wait('document.querySelector(".md-preview-format-menu button:not(:disabled)")');
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('.md-preview-format-menu button')].map(b=>({label:b.getAttribute('aria-label'),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height}))`), [{label:'粗体',width:28,height:28},{label:'斜体',width:28,height:28},{label:'删除线',width:28,height:28}], 'same icon order and button size as editor selection toolbar');
   const selectedRect = await evaluate(`(()=>{const r=getSelection().getRangeAt(0).getClientRects()[0];return {left:r.left,top:r.top,bottom:r.bottom}})()`, session);
-  const geometry = await evaluate(`(()=>{const f=document.querySelector('#preview'),fr=f.getBoundingClientRect(),m=document.querySelector('.md-preview-format-menu').getBoundingClientRect();return {frame:{left:fr.left,top:fr.top,width:fr.width,height:fr.height,offsetWidth:f.offsetWidth,offsetHeight:f.offsetHeight,clientLeft:f.clientLeft,clientTop:f.clientTop},menu:{left:m.left,top:m.top,bottom:m.bottom}}})()`);
+  const geometry = await evaluate(`(()=>{const f=document.querySelector('#preview'),fr=f.getBoundingClientRect(),m=document.querySelector('.md-preview-format-menu').getBoundingClientRect();return {viewport:{top:visualViewport.offsetTop,height:visualViewport.height},frame:{left:fr.left,top:fr.top,width:fr.width,height:fr.height,offsetWidth:f.offsetWidth,offsetHeight:f.offsetHeight,clientLeft:f.clientLeft,clientTop:f.clientTop},menu:{left:m.left,top:m.top,bottom:m.bottom}}})()`);
   const sx=geometry.frame.width/geometry.frame.offsetWidth, sy=geometry.frame.height/geometry.frame.offsetHeight;
   assert.ok(Math.abs(geometry.menu.left-(geometry.frame.left+(geometry.frame.clientLeft+selectedRect.left)*sx))<1, 'menu aligns with the selection, not the context-menu pointer');
-  assert.ok(Math.abs(geometry.menu.bottom-(geometry.frame.top+(geometry.frame.clientTop+selectedRect.top)*sy-8))<1, 'menu sits above the selection with the editor gap');
+  const selectionTop = geometry.frame.top + (geometry.frame.clientTop + selectedRect.top) * sy;
+  const selectionBottom = geometry.frame.top + (geometry.frame.clientTop + selectedRect.bottom) * sy;
+  const menuHeight = geometry.menu.bottom - geometry.menu.top;
+  const minTop = geometry.viewport.top + 4;
+  const maxTop = geometry.viewport.top + geometry.viewport.height - menuHeight - 4;
+  const above = selectionTop - menuHeight - 8;
+  const expectedTop = Math.max(minTop, Math.min(above >= minTop ? above : selectionBottom + 8, maxTop));
+  assert.ok(Math.abs(geometry.menu.top - expectedTop) < 1, 'menu uses the editor gap and viewport bounds');
   const previewIcons = await evaluate(`Array.from(document.querySelectorAll('.md-preview-format-menu button')).map(b=>({icon:b.firstElementChild.outerHTML,width:b.firstElementChild.getBoundingClientRect().width,height:b.firstElementChild.getBoundingClientRect().height}))`);
   await evaluate(`mdEditor.setSelection(mdEditor.getValue().indexOf('重复文字'),mdEditor.getValue().indexOf('重复文字')+4)`);
   await wait(`document.querySelector('.md-quick-actions:not(.md-preview-format-menu):not([hidden]) svg')`);
@@ -153,15 +160,15 @@ try {
   for (const [label, source] of [
     ['equation reference outside selection', '普通文字 $\\eqref{eq:test}$ 后续文字。\n\n$$\nx=1\\label{eq:test}\n$$'],
     ['GB footnote outside selection', '---\ntype: gb\n---\n# 测试\n\n普通文字[^@n]后续文字。\n\n[^@n]: 脚注'],
-  ]) {
+  ]) for (const whole of [false, true]) {
     await evaluate('mdEditor.setValue(' + JSON.stringify(source) + ')');
     await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
     session = await frame();
-    await evaluate(`(()=>{const p=[...document.querySelectorAll('.pagedjs_pages p[data-md2pdf-format-source-id]')].find(p=>p.textContent.startsWith('普通文字'));if(!p)throw Error('missing ${label}');const r=document.createRange();r.setStart(p.firstChild,0);r.setEnd(p.firstChild,4);getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
+    await evaluate(`(()=>{const p=[...document.querySelectorAll('.pagedjs_pages p[data-md2pdf-format-source-id]')].find(p=>p.textContent.startsWith('普通文字'));if(!p)throw Error('missing ${label}');const r=document.createRange();r.setStart(p.firstChild,0);if (${whole}) r.selectNodeContents(p); else r.setEnd(p.firstChild,4);getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
     await wait('document.querySelector(".md-preview-format-menu")');
     assert.equal(await evaluate('document.querySelector(".md-preview-format-menu button").disabled'), false, label);
     await evaluate('document.querySelector(".md-preview-format-menu button").click()');
-    try { await wait('mdEditor.getValue()===' + JSON.stringify(source.replace('普通文字','<strong>普通文字</strong>'))); } catch (error) { console.error(label, await evaluate(`({status:document.querySelector('#status').textContent,state:mdPreviewController.state(),cover:!!document.querySelector('[data-md2pdf-format-cover]'),value:mdEditor.getValue()})`)); throw error; }
+    try { await wait('mdEditor.getValue()===' + JSON.stringify(source.replace(/普通文字.*?。/, paragraph => whole ? '<strong>' + paragraph + '</strong>' : paragraph.replace('普通文字','<strong>普通文字</strong>')))); } catch (error) { console.error(label, await evaluate(`({status:document.querySelector('#status').textContent,state:mdPreviewController.state(),cover:!!document.querySelector('[data-md2pdf-format-cover]'),value:mdEditor.getValue()})`)); throw error; }
   }
   const gbDoc = '---\ntype: gb\n---\n# 国标格式测试\n\n重复文字\n\n:::gb-note\n重复文字\n:::\n\n脚注[^@n]。\n\n[^@n]: 脚注\n\n重复文字';
   await evaluate('mdEditor.setValue(' + JSON.stringify(gbDoc) + ')');
@@ -211,8 +218,8 @@ try {
   await evaluate(`(()=>{const p=document.querySelector('.pagedjs_pages p[data-md2pdf-format-source-id]');const r=document.createRange();r.setStart(p.firstChild,0);r.setEnd(p.firstChild,p.firstChild.length);getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
   await wait('document.querySelector(".md-preview-format-menu button:not(:disabled)")');
   await evaluate(`window.__oldPostPreview=mdWorkspaceHosts.postPreview;mdWorkspaceHosts.postPreview=data=>data.type==='md2pdf-transfer-capture'?undefined:window.__oldPostPreview(data);document.querySelector('.md-preview-format-menu button').click()`);
-  await wait('document.querySelector("#status").textContent.includes("请稍后重试")');
-  assert.equal(await evaluate('mdEditor.getValue()'), 'abc', 'snapshot timeout leaves source unchanged');
+  await wait('mdEditor.getValue()==="<strong>abc</strong>"');
+  assert.equal(await evaluate('!!document.querySelector("[data-md2pdf-format-cover]")'), false, 'a timed-out snapshot does not block a validated edit');
   console.log('preview formatting browser checks passed');
 } finally {
   await browser.stop();

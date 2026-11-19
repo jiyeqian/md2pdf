@@ -353,10 +353,12 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     let mapped = null;
     if (candidates.length === 1) {
       const part = candidates[0], allAtoms = part.item.formatAtoms || [];
-      const atoms = allAtoms.filter(atom => atom.kind === 'ref' || atom.kind === 'footnote');
-      const nodes = [...part.node.querySelectorAll('sup.fnref,a.ref')].filter(node => !node.closest('sup.fnref') || node.matches('sup.fnref'));
+      const atoms = allAtoms.filter(atom => ['ref', 'footnote', 'math', 'gbFootnote'].includes(atom.kind));
+      const nodes = [...part.node.querySelectorAll('sup.fnref,a.ref,mjx-container,.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call')].filter(node => !node.parentElement.closest('sup.fnref,mjx-container,.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call'));
       const verified = nodes.length === atoms.length && nodes.every((node, i) => {
         const atom = atoms[i];
+        if (atom.kind === 'math') return node.matches('mjx-container');
+        if (atom.kind === 'gbFootnote') return node.matches('.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call');
         if (atom.kind === 'footnote') return node.matches('sup.fnref')
           && node.querySelector('a')?.getAttribute('href') === '#fn-' + atom.number;
         return node.matches('a.ref') && atom.expectedId && node.getAttribute('href') === '#' + atom.expectedId;
@@ -367,7 +369,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
           const walker = document.createTreeWalker(nodes[i], NodeFilter.SHOW_TEXT), points = [];
           let textNode;
           while ((textNode = walker.nextNode())) for (let offset = 0; offset < textNode.length; offset++) points.push({ node: textNode, offset });
-          units.push({ ...atoms[i], points, text: nodes[i].textContent });
+          units.push({ ...atoms[i], points, node: nodes[i], text: nodes[i].textContent });
           // Canonical scroll text merges whitespace across omitted references.
           // Preserve a single verified source space after the reference for editing.
           const next = units.find(unit => unit.point && unit.from === atoms[i].to + 1);
@@ -379,25 +381,41 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
         units.sort((a, b) => a.from - b.from);
         let invalid = units.some((unit, i) => {
           if (!i) return false;
-          const previous = units[i - 1], left = previous.points?.at(-1) || previous.point, right = unit.points?.[0] || unit.point;
-          if (!left || !right || previous.to > unit.from) return true;
-          return left.node === right.node ? left.offset >= right.offset
-            : !(left.node.compareDocumentPosition(right.node) & Node.DOCUMENT_POSITION_FOLLOWING);
+          const previous = units[i - 1];
+          if (previous.to > unit.from) return true;
+          const left = document.createRange(), right = document.createRange();
+          if (previous.node) left.selectNode(previous.node); else { left.setStart(previous.point.node, previous.point.offset); left.setEnd(previous.point.node, previous.point.offset + 1); }
+          if (unit.node) right.selectNode(unit.node); else { right.setStart(unit.point.node, unit.point.offset); right.setEnd(unit.point.node, unit.point.offset + 1); }
+          left.collapse(false); right.collapse(true);
+          return left.compareBoundaryPoints(Range.START_TO_START, right) > 0;
         });
         const selected = units.filter(unit => {
-          const points = unit.points || [unit.point];
+          if (unit.node) {
+            if (!range.intersectsNode(unit.node)) return false;
+            const parent = unit.node.parentNode, index = [...parent.childNodes].indexOf(unit.node);
+            const whole = range.comparePoint(parent, index) === 0 && range.comparePoint(parent, index + 1) === 0;
+            if (whole) return true;
+            if (unit.points.length && unit.kind !== 'math' && !unit.node.matches('.gb-footnote')) {
+              const included = unit.points.filter(point => range.comparePoint(point.node, point.offset) === 0 && range.comparePoint(point.node, point.offset + 1) === 0).length;
+              if (included === unit.points.length) return true;
+              if (!included) return false;
+            }
+            invalid = true;
+            return false;
+          }
+          const points = [unit.point];
           const included = points.filter(point => range.comparePoint(point.node, point.offset) === 0 && range.comparePoint(point.node, point.offset + 1) === 0).length;
           if (included && included !== points.length) invalid = true;
           return included > 0;
         });
         if (!invalid && selected.length && selected.every((unit, i) => !i || units.indexOf(unit) === units.indexOf(selected[i - 1]) + 1)) {
-          const first = selected[0].points?.[0] || selected[0].point;
-          const lastUnit = selected.at(-1), last = lastUnit.points?.at(-1) || lastUnit.point;
+          const first = selected[0], lastUnit = selected.at(-1);
           const exact = document.createRange();
-          exact.setStart(first.node, first.offset); exact.setEnd(last.node, last.offset + 1);
+          if (first.node) exact.setStartBefore(first.node); else exact.setStart(first.point.node, first.point.offset);
+          if (lastUnit.node) exact.setEndAfter(lastUnit.node); else exact.setEnd(lastUnit.point.node, lastUnit.point.offset + 1);
           const text = selected.map(unit => unit.text).join('');
           const contents = range.cloneContents();
-          contents.querySelectorAll('sup.fnref,a.ref').forEach(node => node.remove());
+          contents.querySelectorAll('sup.fnref,a.ref,mjx-container,.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call').forEach(node => node.remove());
           if (range.toString() === text && exact.toString() === text && !contents.querySelector(skip)) {
             const from = selected[0].from, to = lastUnit.to;
             if (Number.isSafeInteger(from) && Number.isSafeInteger(to) && to > from

@@ -1345,7 +1345,10 @@ document.addEventListener('md-preview-format-apply', async event => {
   if (current !== revision || previewRevision !== revision || editor.value !== previewFormatSource) return;
   const change = formatPreviewSelection(previewFormatSource, data.mapped, data.format);
   if (change && window.mdEditor) {
-    if (!await coverPreview(current) || current !== revision || editor.value !== previewFormatSource) { clearPreviewFormatCover(); if (current === revision) setStatus('预览未能准备完成，请稍后重试格式操作。', true); return; }
+    const covered = await coverPreview(current);
+    if (current !== revision || previewRevision !== current || editor.value !== previewFormatSource || preview.ownerDocument !== document) { clearPreviewFormatCover(); return; }
+    // The snapshot prevents a flash during rendering, but does not validate the edit.
+    if (!covered) clearPreviewFormatCover();
     const position = data.position;
     if (position && Number.isFinite(position.ratio)) {
       let from = position.from;

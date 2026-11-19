@@ -70,6 +70,11 @@ test('formats ordinary text around formula and GB note without modifying them', 
     const item = buildContentSourceMap(source).find(x => x.kind === 'text' && x.text.startsWith('前文'));
     const from = source.indexOf('前文');
     assert.match(change(source, {from, to:from+2, item}, 'bold')?.insert ?? '', /^<strong>前文<\/strong>/);
-    assert.equal(change(source, {from, to:item.to, item}, 'bold'), null);
+    for (const [format, tag] of [['bold', 'strong'], ['italic', 'em'], ['strike', 'del']]) {
+      const result = change(source, {from, to:item.to, item}, format);
+      assert.equal(result?.insert, '<' + tag + '>' + source.slice(from, item.to) + '</' + tag + '>');
+    }
+    const [atom] = item.formatAtoms;
+    assert.equal(change(source, {from, to:atom.to - 1, item}, 'bold'), null);
   }
 });
