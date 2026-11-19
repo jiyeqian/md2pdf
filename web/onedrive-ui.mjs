@@ -100,10 +100,22 @@ export function initializeOneDrive() {
       const row = doc.createElement('div'); row.className = 'md-cloud-panel-row'; list.append(row);
       const button = doc.createElement('button'); button.type = 'button'; button.className = 'md-cloud-panel-file'; button.disabled = mutationBusy && !item.folder; button.dataset.cloudId = item.id;
       if (binding?.draftId === current() && binding.id === item.id) { button.classList.add('is-current'); button.setAttribute('aria-current', 'true'); }
-      const name = doc.createElement('span'); name.className = 'md-cloud-panel-name'; name.textContent = item.name;
+      const details = doc.createElement('span'); details.className = 'md-cloud-panel-details';
+      const name = doc.createElement('span'); name.className = 'md-cloud-panel-name'; name.title = item.name;
+      const extension = !item.folder && item.name.match(/\.md$/i)?.[0];
+      const stem = doc.createElement('span'); stem.className = 'md-cloud-panel-ellipsis';
+      stem.textContent = extension ? item.name.slice(0, -extension.length) : item.name;
+      name.append(stem);
+      if (extension) name.append(extension);
       const icon=doc.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.classList.add('md-cloud-item-icon');const path=doc.createElementNS(icon.namespaceURI,'path');path.setAttribute('d',item.folder?'M3 6h7l2 2h9v11H3z':'M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6');icon.append(path);
-      const size = doc.createElement('span'); size.className = 'md-cloud-panel-size'; size.textContent = item.folder ? '文件夹' : formatOneDriveSize(item.size);
-      button.append(icon, name, size); button.addEventListener('click', () => { if (item.folder) { folders.push({id:item.id,name:item.name}); items = []; nextLink = ''; renameId = ''; void refresh(); } else void openItem(item); }); row.append(button);
+      const size = doc.createElement('span'); size.className = 'md-cloud-panel-size md-cloud-panel-ellipsis';
+      const modified = Date.parse(item.lastModifiedDateTime);
+      const time = Number.isFinite(modified) ? new Date(modified).toLocaleString('zh-CN', {year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+      size.textContent = [item.folder ? '' : formatOneDriveSize(item.size), time].filter(Boolean).join(' · ');
+      if (size.textContent) size.title = size.textContent;
+      button.setAttribute('aria-label', [item.name, size.textContent].filter(Boolean).join('，'));
+      details.append(name, size);
+      button.append(icon, details); button.addEventListener('click', () => { if (item.folder) { folders.push({id:item.id,name:item.name}); items = []; nextLink = ''; renameId = ''; void refresh(); } else void openItem(item); }); row.append(button);
       const menu = doc.createElement('button'); menu.type = 'button'; menu.className = 'md-cloud-row-menu'; menu.textContent = '⋯'; menu.disabled = mutationBusy || busy; menu.setAttribute('aria-label', item.name + ' 更多操作'); menu.title='更多操作'; row.append(menu);
       menu.addEventListener('click', () => {
         const old = row.querySelector('.md-cloud-popup'); if (old) { closeMenu?.(); return; } closeMenu?.();

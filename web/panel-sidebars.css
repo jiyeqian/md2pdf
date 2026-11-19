@@ -47,8 +47,10 @@
 .md-cloud-panel-file { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-width: 0; width: 100%; padding: 6px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .md-cloud-panel-row:hover,.md-cloud-panel-row:has(.is-current) { background: #e1eaf5; border-radius:4px; }
 .md-cloud-panel-row:has(.md-cloud-popup) { background:transparent; }
-.md-cloud-panel-name { flex:1; min-width: 0; overflow-wrap: anywhere; }
-.md-cloud-panel-size { flex: none; color: #718096; font-size: 11px; white-space: nowrap; }
+.md-cloud-panel-details { display:grid; flex:1; min-width:0; }
+.md-cloud-panel-name { display:flex; min-width:0; overflow:hidden; white-space:nowrap; }
+.md-cloud-panel-ellipsis { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.md-cloud-panel-size { color:#718096; font-size:11px; min-height:1em; }
 
 .md-cloud-panel-row { display:flex; min-width:0; align-items:start; gap:3px; }
 .md-cloud-panel-row .md-cloud-panel-file { flex:1; }

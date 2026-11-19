@@ -74,7 +74,7 @@ export function createOneDriveGraph({ token, fetch: request = globalThis.fetch }
       return rootTask;
     },
     async listPage(rootId, nextLink = '') {
-      let page = idPath(rootId) + '/children?$select=id,name,eTag,file,folder,size&$top=100';
+      let page = idPath(rootId) + '/children?$select=id,name,eTag,file,folder,size,lastModifiedDateTime&$top=100';
       if (nextLink) {
         if (typeof nextLink !== 'string') throw new OneDriveError('OneDrive 返回了无效的分页地址。');
         let next;
