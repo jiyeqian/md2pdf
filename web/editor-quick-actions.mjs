@@ -26,6 +26,52 @@ export function selectionActions(text, from, to) {
   if (from === to || isProtected(text, from, to)) return [];
   return text.slice(from,to).includes('\n') ? ['ul','ol','task-list','quote'] : ['link','bold','italic','strike'];
 }
+// Rebuild simple preview-generated HTML without changing nested inline styles.
+function toggleHtmlSelection(text, from, to, action) {
+  const start = text.lastIndexOf('\n', from - 1) + 1;
+  const next = text.indexOf('\n', to), end = next < 0 ? text.length : next;
+  const raw = text.slice(start, end), names = { strong:'bold', em:'italic', del:'strike' };
+  if (!new RegExp('</?' + { bold:'strong',italic:'em',strike:'del' }[action] + '>').test(raw)) return undefined;
+  const stack = [], chars = []; let i = 0;
+  while (i < raw.length) {
+    if (raw[i] === '<') {
+      const match = /^<(\/?)(strong|em|del)>/.exec(raw.slice(i));
+      if (!match) return null;
+      const style = names[match[2]];
+      if (match[1]) { if (stack.pop() !== style) return null; }
+      else { if (stack.includes(style)) return null; stack.push(style); }
+      i += match[0].length;
+    } else {
+      // Other inline syntax requires a Markdown parser to preserve its meaning.
+      if (/[&\\`$*_~\[\]!]/.test(raw[i])) return null;
+      chars.push({ char:raw[i], pos:start+i, styles:[...stack] }); i++;
+    }
+  }
+  if (stack.length) return null;
+  const chosen = chars.filter(c => c.pos >= from && c.pos < to);
+  if (!chosen.length) return null;
+  const add = !chosen.every(c => c.styles.includes(action));
+  if (chosen.every(c => !c.styles.includes(action))) return undefined;
+  for (const c of chosen) {
+    c.styles = c.styles.filter(style => style !== action);
+    if (add) c.styles.push(action);
+  }
+  const tags = { bold:'strong', italic:'em', strike:'del' }, order = ['bold','italic','strike'];
+  let result = '', active = [], anchor, head;
+  for (const c of chars) {
+    const styles = order.filter(style => c.styles.includes(style));
+    let common = 0;
+    while (common < active.length && active[common] === styles[common]) common++;
+    for (let j = active.length - 1; j >= common; j--) result += '</'+tags[active[j]]+'>';
+    for (let j = common; j < styles.length; j++) result += '<'+tags[styles[j]]+'>';
+    active = styles;
+    if (c === chosen[0]) anchor = start + result.length;
+    result += c.char;
+    if (c === chosen.at(-1)) head = start + result.length;
+  }
+  for (let j = active.length - 1; j >= 0; j--) result += '</'+tags[active[j]]+'>';
+  return { from:start,to:end,text:result,anchor,head };
+}
 export function transformSelection(text, from, to, action) {
   if (!selectionActions(text,from,to).includes(action)) return null;
   if (['link','bold','italic','strike'].includes(action)) {
@@ -37,6 +83,17 @@ export function transformSelection(text, from, to, action) {
       if (text[from-1] === '[' && suffix) return { from:from-1,to:to+suffix[0].length,text:selected,anchor:from-1,head:to-1 };
       return { from,to,text:'['+selected+'](https://)',anchor:from+1,head:to+1 };
     }
+    const tag = { bold:'strong',italic:'em',strike:'del' }[action];
+    const open = '<'+tag+'>', close = '</'+tag+'>';
+    if (selected.startsWith(open) && selected.endsWith(close)) {
+      const value = selected.slice(open.length,-close.length);
+      return { from,to,text:value,anchor:from,head:from+value.length };
+    }
+    if (text.slice(from-open.length,from) === open && text.slice(to,to+close.length) === close) {
+      return { from:from-open.length,to:to+close.length,text:selected,anchor:from-open.length,head:to-open.length };
+    }
+    const html = toggleHtmlSelection(text, from, to, action);
+    if (html !== undefined) return html;
     const mark = { bold:'**',italic:'*',strike:'~~' }[action];
     if (selected.startsWith(mark) && selected.endsWith(mark) && selected.length >= mark.length*2) {
       const value = selected.slice(mark.length,-mark.length);

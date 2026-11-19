@@ -125,11 +125,13 @@ try {
     await evaluate(`[...document.querySelectorAll('#md-drafts-menu button')].find(x=>x.textContent.includes('OneDrive')).click()`);
     await wait(`[...document.querySelectorAll('.md-cloud-panel-button')].some(x=>x.textContent==='连接 OneDrive'&&!x.disabled)`);
     assert.equal(await evaluate('mockGraph.popups'),0);
+    assert.equal(await evaluate(`document.querySelectorAll('.md-cloud-icon-button').length`),0);
     await evaluate(`mockGraph.mode='cancel'; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='连接 OneDrive').click()`);
     await wait(`document.querySelector('.md-cloud-panel-error')?.textContent.includes('登录已取消')`);
     assert.equal(await evaluate('mdEditor.getValue()'),'# 本地原稿');
     await evaluate(`mockGraph.mode='ok'; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='连接 OneDrive').click()`);
     await wait(`document.querySelectorAll('.md-cloud-panel-file').length===15`);
+    assert.deepEqual(await evaluate(`[...document.querySelectorAll('.md-cloud-icon-button')].map(x=>x.getAttribute('aria-label'))`), ['刷新','保存到 OneDrive','新建文件夹','断开']);
     assert.ok(await evaluate(`[...document.querySelectorAll('.md-cloud-panel-file')].some(x=>x.textContent.includes('空文件') && x.textContent.includes('0 B'))`));
     assert.ok(await evaluate(`[...document.querySelectorAll('.md-cloud-panel-file')].some(x=>x.textContent.includes('5.5 KiB'))`));
     await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
@@ -177,14 +179,15 @@ try {
 
     await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,bubbles:true,cancelable:true}))`);
     await wait('mockGraph.downloads===1');
-    await evaluate(`mockGraph.mode='ok'; mockGraph.holdSave=true; document.dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,altKey:true,bubbles:true,cancelable:true}))`);
+    await evaluate(`mockGraph.mode='ok'; mockGraph.holdSave=true; document.querySelector('.md-cloud-icon-button[aria-label="保存到 OneDrive"]').click()`);
     await wait('window.releaseSave');
     assert.equal(await evaluate(`document.querySelector('[aria-label="cloud.md 更多操作"]').disabled`),true);
+    assert.equal(await evaluate(`document.querySelector('.md-cloud-icon-button[aria-label="保存到 OneDrive"]').disabled`),true);
     await evaluate(`document.querySelector('[aria-label="cloud.md 更多操作"]').click()`); assert.equal(await evaluate(`mockGraph.calls.filter(x=>x.method==='DELETE'&&x.url.endsWith('/items/cloud')).length`),0);
     await evaluate('mockGraph.holdSave=false; window.releaseSave()');
     await wait(`mockGraph.calls.some(x=>x.url.endsWith('/items/cloud/content')&&x.method==='PUT')`);
     await wait(`document.querySelector('.md-cloud-status')?.textContent.includes('已保存')`);
-    await evaluate(`mockGraph.mode='late'; document.dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,altKey:true,bubbles:true,cancelable:true}))`);
+    await evaluate(`mockGraph.mode='late'; document.querySelector('.md-cloud-icon-button[aria-label="保存到 OneDrive"]').click()`);
     await wait(`document.querySelector('dialog[aria-label="OneDrive 保存冲突"]')`);
     assert.equal(await evaluate(`mockGraph.calls.filter(x=>x.url.endsWith('/items/cloud/content')).at(-1).headers['If-Match']`),'old');
     await evaluate(`[...document.querySelectorAll('dialog[aria-label="OneDrive 保存冲突"] button')].find(x=>x.textContent==='保存副本').click()`);

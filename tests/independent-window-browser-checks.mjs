@@ -102,11 +102,22 @@ try {
   await ready();
   let popup = await targetSession('page');
   assert.equal(await evaluate('!!document.querySelector(".preview-panel") && !document.querySelector(".editor-panel")', popup.sessionId), true);
+  await evaluate(`document.querySelector('#download').click()`, popup.sessionId);
+  assert.ok(await evaluate(`!!document.querySelector('div[aria-label="打印或下载 PDF"]')`, popup.sessionId), 'print menu opens in independent preview');
+  assert.ok(await evaluate(`(()=>{const m=document.querySelector('div[aria-label="打印或下载 PDF"]'),r=m.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()`, popup.sessionId));
+  await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`, popup.sessionId);
+  assert.equal(await evaluate(`!!document.querySelector('div[aria-label="打印或下载 PDF"]')`, popup.sessionId), false);
+
   assert.equal(await evaluate('mdEditor===sameEditor && mdWorkspaceHosts.query("#preview")===sameFrame'), true);
   assert.equal(await evaluate('renderTasks'), 0, 'opening uses an already-computed result');
   let frame = await targetSession('iframe');
   await wait('getSelection().toString()==='+JSON.stringify(selectedText),frame.sessionId);
   assert.equal(await evaluate('getSelection().toString()',frame.sessionId),selectedText,'native preview selection survives independent-window transfer');
+  await evaluate(`(()=>{const node=document.querySelector('.pagedjs_pages p[data-md2pdf-source-id]');node.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:20,clientY:20}));})()`, frame.sessionId);
+  await wait(`document.querySelector('[role=menu][aria-label="预览格式"]')`, frame.sessionId);
+  assert.equal(await evaluate(`document.querySelectorAll('[role=menu][aria-label="预览格式"] button:disabled').length`, frame.sessionId), 3, 'independent preview editing is disabled');
+  await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`, frame.sessionId);
+  assert.equal(await evaluate(`!!document.querySelector('[role=menu][aria-label="预览格式"]')`, frame.sessionId), false, 'disabled menu closes on Escape');
   for(let round=0;round<2;round++) {
     await evaluate('mdWindowMode.swap()'); await idle(); await ready();
     frame = await targetSession('iframe');

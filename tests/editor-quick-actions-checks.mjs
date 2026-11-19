@@ -53,3 +53,44 @@ test('spaced and empty task items are recognized when converting or toggling',()
   assert.equal(edit(input,0,input.length,'ul').text,'- one\n- ');
   assert.equal(edit(input,0,input.length,'task-list').text,'one\n');
 });
+
+test('preview-generated inline tags toggle off while new formatting remains Markdown',()=>{
+  for (const [action,tag,mark] of [['bold','strong','**'],['italic','em','*'],['strike','del','~~']]) {
+    const source=`before <${tag}>text</${tag}> after`;
+    const start=source.indexOf('text'), end=start+4;
+    const content=edit(source,start,end,action);
+    assert.equal(content.text,'before text after');
+    assert.equal(content.text.slice(content.from,content.to),'text');
+    const all=edit(source,start-tag.length-2,end+tag.length+3,action);
+    assert.equal(all.text,'before text after');
+    assert.equal(all.text.slice(all.from,all.to),'text');
+    assert.equal(edit('text',0,4,action).text,`${mark}text${mark}`);
+    const attributed=`<${tag} class="x">text</${tag}>`;
+    const pos=attributed.indexOf('text');
+    assert.equal(transformSelection(attributed,pos,pos+4,action),null);
+  }
+});
+
+test('partial and mixed preview tags toggle while preserving other inline styles',()=>{
+  for (const [action,tag] of [['bold','strong'],['italic','em'],['strike','del']]) {
+    const source=`<${tag}>abcde</${tag}>`, pos=source.indexOf('bcd');
+    const out=edit(source,pos,pos+3,action);
+    assert.equal(out.text,`<${tag}>a</${tag}>bcd<${tag}>e</${tag}>`);
+    assert.equal(out.text.slice(out.from,out.to),'bcd');
+    const mixed=`<${tag}>ab</${tag}>cd`, begin=mixed.indexOf('b'), end=mixed.lastIndexOf('d')+1;
+    assert.equal(edit(mixed,begin,end,action).text,`<${tag}>abcd</${tag}>`);
+  }
+  const nested='<strong>a<em>bcd</em>e</strong>', pos=nested.indexOf('bcd');
+  assert.equal(edit(nested,pos,pos+3,'bold').text,'<strong>a</strong><em>bcd</em><strong>e</strong>');
+  const unsafe='<strong>a **b** c</strong>', at=unsafe.indexOf('b');
+  assert.equal(transformSelection(unsafe,at,at+1,'bold'),null);
+});
+
+test('unformatted selection on a line with preview tags gets Markdown markers',()=>{
+  for (const [action,tag,mark] of [['bold','strong','**'],['italic','em','*'],['strike','del','~~']]) {
+    const source=`<${tag}>a</${tag}> xyz`, start=source.indexOf('xyz');
+    const out=edit(source,start,start+3,action);
+    assert.equal(out.text,`<${tag}>a</${tag}> ${mark}xyz${mark}`);
+    assert.equal(out.text.slice(out.from,out.to),'xyz');
+  }
+});

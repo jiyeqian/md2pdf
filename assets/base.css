@@ -193,7 +193,7 @@ li > input[type="checkbox"], li > p > input[type="checkbox"] {
 
 /* ---------- 行内 ---------- */
 strong { color: var(--ink); font-weight: 600; }
-em { font-style: normal; color: var(--ink-soft); }
+em { font-style: italic; color: var(--ink-soft); }
 code {
   font-family: var(--font-mono); font-size: .88em;
   background: var(--tint); color: var(--ink);

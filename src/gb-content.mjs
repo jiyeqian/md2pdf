@@ -13,14 +13,15 @@ export function prepareGbContent(source, depth = 0) {
   const blocks = [];
   let marker = 'MD2PDFGBBLOCK';
   while (source.includes(marker)) marker += 'X';
-  const out = [];
+  const out = [], origins = [];
+  const keep = i => { out.push(lines[i]); origins.push(i); };
   let fence = null;
   for (let i = 0; i < lines.length; i++) {
     const boundary = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(lines[i]);
     if (boundary) {
       if (!fence) fence = boundary[1];
       else if (boundary[1][0] === fence[0] && boundary[1].length >= fence.length && !boundary[2].trim()) fence = null;
-      out.push(lines[i]);
+      keep(i);
       continue;
     }
     if (!fence && /^\s*<!--\s*gb-check:.*?-->\s*$/.test(lines[i])) continue;
@@ -28,7 +29,7 @@ export function prepareGbContent(source, depth = 0) {
       const error = new Error('未知或已移除的GB指令：' + lines[i].trim() + '；请使用新版 gb-note 参数语法'); error.status = 400; throw error;
     }
     const open = !fence && OPEN.exec(lines[i]);
-    if (!open) { out.push(lines[i]); continue; }
+    if (!open) { keep(i); continue; }
     let depth = 1, end = i + 1, innerFence = null;
     for (; end < lines.length; end++) {
       const code = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(lines[end]);
@@ -43,18 +44,19 @@ export function prepareGbContent(source, depth = 0) {
     }
     if (depth) {
       if (['table','index-section','note'].includes(open[1])) { const error = new Error('gb-' + open[1] + '：块未闭合'); error.status = 400; throw error; }
-      out.push(lines[i]); continue;
+      keep(i); continue;
     }
     if (open[1] === 'term' && !/^(?:(\d+(?:\.\d+)+)(?:\s+|$))?(?:id=([A-Za-z][\w:-]*))?$/.test((open[2] || '').trim())) {
-      out.push(...lines.slice(i, end + 1)); i = end; continue;
+      for (let j = i; j <= end; j++) keep(j); i = end; continue;
     }
     const key = marker + blocks.length + 'END';
     blocks.push({ key, role: open[1], label: (open[2] || '').trim(), text: lines.slice(i + 1, end).join('\n') });
-    out.push('', key, '');
+    out.push('', key, ''); origins.push(null, null, null);
     i = end;
   }
   return {
     body: out.join('\n'),
+    origins,
     restore(html, marked) {
       for (const block of blocks) {
         const output = renderBlock(block, marked, depth);

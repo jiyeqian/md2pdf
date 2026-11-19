@@ -408,3 +408,7 @@
 .workspace.md-editor-workspace .md-wt-overflow-background { position: fixed; z-index: 49; background: #fff; border: 1px solid #dbe2ec; border-radius: 8px; box-shadow: 0 10px 30px rgba(36,51,72,.16); }
 .workspace.md-editor-workspace .md-wt-overflow-item { position: fixed; left: var(--md-overflow-left); top: var(--md-overflow-top); z-index: 50; visibility: hidden; pointer-events: none; }
 .workspace.md-editor-workspace .md-wt-overflow-item.md-wt-overflow-open { visibility: visible; pointer-events: auto; }
+
+.md-preview-format-menu { position: fixed; flex-direction: column; }
+.md-preview-format-row { display: flex; gap: 2px; }
+.md-preview-format-menu button:disabled { opacity: .4; cursor: default; }

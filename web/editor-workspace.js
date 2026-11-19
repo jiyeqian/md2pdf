@@ -1199,21 +1199,29 @@
     editorFullscreenBtn = makeFullscreenButton('Markdown 全屏写作', '全屏写作（Esc 退出）');
     editorFullscreenBtn.addEventListener('click', function () { toggleFullscreen('editor'); });
     if (editorActions) {
-      var saveButton = makeFileButton('下载 Markdown', 'save', function () {
+      var saveButton = makeFileButton('下载 Markdown', 'save', function (activation) {
         if (saveButton._closeSaveMenu) { saveButton._closeSaveMenu(true); return; }
-        var doc = saveButton.ownerDocument, menu = doc.createElement('div');
-        function closeMenu(restore) { saveButton._closeSaveMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('focusin', focusOutside, true); if (restore) saveButton.focus(); }
+        var doc = saveButton.ownerDocument, menu = doc.createElement('div'), timer;
+        function cancelClose() { clearTimeout(timer); }
+        function scheduleClose(event) { if (event.pointerType !== 'mouse') return; cancelClose(); timer = setTimeout(function () { if (!menu.contains(doc.activeElement)) closeMenu(false); }, 180); }
+        function closeMenu(restore) { cancelClose(); saveButton._closeSaveMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('keydown', escape, true); saveButton.removeEventListener('pointerleave', scheduleClose); saveButton.removeEventListener('pointerenter', cancelClose); if (restore) saveButton.focus(); }
         function outside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
-        function focusOutside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
-        menu.className = 'md-drafts-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '保存 Markdown');
-        var rect = saveButton.getBoundingClientRect(); menu.style.left = rect.left + 'px'; menu.style.top = (rect.bottom + 4) + 'px';
-        [['保存到本地（' + (IS_MAC ? '⌘S' : 'Ctrl+S') + '）', saveMarkdown], ['保存到 OneDrive…（' + (IS_MAC ? '⌘⌥S' : 'Ctrl+Alt+S') + '）', function () { return window.mdOneDrive?.save(); }]].forEach(function (item) {
-          var choice = doc.createElement('button'); choice.type = 'button'; choice.textContent = item[0];
-          choice.addEventListener('click', function () { closeMenu(true); item[1](); }); menu.appendChild(choice);
+        function escape(event) { if (event.key === 'Escape' && (menu.contains(event.target) || event.target === saveButton)) { event.preventDefault(); event.stopPropagation(); closeMenu(true); } }
+        menu.className = 'md-drafts-menu md-action-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '保存 Markdown');
+        [['保存到本地', IS_MAC ? '⌘S' : 'Ctrl+S', saveMarkdown], ['保存到 OneDrive', IS_MAC ? '⌘⌥S' : 'Ctrl+Alt+S', function () { return window.mdOneDrive?.save(); }]].forEach(function (item) {
+          var choice = doc.createElement('button'), label = doc.createElement('span'), shortcut = doc.createElement('span'); choice.type = 'button'; label.textContent = item[0]; shortcut.textContent = '（' + item[1] + '）'; choice.append(label, shortcut);
+          choice.addEventListener('click', function () { closeMenu(true); item[2](); }); menu.appendChild(choice);
         });
-        menu.addEventListener('keydown', function (event) { if (event.key === 'Escape') { closeMenu(true); } });
-        doc.body.appendChild(menu); saveButton._closeSaveMenu = closeMenu; menu.firstChild.focus();
-        doc.addEventListener('pointerdown', outside, true); doc.addEventListener('focusin', focusOutside, true);
+        menu.addEventListener('keydown', function (event) { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeMenu(true); } });
+        menu.addEventListener('pointerenter', cancelClose); menu.addEventListener('pointerleave', scheduleClose);
+        saveButton.addEventListener('pointerenter', cancelClose); saveButton.addEventListener('pointerleave', scheduleClose);
+        doc.body.appendChild(menu); saveButton._closeSaveMenu = closeMenu;
+        var rect = saveButton.getBoundingClientRect(), view = doc.defaultView.visualViewport, left = view?.offsetLeft || 0, top = view?.offsetTop || 0, width = view?.width || doc.defaultView.innerWidth, height = view?.height || doc.defaultView.innerHeight;
+        menu.style.maxWidth = Math.max(0, width - 16) + 'px'; menu.style.maxHeight = Math.max(0, height - 16) + 'px';
+        menu.style.left = Math.max(left + 8, Math.min(rect.right - menu.offsetWidth, left + width - menu.offsetWidth - 8)) + 'px';
+        menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
+        doc.addEventListener('pointerdown', outside, true); doc.addEventListener('keydown', escape, true);
+        if (activation.detail === 0) menu.firstElementChild.focus();
       });
       editorActions.appendChild(saveButton);
       editorActions.appendChild(editorFullscreenBtn);
@@ -1414,6 +1422,7 @@
     var docAction = documentShortcut && documentShortcut(event);
     if (docAction) { event.preventDefault(); runDocumentAction(docAction); return; }
     if (event.isComposing || event.keyCode === 229) return;   // 输入法组合中不拦截
+    if (event.key === 'Escape' && (event.target.closest('.md-action-menu') || event.target._closeSaveMenu || event.target._closePdfMenu)) return;
     if (event.key === 'Escape' && basicMenu && !basicMenu.hidden) { event.preventDefault(); closeBasicMenu(true); return; }
     if (event.key === 'Escape' && window.mdWindowMode && (window.mdWindowMode.active || window.mdWindowMode.busy)) { window.mdWindowMode.exit(); return; }
     if (event.key === 'Escape' && fullscreenMode()) { applyFullscreen(null); return; }
@@ -1450,6 +1459,62 @@
     if (window.mdWindowMode && window.mdWindowMode.active) { window.mdWindowMode.exit(); return; }
     if (fullscreenMode() === 'preview') applyFullscreen(null);
   });
+
+  var previewFormatMenu = null;
+  function closePreviewFormatMenu() {
+    if (previewFormatMenu) previewFormatMenu.remove();
+    previewFormatMenu = null;
+  }
+  function openPreviewFormatMenu(event) {
+    closePreviewFormatMenu();
+    var data = event.detail;
+    if (!Object.values(data?.available || {}).some(Boolean)) return;
+    var menu = make('div', { class: 'md-quick-actions md-preview-format-menu', role: 'menu', 'aria-label': '预览格式', tabindex: '-1' });
+    previewFormatMenu = menu;
+    var row = make('div', { class: 'md-preview-format-row' });
+    var paths = { bold: 'M7 4h6a4 4 0 010 8H7zm0 8h7a4 4 0 010 8H7z', italic: 'M10 4h8M6 20h8M15 4L9 20', strike: 'M5 12h14M17 6c-6-5-14 4-6 6 8 2 4 11-3 6' };
+    [['bold', '粗体'], ['italic', '斜体'], ['strike', '删除线']].forEach(function (entry) {
+      var button = make('button', { type: 'button', role: 'menuitem', 'aria-label': entry[1], title: entry[1] });
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'), path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true'); path.setAttribute('d', paths[entry[0]]); svg.appendChild(path);
+      var source = Array.prototype.slice.call(document.querySelectorAll('button[aria-label]')).find(function (button) { return !menu.contains(button) && button.getAttribute('aria-label') === entry[1]; });
+      source = source && source.querySelector('svg,img');
+      button.appendChild(source ? source.cloneNode(true) : svg);
+      button.disabled = !data.available || !data.available[entry[0]];
+      button.addEventListener('click', function () {
+        closePreviewFormatMenu();
+        document.dispatchEvent(new CustomEvent('md-preview-format-apply', { detail: { revision: data.revision, mapped: data.mapped, position: data.position, format: entry[0] } }));
+      });
+      row.appendChild(button);
+    });
+    menu.appendChild(row);
+    document.body.appendChild(menu);
+    var viewport = window.visualViewport;
+    var left = viewport ? viewport.offsetLeft : 0, top = viewport ? viewport.offsetTop : 0;
+    var right = left + (viewport ? viewport.width : window.innerWidth), bottom = top + (viewport ? viewport.height : window.innerHeight);
+    var x = Math.max(left + 4, Math.min(data.x, right - menu.offsetWidth - 4));
+    var y = data.y - menu.offsetHeight - 8;
+    if (y < top + 4) y = data.bottom + 8;
+    menu.style.left = x + 'px';
+    menu.style.top = Math.max(top + 4, Math.min(y, bottom - menu.offsetHeight - 4)) + 'px';
+    var first = menu.querySelector('button:not(:disabled)');
+    if (first) first.focus({ preventScroll: true }); else menu.focus({ preventScroll: true });
+    menu.addEventListener('keydown', function (key) {
+      if (key.key === 'Escape') { key.preventDefault(); key.stopPropagation(); closePreviewFormatMenu(); previewFrame.focus({ preventScroll: true }); return; }
+      if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(key.key)) return;
+      var items = Array.prototype.slice.call(menu.querySelectorAll('button:not(:disabled)'));
+      if (!items.length) return;
+      key.preventDefault();
+      var index = items.indexOf(document.activeElement);
+      items[(index + (['ArrowDown', 'ArrowRight'].includes(key.key) ? 1 : items.length - 1)) % items.length].focus({ preventScroll: true });
+    });
+  }
+  document.addEventListener('md-preview-format-menu', openPreviewFormatMenu);
+  document.addEventListener('md-editor-change', closePreviewFormatMenu);
+  document.addEventListener('md-preview-selection-intent', closePreviewFormatMenu);
+  onWorkspaceDOM('pointerdown', function (event) {
+    if (previewFormatMenu && !previewFormatMenu.contains(event.target)) closePreviewFormatMenu();
+  }, true);
 
   // ---------------------------------------------------------------- 事件装配
   function onReady() {
