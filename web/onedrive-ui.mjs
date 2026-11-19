@@ -149,6 +149,7 @@ export function initializeOneDrive() {
       button.setAttribute('aria-label', [item.name, size.textContent].filter(Boolean).join('，'));
       details.append(name, size);
       button.append(icon, details); button.addEventListener('click', () => { if (item.folder) { folders.push({id:item.id,name:item.name}); items = []; nextLink = ''; renameId = ''; void refresh(); } else void openItem(item); }); row.append(button);
+      const menu = doc.createElement('button'); menu.type = 'button'; menu.className = 'md-cloud-row-menu'; menu.textContent = '⋯'; menu.disabled = mutationBusy || busy; menu.setAttribute('aria-label', item.name + ' 更多操作'); addTooltip(menu, '更多操作'); row.append(menu);
       menu.addEventListener('click', () => {
         const old = row.querySelector('.md-cloud-popup'); if (old) { closeMenu?.(); return; } closeMenu?.();
         const popup=doc.createElement('div'); popup.className='md-cloud-popup'; popup.setAttribute('role','menu');
