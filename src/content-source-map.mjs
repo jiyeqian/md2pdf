@@ -109,7 +109,7 @@ function unquote(region) {
 }
 
 /** Build verified, token-local source ranges for preview navigation. */
-export function buildContentSourceMap(markdown, { type, referenceKeys: renderedReferenceKeys } = {}) {
+export function buildContentSourceMap(markdown, { type, referenceKeys: renderedReferenceKeys, referenceTargets = {} } = {}) {
   const source = String(markdown ?? '');
   const original = normalizedSource(source), chars = original.text.split(''), citationChars = chars.slice();
   const out = [], references = [], lineStarts = [0];
@@ -123,7 +123,7 @@ export function buildContentSourceMap(markdown, { type, referenceKeys: renderedR
     if (!region?.positions.length) return;
     const from = region.positions[0], to = region.positions.at(-1) + (source[region.positions.at(-1)] === '\r' && source[region.positions.at(-1) + 1] === '\n' ? 2 : 1);
     const value = canonical(visible);
-    out.push({ id: out.length, kind, tag, from, to, line: lineAt(from), ...value, ...extra });
+    out.push({ id: out.length, kind, tag, from, to, line: lineAt(from), ...value, ...(visible.atoms?.length ? { formatAtoms: visible.atoms } : {}), ...extra });
   };
   const mask = (from, to, citations = false) => { for (let i = from; i < to; i++) if (chars[i] !== '\n') { chars[i] = ' '; if (citations) citationChars[i] = ' '; } };
   const fm = /^---[ \t]*\n[\s\S]*?\n---[ \t]*(?:\n|$)/.exec(original.text);
@@ -196,10 +196,18 @@ export function buildContentSourceMap(markdown, { type, referenceKeys: renderedR
   ] });
 
   function inline(tokens, region) {
-    let text = ''; const positions = []; let cursor = 0;
+    let text = ''; const positions = [], atoms = []; let cursor = 0;
     for (const token of tokens || []) {
       const raw = project(token.raw, region, cursor); if (!raw) continue; cursor = raw.end;
-      if (token.type === 'sourceOmitted') { if (token.math) add('math', 'mjx-container', raw); continue; }
+      if (token.type === 'sourceOmitted') {
+        if (token.math) add('math', 'mjx-container', raw);
+        const ref = /^\\ref\{([\w:.-]+)\}$/.exec(raw.text), cite = /^\[\^([^\]]+)\]$/.exec(raw.text);
+        const equation = /^\\eqref\{([\w:.-]+)\}$/.exec(raw.text);
+        const gbNote = cite && pageNoteKeys.has(cite[1]);
+        if ((token.math || equation || ref || gbNote || (cite && referenceNumbers.has(cite[1]))) && raw.positions.every((pos, i) => pos === raw.positions[0] + i))
+          atoms.push({ from: raw.positions[0], to: raw.positions.at(-1) + 1, kind: token.math || equation ? 'math' : gbNote ? 'gbFootnote' : ref ? 'ref' : 'footnote', ...(!token.math ? { key: (ref || cite || equation)[1] } : {}), ...(cite && !gbNote ? { number: referenceNumbers.get(cite[1]) } : {}), ...(ref && referenceTargets[ref[1]] ? { expectedId: referenceTargets[ref[1]] } : {}) });
+        continue;
+      }
       if (token.type === 'image') { add('image', 'img', raw); continue; }
       let visible;
       if (token.tokens) {
@@ -220,9 +228,9 @@ export function buildContentSourceMap(markdown, { type, referenceKeys: renderedR
       } else if (token.type === 'escape') visible = { text: token.text, positions: Array(token.text.length).fill(raw.positions.at(-1)) };
       else if (token.type === 'br') visible = { text: '\n', positions: [raw.positions.at(-1)] };
       else visible = decode(raw);
-      if (visible) { text += visible.text; append(positions, visible.positions); }
+      if (visible) { text += visible.text; append(positions, visible.positions); if (visible.atoms) atoms.push(...visible.atoms); }
     }
-    return { text, positions };
+    return { text, positions, atoms };
   }
 
   function visit(tokens, parent, textTag = 'p') {

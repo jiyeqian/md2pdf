@@ -352,20 +352,57 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
       && part.node.contains(range.startContainer) && part.node.contains(range.endContainer));
     let mapped = null;
     if (candidates.length === 1) {
-      const part = candidates[0], selected = [];
-      for (let i = 0; i < part.points.length; i++) {
-        const point = part.points[i];
-        if (range.comparePoint(point.node, point.offset) === 0 && range.comparePoint(point.node, point.offset + 1) === 0) selected.push(i);
-      }
-      if (selected.length && selected.every((index, i) => index === selected[0] + i)) {
-        const first = part.points[selected[0]], last = part.points[selected.at(-1)];
-        const exact = document.createRange();
-        exact.setStart(first.node, first.offset); exact.setEnd(last.node, last.offset + 1);
-        const text = selected.map(index => part.points[index].char).join('');
-        const contents = range.cloneContents();
-        if (range.toString() === text && exact.toString() === text && !contents.querySelector(skip)) {
-          const from = part.item.positions[part.start + selected[0]], to = part.item.positions[part.start + selected.at(-1)] + 1;
-          if (Number.isSafeInteger(from) && Number.isSafeInteger(to) && to > from) mapped = { id: part.item.id, from, to };
+      const part = candidates[0], allAtoms = part.item.formatAtoms || [];
+      const atoms = allAtoms.filter(atom => atom.kind === 'ref' || atom.kind === 'footnote');
+      const nodes = [...part.node.querySelectorAll('sup.fnref,a.ref')].filter(node => !node.closest('sup.fnref') || node.matches('sup.fnref'));
+      const verified = nodes.length === atoms.length && nodes.every((node, i) => {
+        const atom = atoms[i];
+        if (atom.kind === 'footnote') return node.matches('sup.fnref')
+          && node.querySelector('a')?.getAttribute('href') === '#fn-' + atom.number;
+        return node.matches('a.ref') && atom.expectedId && node.getAttribute('href') === '#' + atom.expectedId;
+      });
+      if (verified) {
+        const units = part.points.map((point, i) => ({ point, from: part.item.positions[part.start + i], to: part.item.positions[part.start + i] + 1, text: point.char }));
+        for (let i = 0; i < atoms.length; i++) {
+          const walker = document.createTreeWalker(nodes[i], NodeFilter.SHOW_TEXT), points = [];
+          let textNode;
+          while ((textNode = walker.nextNode())) for (let offset = 0; offset < textNode.length; offset++) points.push({ node: textNode, offset });
+          units.push({ ...atoms[i], points, text: nodes[i].textContent });
+          // Canonical scroll text merges whitespace across omitted references.
+          // Preserve a single verified source space after the reference for editing.
+          const next = units.find(unit => unit.point && unit.from === atoms[i].to + 1);
+          if (next && next.point.offset > 0 && next.point.node.data[next.point.offset - 1] === ' '
+            && !units.some(unit => unit.from === atoms[i].to)) {
+            units.push({ point: { node: next.point.node, offset: next.point.offset - 1 }, from: atoms[i].to, to: atoms[i].to + 1, text: ' ' });
+          }
+        }
+        units.sort((a, b) => a.from - b.from);
+        let invalid = units.some((unit, i) => {
+          if (!i) return false;
+          const previous = units[i - 1], left = previous.points?.at(-1) || previous.point, right = unit.points?.[0] || unit.point;
+          if (!left || !right || previous.to > unit.from) return true;
+          return left.node === right.node ? left.offset >= right.offset
+            : !(left.node.compareDocumentPosition(right.node) & Node.DOCUMENT_POSITION_FOLLOWING);
+        });
+        const selected = units.filter(unit => {
+          const points = unit.points || [unit.point];
+          const included = points.filter(point => range.comparePoint(point.node, point.offset) === 0 && range.comparePoint(point.node, point.offset + 1) === 0).length;
+          if (included && included !== points.length) invalid = true;
+          return included > 0;
+        });
+        if (!invalid && selected.length && selected.every((unit, i) => !i || units.indexOf(unit) === units.indexOf(selected[i - 1]) + 1)) {
+          const first = selected[0].points?.[0] || selected[0].point;
+          const lastUnit = selected.at(-1), last = lastUnit.points?.at(-1) || lastUnit.point;
+          const exact = document.createRange();
+          exact.setStart(first.node, first.offset); exact.setEnd(last.node, last.offset + 1);
+          const text = selected.map(unit => unit.text).join('');
+          const contents = range.cloneContents();
+          contents.querySelectorAll('sup.fnref,a.ref').forEach(node => node.remove());
+          if (range.toString() === text && exact.toString() === text && !contents.querySelector(skip)) {
+            const from = selected[0].from, to = lastUnit.to;
+            if (Number.isSafeInteger(from) && Number.isSafeInteger(to) && to > from
+              && !allAtoms.some(atom => !atoms.includes(atom) && from < atom.to && to > atom.from)) mapped = { id: part.item.id, from, to };
+          }
         }
       }
     }

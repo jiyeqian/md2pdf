@@ -69,7 +69,7 @@ try {
     assert.deepEqual(autoStatic.effective,autoNode.effective,type+': automatic effective options');
     assert.deepEqual(autoStatic.resetOptions,autoNode.resetOptions,type+': reset controls');
     // Preview-only source identity attributes do not affect printable layout.
-    sameHtml(online.html.replace(/ data-md2pdf-format-source-id="\d+"/g, ''),await webDocument(attachSourcePositions(core.pagedHtml,md,{type,referenceKeys:core.referenceKeys}),true,type),type+': prepared HTML');
+    sameHtml(online.html.replace(/ data-md2pdf-format-source-id="\d+"/g, ''),await webDocument(attachSourcePositions(core.pagedHtml,md,{type,referenceKeys:core.referenceKeys,referenceTargets:core.referenceTargets}),true,type),type+': prepared HTML');
     console.log(`✓ ${type}: CLI HTML、共用核心、Node API、静态预览与配置一致`);
   }
   for (const mode of ['continuous', 'page', 'odd-page']) {

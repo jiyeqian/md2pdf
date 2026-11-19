@@ -691,7 +691,10 @@ export async function render(src, options = {}, context = {}) {
       const match = args[0], offset = args.at(-2), replacement = replace(...args);
       if (sourcePositions && replacement !== match) {
         const at = offset + delta;
-        sourcePositions = sourcePositions.slice(0, at).concat(Array(replacement.length).fill(null), sourcePositions.slice(at + match.length));
+        const original = sourcePositions.slice(at, at + match.length);
+        const atomic = /^(?:\\ref\{[\w:.-]+\}|\[\^[^\]]+\]|\$\$[\s\S]*?\$\$|\$[^$\n]+\$)$/.test(match) && original.length && original.every((pos, index) => Number.isInteger(pos) && pos === original[0] + index);
+        const substituted = atomic ? Array.from({ length: replacement.length }, (_, index) => ({ start: original[0], end: original.at(-1) + 1, first: index === 0 })) : Array(replacement.length).fill(null);
+        sourcePositions = sourcePositions.slice(0, at).concat(substituted, sourcePositions.slice(at + match.length));
         delta += replacement.length - match.length;
       }
       return replacement;
@@ -759,11 +762,13 @@ export async function render(src, options = {}, context = {}) {
   let lexBody = '', lexPositions = [], lexWidths = [];
   if (sourcePositions?.length === parserBody.length) {
     for (let i = 0; i < parserBody.length; i++) {
-      const start = sourcePositions[i], crlf = parserBody[i] === '\r' && parserBody[i + 1] === '\n';
+      const origin = sourcePositions[i], crlf = parserBody[i] === '\r' && parserBody[i + 1] === '\n';
+      const atomic = origin && typeof origin === 'object';
+      const start = atomic ? (origin.first ? origin.start : origin.end) : origin;
       const valid = Number.isInteger(start) && (!crlf || sourcePositions[i + 1] === start + 1);
       lexBody += parserBody[i] === '\r' ? '\n' : parserBody[i];
       lexPositions.push(valid ? start : null);
-      lexWidths.push(crlf ? 2 : 1);
+      lexWidths.push(atomic ? (origin.first ? origin.end - origin.start : 0) : crlf ? 2 : 1);
       if (crlf) i++;
     }
   }
@@ -776,7 +781,7 @@ export async function render(src, options = {}, context = {}) {
     && sourcePositions?.length === parserBody.length;
   if (canIdentifyParagraphs) {
     const tokens = marked.lexer(lexBody);
-    const inlineSafe = list => list.every(token => ['text', 'strong', 'em', 'del', 'safeInlineHtml'].includes(token.type)
+    const inlineSafe = list => list.every(token => ['text', 'strong', 'em', 'del', 'safeInlineHtml', 'gbPageFootnote'].includes(token.type)
       && (!token.tokens || inlineSafe(token.tokens)));
     if (tokens.map(token => token.raw).join('') === lexBody) {
       const map = buildContentSourceMap(src, { type: profile.gbDoc ? 'gb' : profile.type });
@@ -803,7 +808,13 @@ export async function render(src, options = {}, context = {}) {
           if (position !== end) return false;
           end += widths[index]; return true;
         });
-        const item = contiguous && src.slice(start, end).replace(/\r\n|\r/g, '\n') === token.raw ? byRange.get(start + ':' + end) : null;
+        const original = positions.map((position, index) => widths[index] ? src.slice(position, position + widths[index]) : '').join('');
+        const verified = positions.every((position, index) => widths[index] === 0 || widths[index] > 2 || src.slice(position, position + widths[index]).replace(/\r\n|\r/g, '\n') === token.raw[index]);
+        let item = contiguous && verified && original === src.slice(start, end) ? byRange.get(start + ':' + end) : null;
+        if (!item && token.type === 'paragraph' && contiguous && verified && original === src.slice(start, end) && /\n$/.test(token.raw)) {
+          let trimmedEnd = end; while (trimmedEnd > start && /[\r\n]/.test(src[trimmedEnd - 1])) trimmedEnd--;
+          item = byRange.get(start + ':' + trimmedEnd);
+        }
         if (token.type === 'paragraph' && (!profile.gbDoc || !/^\s*[图表]\s*[：:]/.test(token.text)) && inlineSafe(token.tokens || []) && item?.kind === 'text' && item.tag === 'p' && !isKeywordSection(item.from)) { identities.set(token, item.id); candidateIds.push(item.id); }
         offset += token.raw.length;
       }
@@ -1205,6 +1216,7 @@ export async function render(src, options = {}, context = {}) {
   const assetHtml = value => context.assetBase ? value.replaceAll(pathToFileURL(ROOT + path.sep).href, context.assetBase.replace(/\/$/, '') + '/') : value;
   return { title, warnings, html: assetHtml(usePaged && !profile.gbDoc ? pagedOut : out), pagedHtml: pagedOut && assetHtml(pagedOut), type: profile.name,
     formatSourceIds,
+    referenceTargets: Object.fromEntries([...floats.refs].map(([key, value]) => [key, value.id])),
     referenceKeys: orderedFootnotes.map(footnote => footnote.id),
     printOptions: { ...(profile.gbDoc ? {requireGbFonts:true} : {}), ...(fontChecks.length ? {requireFonts:true,waitFonts:true} : {}), footer: usePaged ? false : eff.footer !== false, footerTemplate, header: usePaged ? false : !!showHeader, headerTemplate,
       landscape: eff.landscape, outline: eff.outline !== false, waitMath: hasMath, waitMermaid: hasMermaid, waitPaged: usePaged } };

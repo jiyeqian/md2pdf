@@ -35,7 +35,7 @@ test('sets and removes formats with Markdown rendering', () => {
   rendered('*abc*', 'abc', 'bold', '<strong><em>abc</em></strong>');
 });
 test('rejects constructs and unsafe boundaries', () => {
-  for (const source of ['a &amp; b', 'a \\*b', '[abc](url)', 'a $x$ b', 'a `b` c']) assert.equal(run(source, 'a', 'bold'), null, source);
+  for (const source of ['a &amp; b', 'a \\*b', '[abc](url)', 'a `b` c']) assert.equal(run(source, 'a', 'bold'), null, source);
   assert.equal(run('a b', 'a ', 'bold'), null);
 });
 
@@ -53,4 +53,23 @@ test('returns exact selected character boundaries after reconstruction', () => {
   const result = change(source, { from: source.indexOf('bcd'), to: source.indexOf('bcd') + 3, item }, 'bold');
   assert.ok(result);
   assert.equal(result.insert.slice(result.selectionFrom - result.from, result.selectionTo - result.from), 'bcd');
+});
+
+test('formats ordinary text and complete citation atoms without changing references', () => {
+  const source = '前文 \\ref{fig:a} 后面[^key]。\n\n[^key]: 内容';
+  const item = buildContentSourceMap(source)[0];
+  for (const [from, to, expected] of [[0, 2, '<strong>前文</strong> \\ref{fig:a} 后面[^key]。'], [3, 14, '前文 <strong>\\ref{fig:a}</strong> 后面[^key]。'], [0, 23, '<strong>前文 \\ref{fig:a} 后面[^key]</strong>。']]) {
+    const result = change(source, { from, to, item }, 'bold');
+    assert.equal(result?.insert, expected);
+  }
+  assert.equal(change(source, { from: 4, to: 14, item }, 'bold'), null);
+});
+
+test('formats ordinary text around formula and GB note without modifying them', () => {
+  for (const source of ['前文 $\\eqref{eq:a}$ 后文。', '---\ntype: gb\n---\n# 标准\n\n前文[^@a]后文。\n\n[^@a]: 注释']) {
+    const item = buildContentSourceMap(source).find(x => x.kind === 'text' && x.text.startsWith('前文'));
+    const from = source.indexOf('前文');
+    assert.match(change(source, {from, to:from+2, item}, 'bold')?.insert ?? '', /^<strong>前文<\/strong>/);
+    assert.equal(change(source, {from, to:item.to, item}, 'bold'), null);
+  }
 });

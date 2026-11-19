@@ -55,6 +55,33 @@ export function formatPreviewSelection(source, selection, format) {
   const marker = { bold: '**', italic: '*', strike: '~~' }[format];
   const { from, to, item } = selection || {};
   if (!marker || typeof source !== 'string' || !item || !['text', 'heading'].includes(item.kind) || !Array.isArray(item.positions) || !Number.isInteger(from) || !Number.isInteger(to) || from >= to || from < item.from || to > item.to || item.from < 0 || item.to > source.length) return null;
+  if (item.formatAtoms?.length) {
+    const atoms = item.formatAtoms;
+    if (atoms.length > 0x18ff || atoms.some((atom, index) => !Number.isInteger(atom.from) || !Number.isInteger(atom.to) || atom.from < item.from || atom.to > item.to || atom.from >= atom.to || (index && atoms[index - 1].to > atom.from) || (from > atom.from && from < atom.to) || (to > atom.from && to < atom.to))) return null;
+    let masked = source;
+    const positions = [...item.positions];
+    const replacements = [];
+    for (let i = 0; i < atoms.length; i++) {
+      const atom = atoms[i], raw = source.slice(atom.from, atom.to);
+      if (!(atom.kind === 'ref' && /^\\ref\{[\w:.-]+\}$/.test(raw) || atom.kind === 'footnote' && /^\[\^[^\]]+\]$/.test(raw) || atom.kind === 'gbFootnote' && /^\[\^@[^\]\s]+\]$/.test(raw) || atom.kind === 'math' && /^(?:\$\$[\s\S]*?\$\$|\$[^$\n]+\$|\\eqref\{[\w:.-]+\})$/.test(raw))) return null;
+      if (['math', 'gbFootnote'].includes(atom.kind) && from < atom.to && to > atom.from) return null;
+      if (item.positions.some(position => position >= atom.from && position < atom.to)) return null;
+      const char = String.fromCharCode(0xe000 + i);
+      if (source.includes(char)) return null;
+      masked = masked.slice(0, atom.from) + char.repeat(raw.length) + masked.slice(atom.to);
+      for (let pos = atom.from; pos < atom.to; pos++) positions.push(pos);
+      replacements.push([char.repeat(raw.length), raw]);
+    }
+    for (let pos = item.from; pos < item.to; pos++) if (/\s/.test(source[pos]) && !positions.includes(pos)) positions.push(pos);
+    positions.sort((a, b) => a - b);
+    const result = formatPreviewSelection(masked, { ...selection, item: { ...item, positions, formatAtoms: [] } }, format);
+    if (!result) return null;
+    for (const [placeholder, raw] of replacements) {
+      if (result.insert.split(placeholder).length !== 2) return null;
+      result.insert = result.insert.replace(placeholder, raw);
+    }
+    return result;
+  }
   const positions = item.positions;
   if (!positions.length || positions.some((p, i) => !Number.isInteger(p) || p < item.from || p >= item.to || (i && p <= positions[i - 1]))) return null;
   const start = positions.indexOf(from), end = positions.indexOf(to - 1);

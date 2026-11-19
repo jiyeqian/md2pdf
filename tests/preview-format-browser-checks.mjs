@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createApp } from '../src/server.mjs';
 import { Chrome, findChrome } from '../src/chrome.mjs';
 
@@ -130,6 +130,38 @@ try {
     await evaluate('document.querySelectorAll(".md-preview-format-menu button")[' + button + '].click()');
     await wait('mdEditor.getValue()===' + JSON.stringify(expected));
     await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+  }
+  const referenceDoc = await readFile(new URL('../web/examples/general.md', import.meta.url), 'utf8');
+  for (const [label, selector, mode, expected] of [
+    ['text before footnote', 'sup.fnref', 'before', true],
+    ['whole footnote', 'sup.fnref', 'whole', true],
+    ['partial footnote', 'sup.fnref', 'partial', false],
+    ['paragraph with figure reference', 'a.ref[href^="#fig-"]', 'paragraph', true],
+  ]) {
+    await evaluate('mdEditor.setValue(' + JSON.stringify(referenceDoc) + ')');
+    await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+    session = await frame();
+    await evaluate(`(()=>{const atom=document.querySelector('.pagedjs_pages p[data-md2pdf-format-source-id] ${selector}');if(!atom)throw Error('missing ${label}');const p=atom.closest('p'),r=document.createRange();if('${mode}'==='paragraph')r.selectNodeContents(p);else if('${mode}'==='before'){const n=p.firstChild;r.setStart(n,0);r.setEnd(n,Math.min(4,n.length));}else{const w=document.createTreeWalker(atom,NodeFilter.SHOW_TEXT),n=w.nextNode();r.setStart(n,0);r.setEnd(n,'${mode}'==='partial'?1:n.length);}getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
+    await wait('document.querySelector(".md-preview-format-menu")');
+    assert.equal(await evaluate('!document.querySelector(".md-preview-format-menu button").disabled'), expected, label);
+    if (expected) {
+      const original = label === 'text before footnote' ? '仿生机械' : label === 'whole footnote' ? '[^hogan1985]' : '抓取过程的状态转移如图 \\ref{fig:flow} 所示：';
+      await evaluate('document.querySelector(".md-preview-format-menu button").click()');
+      await wait('mdEditor.getValue()===' + JSON.stringify(referenceDoc.replace(label === 'text before footnote' ? '\n\n' + original : original, label === 'text before footnote' ? '\n\n<strong>' + original + '</strong>' : '<strong>' + original + '</strong>')));
+    } else await evaluate('document.querySelector(".md-preview-format-menu").dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}))');
+  }
+  for (const [label, source] of [
+    ['equation reference outside selection', '普通文字 $\\eqref{eq:test}$ 后续文字。\n\n$$\nx=1\\label{eq:test}\n$$'],
+    ['GB footnote outside selection', '---\ntype: gb\n---\n# 测试\n\n普通文字[^@n]后续文字。\n\n[^@n]: 脚注'],
+  ]) {
+    await evaluate('mdEditor.setValue(' + JSON.stringify(source) + ')');
+    await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+    session = await frame();
+    await evaluate(`(()=>{const p=[...document.querySelectorAll('.pagedjs_pages p[data-md2pdf-format-source-id]')].find(p=>p.textContent.startsWith('普通文字'));if(!p)throw Error('missing ${label}');const r=document.createRange();r.setStart(p.firstChild,0);r.setEnd(p.firstChild,4);getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
+    await wait('document.querySelector(".md-preview-format-menu")');
+    assert.equal(await evaluate('document.querySelector(".md-preview-format-menu button").disabled'), false, label);
+    await evaluate('document.querySelector(".md-preview-format-menu button").click()');
+    try { await wait('mdEditor.getValue()===' + JSON.stringify(source.replace('普通文字','<strong>普通文字</strong>'))); } catch (error) { console.error(label, await evaluate(`({status:document.querySelector('#status').textContent,state:mdPreviewController.state(),cover:!!document.querySelector('[data-md2pdf-format-cover]'),value:mdEditor.getValue()})`)); throw error; }
   }
   const gbDoc = '---\ntype: gb\n---\n# 国标格式测试\n\n重复文字\n\n:::gb-note\n重复文字\n:::\n\n脚注[^@n]。\n\n[^@n]: 脚注\n\n重复文字';
   await evaluate('mdEditor.setValue(' + JSON.stringify(gbDoc) + ')');

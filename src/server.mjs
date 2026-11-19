@@ -238,7 +238,7 @@ export function createApp({ chromeFactory = (bin, dir) => new Chrome(bin, dir, {
         try {
           const rendered = await render(md, opts, { webSafe: true, formatProvenance: !printing, signal:controller.signal, parsedFrontmatter, imageAssets });
           controller.signal.throwIfAborted();
-          const source = printing ? (rendered.pagedHtml || rendered.html) : attachSourcePositions(rendered.pagedHtml, md, {type:rendered.type,referenceKeys:rendered.referenceKeys});
+          const source = printing ? (rendered.pagedHtml || rendered.html) : attachSourcePositions(rendered.pagedHtml, md, {type:rendered.type,referenceKeys:rendered.referenceKeys,referenceTargets:rendered.referenceTargets});
           const html = await webDocument(printing && allowFontFallback ? withGbFontFallback(source) : source, !printing, rendered.type, controller.signal);
           controller.signal.throwIfAborted();
           json(200, { html, formatSourceIds:rendered.formatSourceIds, type:rendered.type, policy:policyForType(rendered.type, effective), effective, resetOptions, authorDiagnostics });

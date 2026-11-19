@@ -32,7 +32,7 @@ test('unrelated structures preserve safe paragraph identities and rendered outpu
       render(md, options, {webSafe:true, formatProvenance:true}),
       render(md, options, {webSafe:true}),
     ]);
-    const expected = buildContentSourceMap(md).filter(item => item.kind === 'text' && item.tag === 'p' && md.slice(item.from, item.to) === 'same').map(item => item.id);
+    const expected = buildContentSourceMap(md).filter(item => item.kind === 'text' && item.tag === 'p' && (md.slice(item.from, item.to) === 'same' || md.slice(item.from, item.to) === 'reference[^a]')).map(item => item.id);
     assert.deepEqual(result.formatSourceIds, expected, middle);
     assert.equal(result.html.replace(marker, ''), baseline.html, middle);
     assert.equal(result.pagedHtml.replace(marker, ''), baseline.pagedHtml, middle);
@@ -40,7 +40,7 @@ test('unrelated structures preserve safe paragraph identities and rendered outpu
 });
 
 test('unsafe paragraphs and non-web sources do not issue provenance', async () => {
-  for (const md of ['before $math$ after', 'before [link](https://example.com) after']) {
+  for (const md of ['before [link](https://example.com) after']) {
     const result = await render(md, options, {webSafe:true, formatProvenance:true});
     assert.deepEqual(result.formatSourceIds, [], md);
   }
@@ -85,7 +85,7 @@ test('GB ordinary paragraphs retain identity around notes and structured blocks'
     render(md, opts, {webSafe:true, formatProvenance:true}),
     render(md, opts, {webSafe:true}),
   ]);
-  const expected = buildContentSourceMap(md, {type:'gb'}).filter(item => item.kind === 'text' && item.tag === 'p' && (item.from === 0 || item.to === md.length)).map(item => item.id);
+  const expected = buildContentSourceMap(md, {type:'gb'}).filter(item => item.kind === 'text' && item.tag === 'p' && (item.from === 0 || item.to === md.length || item.formatAtoms?.some(atom => atom.kind === 'gbFootnote'))).map(item => item.id);
   assert.deepEqual(result.formatSourceIds, expected);
   assert.equal(result.html.replace(marker, ''), baseline.html);
   assert.equal(result.pagedHtml.replace(marker, ''), baseline.pagedHtml);
@@ -157,4 +157,22 @@ test('safe paired inline HTML renders consistently and carries preview identity'
   assert.equal(web.formatSourceIds.length, 1);
   const unsafe = await render('前 <strong onclick="evil()">坏</strong>。', options, { webSafe: true });
   assert.ok(!unsafe.html.includes('<strong onclick="evil()">'));
+});
+
+test('formatted repeated references retain their targets in CLI and WebApp', async () => {
+  const md = '前 <strong>\\ref{fig:a} 和 \\ref{fig:a} 与[^key]及[^key]</strong>。\n\n![图片 {#fig:a}](https://a.b/test.png)\n\n[^key]: 内容\n';
+  const [cli, web] = await Promise.all([render(md, options), render(md, options, {webSafe:true, formatProvenance:true})]);
+  const paragraph = result => result.html.match(/<p[^>]*>前 [\s\S]*?<\/p>/)?.[0].replace(marker, '');
+  assert.equal(paragraph(web), paragraph(cli));
+  assert.equal((paragraph(web).match(/href="#fig-1"/g) || []).length, 2);
+  assert.equal((paragraph(web).match(/href="#fn-1"/g) || []).length, 2);
+  assert.match(paragraph(web), /<strong>[\s\S]*<\/strong>/);
+});
+
+test('ordinary text around equation and GB notes retains paragraph identity', async () => {
+  for (const md of ['前文 $\\eqref{eq:a}$ 后文。', '---\ntype: gb\n---\n# 标准\n\n前文[^@a]后文。\n\n[^@a]: 注释']) {
+    const result = await render(md, {}, {webSafe:true, formatProvenance:true});
+    const item = buildContentSourceMap(md).find(x => x.kind === 'text' && x.text.startsWith('前文'));
+    assert.ok(result.formatSourceIds.includes(item.id), md);
+  }
 });
