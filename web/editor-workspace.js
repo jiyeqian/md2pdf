@@ -1476,7 +1476,10 @@
     [['bold', '粗体'], ['italic', '斜体'], ['strike', '删除线']].forEach(function (entry) {
       var button = make('button', { type: 'button', role: 'menuitem', 'aria-label': entry[1], title: entry[1] });
       var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'), path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true'); path.setAttribute('d', paths[entry[0]]); svg.appendChild(path); button.appendChild(svg);
+      svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true'); path.setAttribute('d', paths[entry[0]]); svg.appendChild(path);
+      var source = Array.prototype.slice.call(document.querySelectorAll('button[aria-label]')).find(function (button) { return !menu.contains(button) && button.getAttribute('aria-label') === entry[1]; });
+      source = source && source.querySelector('svg,img');
+      button.appendChild(source ? source.cloneNode(true) : svg);
       button.disabled = !data.available || !data.available[entry[0]];
       button.addEventListener('click', function () {
         closePreviewFormatMenu();
@@ -1490,8 +1493,14 @@
       menu.appendChild(make('div', { class: 'md-preview-format-note' }, '此选区无法安全编辑'));
     }
     document.body.appendChild(menu);
-    menu.style.left = Math.max(4, Math.min(data.x, window.innerWidth - menu.offsetWidth - 4)) + 'px';
-    menu.style.top = Math.max(4, Math.min(data.y, window.innerHeight - menu.offsetHeight - 4)) + 'px';
+    var viewport = window.visualViewport;
+    var left = viewport ? viewport.offsetLeft : 0, top = viewport ? viewport.offsetTop : 0;
+    var right = left + (viewport ? viewport.width : window.innerWidth), bottom = top + (viewport ? viewport.height : window.innerHeight);
+    var x = Math.max(left + 4, Math.min(data.x, right - menu.offsetWidth - 4));
+    var y = data.y - menu.offsetHeight - 8;
+    if (y < top + 4) y = data.bottom + 8;
+    menu.style.left = x + 'px';
+    menu.style.top = Math.max(top + 4, Math.min(y, bottom - menu.offsetHeight - 4)) + 'px';
     var first = menu.querySelector('button:not(:disabled)');
     if (first) first.focus({ preventScroll: true }); else menu.focus({ preventScroll: true });
     menu.addEventListener('keydown', function (key) {

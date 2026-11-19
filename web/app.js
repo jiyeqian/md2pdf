@@ -867,8 +867,8 @@ window.addEventListener('message', async event => {
   }
   if (event.data.type === 'md2pdf-format-menu') {
     if (!window.__MD2PDF_PREVIEW_READY__ || preview.ownerDocument !== document) return;
-    const { mapped, x, y } = event.data;
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    const { mapped, x, y, bottom } = event.data;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(bottom)) return;
     const item = mapped && previewFormatMap.filter(entry => entry.id === mapped.id);
     const valid = item?.length === 1 && previewFormatIds.has(mapped.id) && Number.isSafeInteger(mapped.from) && Number.isSafeInteger(mapped.to)
       && mapped.from >= item[0].from && mapped.to <= item[0].to && mapped.to > mapped.from;
@@ -886,8 +886,9 @@ window.addEventListener('message', async event => {
     const rect = preview.getBoundingClientRect();
     document.dispatchEvent(new CustomEvent('md-preview-format-menu', { detail: {
       revision, mapped: selection, available, position: event.data.position,
-      x: rect.left + x * (rect.width / (preview.clientWidth || rect.width)),
-      y: rect.top + y * (rect.height / (preview.clientHeight || rect.height))
+      x: rect.left + (preview.clientLeft + x) * (rect.width / (preview.offsetWidth || rect.width)),
+      y: rect.top + (preview.clientTop + y) * (rect.height / (preview.offsetHeight || rect.height)),
+      bottom: rect.top + (preview.clientTop + bottom) * (rect.height / (preview.offsetHeight || rect.height))
     } }));
     return;
   }

@@ -372,10 +372,11 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     event.preventDefault();
     closeFormatFallback();
     const ticket = ++formatMenuTicket;
+    const selectionRect = range.getClientRects()[0] || range.getBoundingClientRect();
     const anchor = capture();
-    parent.postMessage({ type: 'md2pdf-format-menu', revision: revision(), mapped, x: event.clientX, y: event.clientY, ticket,
+    parent.postMessage({ type: 'md2pdf-format-menu', revision: revision(), mapped, x: selectionRect.left, y: selectionRect.top, bottom: selectionRect.bottom, ticket,
       position: { from: anchor?.from, anchorRatio: anchor?.anchorRatio, offset: 0, ratio: scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight) } }, '*');
-    formatFallbackTimer = setTimeout(() => { if (ticket === formatMenuTicket) showFormatFallback(event.clientX, event.clientY); }, 300);
+    formatFallbackTimer = setTimeout(() => { if (ticket === formatMenuTicket) showFormatFallback(selectionRect.left, selectionRect.top); }, 300);
   });
   let selectionTimer;
   document.addEventListener('selectionchange', () => {
