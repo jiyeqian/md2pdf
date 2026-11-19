@@ -26,7 +26,7 @@ toc: true
 
 ## 正文与列表
 
-这是**加粗**、*斜体*、~~删除线~~、\`行内代码\`和[链接](https://example.com)。
+这是**加粗**、*斜体*、<em>中文斜体</em>、~~删除线~~、\`行内代码\`和[链接](https://example.com)。
 
 3. 从三开始
 4. 下一项
@@ -96,6 +96,8 @@ try {
     await writeFile(path.join(out, theme + '.html'), online.html);
     await writeFile(path.join(out, theme + '.pdf'), await chrome.printHtml(online.html, { webSafe: true, waitPaged: true, outline: true }));
     await evaluate(`new Promise(resolve=>{const check=()=>document.getElementById('md2pdf-preview-screen')?document.fonts.ready.then(resolve):setTimeout(check,50);check()})`);
+    const emphasis = await evaluate(`Array.from(document.querySelectorAll('.pagedjs_pages main em')).map(el=>({text:el.textContent,style:getComputedStyle(el).fontStyle}))`);
+    assert.deepEqual(emphasis, [{text:'斜体',style:'italic'}, {text:'中文斜体',style:'italic'}], `${theme}: Markdown and HTML emphasis are italic`);
     if (theme === 'minimal') {
       const styles = await evaluate(`(()=>{const root=document.querySelector('.pagedjs_pages');const get=s=>getComputedStyle(root.querySelector(s));return {h2Border:get('h2').borderBottomStyle,h2Padding:get('h2').paddingLeft,em:get('em').fontStyle,ol:get('main ol:not(.references)').listStyleType,ul:get('main ul').listStyleType,start:root.querySelector('main ol').start,marker:getComputedStyle(root.querySelector('main ol li'),'::before').display,toc:get('.toc').borderTopStyle,code:get('pre').borderTopStyle,codeRadius:get('pre').borderRadius,row:get('tbody tr:nth-child(even)').backgroundColor,quote:get('blockquote').borderLeftWidth,checks:root.querySelectorAll('input[type=checkbox]').length,checked:root.querySelectorAll('input:checked').length,taskMarker:getComputedStyle(root.querySelector('input[type=checkbox]').parentElement).listStyleType,math:root.querySelectorAll('mjx-container').length}})()`);
       assert.deepEqual(styles, { h2Border: 'none', h2Padding: '0px', em: 'italic', ol: 'decimal', ul: 'disc', start: 3, marker: 'none', toc: 'solid', code: 'solid', codeRadius: '4px', row: 'rgba(0, 0, 0, 0)', quote: '3px', checks: 2, checked: 1, taskMarker: 'none', math: 1 });
