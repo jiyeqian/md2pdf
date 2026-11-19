@@ -327,10 +327,11 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     let mapped = null;
     if (candidates.length === 1) {
       const part = candidates[0], allAtoms = part.item.formatAtoms || [];
-      const atoms = allAtoms.filter(atom => ['ref', 'footnote', 'math', 'gbFootnote'].includes(atom.kind));
-      const nodes = [...part.node.querySelectorAll('sup.fnref,a.ref,mjx-container,.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call')].filter(node => !node.parentElement.closest('sup.fnref,mjx-container,.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call'));
+      const atoms = allAtoms.filter(atom => ['ref', 'footnote', 'math', 'gbFootnote', 'link'].includes(atom.kind));
+      const nodes = [...part.node.querySelectorAll('sup.fnref,a,mjx-container,.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call')].filter(node => !node.parentElement.closest('sup.fnref,mjx-container,.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call'));
       const verified = nodes.length === atoms.length && nodes.every((node, i) => {
         const atom = atoms[i];
+        if (atom.kind === 'link') return node.matches('a') && node.getAttribute('href') === atom.href;
         if (atom.kind === 'math') return node.matches('mjx-container');
         if (atom.kind === 'gbFootnote') return node.matches('.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call');
         if (atom.kind === 'footnote') return node.matches('sup.fnref')
@@ -338,7 +339,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
         return node.matches('a.ref') && atom.expectedId && node.getAttribute('href') === '#' + atom.expectedId;
       });
       if (verified) {
-        const units = part.points.map((point, i) => ({ point, from: part.item.positions[part.start + i], to: part.item.positions[part.start + i] + 1, text: point.char }));
+        const units = part.points.map((point, i) => ({ point, from: part.item.positions[part.start + i], to: part.item.positions[part.start + i] + 1, text: point.char })).filter(unit => !atoms.some(atom => unit.from >= atom.from && unit.to <= atom.to));
         for (let i = 0; i < atoms.length; i++) {
           const walker = document.createTreeWalker(nodes[i], NodeFilter.SHOW_TEXT), points = [];
           let textNode;
@@ -389,7 +390,7 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
           if (lastUnit.node) exact.setEndAfter(lastUnit.node); else exact.setEnd(lastUnit.point.node, lastUnit.point.offset + 1);
           const text = selected.map(unit => unit.text).join('');
           const contents = range.cloneContents();
-          contents.querySelectorAll('sup.fnref,a.ref,mjx-container,.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call').forEach(node => node.remove());
+          contents.querySelectorAll('sup.fnref,a,mjx-container,.gb-footnote,.gb-footnote-repeat,.gb-float-footnote-call').forEach(node => node.remove());
           if (range.toString() === text && exact.toString() === text && !contents.querySelector(skip)) {
             const from = selected[0].from, to = lastUnit.to;
             if (Number.isSafeInteger(from) && Number.isSafeInteger(to) && to > from

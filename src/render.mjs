@@ -781,7 +781,7 @@ export async function render(src, options = {}, context = {}) {
     && sourcePositions?.length === parserBody.length;
   if (canIdentifyParagraphs) {
     const tokens = marked.lexer(lexBody);
-    const inlineSafe = list => list.every(token => ['text', 'strong', 'em', 'del', 'safeInlineHtml', 'gbPageFootnote'].includes(token.type)
+    const inlineSafe = list => list.every(token => ['text', 'strong', 'em', 'del', 'link', 'safeInlineHtml', 'gbPageFootnote'].includes(token.type) && (token.type !== 'link' || /^\[/.test(token.raw))
       && (!token.tokens || inlineSafe(token.tokens)));
     if (tokens.map(token => token.raw).join('') === lexBody) {
       const map = buildContentSourceMap(src, { type: profile.gbDoc ? 'gb' : profile.type });

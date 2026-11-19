@@ -59,12 +59,12 @@ export function formatPreviewSelection(source, selection, format) {
     const atoms = item.formatAtoms;
     if (atoms.length > 0x18ff || atoms.some((atom, index) => !Number.isInteger(atom.from) || !Number.isInteger(atom.to) || atom.from < item.from || atom.to > item.to || atom.from >= atom.to || (index && atoms[index - 1].to > atom.from) || (from > atom.from && from < atom.to) || (to > atom.from && to < atom.to))) return null;
     let masked = source;
-    const positions = [...item.positions];
+    const positions = item.positions.filter(position => !atoms.some(atom => atom.kind === 'link' && position >= atom.from && position < atom.to));
     const replacements = [];
     for (let i = 0; i < atoms.length; i++) {
       const atom = atoms[i], raw = source.slice(atom.from, atom.to);
-      if (!(atom.kind === 'ref' && /^\\ref\{[\w:.-]+\}$/.test(raw) || atom.kind === 'footnote' && /^\[\^[^\]]+\]$/.test(raw) || atom.kind === 'gbFootnote' && /^\[\^@[^\]\s]+\]$/.test(raw) || atom.kind === 'math' && /^(?:\$\$[\s\S]*?\$\$|\$[^$\n]+\$|\\eqref\{[\w:.-]+\})$/.test(raw))) return null;
-      if (item.positions.some(position => position >= atom.from && position < atom.to)) return null;
+      if (!(atom.kind === 'link' && (() => { const tokens = Lexer.lexInline(raw, { gfm: true }); return tokens.length === 1 && tokens[0].type === 'link' && tokens[0].raw === raw && /^\[/.test(raw) && tokens[0].href === atom.href; })() || atom.kind === 'ref' && /^\\ref\{[\w:.-]+\}$/.test(raw) || atom.kind === 'footnote' && /^\[\^[^\]]+\]$/.test(raw) || atom.kind === 'gbFootnote' && /^\[\^@[^\]\s]+\]$/.test(raw) || atom.kind === 'math' && /^(?:\$\$[\s\S]*?\$\$|\$[^$\n]+\$|\\eqref\{[\w:.-]+\})$/.test(raw))) return null;
+      if (atom.kind !== 'link' && item.positions.some(position => position >= atom.from && position < atom.to)) return null;
       const char = String.fromCharCode(0xe000 + i);
       if (source.includes(char)) return null;
       masked = masked.slice(0, atom.from) + char.repeat(raw.length) + masked.slice(atom.to);

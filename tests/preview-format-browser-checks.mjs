@@ -171,6 +171,25 @@ try {
     await evaluate('document.querySelector(".md-preview-format-menu button").click()');
     try { await wait('mdEditor.getValue()===' + JSON.stringify(source.replace(/普通文字.*?。/, paragraph => whole ? '<strong>' + paragraph + '</strong>' : paragraph.replace('普通文字','<strong>普通文字</strong>')))); } catch (error) { console.error(label, await evaluate(`({status:document.querySelector('#status').textContent,state:mdPreviewController.state(),cover:!!document.querySelector('[data-md2pdf-format-cover]'),value:mdEditor.getValue()})`)); throw error; }
   }
+  const linkTarget = 'https://cnb.cool/jiyeqian/md2pdf';
+  const linkParagraph = '所用工具 [md2pdf](' + linkTarget + ') 即本项目[^md2pdf]。';
+  const linkSuffix = '\n\n[^md2pdf]: 项目说明';
+  for (const [whole, button, tag] of [[false, 0, 'strong'], [true, 0, 'strong'], [true, 1, 'em'], [true, 2, 'del']]) {
+    const source = linkParagraph + linkSuffix;
+    if (await evaluate('mdEditor.getValue()') !== source) {
+      await evaluate('mdEditor.setValue(' + JSON.stringify(source) + ')');
+    }
+    await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+    session = await frame();
+    await evaluate(`(()=>{const p=[...document.querySelectorAll('.pagedjs_pages p')].find(p=>p.textContent.startsWith('所用工具'));const r=document.createRange();if (${whole}) r.selectNodeContents(p);else {r.setStart(p.firstChild,0);r.setEnd(p.firstChild,4);}getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
+    await wait('document.querySelector(".md-preview-format-menu button:not(:disabled)")');
+    await evaluate('document.querySelectorAll(".md-preview-format-menu button")[' + button + '].click()');
+    const expected = (whole ? '<' + tag + '>' + linkParagraph + '</' + tag + '>' : linkParagraph.replace('所用工具', '<strong>所用工具</strong>')) + linkSuffix;
+    await wait('mdEditor.getValue()===' + JSON.stringify(expected));
+    await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+    session = await frame();
+    assert.equal(await evaluate(`[...document.querySelectorAll('.pagedjs_pages p a')].find(a=>a.textContent==='md2pdf')?.getAttribute('href')`, session), linkTarget);
+  }
   const gbDoc = '---\ntype: gb\n---\n# 国标格式测试\n\n重复文字\n\n:::gb-note\n重复文字\n:::\n\n脚注[^@n]。\n\n[^@n]: 脚注\n\n重复文字';
   await evaluate('mdEditor.setValue(' + JSON.stringify(gbDoc) + ')');
   await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');

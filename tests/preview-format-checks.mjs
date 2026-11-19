@@ -35,7 +35,7 @@ test('sets and removes formats with Markdown rendering', () => {
   rendered('*abc*', 'abc', 'bold', '<strong><em>abc</em></strong>');
 });
 test('rejects constructs and unsafe boundaries', () => {
-  for (const source of ['a &amp; b', 'a \\*b', '[abc](url)', 'a `b` c']) assert.equal(run(source, 'a', 'bold'), null, source);
+  for (const source of ['a &amp; b', 'a \\*b', 'a `b` c']) assert.equal(run(source, 'a', 'bold'), null, source);
   assert.equal(run('a b', 'a ', 'bold'), null);
 });
 
@@ -77,4 +77,16 @@ test('formats ordinary text around formula and GB note without modifying them', 
     const [atom] = item.formatAtoms;
     assert.equal(change(source, {from, to:atom.to - 1, item}, 'bold'), null);
   }
+});
+
+test('formats around and across complete Markdown links while preserving destinations', () => {
+  const source = '前文 [链接](https://example.com/a?q=1 "标题") 后文';
+  const item = buildContentSourceMap(source).find(x => x.kind === 'text');
+  const atom = item.formatAtoms.find(x => x.kind === 'link');
+  for (const [from, to, expected] of [[0, 2, '<strong>前文</strong>'], [atom.from, atom.to, '<strong>[链接](https://example.com/a?q=1 "标题")</strong>'], [0, item.to, '<strong>' + source + '</strong>']]) {
+    const result = change(source, {from, to, item}, 'bold');
+    assert.ok(result?.insert.includes(expected));
+    assert.match(result.insert, /https:\/\/example\.com\/a\?q=1/);
+  }
+  assert.equal(change(source, {from: atom.from + 1, to: atom.to, item}, 'bold'), null);
 });

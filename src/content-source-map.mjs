@@ -228,7 +228,12 @@ export function buildContentSourceMap(markdown, { type, referenceKeys: renderedR
       } else if (token.type === 'escape') visible = { text: token.text, positions: Array(token.text.length).fill(raw.positions.at(-1)) };
       else if (token.type === 'br') visible = { text: '\n', positions: [raw.positions.at(-1)] };
       else visible = decode(raw);
-      if (visible) { text += visible.text; append(positions, visible.positions); if (visible.atoms) atoms.push(...visible.atoms); }
+      if (visible) {
+        text += visible.text; append(positions, visible.positions);
+        if (token.type === 'link' && /^\[/.test(raw.text) && raw.positions.every((pos, i) => pos === raw.positions[0] + i))
+          atoms.push({ from: raw.positions[0], to: raw.positions.at(-1) + 1, kind: 'link', href: token.href });
+        else if (visible.atoms) atoms.push(...visible.atoms);
+      }
     }
     return { text, positions, atoms };
   }

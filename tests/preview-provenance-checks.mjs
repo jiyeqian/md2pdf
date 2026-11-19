@@ -32,7 +32,7 @@ test('unrelated structures preserve safe paragraph identities and rendered outpu
       render(md, options, {webSafe:true, formatProvenance:true}),
       render(md, options, {webSafe:true}),
     ]);
-    const expected = buildContentSourceMap(md).filter(item => item.kind === 'text' && item.tag === 'p' && (md.slice(item.from, item.to) === 'same' || md.slice(item.from, item.to) === 'reference[^a]')).map(item => item.id);
+    const expected = buildContentSourceMap(md).filter(item => item.kind === 'text' && item.tag === 'p' && (md.slice(item.from, item.to) === 'same' || md.slice(item.from, item.to) === 'reference[^a]' || md.slice(item.from, item.to) === '[link](https://example.com)')).map(item => item.id);
     assert.deepEqual(result.formatSourceIds, expected, middle);
     assert.equal(result.html.replace(marker, ''), baseline.html, middle);
     assert.equal(result.pagedHtml.replace(marker, ''), baseline.pagedHtml, middle);
@@ -40,10 +40,6 @@ test('unrelated structures preserve safe paragraph identities and rendered outpu
 });
 
 test('unsafe paragraphs and non-web sources do not issue provenance', async () => {
-  for (const md of ['before [link](https://example.com) after']) {
-    const result = await render(md, options, {webSafe:true, formatProvenance:true});
-    assert.deepEqual(result.formatSourceIds, [], md);
-  }
   const forged = await render('safe\n\n<p data-md2pdf-format-source-id="0">safe</p>', options, {webSafe:true, formatProvenance:true});
   assert.deepEqual(forged.formatSourceIds, [0]);
   assert.equal([...forged.html.matchAll(marker)].length, 1);
@@ -194,4 +190,12 @@ test('formatting complete equations and GB footnote calls keeps the rendered tar
       assert.equal(renderedParagraph(cli).replace('<' + tag + '>', '').replace('</' + tag + '>', ''), renderedParagraph(original));
     }
   }
+});
+
+test('formatted links retain destinations in CLI and WebApp', async () => {
+  const md = '前 <strong>[链接](https://example.com/a?q=1 "标题")</strong> 后。';
+  const [cli, web] = await Promise.all([render(md, options), render(md, options, {webSafe:true, formatProvenance:true})]);
+  const paragraph = result => result.html.match(/<p[^>]*>前 [\s\S]*?<\/p>/)?.[0].replace(marker, '');
+  for (const result of [cli, web]) assert.match(paragraph(result), /<strong><a href="https:\/\/example\.com\/a\?q=1"[^>]*>链接<\/a><\/strong>/);
+  assert.equal(web.formatSourceIds.length, 1);
 });
