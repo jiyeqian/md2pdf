@@ -1,3 +1,4 @@
+import { installSafeInlineHtml } from './safe-inline-html.mjs';
 import { Marked } from '../vendor/marked.esm.js';
 import { installInlineScripts } from './inline-scripts.mjs';
 
@@ -184,6 +185,7 @@ export function buildContentSourceMap(markdown, { type, referenceKeys: renderedR
   }
   const marked = new Marked({ gfm: true });
   installInlineScripts(marked);
+  installSafeInlineHtml(marked);
   marked.use({ extensions: [
     { name: 'sourceMathBlock', level: 'block', start(text) { return /(?:^|\n) {0,3}\$\$/.exec(text)?.index; }, tokenizer(text) { const m = /^ {0,3}\$\$[\s\S]*?\$\$(?:[ \t]*(?:\n|$))/.exec(text); if (m) return { type: 'sourceMathBlock', raw: m[0] }; } },
     { name: 'sourceOmitted', level: 'inline', start(text) { return /\$|\\(?:eqref|ref)\{|\[\^/.exec(text)?.index; }, tokenizer(text) {

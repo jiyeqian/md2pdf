@@ -1469,19 +1469,22 @@
     closePreviewFormatMenu();
     var data = event.detail;
     if (!data) return;
-    var menu = make('div', { class: 'md-wt-basic-menu md-preview-format-menu', role: 'menu', 'aria-label': '预览格式', tabindex: '-1' });
+    var menu = make('div', { class: 'md-quick-actions md-preview-format-menu', role: 'menu', 'aria-label': '预览格式', tabindex: '-1' });
     previewFormatMenu = menu;
-    [['bold', 'bold', '加粗'], ['italic', 'italic', '斜体'], ['strike', 'strikethrough', '删除线']].forEach(function (entry) {
-      var button = make('button', { type: 'button', class: 'md-wt-button md-wt-menu-item', role: 'menuitem', 'aria-label': entry[2], title: entry[2] });
-      button.appendChild(iconSvg(entry[1]));
-      button.appendChild(make('span', null, entry[2]));
+    var row = make('div', { class: 'md-preview-format-row' });
+    var paths = { bold: 'M7 4h6a4 4 0 010 8H7zm0 8h7a4 4 0 010 8H7z', italic: 'M10 4h8M6 20h8M15 4L9 20', strike: 'M5 12h14M17 6c-6-5-14 4-6 6 8 2 4 11-3 6' };
+    [['bold', '粗体'], ['italic', '斜体'], ['strike', '删除线']].forEach(function (entry) {
+      var button = make('button', { type: 'button', role: 'menuitem', 'aria-label': entry[1], title: entry[1] });
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'), path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true'); path.setAttribute('d', paths[entry[0]]); svg.appendChild(path); button.appendChild(svg);
       button.disabled = !data.available || !data.available[entry[0]];
       button.addEventListener('click', function () {
         closePreviewFormatMenu();
         document.dispatchEvent(new CustomEvent('md-preview-format-apply', { detail: { revision: data.revision, mapped: data.mapped, position: data.position, format: entry[0] } }));
       });
-      menu.appendChild(button);
+      row.appendChild(button);
     });
+    menu.appendChild(row);
     if (!Object.values(data.available || {}).some(Boolean)) {
       menu.title = '此选区无法安全映射到 Markdown';
       menu.appendChild(make('div', { class: 'md-preview-format-note' }, '此选区无法安全编辑'));
@@ -1493,12 +1496,12 @@
     if (first) first.focus({ preventScroll: true }); else menu.focus({ preventScroll: true });
     menu.addEventListener('keydown', function (key) {
       if (key.key === 'Escape') { key.preventDefault(); key.stopPropagation(); closePreviewFormatMenu(); previewFrame.focus({ preventScroll: true }); return; }
-      if (key.key !== 'ArrowDown' && key.key !== 'ArrowUp') return;
+      if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(key.key)) return;
       var items = Array.prototype.slice.call(menu.querySelectorAll('button:not(:disabled)'));
       if (!items.length) return;
       key.preventDefault();
       var index = items.indexOf(document.activeElement);
-      items[(index + (key.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus({ preventScroll: true });
+      items[(index + (['ArrowDown', 'ArrowRight'].includes(key.key) ? 1 : items.length - 1)) % items.length].focus({ preventScroll: true });
     });
   }
   document.addEventListener('md-preview-format-menu', openPreviewFormatMenu);

@@ -174,3 +174,11 @@ test('unsupported named entities stay conservative and image data never expands 
   assert.equal(image.text, '');
   assert.equal(image.positions.length, 0);
 });
+
+
+test('balanced inline HTML formatting maps visible characters to their original offsets', () => {
+  const source = '前 <strong>粗<em>斜</em></strong> 后 <del>删</del>。';
+  const [entry] = checked(source);
+  assert.equal(entry.text, '前 粗斜 后 删。');
+  for (const char of ['粗', '斜', '删']) assert.equal(entry.positions[entry.text.indexOf(char)], source.indexOf(char));
+});

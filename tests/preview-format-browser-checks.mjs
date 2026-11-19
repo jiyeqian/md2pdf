@@ -51,15 +51,16 @@ try {
   const select = async (second) => evaluate(`(()=>{const nodes=[...document.querySelectorAll('.pagedjs_pages p[data-md2pdf-source-id]')].filter(n=>n.textContent==='重复文字');const node=nodes[${second}].firstChild;const r=document.createRange();r.setStart(node,0);r.setEnd(node,node.length);getSelection().removeAllRanges();getSelection().addRange(r);nodes[${second}].dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:20,clientY:20}));})()`, session);
   await select(1);
   await wait('document.querySelector(".md-preview-format-menu button:not(:disabled)")');
+  assert.deepEqual(await evaluate(`[...document.querySelectorAll('.md-preview-format-menu button')].map(b=>({label:b.getAttribute('aria-label'),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height}))`), [{label:'粗体',width:28,height:28},{label:'斜体',width:28,height:28},{label:'删除线',width:28,height:28}], 'same icon order and button size as editor selection toolbar');
   await browser.send('Page.captureScreenshot',{format:'png'}).then(result=>writeFile('/private/tmp/md2pdf-format-before.png',Buffer.from(result.data,'base64')));
   await evaluate(`const original=mdEditor.replaceRange;mdEditor.replaceRange=function(...args){mdEditor.replaceRange=original;setTimeout(()=>original.apply(mdEditor,args),600)};window.__coverAtReplacement=null;new MutationObserver(()=>{const cover=document.querySelector('[data-md2pdf-format-cover]');window.__coverAtReplacement=!!cover&&getComputedStyle(cover).opacity==='1';}).observe(document.querySelector('#preview'),{attributes:true,attributeFilter:['srcdoc']});document.querySelector('.md-preview-format-menu button').click()`);
   await wait('document.querySelector("[data-md2pdf-format-cover]") && getComputedStyle(document.querySelector("[data-md2pdf-format-cover]")).opacity==="1"');
   await browser.send('Page.captureScreenshot',{format:'png'}).then(result=>writeFile('/private/tmp/md2pdf-format-cover.png',Buffer.from(result.data,'base64')));
-  await wait('mdEditor.getValue().includes("**重复文字**")');
-  assert.equal(await evaluate('mdEditor.getValue()'), md.replace('重复文字\n\n跨段', '**重复文字**\n\n跨段'));
+  await wait('mdEditor.getValue().includes("<strong>重复文字</strong>")');
+  assert.equal(await evaluate('mdEditor.getValue()'), md.replace('重复文字\n\n跨段', '<strong>重复文字</strong>\n\n跨段'));
   await wait('window.__MD2PDF_PREVIEW_READY__');
   session = await frame();
-  await new Promise(resolve => setTimeout(resolve, 350));
+  await wait('getSelection().toString() === \"重复文字\"', session);
   assert.equal(await evaluate('getSelection().toString()', session), '重复文字', 'formatted selection is restored');
   assert.equal(await evaluate('window.__coverAtReplacement'), true, 'visible snapshot covers the preview when srcdoc is replaced');
   await wait('!document.querySelector("[data-md2pdf-format-cover]")');
@@ -76,10 +77,10 @@ try {
   await evaluate('document.querySelector(".md-preview-format-menu").dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}))');
   assert.equal(await evaluate('!!document.querySelector(".md-preview-format-menu")'), false);
   const fixtures = [
-    ['bold', 'abc', '**abc**', 0], ['italic', 'abc', '*abc*', 1], ['strike', 'abc', '~~abc~~', 2],
-    ['nested', '**abc**', '**_abc_**', 1],
+    ['bold', 'abc', '<strong>abc</strong>', 0, 'abc'], ['italic', 'abc', '<em>abc</em>', 1, 'abc'], ['strike', 'abc', '<del>abc</del>', 2, 'abc'],
+    ['nested', '**abc**', '<strong><em>abc</em></strong>', 1, '<strong>abc</strong>'],
   ];
-  for (const [label, source, expected, button] of fixtures) {
+  for (const [label, source, expected, button, toggledOff] of fixtures) {
     await evaluate('mdEditor.setValue(' + JSON.stringify(source) + ')');
     await wait('window.__MD2PDF_PREVIEW_READY__ && document.querySelector("#preview").srcdoc.includes("abc")');
     session = await frame();
@@ -96,9 +97,61 @@ try {
     session = await frame();
     await wait('getSelection().toString()==="abc"', session);
     await open();
-    await wait('mdEditor.getValue()===' + JSON.stringify(source));
-    assert.equal(await evaluate('mdEditor.getValue()'), source, label + ' toggles off');
+    await wait('mdEditor.getValue()===' + JSON.stringify(toggledOff));
+    assert.equal(await evaluate('mdEditor.getValue()'), toggledOff, label + ' toggles off');
   }
+  // Mixed inline styles and reverse drag use rendered coordinates, not text lookup in source.
+  for (const [source, start, end, button, expected, reverse] of [
+    ['这里是**普通文字**', 0, 3, 0, '<strong>这里是普通文字</strong>', false],
+    ['**普通文字**', 0, 2, 0, '普通<strong>文字</strong>', true],
+    ['这里是**普通文字**', 1, 5, 0, '这<strong>里是普通文字</strong>', true],
+    ['*中文*相邻', 0, 4, 1, '<em>中文相邻</em>', true],
+    ['~~中文~~相邻', 0, 4, 2, '<del>中文相邻</del>', true],
+    ['*中文*', 0, 1, 1, '中<em>文</em>', true],
+    ['~~中文~~', 0, 1, 2, '中<del>文</del>', true],
+    ['**a *b* c**', 2, 3, 0, '<strong>a </strong><em>b</em><strong> c</strong>', true],
+    ['你好，世界', 2, 5, 0, '你好<strong>，世界</strong>', false],
+  ]) {
+    await evaluate('mdEditor.setValue(' + JSON.stringify(source) + ')');
+    await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+    session = await frame();
+    await evaluate(`(()=>{const p=document.querySelector('.pagedjs_pages p[data-md2pdf-format-source-id]');const w=document.createTreeWalker(p,NodeFilter.SHOW_TEXT);const nodes=[];let n;while((n=w.nextNode()))nodes.push(n);function at(i,start){for(const n of nodes){if(i<n.length || (!start && i===n.length))return [n,i];i-=n.length}throw Error('selection offset')}const a=at(${start},true),b=at(${end},false);const sel=getSelection();sel.removeAllRanges();sel.setBaseAndExtent(...(${reverse}?[b[0],b[1],a[0],a[1]]:[a[0],a[1],b[0],b[1]]));p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
+    await wait('document.querySelector(".md-preview-format-menu")');
+    assert.equal(await evaluate('document.querySelectorAll(".md-preview-format-menu button")[' + button + '].disabled'), false, source + ' selection enabled');
+    await evaluate('document.querySelectorAll(".md-preview-format-menu button")[' + button + '].click()');
+    await wait('mdEditor.getValue()===' + JSON.stringify(expected));
+    await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+  }
+  const gbDoc = '---\ntype: gb\n---\n# 国标格式测试\n\n重复文字\n\n:::gb-note\n重复文字\n:::\n\n脚注[^@n]。\n\n[^@n]: 脚注\n\n重复文字';
+  await evaluate('mdEditor.setValue(' + JSON.stringify(gbDoc) + ')');
+  await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+  session = await frame();
+  await evaluate(`(()=>{const nodes=[...document.querySelectorAll('.pagedjs_pages p[data-md2pdf-format-source-id]')].filter(n=>n.textContent==='重复文字');if(nodes.length!==2)throw Error('GB provenance mismatch: '+nodes.length);const p=nodes[1],r=document.createRange();r.setStart(p.firstChild,0);r.setEnd(p.firstChild,p.firstChild.length);getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`,session);
+  await wait('document.querySelector(".md-preview-format-menu button:not(:disabled)")');
+  await evaluate('document.querySelector(".md-preview-format-menu button").click()');
+  await wait('mdEditor.getValue()===' + JSON.stringify(gbDoc.replace(/重复文字$/, '<strong>重复文字</strong>')));
+  await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+  session = await frame();
+  await wait('getSelection().toString()==="重复文字"', session);
+  await evaluate('mdEditor.runCommand("undo")');
+  assert.equal(await evaluate('mdEditor.getValue()'), gbDoc, 'GB formatting is one undo transaction');
+  await evaluate('mdEditor.setValue("这里是**普通文字**")');
+  await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+  session = await frame();
+  await evaluate(`(()=>{const p=document.querySelector('.pagedjs_pages p[data-md2pdf-format-source-id]'),r=document.createRange();r.selectNodeContents(p);getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`,session);
+  await wait('document.querySelector(".md-preview-format-menu")');
+  assert.equal(await evaluate('document.querySelector(".md-preview-format-menu button").disabled'),false,'equivalent element-boundary selection stays editable');
+  await evaluate('document.querySelector(".md-preview-format-menu button").click()');
+  await wait('mdEditor.getValue()==="<strong>这里是普通文字</strong>"');
+  const mixedDoc = '# 混合文档\n\n正文可编辑\n\n- 列表\n\n| 甲 | 乙 |\n| --- | --- |\n| 一 | 二 |\n\n包含公式 $x$ 与引用[^a]。\n\n[^a]: 脚注\n';
+  await evaluate('mdEditor.setValue(' + JSON.stringify(mixedDoc) + ')');
+  await wait('mdPreviewController.state().ready && mdPreviewController.state().previewRevision === mdPreviewController.state().revision');
+  session = await frame();
+  await evaluate(`(()=>{const p=[...document.querySelectorAll('.pagedjs_pages p[data-md2pdf-format-source-id]')].find(x=>x.textContent==='正文可编辑');const r=document.createRange();r.setStart(p.firstChild,0);r.setEnd(p.firstChild,p.firstChild.length);getSelection().removeAllRanges();getSelection().addRange(r);p.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`,session);
+  await wait('document.querySelector(".md-preview-format-menu")');
+  assert.equal(await evaluate('document.querySelector(".md-preview-format-menu button").disabled'),false,'unrelated structures do not disable safe paragraph');
+  await evaluate('document.querySelector(".md-preview-format-menu button").click()');
+  await wait('mdEditor.getValue()===' + JSON.stringify(mixedDoc.replace('正文可编辑','<strong>正文可编辑</strong>')));
   for (const [label, source, selector] of [
     ['table', '| abc | x |\n|---|---|\n| def | y |', '.pagedjs_pages td'],
     ['forged', '<p data-md2pdf-format-source-id="0">abc</p>\n\nordinary', '.pagedjs_pages p'],
@@ -106,7 +159,7 @@ try {
     await evaluate('mdEditor.setValue(' + JSON.stringify(source) + ')');
     await wait('window.__MD2PDF_PREVIEW_READY__');
     session = await frame();
-    await evaluate(`(()=>{const node=[...document.querySelectorAll(${JSON.stringify(selector)})].find(node=>node.textContent.trim());const r=document.createRange();r.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(r);node.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
+    await evaluate(`(()=>{let node;if(${JSON.stringify(label)}==='forged'){const w=document.createTreeWalker(document.querySelector('.pagedjs_pages'),NodeFilter.SHOW_TEXT);while((node=w.nextNode())&&!node.data.includes('data-md2pdf-format-source-id')){}}else node=[...document.querySelectorAll(${JSON.stringify(selector)})].find(node=>node.textContent.trim());if(!node)throw Error('test target missing');const r=document.createRange();r.selectNodeContents(node);getSelection().removeAllRanges();getSelection().addRange(r);(node.nodeType===3?node.parentElement:node).dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:30,clientY:30}));})()`, session);
     await wait('document.querySelector(".md-preview-format-menu")');
     assert.equal(await evaluate('document.querySelectorAll(".md-preview-format-menu button:disabled").length'), 3, label + ' is disabled');
     assert.equal(await evaluate('mdEditor.getValue()'), source);

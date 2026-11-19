@@ -1,3 +1,4 @@
+import { installSafeInlineHtml } from './safe-inline-html.mjs';
 import { buildContentSourceMap } from './content-source-map.mjs';
 import { installInlineScripts } from './inline-scripts.mjs';
 import {prepareDocumentContent,prepareContentHeadings,finalizeContentNavigation,finalizeHeadingSubtitles} from './document-content.mjs';
@@ -577,6 +578,7 @@ export async function render(src, options = {}, context = {}) {
   throwIfAborted();
   const marked = new Marked({ gfm: true });
   installInlineScripts(marked);
+  installSafeInlineHtml(marked);
   const require = createRequire(import.meta.url);
   const hljs = require(path.join(ROOT, 'vendor', 'highlight', 'highlight.cjs'));
   marked.use({
@@ -635,13 +637,86 @@ export async function render(src, options = {}, context = {}) {
   // 脚注：提取 [^id]: 定义，正文 [^id] 引用替换为编号上标
   const gbNotes = profile.gbDoc ? prepareGbFootnotes(rawBody) : null;
   const { body, footnotes } = parseFootnotes(gbNotes ? gbNotes.body : rawBody, profile.gbDoc);
+  // Each preprocessing stage supplies line origins; inserted lines stay unmapped.
+  let sourcePositions = null;
+  const mapLines = (input, positions, origins, output) => {
+    const lines = input.split('\n'), starts = []; let at = 0;
+    for (const line of lines) { starts.push(at); at += line.length + 1; }
+    const result = [], outputLines = output?.split('\n');
+    for (let i = 0; i < origins.length; i++) {
+      const origin = origins[i];
+      if (i) {
+        const prior = origins[i - 1];
+        result.push(Number.isInteger(prior) && origin === prior + 1 ? positions[starts[prior] + lines[prior].length] : null);
+      }
+      if (Number.isInteger(origin)) for (let j = 0; j < lines[origin].length; j++) result.push(positions[starts[origin] + j]);
+      else for (let j = 0; j < (outputLines?.[i].length || 0); j++) result.push(null);
+    }
+    return result;
+  };
+  if (context.webSafe && context.formatProvenance === true && src.endsWith(sourceBody)) {
+    const before = sourceBody.split('\n'), after = rawBody.split('\n');
+    // Document content blocks replace whole lines with empty lines. Preserve
+    // offsets only when that invariant holds, including their original newlines.
+    if (before.length === after.length && before.every((line, i) => line === after[i] || after[i] === '')) {
+      sourcePositions = []; let offset = src.length - sourceBody.length;
+      for (let i = 0; i < before.length; i++) {
+        if (before[i] === after[i]) for (let j = 0; j < before[i].length; j++) sourcePositions.push(offset + j);
+        offset += before[i].length;
+        if (i + 1 < before.length) sourcePositions.push(offset++);
+      }
+    }
+    let input = rawBody;
+    if (gbNotes && sourcePositions) sourcePositions = mapLines(input, sourcePositions, gbNotes.origins);
+    if (gbNotes) input = gbNotes.body;
+    const lines = input.split('\n'), origins = []; let fence = null;
+    for (let i = 0; i < lines.length; i++) {
+      const boundary = /^ {0,3}(`{3,}|~{3,})/.exec(lines[i]);
+      if (profile.gbDoc && boundary) {
+        if (!fence) fence = boundary[1];
+        else if (boundary[1][0] === fence[0] && boundary[1].length >= fence.length) fence = null;
+        origins.push(i); continue;
+      }
+      if (profile.gbDoc && fence) { origins.push(i); continue; }
+      const m = /^\[\^([^\]]+)\]:[ \t]*(.*)$/.exec(lines[i]);
+      if (!m || (profile.gbDoc && m[1].startsWith('@'))) { origins.push(i); continue; }
+      while (i + 1 < lines.length && /^[ \t]+\S/.test(lines[i + 1])) i++;
+    }
+    if (sourcePositions && origins.map(i => lines[i]).join('\n') === body) sourcePositions = mapLines(input, sourcePositions, origins);
+    else sourcePositions = null;
+  }
+  const mappedReplace = (input, pattern, replace) => {
+    let delta = 0;
+    return input.replace(pattern, (...args) => {
+      const match = args[0], offset = args.at(-2), replacement = replace(...args);
+      if (sourcePositions && replacement !== match) {
+        const at = offset + delta;
+        sourcePositions = sourcePositions.slice(0, at).concat(Array(replacement.length).fill(null), sourcePositions.slice(at + match.length));
+        delta += replacement.length - match.length;
+      }
+      return replacement;
+    });
+  };
   // 编号按正文「首次引用顺序」自动排序（类 LaTeX）；md 里的定义顺序保持不变
   const defIds = new Set(footnotes.map(fn => fn.id));
   const fnIndex = new Map();
   const fnRefCount = new Map();
   const fnMarkup = [];
   const headingAttributes=protectHeadingAttributes(body);
-  const bodyWithRefs = headingAttributes.body.replace(/\[\^([^\]]+)\]/g, (m, id) => {
+  if (sourcePositions && headingAttributes.body !== body) {
+    const before = body.split('\n'), after = headingAttributes.body.split('\n');
+    if (before.length !== after.length) sourcePositions = null;
+    else {
+      let mapped = []; let offset = 0;
+      for (let i = 0; i < before.length; i++) {
+        mapped = mapped.concat(before[i] === after[i] ? sourcePositions.slice(offset, offset + before[i].length) : Array(after[i].length).fill(null));
+        offset += before[i].length;
+        if (i + 1 < before.length) mapped.push(sourcePositions[offset++]);
+      }
+      sourcePositions = mapped;
+    }
+  }
+  const bodyWithRefs = mappedReplace(headingAttributes.body, /\[\^([^\]]+)\]/g, (m, id) => {
     if (!defIds.has(id)) return m;
     if (!fnIndex.has(id)) fnIndex.set(id, fnIndex.size + 1);
     const n = fnIndex.get(id);
@@ -660,13 +735,12 @@ export async function render(src, options = {}, context = {}) {
   // 保护数学公式与图表引用：markdown 的转义处理会破坏 \, \\ 与 \ref（多行公式塌行、引用失效）
   const mathStore = [];
   const refStore = [];
-  const bodyProtected = bodyWithRefs
-    .replace(/\$\$[\s\S]*?\$\$|\$[^$\n]+\$/g, (m) => {
+  const mathProtected = mappedReplace(bodyWithRefs, /\$\$[\s\S]*?\$\$|\$[^$\n]+\$/g, (m) => {
       const i = mathStore.length;
       mathStore.push(m);
       return '\u0001MATH' + i + '\u0001';
-    })
-    .replace(/\\ref\{([\w:.-]+)\}/g, (m, label) => {
+    });
+  const bodyProtected = mappedReplace(mathProtected, /\\ref\{([\w:.-]+)\}/g, (m, label) => {
       const i = refStore.length;
       refStore.push(label);
       return '\u0002REF' + i + '\u0002';
@@ -674,41 +748,72 @@ export async function render(src, options = {}, context = {}) {
 
   if (gbNotes) marked.use({extensions:[gbNotes.extension]});
   const gbBlocks = profile.gbDoc ? prepareGbContent(bodyProtected) : null;
+  if (gbBlocks && sourcePositions) {
+    sourcePositions = mapLines(bodyProtected, sourcePositions, gbBlocks.origins, gbBlocks.body);
+    // Synthetic block markers have no source positions.
+    if (sourcePositions.length !== gbBlocks.body.length) sourcePositions = null;
+  }
+  const parserBody = gbBlocks ? gbBlocks.body : bodyProtected;
+  // Marked normalizes both CRLF and CR before block lexing. Keep each output
+  // character's exact source span so ranges remain in original UTF-16 units.
+  let lexBody = '', lexPositions = [], lexWidths = [];
+  if (sourcePositions?.length === parserBody.length) {
+    for (let i = 0; i < parserBody.length; i++) {
+      const start = sourcePositions[i], crlf = parserBody[i] === '\r' && parserBody[i + 1] === '\n';
+      const valid = Number.isInteger(start) && (!crlf || sourcePositions[i + 1] === start + 1);
+      lexBody += parserBody[i] === '\r' ? '\n' : parserBody[i];
+      lexPositions.push(valid ? start : null);
+      lexWidths.push(crlf ? 2 : 1);
+      if (crlf) i++;
+    }
+  }
+
   let html;
   let formatSourceIds = [];
   // Provenance is issued only for unchanged top-level paragraphs, from the
   // actual token objects subsequently passed to the parser.
-  const canIdentifyParagraphs = context.webSafe && context.formatProvenance === true && !profile.gbDoc
-    && !src.includes('\r') && src.endsWith(sourceBody)
-    && sourceBody === rawBody && rawBody === body && body === headingAttributes.body
-    && headingAttributes.body === bodyWithRefs && bodyWithRefs === bodyProtected;
+  const canIdentifyParagraphs = context.webSafe && context.formatProvenance === true
+    && sourcePositions?.length === parserBody.length;
   if (canIdentifyParagraphs) {
-    const tokens = marked.lexer(bodyProtected);
-    const inlineSafe = list => list.every(token => ['text', 'strong', 'em', 'del'].includes(token.type)
+    const tokens = marked.lexer(lexBody);
+    const inlineSafe = list => list.every(token => ['text', 'strong', 'em', 'del', 'safeInlineHtml'].includes(token.type)
       && (!token.tokens || inlineSafe(token.tokens)));
-    const safe = tokens.every(token => token.type === 'space'
-      || ((token.type === 'paragraph' || token.type === 'heading') && inlineSafe(token.tokens || [])));
-    if (safe && tokens.map(token => token.raw).join('') === bodyProtected) {
-      const map = buildContentSourceMap(src, { type: profile.type });
+    if (tokens.map(token => token.raw).join('') === lexBody) {
+      const map = buildContentSourceMap(src, { type: profile.gbDoc ? 'gb' : profile.type });
       const byRange = new Map();
       for (const item of map) {
         const key = item.from + ':' + item.to;
         byRange.set(key, byRange.has(key) ? null : item);
       }
       const identities = new WeakMap(), candidateIds = [];
-      let offset = src.length - sourceBody.length;
+      // Keyword sections remove their paragraph wrapper during postprocessing.
+      // Keep that wrapper unannotated so validation and rendering stay identical.
+      const sections = map.filter(item => item.kind === 'heading' && /^h[12]$/.test(item.tag));
+      const isKeywordSection = from => {
+        let role;
+        for (const section of sections) { if (section.from >= from) break; role = section.role; }
+        return role === 'keywords';
+      };
+      let offset = 0;
       for (const token of tokens) {
-        const item = byRange.get(offset + ':' + (offset + token.raw.length));
-        if (token.type === 'paragraph' && item?.kind === 'text' && item.tag === 'p') { identities.set(token, item.id); candidateIds.push(item.id); }
+        const positions = lexPositions.slice(offset, offset + token.raw.length);
+        const widths = lexWidths.slice(offset, offset + token.raw.length);
+        const start = positions[0]; let end = start;
+        const contiguous = Number.isInteger(start) && positions.every((position, index) => {
+          if (position !== end) return false;
+          end += widths[index]; return true;
+        });
+        const item = contiguous && src.slice(start, end).replace(/\r\n|\r/g, '\n') === token.raw ? byRange.get(start + ':' + end) : null;
+        if (token.type === 'paragraph' && (!profile.gbDoc || !/^\s*[图表]\s*[：:]/.test(token.text)) && inlineSafe(token.tokens || []) && item?.kind === 'text' && item.tag === 'p' && !isKeywordSection(item.from)) { identities.set(token, item.id); candidateIds.push(item.id); }
         offset += token.raw.length;
       }
-      const baseline = marked.parser(tokens);
+      const baseline = profile.gbDoc ? null : marked.parser(tokens);
       marked.use({ renderer: { paragraph(token) {
         const id = identities.get(token);
         return id === undefined ? false : '<p data-md2pdf-format-source-id="' + id + '">' + this.parser.parseInline(token.tokens) + '</p>\n';
       } } });
       const identified = marked.parser(tokens);
-      if (identified.replace(/ data-md2pdf-format-source-id="\d+"/g, '') === baseline) { html = identified; formatSourceIds = candidateIds; }
+      if (profile.gbDoc || identified.replace(/ data-md2pdf-format-source-id="\d+"/g, '') === baseline) { html = identified; formatSourceIds = candidateIds; }
       else html = baseline;
     }
   }

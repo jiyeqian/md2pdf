@@ -49,7 +49,7 @@ try {
   const node = await nodeResponse.json();
   const offline = await staticResponse.json();
   assert.equal(normalize(node.html), normalize(offline.html), 'Node/static HTML');
-  assert.equal(normalize(/<main>([\s\S]*?)<\/main>/.exec(core.html)[1]), normalize(/<main>([\s\S]*?)<\/main>/.exec(node.html)[1]), 'core/Node body');
+  assert.equal(normalize(/<main>([\s\S]*?)<\/main>/.exec(core.html)[1]), normalize(/<main>([\s\S]*?)<\/main>/.exec(node.html)[1].replace(/ data-md2pdf-format-source-id="\d+"/g, '')), 'core/Node body');
   const cliHtml = path.join(out, 'gb-ef-cli.html');
   execFileSync(process.execPath, ['src/md2pdf.mjs', input, '--html-only', '--type', 'gb', '--paged-html=', '-o', cliHtml], { stdio:'pipe' });
   assert.equal(normalize(await readFile(cliHtml, 'utf8')), normalize(core.pagedHtml), 'CLI/core paged HTML');

@@ -320,11 +320,15 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
     closeFormatFallback();
     const menu = document.createElement('div');
     menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', '预览格式'); menu.tabIndex = -1;
-    menu.style.cssText = 'position:fixed;z-index:2147483647;padding:8px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 30px rgba(36,51,72,.14);font:13px sans-serif;color:#64748b';
-    for (const label of ['加粗', '斜体', '删除线']) {
-      const button = document.createElement('button'); button.textContent = label; button.disabled = true;
-      button.style.cssText = 'display:block;border:0;background:none;padding:6px;color:#94a3b8'; menu.appendChild(button);
+    menu.style.cssText = 'position:fixed;z-index:2147483647;padding:3px;background:#fff;border:1px solid #d7dce2;border-radius:6px;box-shadow:0 2px 8px #0002;font:13px sans-serif;color:#64748b';
+    const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:2px';
+    for (const [label, pathData] of [['粗体','M7 4h6a4 4 0 010 8H7zm0 8h7a4 4 0 010 8H7z'], ['斜体','M10 4h8M6 20h8M15 4L9 20'], ['删除线','M5 12h14M17 6c-6-5-14 4-6 6 8 2 4 11-3 6']]) {
+      const button = document.createElement('button'); button.disabled = true; button.setAttribute('aria-label', label); button.title = label;
+      button.style.cssText = 'width:28px;height:28px;display:grid;place-items:center;padding:4px;border:0;border-radius:3px;background:transparent;color:#94a3b8';
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'), path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('aria-hidden','true'); svg.style.cssText='width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round'; path.setAttribute('d',pathData); svg.appendChild(path); button.appendChild(svg); row.appendChild(button);
     }
+    menu.appendChild(row);
     const note = document.createElement('div'); note.textContent = '当前预览不可编辑'; menu.appendChild(note);
     document.body.appendChild(menu); formatFallback = menu;
     menu.style.left = Math.max(4, Math.min(x, innerWidth - menu.offsetWidth - 4)) + 'px';
@@ -358,8 +362,8 @@ export function installContentSync({ activeScope, revision, beforeLocate }) {
         const exact = document.createRange();
         exact.setStart(first.node, first.offset); exact.setEnd(last.node, last.offset + 1);
         const text = selected.map(index => part.points[index].char).join('');
-        if (range.compareBoundaryPoints(Range.START_TO_START, exact) === 0
-          && range.compareBoundaryPoints(Range.END_TO_END, exact) === 0 && range.toString() === text) {
+        const contents = range.cloneContents();
+        if (range.toString() === text && exact.toString() === text && !contents.querySelector(skip)) {
           const from = part.item.positions[part.start + selected[0]], to = part.item.positions[part.start + selected.at(-1)] + 1;
           if (Number.isSafeInteger(from) && Number.isSafeInteger(to) && to > from) mapped = { id: part.item.id, from, to };
         }

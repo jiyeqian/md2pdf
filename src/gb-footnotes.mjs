@@ -28,16 +28,18 @@ contentParser.use({extensions:[{
 export function prepareGbFootnotes(source) {
   const definitions = new Map(), rows = String(source).split('\n'), output = [];
   let fence = null;
+  const origins = [];
+  const keep = i => { output.push(rows[i]); origins.push(i); };
   for (let i = 0; i < rows.length; i++) {
     const boundary = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(rows[i]);
     if (boundary) {
       if (!fence) fence = {char:boundary[1][0], length:boundary[1].length};
       else if (boundary[1][0] === fence.char && boundary[1].length >= fence.length && !boundary[2].trim()) fence = null;
-      output.push(rows[i]);
+      keep(i);
       continue;
     }
     const match = !fence && /^ {0,3}\[\^@([^\]\s]+)\]:[ \t]*(.*)$/.exec(rows[i]);
-    if (!match) { output.push(rows[i]); continue; }
+    if (!match) { keep(i); continue; }
     if (definitions.has(match[1])) throw inputError('国家标准条文脚注定义重复：' + match[1]);
     let content = match[2];
     while (i + 1 < rows.length && /^(?: {4}|\t)\S/.test(rows[i + 1])) content += '\n' + rows[++i].replace(/^(?: {4}|\t)/, '');
@@ -48,6 +50,7 @@ export function prepareGbFootnotes(source) {
   while (source.includes(marker)) marker += 'X';
   return {
     body:output.join('\n'),
+    origins,
     get css() {
       return [...numbers.values()].map(number => `.gb-footnote-${number}::footnote-call { content: "${number})"; } .gb-footnote-${number}::footnote-marker { content: none; }`).join('\n');
     },
