@@ -12,6 +12,21 @@ export function formatOneDriveSize(size) {
   return `${Number(value.toFixed(1))} ${units[index]}`;
 }
 
+const cloudNameOrder = new Intl.Collator('zh-CN', { numeric: true, sensitivity: 'base' });
+
+export function orderOneDriveItems(values) {
+  const ids = new Set();
+  const timestamp = item => {
+    const time = Date.parse(item.lastModifiedDateTime);
+    return Number.isFinite(time) ? time : -Infinity;
+  };
+  return values.filter(item => !ids.has(item.id) && ids.add(item.id)).sort((a, b) =>
+    Number(Boolean(b.folder)) - Number(Boolean(a.folder)) ||
+    timestamp(b) - timestamp(a) ||
+    cloudNameOrder.compare(a.name, b.name)
+  );
+}
+
 export function initializeOneDrive() {
   let graph, auth, binding = null, busy = false, generation = 0;
   const current = () => window.mdDrafts?.current();
@@ -188,13 +203,10 @@ export function initializeOneDrive() {
       if (!folders.length || folders[0].id !== root) folders = [{id:root,name:'应用文件夹'}];
       const page = await client.listPage(folders.at(-1).id);
       if (started !== generation || request !== listGeneration || client !== graph) return;
-      rootId = root; items = uniqueItems(page.items); nextLink = page.nextLink; visited = new Set();
+      rootId = root; items = orderOneDriveItems(page.items); nextLink = page.nextLink; visited = new Set();
       if (nextLink) visited.add(nextLink);
     } catch (error) { if (started === generation && request === listGeneration) listError = errorMessage(error); }
     finally { if (started === generation && request === listGeneration) { loading = false; renderCloud(); } }
-  }
-  function uniqueItems(values) {
-    const ids = new Set(); return values.filter(item => !ids.has(item.id) && ids.add(item.id));
   }
   async function loadMore() {
     if (loading || !nextLink || !graph || !auth?.connected()) return;
@@ -205,7 +217,7 @@ export function initializeOneDrive() {
       const page = await client.listPage(folders.at(-1).id, link);
       if (started !== generation || request !== listGeneration || client !== graph) return;
       if (page.nextLink && visited.has(page.nextLink)) throw new Error('OneDrive 返回了重复的分页地址，请刷新重试。');
-      items = uniqueItems([...items, ...page.items]); nextLink = page.nextLink; if (nextLink) visited.add(nextLink);
+      items = orderOneDriveItems([...items, ...page.items]); nextLink = page.nextLink; if (nextLink) visited.add(nextLink);
     } catch (error) { if (started === generation && request === listGeneration) listError = errorMessage(error); }
     finally { if (started === generation && request === listGeneration) { loading = false; renderCloud(); } }
   }
