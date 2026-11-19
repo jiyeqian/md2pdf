@@ -34,12 +34,14 @@ try{
  assert.equal(await evalJS(`(()=>{const b=document.querySelector('.md-cloud-crumb');return b.textContent==='md2pdf' && b.scrollWidth<=b.clientWidth+1})()`),true,'root path must not truncate md2pdf');
 
  assert.equal(await evalJS(`document.querySelectorAll('.md-cloud-item-icon').length`),2);
- await evalJS(`document.querySelector('.md-cloud-row-menu').click()`);
+ await evalJS(`document.querySelector('[data-cloud-id="one"]').closest('.md-cloud-panel-row').querySelector('.md-cloud-row-menu').click()`);
  const menuPoint=await evalJS(`(()=>{const r=document.querySelectorAll('.md-cloud-popup button')[1].getBoundingClientRect();return {x:r.left+10,y:r.top+10}})()`);
  await browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',...menuPoint});
  assert.equal(await evalJS(`getComputedStyle(document.querySelector('.md-cloud-popup button')).backgroundColor`),'rgba(0, 0, 0, 0)');
  assert.notEqual(await evalJS(`getComputedStyle(document.querySelectorAll('.md-cloud-popup button')[1]).backgroundColor`),'rgba(0, 0, 0, 0)');
+ const rowBeforeRename = await evalJS(`document.querySelector('.md-cloud-popup').closest('.md-cloud-panel-row').getBoundingClientRect().height`);
  await evalJS(`document.querySelector('.md-cloud-popup button').click()`);
+ assert.deepEqual(await evalJS(`(() => {const form=document.querySelector('.md-cloud-rename'), input=form.querySelector('input');return [form.nextElementSibling.classList.contains('md-cloud-panel-size'),form.closest('.md-cloud-panel-row').getBoundingClientRect().height,input.selectionStart,input.selectionEnd]})()`), [true,rowBeforeRename,0,'示例文件'.length]);
 
  assert.equal(await evalJS(`document.querySelector('.md-cloud-rename input').value`),'示例文件');
  assert.equal(await evalJS(`document.querySelector('.md-cloud-extension').textContent`),'.md');

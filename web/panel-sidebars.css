@@ -79,8 +79,8 @@
 .md-cloud-popup { position:fixed;z-index:5;min-width:140px;background:#fff;border:1px solid #d6dfea;border-radius:5px;box-shadow:0 3px 10px #0002;padding:4px; }
 .md-cloud-popup button { display:block;width:100%;border:0;background:transparent;color:inherit;font:inherit;text-align:left;padding:6px;cursor:pointer; }
 .md-cloud-popup button:hover,.md-cloud-popup button:focus-visible { background:#edf2f8; }
-.md-cloud-rename { display:flex;gap:3px;min-width:0; }
-.md-cloud-rename input { min-width:0;flex:1; }
+.md-cloud-rename { display:flex;align-items:center;gap:3px;min-width:0;height:1.5em; }
+.md-cloud-rename input { box-sizing:border-box;min-width:0;flex:1;height:100%;font:inherit;padding:0 3px;border:1px solid #92a8c3;border-radius:4px;color:inherit; }
 
 @media(max-width:600px) { .md-cloud-breadcrumb[data-nested="true"] > .md-cloud-prefix-apps, .md-cloud-breadcrumb[data-nested="true"] > .md-cloud-prefix-apps + .md-cloud-separator { display:none; } }
 @media(max-width:360px) { .md-cloud-breadcrumb[data-nested="true"] > .md-cloud-prefix-home, .md-cloud-breadcrumb[data-nested="true"] > .md-cloud-prefix-home + .md-cloud-separator { display:none; } }
