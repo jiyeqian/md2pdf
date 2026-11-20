@@ -27,8 +27,18 @@ export function orderOneDriveItems(values) {
   );
 }
 
+
+function conciseCloudMessage(text) {
+  if (/重命名.*失败.*(?:nameAlreadyExists|名称已存在)/i.test(text)) return '重命名失败：名称已存在';
+  if (/重命名.*失败.*(?:HTTP 409|HTTP 412|resourceModified)/i.test(text)) return '重命名失败：云端文件冲突';
+  if (/重命名.*失败/i.test(text)) return '重命名失败，请检查文件名';
+  if (/evil\.test|下载地址|不受信任/i.test(text)) return '打开失败：文件地址不受信任';
+  if (/HTTP|网络|连接|超时|network/i.test(text)) return '操作失败，请检查连接';
+  return text.replace(/\s+/g, ' ').trim();
+}
+
 export function initializeOneDrive() {
-  let graph, auth, binding = null, busy = false, generation = 0, noticeTimer, statusRowTimer;
+  let graph, auth, binding = null, busy = false, generation = 0, noticeTimer;
   const current = () => window.mdDrafts?.current();
   const status = (message, error = false) => {
     clearTimeout(noticeTimer);
@@ -99,7 +109,7 @@ export function initializeOneDrive() {
     const message = (text, error = false) => {
       if (!text) return;
       const p = doc.createElement('p'); p.className = error ? 'md-cloud-panel-error' : 'md-sidebar-empty';
-      p.setAttribute('role', error ? 'alert' : 'status'); p.textContent = text;
+      p.setAttribute('role', error ? 'alert' : 'status'); p.textContent = error ? conciseCloudMessage(text) : text; p.title = text;
       if (error && text === ONEDRIVE_UNCONFIGURED) {
         const link = doc.createElement('a'); link.href = new URL('onedrive-setup.html', import.meta.url).href;
         link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '配置说明';
@@ -136,15 +146,17 @@ export function initializeOneDrive() {
     if (creatingFolder) { const form = doc.createElement('form'); form.className = 'md-cloud-panel-actions'; const input = doc.createElement('input'); input.placeholder = '文件夹名称'; input.setAttribute('aria-label', '文件夹名称'); const submit = doc.createElement('button'); submit.type = 'submit'; submit.disabled = mutationBusy || busy; submit.className = 'md-cloud-panel-button'; submit.textContent = '创建'; const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.className = 'md-cloud-panel-button'; cancel.textContent = '取消'; cancel.addEventListener('click', () => { creatingFolder = false; renderCloud(); }); form.append(input, submit, cancel); form.addEventListener('submit', e => { e.preventDefault(); void createFolder(input.value); }); cloudPane.append(form); }
     const statusRow = previousStatus || doc.createElement('div'); statusRow.className = 'md-cloud-panel-status'; cloudPane.append(statusRow);
     const statusText = listError || (loading ? '正在加载…' : info);
-    clearTimeout(statusRowTimer);
+    const wasVisible = statusRow.dataset.visible === 'true';
+    statusRow.getAnimations().forEach(animation => animation.cancel());
+    const motion = !doc.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (statusText) {
-      statusRow.replaceChildren(); const p = doc.createElement('p'); p.className = listError ? 'md-cloud-panel-error' : 'md-sidebar-empty'; p.setAttribute('role', listError ? 'alert' : 'status'); p.textContent = statusText; p.title = statusText; statusRow.append(p);
-      if (!previousStatus) statusRow.getBoundingClientRect();
-      statusRow.dataset.visible = 'true';
-    } else {
-      statusRow.dataset.visible = 'false';
-      statusRowTimer = setTimeout(() => { if (statusRow.dataset.visible === 'false') statusRow.replaceChildren(); }, 200);
-    }
+      statusRow.replaceChildren(); const p = doc.createElement('p'); p.className = listError ? 'md-cloud-panel-error' : 'md-sidebar-empty'; p.setAttribute('role', listError ? 'alert' : 'status'); p.textContent = listError ? conciseCloudMessage(statusText) : statusText; p.title = statusText; statusRow.append(p);
+      statusRow.dataset.error = String(!!listError); statusRow.dataset.visible = 'true';
+      if (!wasVisible && motion) statusRow.animate([{height:'0px',opacity:0},{height:'28px',opacity:1}], {duration:240,easing:'ease-out'});
+    } else if (wasVisible && motion) {
+      const animation = statusRow.animate([{height:'28px',opacity:1},{height:'0px',opacity:0}], {duration:240,easing:'ease-in',fill:'forwards'});
+      animation.onfinish = () => { statusRow.dataset.visible = 'false'; statusRow.replaceChildren(); animation.cancel(); };
+    } else { statusRow.dataset.visible = 'false'; statusRow.replaceChildren(); }
     const list = doc.createElement('div'); list.className = 'md-cloud-panel-list'; cloudPane.append(list);
     if (!items.length && !loading) { const empty = doc.createElement('p'); empty.className = 'md-sidebar-empty'; empty.textContent = nextLink ? '本页没有 Markdown 文件。' : '应用文件夹中没有 Markdown 文件。'; list.append(empty); }
     for (const item of items) {
@@ -180,8 +192,6 @@ export function initializeOneDrive() {
 
     }
     lastHighlight = binding?.draftId === current() ? binding.id : '';
-    if (listError && retryOpenItem) addButton('重试打开', () => { void openItem(retryOpenItem); }, loading, statusRow);
-    else if (listError && !retryPage) addButton('重试', () => { void refresh(); }, loading, statusRow);
     if (nextLink) addButton(listError && retryPage && !retryOpenItem ? '重试加载' : '加载更多', () => { void loadMore(); }, loading);
     cloudPane.append(account);
     expireInfo();

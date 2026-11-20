@@ -117,3 +117,13 @@
 
 .md-cloud-panel-account { justify-content:center; }
 .md-cloud-account-prefix { flex:none; white-space:pre; }
+
+.md-cloud-panel-status { flex:none; min-height:0; max-height:none; height:0; opacity:0; overflow:hidden; transition:none; gap:0; align-items:center; border-radius:4px; background:#eef3f8; }
+.md-cloud-panel-status[data-visible="true"] { height:28px; max-height:none; opacity:1; overflow:hidden; }
+.md-cloud-panel-status[data-error="true"] { background:#fcf0f0; }
+.md-cloud-panel-status .md-sidebar-empty,.md-cloud-panel-status .md-cloud-panel-error { display:block; margin:0; padding:0 6px; min-width:0; width:100%; line-height:28px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.md-cloud-panel.is-disconnected .md-cloud-panel-error,.md-cloud-panel.is-disconnected .md-sidebar-empty { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.md-cloud-panel.is-disconnected .md-cloud-panel-error,.md-cloud-panel.is-disconnected .md-sidebar-empty { height:28px; line-height:28px; margin:0 0 6px; padding:0 6px; border-radius:4px; background:#eef3f8; }
+.md-cloud-panel.is-disconnected .md-cloud-panel-error { background:#fcf0f0; }
+.md-cloud-breadcrumb { padding-left:6px; }
