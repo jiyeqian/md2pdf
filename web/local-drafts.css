@@ -70,4 +70,3 @@
 .editor-footer .md-cloud-status { border:0; padding:0; background:transparent; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
 .editor-footer .md-cloud-notice[data-error="true"] .md-cloud-status { color:#a53434; }
 .editor-footer .md-cloud-error { display:none; }
-.editor-footer .md-cloud-close { font-size:15px; line-height:16px; }

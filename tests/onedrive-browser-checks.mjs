@@ -133,7 +133,13 @@ try {
     await wait(`document.querySelectorAll('.md-cloud-panel-file').length===15`);
     assert.deepEqual(await evaluate(`[...document.querySelectorAll('.md-cloud-icon-button')].map(x=>x.getAttribute('aria-label'))`), ['刷新','保存到 OneDrive','新建文件夹','断开']);
     assert.equal(await evaluate(`document.querySelector('.md-cloud-panel').lastElementChild.matches('.md-cloud-panel-account')`),true,'account is at the bottom');
-    assert.equal(await evaluate(`!!document.querySelector('.md-cloud-panel-status')`),true,'status row is reserved');
+    assert.equal(await evaluate(`!!document.querySelector('.md-cloud-panel-status')`),true,'status row exists');
+    assert.ok(await evaluate(`document.querySelector('.md-cloud-panel-account').textContent.startsWith('OneDrive 帐户 ')`));
+    assert.equal(await evaluate(`!!document.querySelector('.md-cloud-close')`),false,'footer has no dismiss button');
+    await wait(`document.querySelector('.md-cloud-panel-status').dataset.visible==='false'`);
+    await new Promise(resolve=>setTimeout(resolve,250));
+    assert.equal(await evaluate(`document.querySelector('.md-cloud-panel-status').getBoundingClientRect().height`),0,'empty status row collapses');
+    assert.ok(await evaluate(`getComputedStyle(document.querySelector('.md-cloud-panel-status')).transitionDuration !== '0s'`),'status row has a transition');
     assert.equal(await evaluate(`document.querySelector('.preview-footer math munder mi')?.textContent`),'t','preview footer uses t');
     assert.ok(await evaluate(`[...document.querySelectorAll('.md-cloud-panel-file')].some(x=>x.textContent.includes('空文件') && x.textContent.includes('0 B'))`));
     assert.ok(await evaluate(`[...document.querySelectorAll('.md-cloud-panel-file')].some(x=>x.textContent.includes('5.5 KiB'))`));
@@ -199,6 +205,7 @@ try {
     await evaluate('mockGraph.holdSave=false; window.releaseSave()');
     await wait(`mockGraph.calls.some(x=>x.url.endsWith('/items/cloud/content')&&x.method==='PUT')`);
     await wait(`document.querySelector('.md-cloud-status')?.textContent.includes('已保存')`);
+    await wait(`document.querySelector('.md-cloud-notice').hidden`);
     await evaluate(`mockGraph.mode='late'; document.querySelector('.md-cloud-icon-button[aria-label="保存到 OneDrive"]').click()`);
     await wait(`document.querySelector('dialog[aria-label="OneDrive 保存冲突"]')`);
     assert.equal(await evaluate(`mockGraph.calls.filter(x=>x.url.endsWith('/items/cloud/content')).at(-1).headers['If-Match']`),'old');

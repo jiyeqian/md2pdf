@@ -28,9 +28,10 @@ export function orderOneDriveItems(values) {
 }
 
 export function initializeOneDrive() {
-  let graph, auth, binding = null, busy = false, generation = 0;
+  let graph, auth, binding = null, busy = false, generation = 0, noticeTimer, statusRowTimer;
   const current = () => window.mdDrafts?.current();
   const status = (message, error = false) => {
+    clearTimeout(noticeTimer);
     const panel = window.mdWorkspaceHosts?.query('.editor-panel') || document.querySelector('.editor-panel');
     if (!panel) return;
     let notice = panel.querySelector('.md-cloud-notice');
@@ -38,11 +39,9 @@ export function initializeOneDrive() {
       const doc = panel.ownerDocument;
       notice = doc.createElement('div'); notice.className = 'md-cloud-notice';
       const body = doc.createElement('div'); body.className = 'md-cloud-notice-body';
-      const node = doc.createElement('button'); node.type = 'button'; node.className = 'md-cloud-status'; node.setAttribute('role', 'status'); node.addEventListener('click', () => { if (notice.dataset.error === 'true') { listError = detail.textContent; showCloud(); renderCloud(); } });
+      const node = doc.createElement('button'); node.type = 'button'; node.className = 'md-cloud-status'; node.setAttribute('role', 'status'); node.addEventListener('click', () => { if (notice.dataset.error === 'true') { listError = detail.textContent; showCloud(); renderCloud(); notice.hidden = true; } });
       const detail = doc.createElement('div'); detail.className = 'md-cloud-error'; detail.setAttribute('role', 'alert'); detail.hidden = true;
-      const close = doc.createElement('button'); close.type = 'button'; close.className = 'md-cloud-close'; close.setAttribute('aria-label', '关闭 OneDrive 提示'); close.textContent = '×';
-      close.addEventListener('click', () => { notice.hidden = true; panel.querySelector('button[aria-label="打开 Markdown"]')?.focus(); });
-      body.append(node, detail); notice.append(body, close);
+      body.append(node, detail); notice.append(body);
     }
     const footer = panel.querySelector('.editor-footer');
     if (footer && notice.parentElement !== footer) footer.append(notice);
@@ -59,6 +58,7 @@ export function initializeOneDrive() {
     detail.hidden = !error;
     notice.dataset.error = String(error);
     notice.hidden = !message;
+    if (message && !error && /已保存|已打开/.test(message)) noticeTimer = setTimeout(() => { notice.hidden = true; }, 4000);
   };
   const cloudSidebars = new Map();
   let sidebar, cloudPane, wantOpen = false, preparing, connectionPromise, initializing = false, connecting = false;
@@ -90,6 +90,7 @@ export function initializeOneDrive() {
     if (auth && !auth.connected() && (items.length || rootId || binding)) { rootId = ''; folders = []; items = []; nextLink = ''; visited.clear(); binding = null; ++openGeneration; }
     const doc = cloudPane.ownerDocument;
     hideTooltip(); closeMenu?.(); closeRenameKey?.();
+    const previousStatus = cloudPane.querySelector('.md-cloud-panel-status');
     cloudPane.replaceChildren();
     const addButton = (text, action, disabled = false, parent = cloudPane) => {
       const button = doc.createElement('button'); button.type = 'button'; button.className = 'md-cloud-panel-button';
@@ -114,8 +115,9 @@ export function initializeOneDrive() {
     }
     cloudPane.classList.remove('is-disconnected');
     const account = doc.createElement('p'); account.className = 'md-cloud-panel-account'; account.title = auth.account() || 'Microsoft 账户';
+    const prefix = doc.createElement('span'); prefix.className = 'md-cloud-account-prefix'; prefix.textContent = 'OneDrive 帐户 '; account.append(prefix);
     const at = account.title.lastIndexOf('@');
-    if (at > 0) { const first = doc.createElement('span'); first.className = 'md-cloud-account-name'; first.textContent = account.title.slice(0, at); const domain = doc.createElement('span'); domain.textContent = account.title.slice(at); account.append(first, domain); } else account.textContent = account.title;
+    if (at > 0) { const first = doc.createElement('span'); first.className = 'md-cloud-account-name'; first.textContent = account.title.slice(0, at); const domain = doc.createElement('span'); domain.textContent = account.title.slice(at); account.append(first, domain); } else account.append(doc.createTextNode(account.title));
     const actions = doc.createElement('div'); actions.className = 'md-cloud-panel-actions'; cloudPane.append(actions);
     const action = (label, path, fn, disabled = false) => { const button = doc.createElement('button'); button.type = 'button'; button.className = 'icon-button md-cloud-icon-button'; addTooltip(button, label); button.setAttribute('aria-label', label); button.disabled = disabled; button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg>'; button.addEventListener('click', fn); actions.append(button); };
     action('刷新', 'M20 7v5h-5 M4 17v-5h5 M5 9a7 7 0 0 1 12-3l3 3 M19 15a7 7 0 0 1-12 3l-3-3', () => { void refresh(); });
@@ -132,9 +134,17 @@ export function initializeOneDrive() {
       if(folders.length>1){nav.append(doc.createTextNode(' › '));crumb(folders.length-1,nav);}
     }
     if (creatingFolder) { const form = doc.createElement('form'); form.className = 'md-cloud-panel-actions'; const input = doc.createElement('input'); input.placeholder = '文件夹名称'; input.setAttribute('aria-label', '文件夹名称'); const submit = doc.createElement('button'); submit.type = 'submit'; submit.disabled = mutationBusy || busy; submit.className = 'md-cloud-panel-button'; submit.textContent = '创建'; const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.className = 'md-cloud-panel-button'; cancel.textContent = '取消'; cancel.addEventListener('click', () => { creatingFolder = false; renderCloud(); }); form.append(input, submit, cancel); form.addEventListener('submit', e => { e.preventDefault(); void createFolder(input.value); }); cloudPane.append(form); }
-    const statusRow = doc.createElement('div'); statusRow.className = 'md-cloud-panel-status'; cloudPane.append(statusRow);
+    const statusRow = previousStatus || doc.createElement('div'); statusRow.className = 'md-cloud-panel-status'; cloudPane.append(statusRow);
     const statusText = listError || (loading ? '正在加载…' : info);
-    if (statusText) { const p = doc.createElement('p'); p.className = listError ? 'md-cloud-panel-error' : 'md-sidebar-empty'; p.setAttribute('role', listError ? 'alert' : 'status'); p.textContent = statusText; p.title = statusText; statusRow.append(p); }
+    clearTimeout(statusRowTimer);
+    if (statusText) {
+      statusRow.replaceChildren(); const p = doc.createElement('p'); p.className = listError ? 'md-cloud-panel-error' : 'md-sidebar-empty'; p.setAttribute('role', listError ? 'alert' : 'status'); p.textContent = statusText; p.title = statusText; statusRow.append(p);
+      if (!previousStatus) statusRow.getBoundingClientRect();
+      statusRow.dataset.visible = 'true';
+    } else {
+      statusRow.dataset.visible = 'false';
+      statusRowTimer = setTimeout(() => { if (statusRow.dataset.visible === 'false') statusRow.replaceChildren(); }, 200);
+    }
     const list = doc.createElement('div'); list.className = 'md-cloud-panel-list'; cloudPane.append(list);
     if (!items.length && !loading) { const empty = doc.createElement('p'); empty.className = 'md-sidebar-empty'; empty.textContent = nextLink ? '本页没有 Markdown 文件。' : '应用文件夹中没有 Markdown 文件。'; list.append(empty); }
     for (const item of items) {
