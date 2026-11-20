@@ -87,6 +87,12 @@ try {
   const alignedLeft = leftFits ? menuGeometry.trigger.left : Math.max(submenuBounds.left, Math.min(menuGeometry.trigger.right - menuGeometry.third.width, submenuBounds.right - menuGeometry.third.width));
   assert.ok(Math.abs(menuGeometry.third.left - alignedLeft) < 1, JSON.stringify(menuGeometry));
   const move = (x,y) => browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',x,y});
+  const siblingPoint = await evaluate(`(()=>{const trigger=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]'),sibling=[...document.querySelectorAll('.md-wt-toolbar .md-wt-overflow-open button')].find(button=>button!==trigger && !trigger.parentElement.contains(button)),r=sibling.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+  await move(siblingPoint.x,siblingPoint.y);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`!!document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])')`),false,'moving to a sibling closes the submenu even if it was never entered');
+  assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'true','the parent remains open over a sibling');
+  await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]').click()`);
   await move((menuGeometry.first.left+menuGeometry.first.right)/2,(menuGeometry.first.top+menuGeometry.first.bottom)/2);
   await move(menuGeometry.third.left+10,(menuGeometry.first.bottom+menuGeometry.third.top)/2);
   await move(menuGeometry.third.left+10,menuGeometry.third.top+10);

@@ -407,7 +407,7 @@
 
   // A short delay lets the pointer cross the gap between a trigger and its menu.
   function watchToolbarMenuPointer(trigger, getMenu, isOpen, close, includeChildren) {
-    var timer = null, enteredMenu = false;
+    var timer = null;
     function inside(node, x, y) {
       if (!node || node.hidden || !node.getBoundingClientRect) return false;
       var rect = node.getBoundingClientRect();
@@ -415,26 +415,22 @@
     }
     function cancel() { if (timer !== null) { clearTimeout(timer); timer = null; } }
     function check(event) {
-      if (event.pointerType !== 'mouse' || !isOpen()) { if (!isOpen()) { cancel(); enteredMenu = false; } return; }
+      if (event.pointerType !== 'mouse' || !isOpen()) { if (!isOpen()) cancel(); return; }
       var doc = trigger.ownerDocument;
       if (event.target !== doc && event.target?.ownerDocument !== doc) return;
       if (event.buttons) { cancel(); return; }
       var menu = getMenu(), x = event.clientX, y = event.clientY;
-      var overMenu = inside(menu, x, y);
-      if (overMenu) enteredMenu = true;
       var regions = [trigger, menu];
       var bar = trigger.closest?.('.md-wt-toolbar, .preview-toolbar');
       if (bar && includeChildren) {
         regions.push.apply(regions, Array.from(bar.querySelectorAll('.md-wt-basic-menu:not([hidden]), details[open] .range-popover')).concat(overflowOwnedMenus(bar)));
-      } else if (bar && !enteredMenu && trigger.closest?.('.md-wt-overflow-open')) {
-        regions.push(bar.querySelector('.md-wt-overflow-background:not([hidden])'));
       }
       if (regions.some(function (node) { return inside(node, x, y); })) { cancel(); return; }
-      if (timer === null) timer = setTimeout(function () { timer = null; enteredMenu = false; if (isOpen()) close(); }, 300);
+      if (timer === null) timer = setTimeout(function () { timer = null; if (isOpen()) close(); }, 300);
     }
-    trigger.addEventListener('click', function () { cancel(); enteredMenu = false; });
+    trigger.addEventListener('click', cancel);
     onWorkspaceDOM('md-preview-pointer-enter', function () {
-      if (isOpen() && timer === null) timer = setTimeout(function () { timer = null; enteredMenu = false; if (isOpen()) close(); }, 300);
+      if (isOpen() && timer === null) timer = setTimeout(function () { timer = null; if (isOpen()) close(); }, 300);
     });
     onWorkspaceDOM('pointermove', check, true);
     onWorkspaceDOM('pointerup', check, true);
@@ -444,7 +440,7 @@
       if (event.target !== doc && event.target?.ownerDocument !== doc) return;
       // Entering the preview iframe stops pointermove events from reaching this document.
       if (event.relatedTarget) { check(event); return; }
-      if (timer === null) timer = setTimeout(function () { timer = null; enteredMenu = false; if (isOpen()) close(); }, 300);
+      if (timer === null) timer = setTimeout(function () { timer = null; if (isOpen()) close(); }, 300);
     }, true);
   }
   window.mdWatchToolbarMenuPointer = watchToolbarMenuPointer;
