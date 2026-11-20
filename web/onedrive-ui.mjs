@@ -43,7 +43,11 @@ export function initializeOneDrive() {
       const close = doc.createElement('button'); close.type = 'button'; close.className = 'md-cloud-close'; close.setAttribute('aria-label', '关闭 OneDrive 提示'); close.textContent = '×';
       close.addEventListener('click', () => { notice.hidden = true; panel.querySelector('button[aria-label="打开 Markdown"]')?.focus(); });
       body.append(node, detail); notice.append(body, close);
-      const anchor = panel.querySelector('.md-wt-toolbar') || panel.querySelector('.panel-heading');
+    }
+    // In focus mode the toolbar lives in a popup, but notices belong to the panel.
+    if (notice.parentElement !== panel) {
+      const toolbar = panel.querySelector('.md-wt-toolbar');
+      const anchor = toolbar?.parentElement === panel ? toolbar : panel.querySelector('.panel-heading');
       if (anchor) anchor.after(notice); else panel.append(notice);
     }
     const node = notice.querySelector('.md-cloud-status'), detail = notice.querySelector('.md-cloud-error');

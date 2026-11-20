@@ -158,8 +158,17 @@ try {
     await wait(`document.querySelector('.md-cloud-panel-error')?.textContent.includes('eTag')`);
     assert.equal(await evaluate('mdEditor.getValue()'),'# 本地原稿');
     assert.equal(await evaluate('mdDrafts.current()'),local);
+    await evaluate(`document.querySelector('.md-cloud-notice')?.remove(); document.querySelector('.editor-panel .md-focus-toggle').click(); document.querySelector('.editor-panel .md-focus-tools').click()`);
+    const popupWidth = await evaluate(`document.querySelector('.editor-panel .md-focus-popup').getBoundingClientRect().width`);
     await evaluate(`mockGraph.mode='ok'; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='重试打开').click()`);
     await wait(`mdEditor.getValue()==='# 云端原稿'`);
+    await wait(`document.querySelector('.md-cloud-status')?.textContent.includes('已打开')`);
+    assert.equal(await evaluate(`document.querySelector('.md-cloud-notice').parentElement.matches('.editor-panel')`),true,'cloud notice stays in the editor panel');
+    const focusedWidth = await evaluate(`document.querySelector('.editor-panel .md-focus-popup').getBoundingClientRect().width`);
+    assert.ok(Math.abs(focusedWidth-popupWidth)<1,JSON.stringify({popupWidth,focusedWidth}));
+    await evaluate(`document.querySelector('.md-image-status').textContent='图片处理失败：'+ '错误'.repeat(300)`);
+    assert.ok(Math.abs(await evaluate(`document.querySelector('.editor-panel .md-focus-popup').getBoundingClientRect().width`)-popupWidth)<1,'image errors do not widen the toolbar');
+    await evaluate(`document.querySelector('.md-image-status').textContent=''; document.querySelector('.editor-panel .md-focus-toggle').click()`);
     assert.equal(await evaluate(`mdDrafts.store.get(${JSON.stringify(local)}).then(x=>x.md)`),'# 本地原稿');
     await evaluate(`mdEditor.setValue('# 云端原稿\\n![hello image](images/helloworld.jpeg)')`);
     await wait(`document.querySelector('#preview').srcdoc.includes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB') && document.querySelector('#preview').srcdoc.includes('hello image')`);
