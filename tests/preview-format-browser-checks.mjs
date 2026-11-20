@@ -51,6 +51,10 @@ try {
   const select = async (second) => evaluate(`(()=>{const nodes=[...document.querySelectorAll('.pagedjs_pages p[data-md2pdf-source-id]')].filter(n=>n.textContent==='重复文字');const node=nodes[${second}].firstChild;const r=document.createRange();r.setStart(node,0);r.setEnd(node,node.length);getSelection().removeAllRanges();getSelection().addRange(r);nodes[${second}].dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:20,clientY:20}));})()`, session);
   await select(1);
   await wait('document.querySelector(".md-preview-format-menu button:not(:disabled)")');
+  assert.equal(await evaluate('document.activeElement === document.querySelector(".md-preview-format-menu")'), true, 'preview action menu starts without focusing an item');
+  await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true,cancelable:true}))`);
+  assert.equal(await evaluate('document.activeElement.getAttribute("aria-label")'), '删除线', 'backward arrow enters the last action');
+  await evaluate('document.querySelector(".md-preview-format-menu").focus()');
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('.md-preview-format-menu button')].map(b=>({label:b.getAttribute('aria-label'),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height}))`), [{label:'粗体',width:30,height:30},{label:'斜体',width:30,height:30},{label:'删除线',width:30,height:30}], 'same icon order and button size as editor selection toolbar');
   const selectedRect = await evaluate(`(()=>{const r=getSelection().getRangeAt(0).getClientRects()[0];return {left:r.left,top:r.top,bottom:r.bottom}})()`, session);
   const geometry = await evaluate(`(()=>{const f=document.querySelector('#preview'),fr=f.getBoundingClientRect(),m=document.querySelector('.md-preview-format-menu').getBoundingClientRect();return {viewport:{top:visualViewport.offsetTop,height:visualViewport.height},frame:{left:fr.left,top:fr.top,width:fr.width,height:fr.height,offsetWidth:f.offsetWidth,offsetHeight:f.offsetHeight,clientLeft:f.clientLeft,clientTop:f.clientTop},menu:{left:m.left,top:m.top,bottom:m.bottom}}})()`);

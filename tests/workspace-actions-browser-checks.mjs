@@ -41,8 +41,20 @@ try {
   await browser.send('Page.navigate',{url:`http://127.0.0.1:${app.server.address().port}`});
   await wait('window.mdDrafts && window.mdEditor');
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('.md-wt-group--academic > .md-wt-basic > button')].map(button=>button.getAttribute('aria-label'))`), ['插入参考文献','插入引用']);
+  await evaluate(`mdEditor.setValue('hello world');mdEditor.setSelection(0,5);mdEditor.focus()`);
+  await wait(`document.querySelector('.md-quick-actions')?.style.visibility==='visible'`);
+  assert.equal(await evaluate(`document.querySelectorAll('.md-quick-actions .is-active').length`),0,'selection actions have no default active item');
+  await evaluate(`mdEditor.setSelection(0,0);document.querySelector('#md-wt-basic-format').click()`);
+  assert.equal(await evaluate(`document.activeElement===document.querySelector('#md-wt-basic-menu')`),true,'basic menu starts without focusing an item');
+  await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}))`);
+  assert.equal(await evaluate(`document.activeElement?.getAttribute('aria-label')`),'一级标题','keyboard navigation enters the first item');
+  await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))`);
+
   await evaluate(`document.querySelector('button[aria-label="插入参考文献"]').click()`);
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('.md-wt-group--academic .md-wt-basic-menu:not([hidden]) button')].map(button=>button.getAttribute('aria-label'))`), ['参考文献','BibTeX参考文献','DOI参考文献']);
+  assert.equal(await evaluate(`document.activeElement===document.querySelector('.md-wt-group--academic .md-wt-basic-menu:not([hidden])')`),true,'academic menu starts without focusing an item');
+  await evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true,cancelable:true}))`);
+  assert.equal(await evaluate(`document.activeElement?.getAttribute('aria-label')`),'DOI参考文献','backward navigation enters the last item');
   await evaluate(`document.querySelector('.md-wt-group--academic .md-wt-basic-menu:not([hidden])').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
   await evaluate(`document.querySelector('button[aria-label="插入引用"]').click()`);
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('.md-wt-group--academic .md-wt-basic-menu:not([hidden]) button')].map(button=>button.getAttribute('aria-label'))`), ['图表引用','公式引用','文献引用']);
@@ -55,6 +67,7 @@ try {
   assert.equal(await evaluate(`(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented})()`),false,'unchanged draft must not mark pending');
   await clickCreate();
   assert.deepEqual(await evaluate(`[...document.querySelector('#md-create-menu').children].map(n=>n.textContent)`),['创建空文件','从模板创建','通用文档','学术论文','国家标准','更多模板']);
+  assert.equal(await evaluate(`document.activeElement===document.querySelector('#md-create-menu')`),true,'create menu starts without focusing an item');
   assert.ok(await evaluate(`(()=>{const menu=document.querySelector('#md-create-menu'),a=menu.querySelector('a'),b=menu.querySelector('button'),r=menu.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(a);const text=range.getBoundingClientRect(),item=a.getBoundingClientRect();return r.width<210&&Math.abs((text.left-item.left)-19.5)<1&&getComputedStyle(a).fontSize===getComputedStyle(b).fontSize&&getComputedStyle(a).color===getComputedStyle(b).color})()`));
   assert.deepEqual(await evaluate(`(()=>{const create=document.querySelector('#md-create-menu'), item=create.querySelector('button'), link=create.querySelector('a'), template=create.querySelector('[data-template-id]'), preview=document.querySelector('.preview-toolbar .option-popover'), choice=preview.querySelector('.option-choice');return {createOuter:getComputedStyle(create).paddingLeft,previewOuter:getComputedStyle(preview).paddingLeft,itemLeft:getComputedStyle(item).paddingLeft,itemRight:getComputedStyle(item).paddingRight,linkLeft:getComputedStyle(link).paddingLeft,linkRight:getComputedStyle(link).paddingRight,previewRight:getComputedStyle(choice).paddingRight,templateLeft:getComputedStyle(template).paddingLeft}})()`), {createOuter:'5px',previewOuter:'5px',itemLeft:'19.5px',itemRight:'8px',linkLeft:'19.5px',linkRight:'8px',previewRight:'8px',templateLeft:'31.5px'});
   assert.ok(await evaluate(`(()=>{const item=document.querySelector('#md-create-menu > button'),choice=document.querySelector('.preview-toolbar .option-choice'),style=getComputedStyle(choice),check=getComputedStyle(choice,'::before');return Math.abs(parseFloat(getComputedStyle(item).paddingLeft)-parseFloat(style.paddingLeft)-parseFloat(check.width)-parseFloat(check.marginRight))<0.1})()`), 'visible text starts at the same inset as preview menu text');
@@ -86,6 +99,11 @@ try {
   await browser.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await evaluate(`mdEditor.setValue(${JSON.stringify('/b\n\n'+Array.from({length:80},(_,i)=>'正文 '+i).join('\n'))});mdEditor.setSelection(2);mdEditor.focus()`);
   await wait(`document.querySelector('.md-quick-actions')?.style.visibility==='visible'`);
+  assert.equal(await evaluate(`document.querySelectorAll('.md-quick-actions .is-active').length`),0,'slash actions have no default active item');
+  await evaluate(`document.querySelector('.cm-content').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,cancelable:true}))`);
+  assert.equal(await evaluate(`document.querySelector('.md-quick-actions .is-active')?.dataset.action`),'footnote','first arrow selects first action');
+  await evaluate(`document.querySelector('.cm-content').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true,cancelable:true}))`);
+  assert.equal(await evaluate(`document.querySelector('.md-quick-actions .is-active')?.dataset.action`),'doi','backward arrow wraps to last action');
   assertAnchored(await geometry());
   await evaluate(`scrollTo(0,70)`);
   await evaluate(`new Promise(r=>setTimeout(r,160))`);

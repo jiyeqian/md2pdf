@@ -31,6 +31,7 @@ export async function openCreateMenu(anchor) {
     menu.className = 'md-drafts-menu';
     menu.setAttribute('role', 'dialog');
     menu.setAttribute('aria-label', '创建 Markdown');
+    menu.tabIndex = -1;
     const blank = document.createElement('button');
     blank.type = 'button';
     blank.textContent = '创建空文件';
@@ -72,7 +73,7 @@ export async function openCreateMenu(anchor) {
         event.preventDefault();
         const items = [...menu.querySelectorAll('button:not(:disabled), a')];
         const index = items.indexOf(menu.ownerDocument.activeElement);
-        items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+        items[index < 0 ? (event.key === 'ArrowDown' ? 0 : items.length - 1) : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
       }
     });
     on('resize', position);
@@ -122,5 +123,5 @@ export async function openCreateMenu(anchor) {
     } finally { browse.textContent = '更多模板'; }
   }
   position();
-  if (!menu.hidden) (menu.querySelector('button') || browse).focus();
+  if (!menu.hidden) menu.focus({ preventScroll: true });
 }

@@ -233,6 +233,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       menu.className = 'md-drafts-menu';
       menu.setAttribute('role', 'dialog');
       menu.setAttribute('aria-label', '打开 Markdown');
+      menu.tabIndex = -1;
       document.body.append(menu);
       menu.addEventListener('keydown', event => {
         if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeMenu(true); }
@@ -240,7 +241,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
           event.preventDefault();
           const buttons = [...menu.querySelectorAll('button:not(:disabled)')];
           const index = buttons.indexOf(menu.ownerDocument.activeElement);
-          buttons[(index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+          buttons[index < 0 ? (event.key === 'ArrowDown' ? 0 : buttons.length - 1) : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
         }
       });
       (window.mdWorkspaceHosts?.on || document.addEventListener.bind(document))('click', event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) closeMenu(); });
@@ -264,7 +265,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     trigger.setAttribute('aria-expanded', 'true');
     try { await enqueue(saveNow); } catch { /* 保留文件下载及草稿管理入口。 */ }
     await renderMenu();
-    menu.querySelector('button')?.focus();
+    menu.focus({ preventScroll: true });
   }
   async function reconcile() {
     await enqueue(async () => {

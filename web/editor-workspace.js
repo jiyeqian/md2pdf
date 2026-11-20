@@ -445,7 +445,7 @@
     ACADEMIC_GROUPS.forEach(function (entry) {
       var wrap = make('div', { class: 'md-wt-basic' });
       var button = iconButton(entry.icon, entry.label, entry.label);
-      var menu = make('div', { class: 'md-wt-basic-menu', role: 'menu', 'aria-label': entry.label });
+      var menu = make('div', { class: 'md-wt-basic-menu', role: 'menu', 'aria-label': entry.label, tabindex: '-1' });
       menu.hidden = true;
       button.setAttribute('aria-haspopup', 'menu');
       button.setAttribute('aria-expanded', 'false');
@@ -467,7 +467,7 @@
         menu.hidden = false;
         button.setAttribute('aria-expanded', 'true');
         positionToolbarSubmenu(button, menu, false);
-        row.querySelector('button')?.focus();
+        menu.focus({ preventScroll: true });
       });
       watchToolbarMenuPointer(button, function () { return menu; }, function () { return !menu.hidden; }, function () { close(false); });
       menu.addEventListener('keydown', function (event) {
@@ -476,8 +476,8 @@
         if (event.key === 'Escape') { event.preventDefault(); close(true); }
         else if (event.key === 'Tab') close(false);
         else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-          event.preventDefault();
-          buttons[(index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+          event.preventDefault(); event.stopPropagation();
+          buttons[index < 0 ? (event.key === 'ArrowRight' ? 0 : buttons.length - 1) : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
         }
       });
       onWorkspaceDOM('pointerdown', function (event) {
@@ -519,7 +519,7 @@
     basicButton.setAttribute('aria-haspopup', 'true');
     basicButton.setAttribute('aria-expanded', 'false');
     basicButton.setAttribute('aria-controls', 'md-wt-basic-menu');
-    basicMenu = make('div', { class: 'md-wt-basic-menu', role: 'menu', 'aria-label': '基础格式', id: 'md-wt-basic-menu' });
+    basicMenu = make('div', { class: 'md-wt-basic-menu', role: 'menu', 'aria-label': '基础格式', id: 'md-wt-basic-menu', tabindex: '-1' });
     basicMenu.hidden = true;
     watchToolbarMenuPointer(basicButton, function () { return basicMenu; }, function () { return !basicMenu.hidden; }, function () { closeBasicMenu(false); });
     BASIC_GROUPS.forEach(function (entry) { basicMenu.appendChild(buildBasicMenuRow(entry)); });
@@ -545,8 +545,7 @@
     basicButton.setAttribute('aria-expanded', 'true');
     basicWrap.classList.add('is-open');
     positionBasicMenu();
-    var items = menuItems();
-    if (items.length) items[0].focus();
+    basicMenu.focus({ preventScroll: true });
   }
 
   function closeBasicMenu(restoreFocus) {
@@ -576,6 +575,7 @@
     else if (event.key === 'Tab') { closeBasicMenu(false); return; }
     else return;
     event.preventDefault();
+    event.stopPropagation();
     if (next < 0) next = items.length - 1;
     if (next >= items.length) next = 0;
     items[next].focus();
@@ -1365,7 +1365,7 @@
         menu.style.left = Math.max(left + 8, Math.min(rect.right - menu.offsetWidth, left + width - menu.offsetWidth - 8)) + 'px';
         menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
         doc.addEventListener('pointerdown', outside, true); doc.addEventListener('keydown', escape, true);
-        if (activation.detail === 0) menu.firstElementChild.focus();
+        if (activation.detail === 0) { menu.tabIndex = -1; menu.focus({ preventScroll: true }); }
       });
       editorActions.appendChild(saveButton);
       editorActions.appendChild(editorFullscreenBtn);
@@ -1641,8 +1641,7 @@
     if (y < top + 4) y = data.bottom + 8;
     menu.style.left = x + 'px';
     menu.style.top = Math.max(top + 4, Math.min(y, bottom - menu.offsetHeight - 4)) + 'px';
-    var first = menu.querySelector('button:not(:disabled)');
-    if (first) first.focus({ preventScroll: true }); else menu.focus({ preventScroll: true });
+    menu.focus({ preventScroll: true });
     menu.addEventListener('keydown', function (key) {
       if (key.key === 'Escape') { key.preventDefault(); key.stopPropagation(); closePreviewFormatMenu(); previewFrame.focus({ preventScroll: true }); return; }
       if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(key.key)) return;
@@ -1650,7 +1649,8 @@
       if (!items.length) return;
       key.preventDefault();
       var index = items.indexOf(document.activeElement);
-      items[(index + (['ArrowDown', 'ArrowRight'].includes(key.key) ? 1 : items.length - 1)) % items.length].focus({ preventScroll: true });
+      var forward = ['ArrowDown', 'ArrowRight'].includes(key.key);
+      items[index < 0 ? (forward ? 0 : items.length - 1) : (index + (forward ? 1 : items.length - 1)) % items.length].focus({ preventScroll: true });
     });
   }
   document.addEventListener('md-preview-format-menu', openPreviewFormatMenu);

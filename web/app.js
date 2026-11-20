@@ -1275,7 +1275,7 @@ download.addEventListener('click', activation => {
   menu.style.left = Math.max(left + 8, Math.min(rect.right - menu.offsetWidth, left + width - menu.offsetWidth - 8)) + 'px';
   menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
   doc.addEventListener('pointerdown', outside, true); doc.addEventListener('keydown', escape, true);
-  if (activation.detail === 0) menu.firstElementChild.focus();
+  if (activation.detail === 0) { menu.tabIndex = -1; menu.focus({ preventScroll: true }); }
 });
 
 // 纯函数出口：供前端测试在 vm 内真实执行后读取选项模型（只读、无副作用）。
