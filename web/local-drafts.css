@@ -4,7 +4,7 @@
   box-sizing: border-box;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 4px;
+  padding: 4px 5px;
   border: 1px solid #d5dce4;
   border-radius: 10px;
   background: #fff;
@@ -13,12 +13,12 @@
   font: 12px/1.5 system-ui, sans-serif;
 }
 .md-drafts-menu[hidden] { display: none; }
-.md-drafts-menu button { box-sizing: border-box; display: block; width: 100%; min-height: 26px; border: 0; border-radius: 5px; background: transparent; color: inherit; padding: 4px 6px; text-align: left; font: inherit; cursor: pointer; }
+.md-drafts-menu button { box-sizing: border-box; display: block; width: 100%; min-height: 26px; border: 0; border-radius: 5px; background: transparent; color: inherit; padding: 4px 8px; text-align: left; font: inherit; cursor: pointer; }
 .md-drafts-menu button:hover, .md-drafts-menu button:focus-visible { background: #eef3f8; }
 .md-drafts-menu button:focus-visible { outline: 2px solid #376ba0; outline-offset: -2px; }
-.md-drafts-heading { padding: 5px 6px 3px; border-top: 1px solid #e5e9ef; margin-top: 4px; color: #667789; font-size: .92em; }
-.md-drafts-menu p { padding: 0 6px; color: #667789; }
-.md-draft-row { display: flex; align-items: flex-start; gap: 4px; padding: 0 6px; border-radius: 4px; }
+.md-drafts-heading { padding: 5px 8px 3px; border-top: 1px solid #e5e9ef; margin-top: 4px; color: #667789; font-size: .92em; }
+.md-drafts-menu p { padding: 0 8px; color: #667789; }
+.md-draft-row { display: flex; align-items: flex-start; gap: 4px; padding: 0 8px; border-radius: 4px; }
 .md-draft-row:hover, .md-draft-row:focus-within, .md-draft-row:has([aria-current="true"]) { background: #e1eaf5; }
 .md-drafts-menu .md-draft-row > button:hover, .md-drafts-menu .md-draft-row > button:focus-visible { background: transparent; }
 .md-draft-row > button:first-child { display: grid; grid-template-columns: 12px minmax(0, 1fr); column-gap: 4px; flex: 1 1 auto; width: 0; min-width: 0; padding: 3px 0; }
@@ -31,7 +31,7 @@
 #draft-save-status { min-width: 0; padding: 0; overflow: hidden; text-overflow: ellipsis; color: #617386; font: 11px/16px system-ui, sans-serif; text-align: right; white-space: nowrap; }
 #draft-save-status[data-error="true"] { color: #b12c2c; white-space: normal; overflow-wrap: anywhere; overflow-y: auto; max-height: 100%; }
 .md-draft-confirm p, .md-draft-confirm .template-confirm-actions button { font-size: inherit; }
-.md-drafts-menu a { display: block; min-height: 26px; padding: 4px 6px; border-radius: 5px; color: inherit; text-decoration: none; }
+.md-drafts-menu a { display: block; min-height: 26px; padding: 4px 8px; border-radius: 5px; color: inherit; text-decoration: none; }
 .md-drafts-menu a:hover, .md-drafts-menu a:focus-visible { background: #eef3f8; }
 
 .md-drafts-menu .md-drafts-browse { border-top: 1px solid #e5e9ef; margin-top: 4px; font: inherit; color: inherit; }
@@ -59,4 +59,6 @@
 .md-action-menu button span { display: inline-block; white-space: nowrap; }
 .md-action-menu button span:first-child { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 
-#md-create-menu button[data-template-id] { padding-left: 18px; }
+/* Match the preview menu's checkmark column, so the visible labels align. */
+#md-create-menu > button, #md-create-menu > a, #md-create-menu > .md-drafts-heading { padding-left: calc(var(--panel-button, 28px) / 2 + 5.5px); }
+#md-create-menu button[data-template-id] { padding-left: calc(var(--panel-button, 28px) / 2 + 17.5px); }
