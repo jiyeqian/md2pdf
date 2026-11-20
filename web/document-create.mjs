@@ -23,6 +23,7 @@ function position() {
   menu.style.width = 'max-content';
   menu.style.minWidth = '0';
   menu.style.maxWidth = Math.min(220, width - 16) + 'px';
+  if (trigger.closest('.md-focus-popup') && window.mdPositionToolbarSubmenu) { window.mdPositionToolbarSubmenu(trigger, menu, false); return; }
   menu.style.left = Math.max(left + 8, Math.min(rect.left, left + width - menu.offsetWidth - 8)) + 'px';
   menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
 }

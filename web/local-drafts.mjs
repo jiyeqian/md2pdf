@@ -184,6 +184,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     menu.style.width = Math.min(desired, 400, width - 16) + 'px';
     menu.style.minWidth = Math.min(220, width - 16) + 'px';
     menu.style.maxWidth = Math.min(400, width - 16) + 'px';
+    if (trigger.closest('.md-focus-popup') && window.mdPositionToolbarSubmenu) { window.mdPositionToolbarSubmenu(trigger, menu, false); return; }
     menu.style.left = Math.max(left + 8, Math.min(bounds.left, left + width - menu.offsetWidth - 8)) + 'px';
     menu.style.top = Math.max(top + 8, Math.min(bounds.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
   }

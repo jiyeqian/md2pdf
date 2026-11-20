@@ -117,6 +117,7 @@
   // 默认开启的同步定位是一个带 aria-pressed 的图标开关按钮。
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var ICONS = {
+    toolbarPanel: [{ rect: [3, 3, 14, 14], rx: 2 }, { d: 'M8 3v14M10.5 6h3.5M10.5 10h3.5M10.5 14h3.5M5.3 6h.4M5.3 10h.4M5.3 14h.4' }],
     pageBreak: [{ d: 'M4 2h12v5H4zM4 13h12v5H4zM2 10h3m3 0h2m3 0h2m3 0h1' }],
     taskList: [{ d: 'M8 5h10M8 11h10M8 17h10M2 5l1.5 1.5L6 3M2 11h3v3H2zM2 17h3v3H2z' }],
     headingUp: [{ d: 'M2 4v12M9 4v12M2 10h7M13 8l3-4 3 4M16 4v12' }],
@@ -377,6 +378,24 @@
     var viewTop = viewport ? viewport.offsetTop : 0;
     var viewRight = viewLeft + (viewport ? viewport.width : view.innerWidth);
     var viewBottom = viewTop + (viewport ? viewport.height : view.innerHeight);
+    var focusPopup = trigger.closest?.('.md-focus-popup');
+    if (focusPopup) {
+      var focusBounds = focusPopup.getBoundingClientRect(), focusAnchor = trigger.getBoundingClientRect();
+      var availableRight = Math.max(0, viewRight - 4 - focusBounds.right - 4);
+      var availableLeft = Math.max(0, focusBounds.left - viewLeft - 8);
+      menu.style.maxWidth = Math.max(0, viewRight - viewLeft - 8) + 'px';
+      var menuRect = menu.getBoundingClientRect();
+      var rightSide = menuRect.width <= availableRight || availableRight >= availableLeft;
+      var available = rightSide ? availableRight : availableLeft;
+      if (menuRect.width > available && available > 0) { menu.style.maxWidth = available + 'px'; menuRect = menu.getBoundingClientRect(); }
+      var focusLeft = rightSide ? focusBounds.right + 4 : focusBounds.left - menuRect.width - 4;
+      var focusTop = focusAnchor.top + menuRect.height <= viewBottom - 4 ? focusAnchor.top : focusAnchor.bottom - menuRect.height;
+      menu.setAttribute('data-menu-align', rightSide ? 'left' : 'right');
+      menu.style.left = Math.max(viewLeft + 4, Math.min(focusLeft, viewRight - menuRect.width - 4)) + 'px';
+      menu.style.right = 'auto';
+      menu.style.top = Math.max(viewTop + 4, Math.min(focusTop, viewBottom - menuRect.height - 4)) + 'px';
+      return;
+    }
     var panel = trigger.closest?.('.editor-panel, .preview-panel');
     var panelRect = panel?.getBoundingClientRect?.();
     var leftBound = Math.max(viewLeft + 4, panelRect ? panelRect.left + 4 : viewLeft + 4);
@@ -1445,7 +1464,7 @@
       var path = document.createElementNS(SVG_NS, 'path'); path.setAttribute('d', 'M3.5 7V4h3M13.5 4h3v3M16.5 13v3h-3M6.5 16h-3v-3M8 10h4'); svg.appendChild(path); focus.appendChild(svg);
       actions.insertBefore(focus, panel.querySelector('[data-panel-fullscreen]'));
       var launcher = make('button', { type: 'button', class: 'icon-button md-focus-tools', 'aria-label': '工具栏', 'aria-expanded': 'false', 'aria-haspopup': 'true', title: '工具栏', hidden: '' });
-      launcher.textContent = '⋯'; heading.querySelector('h2').appendChild(launcher);
+      launcher.appendChild(iconSvg('toolbarPanel')); heading.querySelector('h2').appendChild(launcher);
       var popup = make('div', { class: 'md-focus-popup', hidden: '' }); panel.appendChild(popup);
       function closeMenu() {
         popup.hidden = true; launcher.setAttribute('aria-expanded', 'false');
