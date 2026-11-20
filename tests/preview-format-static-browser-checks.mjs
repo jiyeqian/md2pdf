@@ -26,7 +26,7 @@ const server = createServer(async (request, response) => {
 });
 try {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const testFile = process.argv[2] === 'tree' ? './tree-code-browser-checks.mjs' : './preview-format-browser-checks.mjs';
+  const testFile = process.argv[2] === 'tree' ? './tree-code-browser-checks.mjs' : process.argv[2] === 'toolbar' ? './toolbar-overflow-browser-checks.mjs' : './preview-format-browser-checks.mjs';
   const result = await new Promise((accept, reject) => {
     const child = spawn(process.execPath, [fileURLToPath(new URL(testFile, import.meta.url)), 'http://127.0.0.1:' + server.address().port + prefix], { stdio: 'inherit' });
     child.once('error', reject); child.once('exit', accept);

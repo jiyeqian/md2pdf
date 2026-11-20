@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createApp } from '../src/server.mjs';
 import { Chrome, findChrome } from '../src/chrome.mjs';
 
-const app = createApp();
+const app = process.argv[2] ? null : createApp();
 const temp = await mkdtemp(path.join(os.tmpdir(), 'md2pdf-actions-'));
 const browser = new Chrome(findChrome(), temp);
 const evaluate = async expression => {
@@ -21,10 +21,10 @@ const wait = async expression => {
   throw new Error('Timeout: '+expression);
 };
 try {
-  await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
+  if (app) await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
   await browser.start();
   await browser.send('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:false});
-  await browser.send('Page.navigate',{url:`http://127.0.0.1:${app.server.address().port}`});
+  await browser.send('Page.navigate',{url:process.argv[2] || `http://127.0.0.1:${app.server.address().port}`});
   await wait('window.mdDrafts && window.mdEditor && document.querySelectorAll(".md-wt-overflow-trigger").length===2');
   await new Promise(resolve=>setTimeout(resolve,500));
   const alignment = await evaluate(`(()=>{
@@ -72,6 +72,41 @@ try {
   await browser.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
   assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'false');
   assert.equal(await evaluate(`document.activeElement===document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger')`),true);
+  // Moving between levels keeps them open; leaving the group closes both.
+  await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').click()`);
+  const reference = await evaluate(`(()=>{const b=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]');if(!b)return false;b.click();return true})()`);
+  assert.equal(reference,true,'reference group is available in the overflow');
+  const menuGeometry = await evaluate(`(()=>{const first=document.querySelector('.md-wt-toolbar .md-wt-overflow-background').getBoundingClientRect(),third=document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])').getBoundingClientRect();return {first:{left:first.left,right:first.right,top:first.top,bottom:first.bottom},third:{left:third.left,right:third.right,top:third.top,bottom:third.bottom}}})()`);
+  const move = (x,y) => browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',x,y});
+  await move((menuGeometry.first.left+menuGeometry.first.right)/2,(menuGeometry.first.top+menuGeometry.first.bottom)/2);
+  await move(menuGeometry.third.left+10,(menuGeometry.first.bottom+menuGeometry.third.top)/2);
+  await move(menuGeometry.third.left+10,menuGeometry.third.top+10);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'true');
+  assert.equal(await evaluate(`!!document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])')`),true);
+  await move(menuGeometry.first.left+5,menuGeometry.first.top+5);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`!!document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])')`),false,'leaving the third level closes it');
+  assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'true','returning to the second level keeps it open');
+  await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]').click()`);
+  await move(2,750);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'false');
+  assert.equal(await evaluate(`!!document.querySelector('.md-wt-toolbar .md-wt-basic-menu:not([hidden])')`),false);
+  // Touch movement must not dismiss a menu and keyboard dismissal still works.
+  await evaluate(`document.querySelector('#md-wt-basic-format').click();document.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerType:'touch',clientX:2,clientY:750}))`);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`document.querySelector('#md-wt-basic-menu').hidden`),false);
+  await move(3,749);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`document.querySelector('#md-wt-basic-menu').hidden`),true,'leaving the direct submenu closes it');
+  await evaluate(`document.querySelector('#md-wt-basic-format').click();document.querySelector('#md-wt-basic-menu').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
+  assert.equal(await evaluate(`document.querySelector('#md-wt-basic-menu').hidden`),true);
+  await evaluate(`document.querySelector('.preview-toolbar [data-option-trigger="theme"]').click()`);
+  await wait(`document.querySelector('.preview-toolbar [data-option-trigger="theme"]').parentElement.open`);
+  await move(2,750);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`document.querySelector('.preview-toolbar [data-option-trigger="theme"]').parentElement.open`),false);
   await browser.send('Emulation.setDeviceMetricsOverride',{width:120,height:800,deviceScaleFactor:1,mobile:false});
   await new Promise(resolve=>setTimeout(resolve,300));
   await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').click()`);
@@ -106,4 +141,4 @@ try {
   await new Promise(resolve=>setTimeout(resolve,300));
   assert.ok(await evaluate(`document.querySelector('.md-wt-toolbar').getBoundingClientRect().height<60 && document.querySelector('.preview-toolbar').getBoundingClientRect().height<60`));
   console.log('overflow browser check passed');
-} finally { await browser.stop(); await app.close(); await rm(temp,{recursive:true,force:true}); }
+} finally { await browser.stop(); if (app) await app.close(); await rm(temp,{recursive:true,force:true}); }

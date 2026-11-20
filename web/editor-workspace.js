@@ -399,6 +399,45 @@
   }
   window.mdPositionToolbarSubmenu = positionToolbarSubmenu;
 
+  // A short delay lets the pointer cross the gap between a trigger and its menu.
+  function watchToolbarMenuPointer(trigger, getMenu, isOpen, close, includeChildren) {
+    var timer = null, enteredMenu = false;
+    function inside(node, x, y) {
+      if (!node || node.hidden || !node.getBoundingClientRect) return false;
+      var rect = node.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+    }
+    function cancel() { if (timer !== null) { clearTimeout(timer); timer = null; } }
+    function check(event) {
+      if (event.pointerType !== 'mouse' || !isOpen()) { if (!isOpen()) { cancel(); enteredMenu = false; } return; }
+      var doc = trigger.ownerDocument;
+      if (event.target !== doc && event.target?.ownerDocument !== doc) return;
+      if (event.buttons) { cancel(); return; }
+      var menu = getMenu(), x = event.clientX, y = event.clientY;
+      var overMenu = inside(menu, x, y);
+      if (overMenu) enteredMenu = true;
+      var regions = [trigger, menu];
+      var bar = trigger.closest?.('.md-wt-toolbar, .preview-toolbar');
+      if (bar && includeChildren) {
+        regions.push.apply(regions, Array.from(bar.querySelectorAll('.md-wt-basic-menu:not([hidden]), details[open] .range-popover')));
+      } else if (bar && !enteredMenu && trigger.closest?.('.md-wt-overflow-open')) {
+        regions.push(bar.querySelector('.md-wt-overflow-background:not([hidden])'));
+      }
+      if (regions.some(function (node) { return inside(node, x, y); })) { cancel(); return; }
+      if (timer === null) timer = setTimeout(function () { timer = null; enteredMenu = false; if (isOpen()) close(); }, 300);
+    }
+    trigger.addEventListener('click', function () { cancel(); enteredMenu = false; });
+    onWorkspaceDOM('pointermove', check, true);
+    onWorkspaceDOM('pointerup', check, true);
+    onWorkspaceDOM('pointerout', function (event) {
+      if (event.pointerType !== 'mouse' || event.relatedTarget || event.buttons || !isOpen()) return;
+      var doc = trigger.ownerDocument;
+      if (event.target !== doc && event.target?.ownerDocument !== doc) return;
+      if (timer === null) timer = setTimeout(function () { timer = null; enteredMenu = false; if (isOpen()) close(); }, 300);
+    }, true);
+  }
+  window.mdWatchToolbarMenuPointer = watchToolbarMenuPointer;
+
   function buildAcademicGroup() {
     var group = make('div', { class: 'md-wt-group md-wt-group--academic', role: 'group', 'aria-label': '学术' });
     ACADEMIC_GROUPS.forEach(function (entry) {
@@ -428,6 +467,7 @@
         positionToolbarSubmenu(button, menu, false);
         row.querySelector('button')?.focus();
       });
+      watchToolbarMenuPointer(button, function () { return menu; }, function () { return !menu.hidden; }, function () { close(false); });
       menu.addEventListener('keydown', function (event) {
         var buttons = Array.prototype.slice.call(row.querySelectorAll('button:not(:disabled)'));
         var index = buttons.indexOf(menu.ownerDocument.activeElement);
@@ -479,6 +519,7 @@
     basicButton.setAttribute('aria-controls', 'md-wt-basic-menu');
     basicMenu = make('div', { class: 'md-wt-basic-menu', role: 'menu', 'aria-label': '基础格式', id: 'md-wt-basic-menu' });
     basicMenu.hidden = true;
+    watchToolbarMenuPointer(basicButton, function () { return basicMenu; }, function () { return !basicMenu.hidden; }, function () { closeBasicMenu(false); });
     BASIC_GROUPS.forEach(function (entry) { basicMenu.appendChild(buildBasicMenuRow(entry)); });
     basicButton.addEventListener('click', function (event) {
       event.preventDefault();
@@ -762,6 +803,10 @@
     }
     function close(restore) {
       open = false; more.setAttribute('aria-expanded', 'false'); background.hidden = true;
+      overflow.forEach(function (node) {
+        node.querySelectorAll('.md-wt-basic-menu:not([hidden])').forEach(function (menu) { menu.hidden = true; menu.parentElement.querySelector('[aria-expanded]')?.setAttribute('aria-expanded', 'false'); });
+        node.querySelectorAll('details.range-pop[open]').forEach(function (details) { details.open = false; });
+      });
       overflow.forEach(function (node) { node.classList.remove('md-wt-overflow-open'); node.querySelectorAll('[data-overflow-tabindex]').forEach(function (el) { el.tabIndex = Number(el.dataset.overflowTabindex); delete el.dataset.overflowTabindex; }); if (node.hasAttribute('data-overflow-tabindex')) { node.tabIndex = Number(node.dataset.overflowTabindex); delete node.dataset.overflowTabindex; } });
       if (restore && !more.hidden) more.focus();
     }
@@ -802,6 +847,7 @@
       if (more.hidden !== !overflow.length) more.hidden = !overflow.length;
       position();
     }
+    watchToolbarMenuPointer(more, function () { return background; }, function () { return open; }, function () { close(false); }, true);
     more.addEventListener('click', function () {
       if (open) { close(true); return; }
       open = true; more.setAttribute('aria-expanded', 'true'); background.hidden = false;

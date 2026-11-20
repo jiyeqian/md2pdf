@@ -1071,6 +1071,8 @@ for (const name of RANGE_CONTROLS) {
   slider.addEventListener('input', () => { if (dragging) wrap.classList.add('range-adjusting'); });
 }
 for (const details of form.querySelectorAll('details.range-pop')) {
+  const trigger = details.querySelector('summary');
+  if (trigger) window.mdWatchToolbarMenuPointer?.(trigger, () => details.querySelector('.range-popover'), () => details.open, () => { details.open = false; });
   details.addEventListener('toggle', () => {
     if (details.open) { closeRangePopovers(details); const trigger = details.querySelector('[data-option-trigger]'); if (trigger) renderOptionMenu(trigger.getAttribute('data-option-trigger'), true); positionRangePopover(details); const slider = details.querySelector('[data-range-slider]'); if (slider) updateRangeTrigger(slider.getAttribute('data-range-slider')); }
     else { const wrap = details.closest('[data-control]'); if (wrap) wrap.classList.remove('range-adjusting'); }
