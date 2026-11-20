@@ -370,6 +370,7 @@
 
   // Each submenu aligns to its own trigger and stays within its panel.
   function positionToolbarSubmenu(trigger, menu, relative) {
+    if (trigger.closest?.('.md-focus-popup')) relative = false;
     var view = trigger.ownerDocument.defaultView;
     var viewport = view.visualViewport;
     var viewLeft = viewport ? viewport.offsetLeft : 0;
@@ -864,6 +865,11 @@
           positionToolbarSubmenu(details, popup, true);
         });
       });
+      if (workspace.classList.contains('md-focus-mode')) {
+        if (open) close(false);
+        overflow.forEach(function (node) { node.classList.remove('md-wt-overflow-item', 'md-wt-overflow-open'); });
+        overflow = []; more.hidden = true; return;
+      }
       var items = controls(), visible = items.filter(function (node) { return !node.hidden && getComputedStyle(node).display !== 'none'; });
       var columns = parseInt(panel.style.getPropertyValue?.('--panel-columns'), 10) || 1;
       var next = visible.length > columns ? visible.slice(Math.max(0, columns - 1)) : [];
@@ -907,6 +913,7 @@
       var view = bar.ownerDocument.defaultView;
       view.requestAnimationFrame(function () { scheduled = false; updatePanelGrid(panel); update(); });
     }
+    document.addEventListener('md-focus-change', schedule);
     panel.addEventListener('md-panel-owner-change', function () {
       scheduled = false;
       updatePanelGrid(panel);
@@ -939,11 +946,12 @@
     actionCount = Math.max(1, actionCount);
     panel.style.setProperty('--panel-actions-start', String(-actionCount - 1));
     var actionsWidth = actionCount * button + Math.max(0, actionCount - 1) * gap;
-    var empty = Math.max(0, available - button - actionsWidth);
+    var leftWidth = button + (panel.querySelector('.md-focus-tools:not([hidden])') ? button + 4 : 0);
+    var empty = Math.max(0, available - leftWidth - actionsWidth);
     var zoomWidth = Math.min(Math.max(0, empty - gap * 2), empty * 0.3 + 62.334);
     panel.style.setProperty('--panel-zoom-display', zoomWidth >= 62.334 ? 'flex' : 'none');
     panel.style.setProperty('--panel-zoom-width', zoomWidth + 'px');
-    panel.style.setProperty('--panel-zoom-left', (inset + button + empty / 2) + 'px');
+    panel.style.setProperty('--panel-zoom-left', (inset + leftWidth + empty / 2) + 'px');
   }
 
   function updatePanelGrids() {
@@ -1424,6 +1432,70 @@
     });
   }
 
+  // 专注模式与单面板全屏相互独立；复用原工具条以保留全部操作和状态。
+  function buildFocusMode() {
+    var entries = [editorPanel, previewPanel].map(function (panel) {
+      var heading = panel.querySelector('.panel-heading'), actions = heading.querySelector('.panel-actions');
+      var bar = panel.querySelector('.md-wt-toolbar, .preview-toolbar');
+      var placeholder = document.createComment('toolbar position');
+      bar.before(placeholder);
+      var focus = make('button', { type: 'button', class: 'icon-button md-focus-toggle', 'aria-label': '进入专注模式', 'aria-pressed': 'false', title: '进入专注模式' });
+      var svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('class', 'btn-icon'); svg.setAttribute('viewBox', '0 0 20 20'); svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.4'); svg.setAttribute('stroke-linecap', 'round');
+      var path = document.createElementNS(SVG_NS, 'path'); path.setAttribute('d', 'M3.5 7V4h3M13.5 4h3v3M16.5 13v3h-3M6.5 16h-3v-3M8 10h4'); svg.appendChild(path); focus.appendChild(svg);
+      actions.insertBefore(focus, panel.querySelector('[data-panel-fullscreen]'));
+      var launcher = make('button', { type: 'button', class: 'icon-button md-focus-tools', 'aria-label': '工具栏', 'aria-expanded': 'false', 'aria-haspopup': 'true', title: '工具栏', hidden: '' });
+      launcher.textContent = '⋯'; heading.querySelector('h2').appendChild(launcher);
+      var popup = make('div', { class: 'md-focus-popup', hidden: '' }); panel.appendChild(popup);
+      function closeMenu() {
+        popup.hidden = true; launcher.setAttribute('aria-expanded', 'false');
+        bar.querySelectorAll('.md-wt-basic-menu:not([hidden])').forEach(function (menu) { menu.hidden = true; menu.parentElement.querySelector('[aria-expanded]')?.setAttribute('aria-expanded', 'false'); });
+        bar.querySelectorAll('details[open]').forEach(function (details) { details.open = false; });
+        bar.querySelectorAll('[aria-expanded="true"][aria-controls]').forEach(function (button) { var menu = button.ownerDocument.getElementById(button.getAttribute('aria-controls')); if (menu) menu.dispatchEvent(new Event('md-toolbar-dismiss')); });
+      }
+      function position() {
+        var r = launcher.getBoundingClientRect(), view = launcher.ownerDocument.defaultView;
+        popup.style.left = Math.max(4, Math.min(r.left, view.innerWidth - popup.offsetWidth - 4)) + 'px';
+        popup.style.top = Math.min(r.bottom + 4, view.innerHeight - 40) + 'px';
+        popup.style.maxHeight = Math.max(40, view.innerHeight - r.bottom - 8) + 'px';
+      }
+      launcher.addEventListener('click', function () { if (!popup.hidden) { closeMenu(); return; } popup.hidden = false; launcher.setAttribute('aria-expanded', 'true'); position(); });
+      focus.addEventListener('click', function () { setFocus(!workspace.classList.contains('md-focus-mode')); });
+      var leaveTimer;
+      function cancel() { clearTimeout(leaveTimer); }
+      function leave(event) { if (event.pointerType !== 'mouse' || event.buttons) return; cancel(); leaveTimer = setTimeout(closeMenu, 300); }
+      launcher.addEventListener('pointerenter', cancel); launcher.addEventListener('pointerleave', leave);
+      popup.addEventListener('pointerenter', cancel); popup.addEventListener('pointerleave', function (event) {
+        var target = event.relatedTarget;
+        if (target && (popup.contains(target) || launcher.contains(target) || owned(target))) return;
+        leave(event);
+      });
+      function owned(target) { return Array.from(bar.querySelectorAll('[aria-expanded="true"][aria-controls]')).some(function (button) { var menu = button.ownerDocument.getElementById(button.getAttribute('aria-controls')); return menu && !menu.hidden && menu.contains(target); }); }
+      onWorkspaceDOM('pointermove', function (event) { if (!popup.hidden && event.pointerType === 'mouse' && owned(event.target)) cancel(); }, true);
+      onWorkspaceDOM('md-preview-pointer-enter', function () { if (!popup.hidden) { cancel(); leaveTimer = setTimeout(closeMenu, 300); } });
+      onWorkspaceDOM('pointerdown', function (event) {
+        if (popup.hidden || popup.contains(event.target) || launcher.contains(event.target) || owned(event.target)) return;
+        closeMenu();
+      }, true);
+      onWorkspaceDOM('keydown', function (event) { if (!popup.hidden && event.key === 'Escape' && !event.target.closest('.md-wt-basic-menu:not([hidden]), details[open]')) { event.preventDefault(); closeMenu(); launcher.focus(); } });
+      return { bar: bar, placeholder: placeholder, focus: focus, launcher: launcher, popup: popup, close: closeMenu };
+    });
+    function setFocus(enabled) {
+      entries.forEach(function (entry) {
+        entry.close(); entry.launcher.hidden = !enabled;
+        entry.focus.setAttribute('aria-pressed', String(enabled));
+        entry.focus.title = enabled ? '退出专注模式' : '进入专注模式';
+        entry.focus.setAttribute('aria-label', entry.focus.title);
+        if (enabled) entry.popup.appendChild(entry.bar); else entry.placeholder.after(entry.bar);
+      });
+      workspace.classList.toggle('md-focus-mode', enabled);
+      document.body.classList.toggle('md-focus-mode', enabled);
+      document.dispatchEvent(new Event('md-focus-change'));
+      updatePanelGrids(); scheduleStackLayout();
+      requestAnimationFrame(function () { measureEditor(); updatePanelGrids(); });
+    }
+  }
+
   // ---------------------------------------------------------------- 位置桥接
   function locateCurrentCursor(instant) {
     if (!hasEditor() || !previewFrame || !previewFrame.contentWindow) return;
@@ -1737,6 +1809,7 @@
   buildFullscreenButtons();
   buildPanelModeButtons();
   buildIndependentWindows();
+  buildFocusMode();
   buildZoomControls();
   restoreRatio();
   wireEvents();

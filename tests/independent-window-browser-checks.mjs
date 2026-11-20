@@ -63,7 +63,7 @@ try {
   await evaluate('window.fixture=' + JSON.stringify(fixture) + ';mdEditor.setValue(fixture)');
   await ready();
   assert.equal(await evaluate('document.querySelectorAll("[data-panel-independent]").length'), 2);
-  assert.equal(await evaluate('[...document.querySelectorAll("[data-panel-independent]")].every(button=>button.nextElementSibling.matches("[data-panel-fullscreen]"))'), true);
+  assert.equal(await evaluate('[...document.querySelectorAll("[data-panel-independent]")].every(button=>button.nextElementSibling.matches(".md-focus-toggle") && button.nextElementSibling.nextElementSibling.matches("[data-panel-fullscreen]"))'), true);
 
   for (const width of [390, 600, 1440]) {
     await browser.send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });

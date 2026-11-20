@@ -1,0 +1,71 @@
+import assert from 'node:assert/strict';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { createApp } from '../src/server.mjs';
+import { Chrome, findChrome } from '../src/chrome.mjs';
+
+const app = process.argv[2] ? null : createApp();
+const temp = await mkdtemp(path.join(os.tmpdir(), 'md2pdf-actions-'));
+const browser = new Chrome(findChrome(), temp);
+const evaluate = async expression => {
+  const result = await browser.send('Runtime.evaluate', { expression, returnByValue:true, awaitPromise:true });
+  assert.equal(result.exceptionDetails, undefined, JSON.stringify(result.exceptionDetails));
+  return result.result.value;
+};
+const wait = async expression => {
+  for (let n=0;n<200;n++) {
+    if (await evaluate(`Boolean(${expression})`)) return;
+    await new Promise(resolve => setTimeout(resolve,50));
+  }
+  throw new Error('Timeout: '+expression);
+};
+try {
+  if (app) await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
+  await browser.start();
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:1400,height:900,deviceScaleFactor:1,mobile:false});
+  await browser.send('Page.navigate',{url:`http://127.0.0.1:${app.server.address().port}`});
+  await wait('window.mdEditor && document.querySelectorAll(".md-focus-toggle").length===2');
+  await evaluate(`document.querySelector('.editor-panel .md-focus-toggle').click()`);
+  assert.equal(await evaluate(`document.body.classList.contains('md-focus-mode')`),true);
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('#app-topbar')).display`),'none');
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.app-bottom')).display`),'none');
+  assert.equal(await evaluate(`document.querySelector('.editor-panel .md-focus-toggle').getAttribute('aria-pressed')`),'true');
+  assert.equal(await evaluate(`document.querySelectorAll('.md-focus-tools:not([hidden])').length`),2);
+  await evaluate(`document.querySelector('.editor-panel .md-focus-tools').click()`);
+  assert.equal(await evaluate(`document.querySelector('.editor-panel .md-focus-popup').hidden`),false);
+  assert.equal(await evaluate(`document.querySelector('.editor-panel .md-focus-popup .md-wt-toolbar')!==null`),true);
+  const menu = await evaluate(`(()=>{const e=document.querySelector('.editor-panel .md-focus-popup'),r=e.getBoundingClientRect();return {height:r.height,scroll:e.scrollHeight,client:e.clientHeight,hit:document.elementFromPoint(r.left+10,r.top+10)?.closest('.md-focus-popup')!==null}})()`);
+  assert.ok(menu.height>28 && menu.hit,JSON.stringify(menu));
+  await wait(`!document.querySelector('.editor-panel .md-focus-popup button[aria-label="基础格式"]').disabled`);
+  await evaluate(`document.querySelector('.editor-panel .md-focus-popup button[aria-label="基础格式"]').click()`);
+  await wait(`document.querySelector('#md-wt-basic-menu:not([hidden])')`);
+  const nested = await evaluate(`(()=>{const e=document.querySelector('#md-wt-basic-menu:not([hidden])'),r=e.getBoundingClientRect();return {width:r.width,height:r.height,hit:document.elementFromPoint(r.right-10,r.top+10)?.closest('.md-wt-basic-menu')===e}})()`);
+  assert.ok(nested.hit,JSON.stringify(nested));
+  await evaluate(`document.querySelector('.editor-panel [data-panel-fullscreen]').click()`);
+  await wait(`document.querySelector('.workspace').classList.contains('editor-focus')`);
+  assert.equal(await evaluate(`document.body.classList.contains('md-focus-mode')`),true);
+  await evaluate(`document.querySelector('.editor-panel .md-panel-mode').click()`);
+  await wait(`document.querySelector('.workspace').classList.contains('preview-focus')`);
+  assert.equal(await evaluate(`document.body.classList.contains('md-focus-mode')`),true);
+  await evaluate(`document.querySelector('.preview-panel .md-focus-tools').click()`);
+  assert.equal(await evaluate(`document.querySelector('.preview-panel .md-focus-popup .preview-toolbar')!==null`),true);
+  await evaluate(`document.querySelector('.preview-panel .md-focus-popup [data-control="theme"] summary').click()`);
+  await wait(`document.querySelector('.preview-panel .md-focus-popup [data-control="theme"] details').open`);
+  const previewMenu=await evaluate(`(()=>{const e=document.querySelector('.preview-panel .md-focus-popup [data-control="theme"] .range-popover'),r=e.getBoundingClientRect();return {width:r.width,height:r.height,hit:document.elementFromPoint(r.right-10,r.top+10)?.closest('.range-popover')===e}})()`);
+  assert.ok(previewMenu.hit,JSON.stringify(previewMenu));
+  await evaluate(`document.querySelector('.preview-panel .md-focus-toggle').click()`);
+  assert.equal(await evaluate(`document.querySelector('.workspace').classList.contains('preview-focus')`),true,'exiting focus keeps the fullscreen state');
+  await evaluate(`document.querySelector('.preview-panel .md-focus-toggle').click()`);
+  await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
+  await wait(`!document.querySelector('.workspace').classList.contains('preview-focus')`);
+  await evaluate(`document.querySelector('.preview-panel .md-focus-toggle').click()`);
+  assert.equal(await evaluate(`document.body.classList.contains('md-focus-mode')`),false);
+  assert.equal(await evaluate(`document.querySelectorAll('.md-focus-tools:not([hidden])').length`),0);
+  assert.equal(await evaluate(`document.querySelector('.editor-panel > .md-wt-toolbar')!==null`),true);
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:375,height:350,deviceScaleFactor:1,mobile:false});
+  await evaluate(`document.querySelector('.editor-panel .md-focus-toggle').click();document.querySelector('.editor-panel .md-focus-tools').click()`);
+  const narrow=await evaluate(`(()=>{const e=document.querySelector('.editor-panel .md-focus-popup'),r=e.getBoundingClientRect();return {bottom:r.bottom,scroll:e.scrollHeight,client:e.clientHeight}})()`);
+  assert.ok(narrow.bottom<=350 && narrow.scroll>narrow.client,JSON.stringify(narrow));
+  console.log('focus mode browser checks passed');
+} finally { await browser.stop(); if (app) await app.close(); await rm(temp,{recursive:true,force:true}); }

@@ -414,3 +414,15 @@
 .md-preview-format-menu { position: fixed; flex-direction: column; }
 .md-preview-format-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; }
 .md-preview-format-menu button:disabled { opacity: .4; cursor: default; }
+
+/* 专注模式保留面板标题栏，通过单列浮层使用原工具条。 */
+body.md-focus-mode #app-topbar, body.md-focus-mode .app-bottom { display: none; }
+.workspace.md-editor-workspace .panel-heading h2 { display: flex; align-items: center; gap: 4px; }
+.workspace.md-editor-workspace .md-focus-tools { font-size: 20px; line-height: 1; padding: 0; }
+.workspace.md-editor-workspace .md-focus-tools[hidden], .md-focus-popup[hidden] { display: none !important; }
+.workspace.md-editor-workspace .md-focus-toggle[aria-pressed="true"] { background: #e7eef7; border-color: #b7c6da; }
+.md-focus-popup { position: fixed; z-index: 55; width: max-content; overflow-y: auto; overflow-x: visible; background: #fff; border: 1px solid #dbe2ec; border-radius: 8px; box-shadow: 0 10px 30px rgba(36,51,72,.16); }
+.workspace.md-editor-workspace .md-focus-popup .md-wt-toolbar,
+.workspace.md-editor-workspace .md-focus-popup .preview-toolbar { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: center; width: max-content; gap: 4px; padding: 6px; border: 0; background: #fff; }
+.md-focus-popup .md-wt-group, .md-focus-popup .md-wt-mount { display: contents; }
+.md-focus-popup .range-popover { position: fixed; }
