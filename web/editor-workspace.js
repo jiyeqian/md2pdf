@@ -141,6 +141,8 @@
     codeblock: [{ rect: [2.5, 3.5, 15, 13], rx: 1.6 }, { d: 'M7 8 5.5 10 7 12M13 8l1.5 2-1.5 2M11 7l-2 6' }],
     table: [{ rect: [4.2, 5.4, 11.6, 9.2], rx: 1.6 }, { d: 'M4.2 9.5h11.6' }, { d: 'M9.7 5.4v9.2' }],
     figure: [{ rect: [2.5, 3, 5, 4], rx: 1 }, { rect: [12.5, 3, 5, 4], rx: 1 }, { rect: [7.5, 13, 5, 4], rx: 1 }, { d: 'M7.5 5h5M5 7v3h5v3M15 7v3h-5' }],
+    bibliographyGroup: [{ d: 'M3 4h6a3 3 0 0 1 2 1v11a3 3 0 0 0-2-1H3zM11 5a3 3 0 0 1 2-1h4v11h-4a3 3 0 0 0-2 1M5 7h3M13 7h2M5 10h3M13 10h2' }],
+    referenceGroup: [{ d: 'M4 6h5v5H6l-2 3V6zM12 6h5v5h-3l-2 3V6z' }],
     footnote: [{ d: 'M4.4 7.8h8' }, { d: 'M4.4 10.9h8' }, { d: 'M4.4 14h5' }, { d: 'M13.8 5.4 15.6 4.4v5.4' }],
 
     formula: [{ d: 'M5 2h10M5 18h10M6 5h8l-4.5 5 4.5 5H6' }],
@@ -312,12 +314,12 @@
     { icon: 'figure', label: '插入 Mermaid 图表', insert: 'figure' }
   ];
   var ACADEMIC_GROUPS = [
-    { label: '插入参考文献', icon: 'footnote', items: [
+    { label: '插入参考文献', icon: 'bibliographyGroup', items: [
       { icon: 'footnote', label: '参考文献', insert: 'footnote' },
       { icon: 'bibliography', label: 'BibTeX参考文献', insert: 'bibliography' },
       { icon: 'doi', label: 'DOI参考文献' }
     ] },
-    { label: '插入引用', icon: 'noteref', items: [
+    { label: '插入引用', icon: 'referenceGroup', items: [
       { icon: 'ref', label: '图表引用', insert: 'ref' },
       { icon: 'eqref', label: '公式引用', insert: 'eqref' },
       { icon: 'noteref', label: '文献引用', insert: 'noteref' }

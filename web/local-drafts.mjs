@@ -1,3 +1,4 @@
+import { formatOneDriveSize } from './onedrive-ui.mjs';
 import { openDraftStore, DRAFT_LIST_LIMIT, DraftConflict } from './draft-store.mjs';
 
 const signature = record => JSON.stringify([record.md, record.opts, record.templateId, record.previewType, record.filename]);
@@ -128,7 +129,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
   }
   async function remove(records, allVisible = false) {
     const current = records.find(record => record.id === active?.id);
-    const message = allVisible ? '当前列表中的全部草稿，确认删除？'
+    const message = allVisible ? '确认删除当前列表中全部本地草稿？'
       : current ? `当前正在编辑“${current.title}”，确认删除？` : `确认删除草稿“${records[0].title}”？`;
     if (!await confirmDelete(message)) return;
     await enqueue(async () => {
@@ -165,17 +166,22 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     const width = view?.width || win.innerWidth, height = view?.height || win.innerHeight;
     menu.style.maxHeight = Math.max(60, height - 16) + 'px';
     menu.style.fontSize = menuFontSize() + 'px';
-    menu.style.width = 'max-content';
-    menu.style.minWidth = Math.min(144, width - 16) + 'px';
-    menu.style.maxWidth = Math.min(276, width - 16) + 'px';
+    const canvas = owner.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (context) context.font = win.getComputedStyle(menu).font;
+    const titles = [...menu.querySelectorAll('.md-draft-title')];
+    const desired = titles.reduce((max, title) => Math.max(max, context ? context.measureText(title.textContent).width + 78 : 220), 220);
+    menu.style.width = Math.min(desired, 400, width - 16) + 'px';
+    menu.style.minWidth = Math.min(220, width - 16) + 'px';
+    menu.style.maxWidth = Math.min(400, width - 16) + 'px';
     menu.style.left = Math.max(left + 8, Math.min(bounds.left, left + width - menu.offsetWidth - 8)) + 'px';
     menu.style.top = Math.max(top + 8, Math.min(bounds.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
   }
   async function renderMenu() {
     const records = await store.list();
     const visible = records.slice(0, DRAFT_LIST_LIMIT);
-    menu.replaceChildren(button('从本地打开…', () => { closeMenu(); input.click(); }),
-      button('从 OneDrive 打开…', () => { const target = trigger?.closest('.preview-panel') ? 'preview' : 'editor'; closeMenu(); return window.mdOneDrive?.open(target); }));
+    menu.replaceChildren(button('从本地打开', () => { closeMenu(); input.click(); }),
+      button('从 OneDrive 打开', () => { const target = trigger?.closest('.preview-panel') ? 'preview' : 'editor'; closeMenu(); return window.mdOneDrive?.open(target); }));
     const heading = document.createElement('div');
     heading.className = 'md-drafts-heading';
     heading.textContent = `已保存本地草稿 · ${records.length}`;
@@ -201,7 +207,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       mark.setAttribute('aria-hidden', 'true');
       mark.textContent = record.id === active?.id ? '✓' : '';
       const time = document.createElement('small');
-      time.textContent = new Date(record.savedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      time.textContent = formatOneDriveSize(new TextEncoder().encode(record.md || '').length) + ' · ' + new Date(record.savedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
       open.append(mark, title, time);
       const del = button('×', () => remove([record]));
       del.className = 'md-draft-delete';

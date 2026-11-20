@@ -18,7 +18,9 @@
 .md-drafts-menu button:focus-visible { outline: 2px solid #376ba0; outline-offset: -2px; }
 .md-drafts-heading { padding: 5px 6px 3px; border-top: 1px solid #e5e9ef; margin-top: 4px; color: #667789; font-size: .92em; }
 .md-drafts-menu p { padding: 0 6px; color: #667789; }
-.md-draft-row { display: flex; align-items: flex-start; padding: 0 6px; }
+.md-draft-row { display: flex; align-items: flex-start; gap: 4px; padding: 0 6px; border-radius: 4px; }
+.md-draft-row:hover, .md-draft-row:focus-within, .md-draft-row:has([aria-current="true"]) { background: #e1eaf5; }
+.md-drafts-menu .md-draft-row > button:hover, .md-drafts-menu .md-draft-row > button:focus-visible { background: transparent; }
 .md-draft-row > button:first-child { display: grid; grid-template-columns: 12px minmax(0, 1fr); column-gap: 4px; flex: 1 1 auto; width: 0; min-width: 0; padding: 3px 0; }
 .md-draft-mark { grid-column: 1; grid-row: 1; line-height: 1.5; text-align: center; }
 .md-draft-title { grid-column: 2; grid-row: 1; display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -56,3 +58,5 @@
 .md-action-menu { width: max-content; }
 .md-action-menu button span { display: inline-block; white-space: nowrap; }
 .md-action-menu button span:first-child { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+
+#md-create-menu button[data-template-id] { padding-left: 18px; }
