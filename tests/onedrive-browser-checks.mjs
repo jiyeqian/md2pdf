@@ -132,6 +132,9 @@ try {
     await evaluate(`mockGraph.mode='ok'; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='连接 OneDrive').click()`);
     await wait(`document.querySelectorAll('.md-cloud-panel-file').length===15`);
     assert.deepEqual(await evaluate(`[...document.querySelectorAll('.md-cloud-icon-button')].map(x=>x.getAttribute('aria-label'))`), ['刷新','保存到 OneDrive','新建文件夹','断开']);
+    assert.equal(await evaluate(`document.querySelector('.md-cloud-panel').lastElementChild.matches('.md-cloud-panel-account')`),true,'account is at the bottom');
+    assert.equal(await evaluate(`!!document.querySelector('.md-cloud-panel-status')`),true,'status row is reserved');
+    assert.equal(await evaluate(`document.querySelector('.preview-footer math munder mi')?.textContent`),'t','preview footer uses t');
     assert.ok(await evaluate(`[...document.querySelectorAll('.md-cloud-panel-file')].some(x=>x.textContent.includes('空文件') && x.textContent.includes('0 B'))`));
     assert.ok(await evaluate(`[...document.querySelectorAll('.md-cloud-panel-file')].some(x=>x.textContent.includes('5.5 KiB'))`));
     await evaluate(`document.querySelector('.preview-panel [data-panel-fullscreen]').click()`);
@@ -163,7 +166,7 @@ try {
     await evaluate(`mockGraph.mode='ok'; [...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='重试打开').click()`);
     await wait(`mdEditor.getValue()==='# 云端原稿'`);
     await wait(`document.querySelector('.md-cloud-status')?.textContent.includes('已打开')`);
-    assert.equal(await evaluate(`document.querySelector('.md-cloud-notice').parentElement.matches('.editor-panel')`),true,'cloud notice stays in the editor panel');
+    assert.equal(await evaluate(`document.querySelector('.md-cloud-notice').parentElement.matches('.editor-footer')`),true,'cloud notice stays in the editor footer');
     const focusedWidth = await evaluate(`document.querySelector('.editor-panel .md-focus-popup').getBoundingClientRect().width`);
     assert.ok(Math.abs(focusedWidth-popupWidth)<1,JSON.stringify({popupWidth,focusedWidth}));
     await evaluate(`document.querySelector('.md-image-status').textContent='图片处理失败：'+ '错误'.repeat(300)`);

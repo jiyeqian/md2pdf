@@ -96,3 +96,19 @@
 .md-cloud-breadcrumb > .md-cloud-crumb:last-child { overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere; }
 
 .md-cloud-popup:has(button:hover) button:focus-visible:not(:hover) { background:transparent; }
+
+/* 云文件工具、状态、列表与账户保持稳定的层次。 */
+.md-sidebar-content:has(.md-cloud-panel:not(.is-disconnected)) { overflow: hidden; display: flex; }
+.md-sidebar-view:has(> .md-cloud-panel:not(.is-disconnected)):not([hidden]) { display:flex; flex:1; min-height:0; }
+.md-cloud-panel:not(.is-disconnected) { display:flex; flex-direction:column; min-width:0; min-height:0; flex:1; }
+.md-cloud-panel:not(.is-disconnected) > .md-cloud-panel-actions:first-child { padding-bottom:7px; border-bottom:1px solid #e3e9f0; }
+.md-cloud-panel-status { flex:none; min-height:22px; max-height:64px; overflow:auto; }
+.md-cloud-panel-status .md-sidebar-empty,.md-cloud-panel-status .md-cloud-panel-error { margin:2px 6px; }
+.md-cloud-panel:not(.is-disconnected) > .md-cloud-panel-list { flex:1 1 auto; min-height:0; overflow:auto; align-content:start; }
+.md-cloud-panel-account { flex:none; margin:4px 0 0; padding:7px 6px 0; border-top:1px solid #e3e9f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.md-cloud-panel-account { display:flex; min-width:0; }
+.md-cloud-account-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.md-cloud-panel-status { display:flex; align-items:flex-start; gap:4px; }
+.md-cloud-panel-status .md-cloud-panel-error,.md-cloud-panel-status .md-sidebar-empty { min-width:0; overflow-wrap:anywhere; }
+.md-cloud-panel-status .md-cloud-panel-button { flex:none; padding:1px 5px; }

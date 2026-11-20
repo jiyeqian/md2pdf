@@ -27,7 +27,7 @@ try{
   const shot=await browser.send('Page.captureScreenshot',{format:'png'});await writeFile(`/private/tmp/md2pdf-cloud-status/${name}-${width}-${height}.png`,Buffer.from(shot.data,'base64'));
   if(name==='node' && width===390 && height===568){
     await evaluate(`testMode='verylong';document.querySelector('.md-cloud-panel-file').click()`);await wait(`document.querySelector('.md-cloud-panel-error')?.textContent.includes('结束标记')`);
-    const long=await evaluate(`(()=>{const d=document.querySelector('.md-cloud-panel-error'),body=d.closest('.md-sidebar-content');body.scrollTop=body.scrollHeight;return {length:d.textContent.length,scroll:body.scrollHeight,client:body.clientHeight,reachedEnd:body.scrollTop+body.clientHeight>=body.scrollHeight-1,editor:mdEditor.getValue()}})()`);
+    const long=await evaluate(`(()=>{const d=document.querySelector('.md-cloud-panel-error'),body=d.closest('.md-cloud-panel-status');body.scrollTop=body.scrollHeight;return {length:d.textContent.length,scroll:body.scrollHeight,client:body.clientHeight,reachedEnd:body.scrollTop+body.clientHeight>=body.scrollHeight-1,editor:mdEditor.getValue()}})()`);
     assert.ok(long.length>1000&&long.scroll>long.client&&long.reachedEnd&&long.editor==='# 云端文档',JSON.stringify(long));assert.deepEqual(await geometry(),opened);
   }
   if(width===390 && height===568){

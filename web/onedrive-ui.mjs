@@ -38,18 +38,14 @@ export function initializeOneDrive() {
       const doc = panel.ownerDocument;
       notice = doc.createElement('div'); notice.className = 'md-cloud-notice';
       const body = doc.createElement('div'); body.className = 'md-cloud-notice-body';
-      const node = doc.createElement('span'); node.className = 'md-cloud-status'; node.setAttribute('role', 'status');
+      const node = doc.createElement('button'); node.type = 'button'; node.className = 'md-cloud-status'; node.setAttribute('role', 'status'); node.addEventListener('click', () => { if (notice.dataset.error === 'true') { listError = detail.textContent; showCloud(); renderCloud(); } });
       const detail = doc.createElement('div'); detail.className = 'md-cloud-error'; detail.setAttribute('role', 'alert'); detail.hidden = true;
       const close = doc.createElement('button'); close.type = 'button'; close.className = 'md-cloud-close'; close.setAttribute('aria-label', '关闭 OneDrive 提示'); close.textContent = '×';
       close.addEventListener('click', () => { notice.hidden = true; panel.querySelector('button[aria-label="打开 Markdown"]')?.focus(); });
       body.append(node, detail); notice.append(body, close);
     }
-    // In focus mode the toolbar lives in a popup, but notices belong to the panel.
-    if (notice.parentElement !== panel) {
-      const toolbar = panel.querySelector('.md-wt-toolbar');
-      const anchor = toolbar?.parentElement === panel ? toolbar : panel.querySelector('.panel-heading');
-      if (anchor) anchor.after(notice); else panel.append(notice);
-    }
+    const footer = panel.querySelector('.editor-footer');
+    if (footer && notice.parentElement !== footer) footer.append(notice);
     const node = notice.querySelector('.md-cloud-status'), detail = notice.querySelector('.md-cloud-error');
     node.textContent = error ? 'OneDrive · 操作失败' : message;
     node.title = message;
@@ -68,7 +64,11 @@ export function initializeOneDrive() {
   let sidebar, cloudPane, wantOpen = false, preparing, connectionPromise, initializing = false, connecting = false;
   let rootId = '', folders = [], creatingFolder = false, confirmDelete = '', renameId = '', renameDraft = '', items = [], nextLink = '', loading = false, listError = '', info = '', retryPage = false, retryOpenItem = null;
   let listGeneration = 0, openGeneration = 0, visited = new Set(), lastHighlight = '', mutationBusy = false, closeMenu = null, closeRenameKey = null;
-  let cloudTooltip;
+  let cloudTooltip, infoTimer;
+  function expireInfo() {
+    clearTimeout(infoTimer);
+    if (info && !loading && !mutationBusy && !info.startsWith('正在')) { const shown = info; infoTimer = setTimeout(() => { if (info === shown) { info = ''; renderCloud(); } }, 4000); }
+  }
   function hideTooltip() { cloudTooltip?.remove(); cloudTooltip = null; }
   function addTooltip(button, label) {
     button.dataset.tooltip = label;
@@ -91,9 +91,9 @@ export function initializeOneDrive() {
     const doc = cloudPane.ownerDocument;
     hideTooltip(); closeMenu?.(); closeRenameKey?.();
     cloudPane.replaceChildren();
-    const addButton = (text, action, disabled = false) => {
+    const addButton = (text, action, disabled = false, parent = cloudPane) => {
       const button = doc.createElement('button'); button.type = 'button'; button.className = 'md-cloud-panel-button';
-      button.textContent = text; button.disabled = disabled; button.addEventListener('click', action); cloudPane.append(button); return button;
+      button.textContent = text; button.disabled = disabled; button.addEventListener('click', action); parent.append(button); return button;
     };
     const message = (text, error = false) => {
       if (!text) return;
@@ -113,7 +113,9 @@ export function initializeOneDrive() {
       return;
     }
     cloudPane.classList.remove('is-disconnected');
-    const account = doc.createElement('p'); account.className = 'md-cloud-panel-account'; account.textContent = 'OneDrive 帐户 ' + (auth.account() || 'Microsoft 账户'); cloudPane.append(account);
+    const account = doc.createElement('p'); account.className = 'md-cloud-panel-account'; account.title = auth.account() || 'Microsoft 账户';
+    const at = account.title.lastIndexOf('@');
+    if (at > 0) { const first = doc.createElement('span'); first.className = 'md-cloud-account-name'; first.textContent = account.title.slice(0, at); const domain = doc.createElement('span'); domain.textContent = account.title.slice(at); account.append(first, domain); } else account.textContent = account.title;
     const actions = doc.createElement('div'); actions.className = 'md-cloud-panel-actions'; cloudPane.append(actions);
     const action = (label, path, fn, disabled = false) => { const button = doc.createElement('button'); button.type = 'button'; button.className = 'icon-button md-cloud-icon-button'; addTooltip(button, label); button.setAttribute('aria-label', label); button.disabled = disabled; button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg>'; button.addEventListener('click', fn); actions.append(button); };
     action('刷新', 'M20 7v5h-5 M4 17v-5h5 M5 9a7 7 0 0 1 12-3l3 3 M19 15a7 7 0 0 1-12 3l-3-3', () => { void refresh(); });
@@ -130,7 +132,9 @@ export function initializeOneDrive() {
       if(folders.length>1){nav.append(doc.createTextNode(' › '));crumb(folders.length-1,nav);}
     }
     if (creatingFolder) { const form = doc.createElement('form'); form.className = 'md-cloud-panel-actions'; const input = doc.createElement('input'); input.placeholder = '文件夹名称'; input.setAttribute('aria-label', '文件夹名称'); const submit = doc.createElement('button'); submit.type = 'submit'; submit.disabled = mutationBusy || busy; submit.className = 'md-cloud-panel-button'; submit.textContent = '创建'; const cancel = doc.createElement('button'); cancel.type = 'button'; cancel.className = 'md-cloud-panel-button'; cancel.textContent = '取消'; cancel.addEventListener('click', () => { creatingFolder = false; renderCloud(); }); form.append(input, submit, cancel); form.addEventListener('submit', e => { e.preventDefault(); void createFolder(input.value); }); cloudPane.append(form); }
-    message(loading ? '正在加载…' : info); message(listError, true);
+    const statusRow = doc.createElement('div'); statusRow.className = 'md-cloud-panel-status'; cloudPane.append(statusRow);
+    const statusText = listError || (loading ? '正在加载…' : info);
+    if (statusText) { const p = doc.createElement('p'); p.className = listError ? 'md-cloud-panel-error' : 'md-sidebar-empty'; p.setAttribute('role', listError ? 'alert' : 'status'); p.textContent = statusText; p.title = statusText; statusRow.append(p); }
     const list = doc.createElement('div'); list.className = 'md-cloud-panel-list'; cloudPane.append(list);
     if (!items.length && !loading) { const empty = doc.createElement('p'); empty.className = 'md-sidebar-empty'; empty.textContent = nextLink ? '本页没有 Markdown 文件。' : '应用文件夹中没有 Markdown 文件。'; list.append(empty); }
     for (const item of items) {
@@ -166,9 +170,11 @@ export function initializeOneDrive() {
 
     }
     lastHighlight = binding?.draftId === current() ? binding.id : '';
-    if (listError && retryOpenItem) addButton('重试打开', () => { void openItem(retryOpenItem); }, loading);
-    else if (listError && !retryPage) addButton('重试', () => { void refresh(); }, loading);
+    if (listError && retryOpenItem) addButton('重试打开', () => { void openItem(retryOpenItem); }, loading, statusRow);
+    else if (listError && !retryPage) addButton('重试', () => { void refresh(); }, loading, statusRow);
     if (nextLink) addButton(listError && retryPage && !retryOpenItem ? '重试加载' : '加载更多', () => { void loadMore(); }, loading);
+    cloudPane.append(account);
+    expireInfo();
   }
   function attachSidebar(value, target = 'editor') {
     if (!value || cloudSidebars.has(target)) return;
@@ -254,17 +260,17 @@ export function initializeOneDrive() {
     if (mutationBusy || busy) return;
     renameDraft = item.folder?newName:newName.slice(0,-(item.name.match(/\.[^.]+$/)?.[0].length||0));
     if (!item.folder && !/\.(md|markdown|mdown)$/i.test(newName)) { listError='文件名须保留 .md、.markdown 或 .mdown 扩展名。'; renderCloud(); return; }
-    mutationBusy = true; ++openGeneration; renderCloud();
+    mutationBusy = true; ++openGeneration; info = '正在重命名…'; listError = ''; renderCloud();
     const started=generation, request=listGeneration, client=graph, parentId=folders.at(-1)?.id;
     try { const result=await client.rename({id:item.id,eTag:item.eTag,name:item.name,newName,parentId,folder:!!item.folder});
       if(started!==generation || client!==graph) return;
       if(binding?.id===item.id) {binding.name=result.name;binding.eTag=result.eTag;}
       if(request!==listGeneration) return;renameId='';renameDraft='';await refresh();info='已重命名。';renderCloud();
     } catch(error) {if(started===generation && request===listGeneration){listError=errorMessage(error);renderCloud();}}
-    finally {mutationBusy=false;renderCloud();}
+    finally {mutationBusy=false;if (info === '正在重命名…') info = '';renderCloud();}
   }
   async function deleteFile(item) {
-    if (mutationBusy || busy) return; mutationBusy = true; ++openGeneration; info = ''; renderCloud();
+    if (mutationBusy || busy) return; mutationBusy = true; ++openGeneration; info = '正在移到回收站…'; listError = ''; renderCloud();
     const started = generation, request = listGeneration, client = graph;
     try { if (item.folder) await client.deleteFolder(item.id, item.eTag, item.name); else await client.deleteFile(item.id, item.eTag, item.name); if (started !== generation || client !== graph) return; if (binding?.id === item.id || item.folder && binding?.ancestors?.includes(item.id)) { binding = null; status(''); } if (request !== listGeneration) return; confirmDelete = ''; await refresh(); info = '已移到 OneDrive 回收站。'; renderCloud(); }
     catch (error) { if (started === generation && request === listGeneration) { listError = errorMessage(error); renderCloud(); } }
