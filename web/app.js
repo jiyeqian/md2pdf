@@ -1053,12 +1053,7 @@ function closeRangePopovers(except) {
 function positionRangePopover(details) {
   const panel = details.querySelector('.range-popover');
   if (!panel) return;
-  const anchor = details.getBoundingClientRect();
-  const width = panel.getBoundingClientRect().width;
-  const view = details.ownerDocument.defaultView;
-  const left = Math.max(12, Math.min(anchor.left, view.innerWidth - width - 12));
-  panel.style.left = `${left - anchor.left}px`;
-  panel.style.right = 'auto';
+  window.mdPositionToolbarSubmenu(details, panel, true);
 }
 for (const name of RANGE_CONTROLS) {
   const slider = rangeSlider(name);

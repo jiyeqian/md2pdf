@@ -368,6 +368,37 @@
     return group;
   }
 
+  // Submenus use the first menu as their anchor and stay within their panel.
+  function positionToolbarSubmenu(trigger, menu, relative) {
+    var view = trigger.ownerDocument.defaultView;
+    var viewport = view.visualViewport;
+    var viewLeft = viewport ? viewport.offsetLeft : 0;
+    var viewTop = viewport ? viewport.offsetTop : 0;
+    var viewRight = viewLeft + (viewport ? viewport.width : view.innerWidth);
+    var viewBottom = viewTop + (viewport ? viewport.height : view.innerHeight);
+    var panel = trigger.closest?.('.editor-panel, .preview-panel');
+    var panelRect = panel?.getBoundingClientRect?.();
+    var leftBound = Math.max(viewLeft + 4, panelRect ? panelRect.left + 4 : viewLeft + 4);
+    var rightBound = Math.min(viewRight - 4, panelRect ? panelRect.right - 4 : viewRight - 4);
+    if (rightBound <= leftBound) { leftBound = viewLeft + 4; rightBound = viewRight - 4; }
+    menu.style.maxWidth = Math.max(0, rightBound - leftBound) + 'px';
+    var anchor = trigger.getBoundingClientRect();
+    var bar = trigger.closest?.('.md-wt-toolbar, .preview-toolbar');
+    var overflow = trigger.closest?.('.md-wt-overflow-open') && bar?.querySelector('.md-wt-overflow-background:not([hidden])');
+    var first = overflow ? overflow.getBoundingClientRect() : anchor;
+    var rect = menu.getBoundingClientRect();
+    var width = rect.width || menu.offsetWidth || 0;
+    var left = first.left;
+    if (left < leftBound || left + width > rightBound) left = first.right - width;
+    left = Math.max(leftBound, Math.min(left, rightBound - width));
+    menu.style.left = (relative ? left - anchor.left : left) + 'px';
+    menu.style.right = 'auto';
+    var top = first.bottom + 6;
+    if (top + rect.height > viewBottom - 4) top = Math.max(viewTop + 4, first.top - rect.height - 6);
+    menu.style.top = (relative ? top - anchor.top : top) + 'px';
+  }
+  window.mdPositionToolbarSubmenu = positionToolbarSubmenu;
+
   function buildAcademicGroup() {
     var group = make('div', { class: 'md-wt-group md-wt-group--academic', role: 'group', 'aria-label': '学术' });
     ACADEMIC_GROUPS.forEach(function (entry) {
@@ -394,10 +425,7 @@
         if (!menu.hidden) { close(true); return; }
         menu.hidden = false;
         button.setAttribute('aria-expanded', 'true');
-        var rect = button.getBoundingClientRect(), view = button.ownerDocument.defaultView;
-        var width = menu.offsetWidth, height = menu.offsetHeight;
-        menu.style.left = Math.max(8, Math.min(rect.left, view.innerWidth - width - 8)) + 'px';
-        menu.style.top = (rect.bottom + 6 + height <= view.innerHeight - 8 ? rect.bottom + 6 : Math.max(8, rect.top - height - 6)) + 'px';
+        positionToolbarSubmenu(button, menu, false);
         row.querySelector('button')?.focus();
       });
       menu.addEventListener('keydown', function (event) {
@@ -489,16 +517,7 @@
   function positionBasicMenu() {
     if (!basicMenu || basicMenu.hidden) return;
     if (!basicButton.getBoundingClientRect || !basicMenu.getBoundingClientRect) return;
-    var viewport = (basicButton && basicButton.ownerDocument.defaultView.innerWidth) || window.innerWidth || 1024;
-    var anchor = basicButton.getBoundingClientRect();
-    var rect = basicMenu.getBoundingClientRect();
-    var width = basicMenu.offsetWidth || (rect && rect.width) || 360;
-    var left = Math.max(8, Math.min(anchor.left, viewport - width - 8));
-    basicMenu.style.left = left + 'px';
-    var view = basicButton.ownerDocument.defaultView;
-    var top = anchor.bottom + 6;
-    if (top + rect.height > view.innerHeight - 8) top = Math.max(8, anchor.top - rect.height - 6);
-    basicMenu.style.top = top + 'px';
+    positionToolbarSubmenu(basicButton, basicMenu, false);
   }
 
   function onBasicMenuKeydown(event) {
@@ -770,9 +789,7 @@
         details.addEventListener('toggle', function () {
           var popup = details.querySelector('.range-popover');
           if (!popup || !details.open) return;
-          popup.style.top = '';
-          var rect = popup.getBoundingClientRect(), anchor = details.getBoundingClientRect(), view = details.ownerDocument.defaultView;
-          if (rect.bottom > view.innerHeight - 8) popup.style.top = Math.max(8 - anchor.top, -rect.height - 6) + 'px';
+          positionToolbarSubmenu(details, popup, true);
         });
       });
       var items = controls(), visible = items.filter(function (node) { return !node.hidden && getComputedStyle(node).display !== 'none'; });

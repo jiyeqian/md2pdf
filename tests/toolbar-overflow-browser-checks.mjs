@@ -27,6 +27,22 @@ try {
   await browser.send('Page.navigate',{url:`http://127.0.0.1:${app.server.address().port}`});
   await wait('window.mdDrafts && window.mdEditor && document.querySelectorAll(".md-wt-overflow-trigger").length===2');
   await new Promise(resolve=>setTimeout(resolve,500));
+  const alignment = await evaluate(`(()=>{
+    const panel=document.createElement('div');panel.className='editor-panel';panel.style.cssText='position:fixed;left:20px;top:80px;width:240px;height:300px;z-index:500';
+    const bar=document.createElement('div');bar.className='md-wt-toolbar';
+    const first=document.createElement('div');first.className='md-wt-overflow-background';first.style.cssText='position:fixed;left:50px;top:100px;width:100px;height:30px';
+    const trigger=document.createElement('button');trigger.className='md-wt-overflow-open';trigger.style.cssText='position:fixed;left:120px;top:100px;width:28px;height:28px';
+    const menu=document.createElement('div');menu.className='md-wt-basic-menu';menu.style.cssText='position:fixed;width:max-content';
+    const row=document.createElement('div');row.className='md-wt-menu-row';for(let i=0;i<4;i++){const b=document.createElement('button');b.className='md-wt-menu-item';row.append(b)}menu.append(row);bar.append(first,trigger,menu);panel.append(bar);document.body.append(panel);
+    const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};
+    window.mdPositionToolbarSubmenu(trigger,menu,false);const left={menu:rect(menu),first:rect(first),panel:rect(panel)};
+    first.style.left='150px';trigger.style.left='220px';window.mdPositionToolbarSubmenu(trigger,menu,false);const right={menu:rect(menu),first:rect(first),panel:rect(panel)};
+    panel.style.width='80px';first.style.left='25px';trigger.style.left='60px';window.mdPositionToolbarSubmenu(trigger,menu,false);const narrow={menu:rect(menu),first:rect(first),panel:rect(panel),rows:[...row.children].map(b=>b.getBoundingClientRect().top)};
+    panel.remove();return {left,right,narrow};
+  })()`);
+  assert.ok(Math.abs(alignment.left.menu.left-alignment.left.first.left)<1,JSON.stringify(alignment));
+  assert.ok(Math.abs(alignment.right.menu.right-alignment.right.first.right)<1,JSON.stringify(alignment));
+  assert.ok(alignment.narrow.menu.left>=alignment.narrow.panel.left && alignment.narrow.menu.right<=alignment.narrow.panel.right && new Set(alignment.narrow.rows).size>1,JSON.stringify(alignment));
   const state=await evaluate(`Array.from(document.querySelectorAll('.md-wt-overflow-trigger')).map(b=>({hidden:b.hidden, count:b.parentElement.querySelectorAll('.md-wt-overflow-item').length, height:b.parentElement.getBoundingClientRect().height}))`);
   console.log(JSON.stringify(state));
   assert.ok(state.every(s=>!s.hidden && s.count>0 && s.height<60));
@@ -64,6 +80,9 @@ try {
   assert.ok(new Set(narrowRows.items.map(r=>r.top)).size>1, JSON.stringify(narrowRows));
   const academic = await evaluate(`(()=>{const item=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入参考文献"]');if(!item)return false;item.click();const menu=item.parentElement.querySelector('.md-wt-basic-menu');return !menu.hidden && [...menu.querySelectorAll('button')].map(b=>b.getAttribute('aria-label')).join(',')==='参考文献,BibTeX参考文献,DOI参考文献'})()`);
   assert.equal(academic,true,'overflowed bibliography submenu remains usable');
+  const actualSubmenu = await evaluate(`(()=>{const panel=document.querySelector('.editor-panel').getBoundingClientRect(),menu=document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])'),box=menu.getBoundingClientRect(),items=[...menu.querySelectorAll('button')].map(b=>b.getBoundingClientRect());return {panel:{left:panel.left,right:panel.right},box:{left:box.left,right:box.right},rows:items.map(r=>r.top)}})()`);
+  assert.ok(actualSubmenu.box.left>=actualSubmenu.panel.left && actualSubmenu.box.right<=actualSubmenu.panel.right && actualSubmenu.box.left>=0 && actualSubmenu.box.right<=120,JSON.stringify(actualSubmenu));
+  assert.ok(new Set(actualSubmenu.rows).size>1,'submenu icons wrap when the panel is too narrow');
 
   await browser.send('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:false});
   await new Promise(resolve=>setTimeout(resolve,300));

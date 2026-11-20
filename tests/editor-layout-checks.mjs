@@ -819,17 +819,16 @@ const model = appEnv.sandbox.window.md2pdfOptions;
 // vm 内创建的对象/数组来自另一 realm，deepStrictEqual 会因原型不同而失败，统一转成 plain JSON 再比较。
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test('调整浮层定位在视口内，适配工具栏左右两列', () => {
-  appEnv.sandbox.innerWidth = 452;
-  for (const anchorLeft of [28, 232]) {
-    const panel = { style: {}, getBoundingClientRect: () => ({ width: 300 }) };
-    const details = { ownerDocument: appEnv.sandbox.document, querySelector: () => panel, getBoundingClientRect: () => ({ left: anchorLeft }) };
-    appEnv.sandbox.positionRangePopover(details);
-    const left = anchorLeft + parseFloat(panel.style.left);
-    assert.ok(left >= 12, '浮层不应超出左边缘');
-    assert.ok(left + 300 <= 440, '浮层不应超出右边缘');
-    assert.equal(panel.style.right, 'auto');
-  }
+test('预览选项调用工具栏统一的子菜单定位', () => {
+  const calls = [];
+  appEnv.sandbox.mdPositionToolbarSubmenu = (...args) => calls.push(args);
+  const panel = { style: {} };
+  const details = { querySelector: () => panel };
+  appEnv.sandbox.positionRangePopover(details);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], details);
+  assert.equal(calls[0][1], panel);
+  assert.equal(calls[0][2], true);
 });
 
 test('选项模型：合并菜单按类型能力过滤（general 全量 / paper 无 cjk / GB 隐藏）', () => {

@@ -38,6 +38,7 @@
  * z-index 高于调整浮层与全屏面板，面板内按钮沿用工具条图标按钮外观。 */
 .md-wt-basic { position: relative; display: inline-flex; align-items: center; }
 .md-wt-basic-menu {
+  box-sizing: border-box;
   position: fixed;
   z-index: 60;
   display: flex;
