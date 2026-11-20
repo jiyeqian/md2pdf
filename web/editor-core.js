@@ -602,7 +602,7 @@
     const theme = V.EditorView.theme({
       '&': { height: '100%', fontSize: '13px', backgroundColor: '#fff', color: '#35445a' },
       '.cm-scroller': { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,Consolas,"PingFang SC","Microsoft YaHei",monospace', lineHeight: '1.8', overflow: 'auto' },
-      '.cm-line.md-tree-line': { lineHeight: '1.2', fontFamily: 'Menlo,Consolas,monospace' },
+      '.cm-line.md-tree-line': { lineHeight: '1.25', fontFamily: 'Menlo,Consolas,monospace' },
       '.cm-content': { padding: '18px 20px', caretColor: '#233e60' },
       '.cm-gutters': { backgroundColor: '#f7f8fa', color: '#9aa6b6', border: 'none', borderRight: '1px solid #edf0f4' },
       // drawSelection paints beneath text; an opaque active-line background hides it.

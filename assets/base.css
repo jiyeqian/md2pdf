@@ -214,7 +214,7 @@ pre code {
   color: inherit; font-size: .85em; line-height: 1.7;
 }
 
-.md-tree-code { font-size: .85em; line-height: 1.2; }
+.md-tree-code { font-size: .85em; line-height: 1.25; }
 .md-tree-code code { font-size: 1em; line-height: inherit; font-family: Menlo, Consolas, monospace; }
 
 /* ---------- 代码高亮（highlight.js，浅色底） ---------- */
