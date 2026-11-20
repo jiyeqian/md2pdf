@@ -837,6 +837,7 @@ window.addEventListener('message', async event => {
   if (event.source !== preview.contentWindow || !event.data || event.data.revision !== previewRevision) return;
   // 跨 sandbox iframe 预览的 pointerdown 不会冒泡到父文档：预览内按下指针时由其上报，关闭已打开的调整浮层。
   if (event.data.type === 'md2pdf-preview-pointerdown') { closeRangePopovers(); document.dispatchEvent(new CustomEvent('md-preview-selection-intent')); return; }
+  if (event.data.type === 'md2pdf-preview-pointer-enter') { document.dispatchEvent(new CustomEvent('md-preview-pointer-enter')); return; }
   if (event.data.type === 'md2pdf-exit-fullscreen') {
     document.dispatchEvent(new CustomEvent('md-preview-exit-fullscreen'));
     return;
@@ -1053,12 +1054,7 @@ function closeRangePopovers(except) {
 function positionRangePopover(details) {
   const panel = details.querySelector('.range-popover');
   if (!panel) return;
-  const anchor = details.getBoundingClientRect();
-  const width = panel.getBoundingClientRect().width;
-  const view = details.ownerDocument.defaultView;
-  const left = Math.max(12, Math.min(anchor.left, view.innerWidth - width - 12));
-  panel.style.left = `${left - anchor.left}px`;
-  panel.style.right = 'auto';
+  window.mdPositionToolbarSubmenu(details, panel, true);
 }
 for (const name of RANGE_CONTROLS) {
   const slider = rangeSlider(name);
@@ -1076,6 +1072,8 @@ for (const name of RANGE_CONTROLS) {
   slider.addEventListener('input', () => { if (dragging) wrap.classList.add('range-adjusting'); });
 }
 for (const details of form.querySelectorAll('details.range-pop')) {
+  const trigger = details.querySelector('summary');
+  if (trigger) window.mdWatchToolbarMenuPointer?.(trigger, () => details.querySelector('.range-popover'), () => details.open, () => { details.open = false; });
   details.addEventListener('toggle', () => {
     if (details.open) { closeRangePopovers(details); const trigger = details.querySelector('[data-option-trigger]'); if (trigger) renderOptionMenu(trigger.getAttribute('data-option-trigger'), true); positionRangePopover(details); const slider = details.querySelector('[data-range-slider]'); if (slider) updateRangeTrigger(slider.getAttribute('data-range-slider')); }
     else { const wrap = details.closest('[data-control]'); if (wrap) wrap.classList.remove('range-adjusting'); }
@@ -1258,8 +1256,10 @@ download.addEventListener('click', activation => {
   const doc = download.ownerDocument, menu = doc.createElement('div');
   let timer;
   const cancelClose = () => clearTimeout(timer);
-  function scheduleClose(event) { if (event.pointerType !== 'mouse') return; cancelClose(); timer = setTimeout(() => { if (!menu.contains(doc.activeElement)) close(); }, 180); }
-  function close(focus = false) { cancelClose(); download._closePdfMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('keydown', escape, true); download.removeEventListener('pointerleave', scheduleClose); download.removeEventListener('pointerenter', cancelClose); if (focus) download.focus(); }
+  function scheduleClose(event) { if (event.pointerType !== 'mouse') return; cancelClose(); timer = setTimeout(() => close(), 300); }
+  function previewLeave() { cancelClose(); timer = setTimeout(() => close(), 300); }
+  document.addEventListener('md-preview-pointer-enter', previewLeave);
+  function close(focus = false) { cancelClose(); document.removeEventListener('md-preview-pointer-enter', previewLeave); download._closePdfMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('keydown', escape, true); download.removeEventListener('pointerleave', scheduleClose); download.removeEventListener('pointerenter', cancelClose); if (focus) download.focus(); }
   function outside(event) { if (!menu.contains(event.target) && event.target !== download) close(); }
   function escape(event) { if (event.key === 'Escape' && (menu.contains(event.target) || event.target === download)) { event.preventDefault(); event.stopPropagation(); close(true); } }
   menu.className = 'md-drafts-menu md-action-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '打印或下载 PDF');
@@ -1278,7 +1278,7 @@ download.addEventListener('click', activation => {
   menu.style.left = Math.max(left + 8, Math.min(rect.right - menu.offsetWidth, left + width - menu.offsetWidth - 8)) + 'px';
   menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
   doc.addEventListener('pointerdown', outside, true); doc.addEventListener('keydown', escape, true);
-  if (activation.detail === 0) menu.firstElementChild.focus();
+  if (activation.detail === 0) { menu.tabIndex = -1; menu.focus({ preventScroll: true }); }
 });
 
 // 纯函数出口：供前端测试在 vm 内真实执行后读取选项模型（只读、无副作用）。

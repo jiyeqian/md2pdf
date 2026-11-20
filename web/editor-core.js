@@ -492,6 +492,32 @@
         }
       }
     }, { decorations: plugin => plugin.decorations });
+    const treeLines = V.ViewPlugin.fromClass(class {
+      constructor(view) { this.decorations = this.build(view); }
+      update(update) {
+        if (update.docChanged || update.viewportChanged || V.syntaxTree(update.startState) !== V.syntaxTree(update.state)) {
+          this.decorations = this.build(update.view);
+        }
+      }
+      build(view) {
+        const lines = [];
+        for (const range of view.visibleRanges) {
+          for (let pos = range.from; pos <= range.to;) {
+            const line = view.state.doc.lineAt(pos);
+            if (/[│├└┌┐┬┴┼─]/.test(line.text)) {
+              let node = V.syntaxTree(view.state).resolveInner(line.from, 1);
+              while (node && node.name !== 'FencedCode') node = node.parent;
+              if (node && /^ {0,3}(?:`{3,}|~{3,})text(?:\s|$)/i.test(view.state.doc.lineAt(node.from).text)) {
+                lines.push(V.Decoration.line({ class: 'md-tree-line' }).range(line.from));
+              }
+            }
+            if (line.to >= range.to || line.to === view.state.doc.length) break;
+            pos = line.to + 1;
+          }
+        }
+        return V.Decoration.set(lines, true);
+      }
+    }, { decorations: value => value.decorations });
     let view = null;
     let ready = false;
     let editorScrollIntentUntil = 0;
@@ -576,6 +602,7 @@
     const theme = V.EditorView.theme({
       '&': { height: '100%', fontSize: '13px', backgroundColor: '#fff', color: '#35445a' },
       '.cm-scroller': { fontFamily: 'ui-monospace,SFMono-Regular,Menlo,Consolas,"PingFang SC","Microsoft YaHei",monospace', lineHeight: '1.8', overflow: 'auto' },
+      '.cm-line.md-tree-line': { lineHeight: '1.25', fontFamily: 'Menlo,Consolas,monospace' },
       '.cm-content': { padding: '18px 20px', caretColor: '#233e60' },
       '.cm-gutters': { backgroundColor: '#f7f8fa', color: '#9aa6b6', border: 'none', borderRight: '1px solid #edf0f4' },
       // drawSelection paints beneath text; an opaque active-line background hides it.
@@ -720,6 +747,7 @@
       V.history(),
       V.drawSelection(),
       syncHighlight,
+      treeLines,
       V.dropCursor(),
       V.rectangularSelection(),
       V.crosshairCursor(),

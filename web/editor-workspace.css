@@ -38,6 +38,7 @@
  * z-index 高于调整浮层与全屏面板，面板内按钮沿用工具条图标按钮外观。 */
 .md-wt-basic { position: relative; display: inline-flex; align-items: center; }
 .md-wt-basic-menu {
+  box-sizing: border-box;
   position: fixed;
   z-index: 60;
   display: flex;
@@ -54,7 +55,8 @@
   animation: md-wt-menu-in .12s ease-out;
 }
 .md-wt-basic-menu[hidden] { display: none; }
-.md-wt-menu-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.md-wt-menu-row { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 4px; }
+.md-wt-basic-menu[data-menu-align="right"] .md-wt-menu-row { justify-content: flex-end; }
 .md-wt-menu-row + .md-wt-menu-row { margin-top: 4px; padding-top: 4px; border-top: 1px solid #f0f3f7; }
 .md-wt-basic-menu .md-wt-menu-item { width: 30px; height: 30px; flex: 0 0 auto; }
 @keyframes md-wt-menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
@@ -410,5 +412,17 @@
 .workspace.md-editor-workspace .md-wt-overflow-item.md-wt-overflow-open { visibility: visible; pointer-events: auto; }
 
 .md-preview-format-menu { position: fixed; flex-direction: column; }
-.md-preview-format-row { display: flex; gap: 2px; }
+.md-preview-format-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; }
 .md-preview-format-menu button:disabled { opacity: .4; cursor: default; }
+
+/* 专注模式保留面板标题栏，通过单列浮层使用原工具条。 */
+body.md-focus-mode #app-topbar, body.md-focus-mode .app-bottom { display: none; }
+.workspace.md-editor-workspace .panel-heading h2 { display: flex; align-items: center; gap: 4px; }
+.workspace.md-editor-workspace .md-focus-tools { font-size: 20px; line-height: 1; padding: 0; }
+.workspace.md-editor-workspace .md-focus-tools[hidden], .md-focus-popup[hidden] { display: none !important; }
+.workspace.md-editor-workspace .md-focus-toggle[aria-pressed="true"] { background: #e7eef7; border-color: #b7c6da; }
+.md-focus-popup { position: fixed; z-index: 55; width: max-content; overflow-y: auto; overflow-x: visible; background: #fff; border: 1px solid #dbe2ec; border-radius: 8px; box-shadow: 0 10px 30px rgba(36,51,72,.16); }
+.workspace.md-editor-workspace .md-focus-popup .md-wt-toolbar,
+.workspace.md-editor-workspace .md-focus-popup .preview-toolbar { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: center; width: max-content; gap: 4px; padding: 6px; border: 0; background: #fff; }
+.md-focus-popup .md-wt-group, .md-focus-popup .md-wt-mount { display: contents; }
+.md-focus-popup .range-popover { position: fixed; }

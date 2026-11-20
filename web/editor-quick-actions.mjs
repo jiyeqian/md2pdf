@@ -143,13 +143,15 @@ export function installQuickActions(editor) {
   const on = hosts ? hosts.on : doc.addEventListener.bind(doc);
   const owner = () => editor.getDocumentRoot?.() || hosts?.activeDocument() || doc;
   const menu = doc.createElement('div');menu.className='md-quick-actions';menu.setAttribute('role','toolbar');menu.hidden=true;doc.body.append(menu);
-  let mode=null,range=null,index=0,dismissed=null;
+  let mode=null,range=null,index=-1,dismissed=null;
   const place=sel=>{
     const current = owner(), win = current.defaultView || window;
     if (menu.ownerDocument !== current) current.body.append(menu);
     let coords;
     try { coords=editor.coordsAtPos(sel.from); } catch { coords=null; }
     menu.style.visibility='hidden';
+    // A hidden menu at its old position must not expand a resized viewport.
+    menu.style.left='0px'; menu.style.top='0px';
     if(!coords)return;
     const viewport=win.visualViewport;
     let left=viewport?viewport.offsetLeft:0,top=viewport?viewport.offsetTop:0;
@@ -177,7 +179,7 @@ export function installQuickActions(editor) {
     const key=kind+':'+sel.from+':'+sel.to+':'+editor.getValue(); if (dismissed===key) return;
     const same=mode===kind && range?.from===sel.from && range?.to===sel.to && menu.dataset.key===key;
     if (same) { reposition(); return; }
-    mode=kind;range={...sel};index=0;menu.dataset.key=key;menu.replaceChildren();
+    mode=kind;range={...sel};index=-1;menu.dataset.key=key;menu.replaceChildren();
     for (const action of actions) {
       const button=doc.createElement('button');button.type='button';button.dataset.action=action;button.title=labels[action];button.setAttribute('aria-label',labels[action]);
       const svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox',action==='formula'?'0 0 20 20':'0 0 24 24');svg.setAttribute('aria-hidden','true');const path=doc.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',paths[action]);svg.append(path);
@@ -208,7 +210,12 @@ export function installQuickActions(editor) {
   on('keydown',event=>{
     if(menu.hidden||menu.style.visibility==='hidden')return;
     if(event.key==='Escape'){dismissed=menu.dataset.key;close();event.preventDefault();return;}
-    if(mode==='slash' && ['ArrowLeft','ArrowRight','Enter'].includes(event.key)){event.preventDefault();event.stopPropagation();if(event.key==='Enter')activate(menu.children[index].dataset.action);else{index=(index+(event.key==='ArrowRight'?1:-1)+menu.children.length)%menu.children.length;mark();}}
+    if(mode==='slash' && ['ArrowLeft','ArrowRight','Enter'].includes(event.key)) {
+      if (event.key==='Enter' && index<0) return;
+      event.preventDefault(); event.stopPropagation();
+      if(event.key==='Enter') activate(menu.children[index].dataset.action);
+      else { index=index<0 ? (event.key==='ArrowRight'?0:menu.children.length-1) : (index+(event.key==='ArrowRight'?1:-1)+menu.children.length)%menu.children.length; mark(); }
+    }
   },true);
   on('pointerdown',event=>{if(!menu.hidden&&!menu.contains(event.target)){dismissed=menu.dataset.key;close();}});
   let repositionFrame=0,settleFrames=0;

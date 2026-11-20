@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { Lexer } from '../vendor/marked.esm.js';
+import { protectedRanges } from '../web/editor-quick-actions.mjs';
 // 纯解析模块 web/editor-analysis.mjs 的行为检查（无需浏览器）。
 //
 // 覆盖：大纲上下文（frontmatter / 围栏）、交叉引用目标与诊断、脚注与 BibTeX、
@@ -806,7 +808,7 @@ test('heading level shifts affect selected real headings, preserve selection and
   const fn=source.slice(start,source.indexOf('\nfunction ',start+1));
   function harness(input,from=0,to=input.length){
     let value=input,edits=0;
-    const sandbox={selection:{from,to},analyzeAndCache:analyzeMarkdown,
+    const sandbox={selection:{from,to},analyzeAndCache:analyzeMarkdown,Lexer,protectedRanges,
       coreHelpers:()=>({offsetToLine:(text,pos)=>text.slice(0,pos).split('\n').length,lineToOffset:(text,line)=>text.split('\n').slice(0,line-1).reduce((n,s)=>n+s.length+1,0)}),
       getApi:()=>({getValue:()=>value,replaceRanges(changes){for(const change of changes.slice().reverse())value=value.slice(0,change.from)+change.insert+value.slice(change.to);edits++;}}),
       selectRange(from,to){sandbox.selection={from,to};},
@@ -826,7 +828,14 @@ test('heading level shifts affect selected real headings, preserve selection and
   const boundary=harness('# A');boundary.shift(-1);assert.equal(boundary.value,'# A');assert.equal(boundary.edits,0);
   const endAtNextLine=harness('# A\n## B\n### C',0,4);endAtNextLine.shift(1);
   assert.equal(endAtNextLine.value,'## A\n## B\n### C');assert.deepEqual(endAtNextLine.selection,{from:0,to:5});
-  const cursor=harness('# A\n## B',6,6);cursor.shift(-1);
-  assert.equal(cursor.value,'# A\n# B');assert.deepEqual(cursor.selection,{from:5,to:5});
+  const cursor=harness('# A\n## B',6,6);cursor.shift(1);
+  assert.equal(cursor.value,'## A\n### B');assert.deepEqual(cursor.selection,{from:8,to:8});assert.equal(cursor.edits,1);
+  const selected=harness('# A\n## B\n### C',5,7);selected.shift(1);
+  assert.equal(selected.value,'# A\n### B\n### C');assert.equal(selected.edits,1);
+  const setext=harness('一级\n===\n\n二级\n---\n\n```md\n伪标题\n---\n```\n\n$$\n公式\n---\n$$');
+  setext.shift(1);
+  assert.equal(setext.value,'一级\n---\n\n### 二级\n\n```md\n伪标题\n---\n```\n\n$$\n公式\n---\n$$');
+  const selectedSetext=harness('一级\n===\n\n二级\n---',4,6);selectedSetext.shift(1);
+  assert.equal(selectedSetext.value,'一级\n---\n\n二级\n---');
   const plain=harness('ordinary text');plain.shift(1);assert.equal(plain.edits,0);
 });

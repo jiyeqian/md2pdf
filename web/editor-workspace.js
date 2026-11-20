@@ -117,6 +117,7 @@
   // 默认开启的同步定位是一个带 aria-pressed 的图标开关按钮。
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var ICONS = {
+    toolbarPanel: [{ d: 'M4 5h12M4 10h12M4 15h12' }, { d: 'M7 3.5v3M13 8.5v3M8.5 13.5v3' }],
     pageBreak: [{ d: 'M4 2h12v5H4zM4 13h12v5H4zM2 10h3m3 0h2m3 0h2m3 0h1' }],
     taskList: [{ d: 'M8 5h10M8 11h10M8 17h10M2 5l1.5 1.5L6 3M2 11h3v3H2zM2 17h3v3H2z' }],
     headingUp: [{ d: 'M2 4v12M9 4v12M2 10h7M13 8l3-4 3 4M16 4v12' }],
@@ -138,9 +139,11 @@
     link: [{ d: 'M8.4 11.6a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-1 1' }, { d: 'M11.6 8.4a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l1-1' }],
     quote: [{ d: 'M6.2 7.4h2.6v2.6a2.6 2.6 0 0 1-2.6 2.6' }, { d: 'M11.6 7.4h2.6v2.6a2.6 2.6 0 0 1-2.6 2.6' }],
     code: [{ d: 'M8.4 6.2 5 10l3.4 3.8' }, { d: 'M11.6 6.2 15 10l-3.4 3.8' }],
-    codeblock: [{ rect: [4.2, 5.4, 11.6, 9.2], rx: 1.6 }, { d: 'M8.4 8.6 7 10l1.4 1.4' }, { d: 'M11.6 8.6 13 10l-1.4 1.4' }],
+    codeblock: [{ rect: [2.5, 3.5, 15, 13], rx: 1.6 }, { d: 'M7 8 5.5 10 7 12M13 8l1.5 2-1.5 2M11 7l-2 6' }],
     table: [{ rect: [4.2, 5.4, 11.6, 9.2], rx: 1.6 }, { d: 'M4.2 9.5h11.6' }, { d: 'M9.7 5.4v9.2' }],
-    figure: [{ d: 'M4.4 15.6V9.2' }, { d: 'M8.8 15.6V5.4' }, { d: 'M13.2 15.6v-4' }, { d: 'M3.4 16.6h13.2' }],
+    figure: [{ rect: [2.5, 3, 5, 4], rx: 1 }, { rect: [12.5, 3, 5, 4], rx: 1 }, { rect: [7.5, 13, 5, 4], rx: 1 }, { d: 'M7.5 5h5M5 7v3h5v3M15 7v3h-5' }],
+    bibliographyGroup: [{ d: 'M3 4h6a3 3 0 0 1 2 1v11a3 3 0 0 0-2-1H3zM11 5a3 3 0 0 1 2-1h4v11h-4a3 3 0 0 0-2 1M5 7h3M13 7h2M5 10h3M13 10h2' }],
+    referenceGroup: [{ d: 'M4 6h5v5H6l-2 3V6zM12 6h5v5h-3l-2 3V6z' }],
     footnote: [{ d: 'M4.4 7.8h8' }, { d: 'M4.4 10.9h8' }, { d: 'M4.4 14h5' }, { d: 'M13.8 5.4 15.6 4.4v5.4' }],
 
     formula: [{ d: 'M5 2h10M5 18h10M6 5h8l-4.5 5 4.5 5H6' }],
@@ -220,7 +223,7 @@
   }
 
   function iconButton(name, label, title) {
-    var button = make('button', { type: 'button', class: 'md-wt-button', title: title, 'aria-label': label });
+    var button = make('button', { type: 'button', class: 'md-wt-button', title: title && title.replace(/^插入\s*/, ''), 'aria-label': label });
     button.appendChild(iconSvg(name));
     return button;
   }
@@ -296,8 +299,8 @@
     { label: '缩进', items: [
       { icon: 'indentLess', label: '左缩进', command: 'indentLess' },
       { icon: 'indentMore', label: '右缩进', command: 'indentMore' },
-      { icon: 'headingUp', label: '标题升级', insert: 'heading-up' },
-      { icon: 'headingDown', label: '标题降级', insert: 'heading-down' }
+      { icon: 'headingUp', label: '标题升级', hint: '标题升级（无选区时调整全文）', insert: 'heading-up' },
+      { icon: 'headingDown', label: '标题降级', hint: '标题降级（无选区时调整全文）', insert: 'heading-down' }
     ] },
     { label: '行内元素', items: [
       { icon: 'link', label: '链接', action: 'link', insert: 'link' },
@@ -309,22 +312,26 @@
   // 复杂插入保留在第一级：代码块 / 表格 / 图片（图片模块挂载）/ 图表 / 脚注 / 文献 / 公式块。
   var INSERT_ITEMS = [
     { icon: 'table', label: '表格', insert: 'table' },
-    { icon: 'figure', label: '图表', insert: 'figure' }
+    { icon: 'figure', label: '插入 Mermaid 图表', insert: 'figure' }
   ];
-  var ACADEMIC_ITEMS = [
-    { icon: 'footnote', label: '参考文献', insert: 'footnote' },
-    { icon: 'bibliography', label: 'BibTeX参考文献', insert: 'bibliography' },
-    { icon: 'doi', label: 'DOI参考文献' },
-    { icon: 'ref', label: '图表引用', insert: 'ref' },
-    { icon: 'eqref', label: '公式引用', insert: 'eqref' },
-    { icon: 'noteref', label: '文献引用', insert: 'noteref' }
+  var ACADEMIC_GROUPS = [
+    { label: '插入参考文献', icon: 'bibliographyGroup', items: [
+      { icon: 'footnote', label: '参考文献', insert: 'footnote' },
+      { icon: 'bibliography', label: 'BibTeX参考文献', insert: 'bibliography' },
+      { icon: 'doi', label: 'DOI参考文献' }
+    ] },
+    { label: '插入引用', icon: 'referenceGroup', items: [
+      { icon: 'ref', label: '图表引用', insert: 'ref' },
+      { icon: 'eqref', label: '公式引用', insert: 'eqref' },
+      { icon: 'noteref', label: '文献引用', insert: 'noteref' }
+    ] }
   ];
   // 图片按钮挂载点：图片模块只把按钮挂到这里（不改导入管线）；找不到时回落到工具条。
   var IMAGE_MOUNT_ATTR = 'data-md-wt-mount';
 
   // 顶部提示统一为「功能（快捷键）」或「功能」：不再保留各条目的冗长说明文案。
   function itemTitle(item) {
-    return actionTitle(item.label, item.action);
+    return (item.hint || actionTitle(item.label, item.action)).replace(/^插入\s*/, '');
   }
 
   function appendItem(group, item) {
@@ -362,6 +369,154 @@
     return group;
   }
 
+  // Each submenu aligns to its own trigger and stays within its panel.
+  function positionToolbarSubmenu(trigger, menu, relative) {
+    if (trigger.closest?.('.md-focus-popup')) relative = false;
+    var view = trigger.ownerDocument.defaultView;
+    var viewport = view.visualViewport;
+    var viewLeft = viewport ? viewport.offsetLeft : 0;
+    var viewTop = viewport ? viewport.offsetTop : 0;
+    var viewRight = viewLeft + (viewport ? viewport.width : view.innerWidth);
+    var viewBottom = viewTop + (viewport ? viewport.height : view.innerHeight);
+    var focusPopup = trigger.closest?.('.md-focus-popup');
+    if (focusPopup) {
+      var focusBounds = focusPopup.getBoundingClientRect(), focusAnchor = trigger.getBoundingClientRect();
+      var availableRight = Math.max(0, viewRight - 4 - focusBounds.right - 4);
+      var availableLeft = Math.max(0, focusBounds.left - viewLeft - 8);
+      menu.style.maxWidth = Math.max(0, viewRight - viewLeft - 8) + 'px';
+      var menuRect = menu.getBoundingClientRect();
+      var rightSide = menuRect.width <= availableRight || availableRight >= availableLeft;
+      var available = rightSide ? availableRight : availableLeft;
+      if (menuRect.width > available && available > 0) { menu.style.maxWidth = available + 'px'; menuRect = menu.getBoundingClientRect(); }
+      var focusLeft = rightSide ? focusBounds.right + 4 : focusBounds.left - menuRect.width - 4;
+      var focusTop = focusAnchor.top + menuRect.height <= viewBottom - 4 ? focusAnchor.top : focusAnchor.bottom - menuRect.height;
+      menu.setAttribute('data-menu-align', rightSide ? 'left' : 'right');
+      menu.style.left = Math.max(viewLeft + 4, Math.min(focusLeft, viewRight - menuRect.width - 4)) + 'px';
+      menu.style.right = 'auto';
+      menu.style.top = Math.max(viewTop + 4, Math.min(focusTop, viewBottom - menuRect.height - 4)) + 'px';
+      return;
+    }
+    var panel = trigger.closest?.('.editor-panel, .preview-panel');
+    var panelRect = panel?.getBoundingClientRect?.();
+    var leftBound = Math.max(viewLeft + 4, panelRect ? panelRect.left + 4 : viewLeft + 4);
+    var rightBound = Math.min(viewRight - 4, panelRect ? panelRect.right - 4 : viewRight - 4);
+    if (rightBound <= leftBound) { leftBound = viewLeft + 4; rightBound = viewRight - 4; }
+    menu.style.maxWidth = Math.max(0, rightBound - leftBound) + 'px';
+    var anchor = trigger.getBoundingClientRect();
+    var bar = trigger.closest?.('.md-wt-toolbar, .preview-toolbar');
+    var overflow = trigger.closest?.('.md-wt-overflow-open') && bar?.querySelector('.md-wt-overflow-background:not([hidden])');
+    var first = overflow ? overflow.getBoundingClientRect() : anchor;
+    var rect = menu.getBoundingClientRect();
+    var width = rect.width || menu.offsetWidth || 0;
+    var left = anchor.left;
+    var alignRight = left < leftBound || left + width > rightBound;
+    if (alignRight) left = anchor.right - width;
+    left = Math.max(leftBound, Math.min(left, rightBound - width));
+    menu.setAttribute('data-menu-align', alignRight ? 'right' : 'left');
+    menu.style.left = (relative ? left - anchor.left : left) + 'px';
+    menu.style.right = 'auto';
+    var top = first.bottom + 6;
+    if (top + rect.height > viewBottom - 4) top = Math.max(viewTop + 4, first.top - rect.height - 6);
+    menu.style.top = (relative ? top - anchor.top : top) + 'px';
+  }
+  window.mdPositionToolbarSubmenu = positionToolbarSubmenu;
+
+  function overflowOwnedMenus(bar) {
+    return Array.from(bar.querySelectorAll('[aria-expanded="true"][aria-controls]')).filter(function (trigger) { return trigger.closest('.md-wt-overflow-open'); }).map(function (trigger) { return trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')); }).filter(function (menu) { return menu && !menu.hidden; });
+  }
+
+  // A short delay lets the pointer cross the gap between a trigger and its menu.
+  function watchToolbarMenuPointer(trigger, getMenu, isOpen, close, includeChildren) {
+    var timer = null;
+    function inside(node, x, y) {
+      if (!node || node.hidden || !node.getBoundingClientRect) return false;
+      var rect = node.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+    }
+    function cancel() { if (timer !== null) { clearTimeout(timer); timer = null; } }
+    function check(event) {
+      if (event.pointerType !== 'mouse' || !isOpen()) { if (!isOpen()) cancel(); return; }
+      var doc = trigger.ownerDocument;
+      if (event.target !== doc && event.target?.ownerDocument !== doc) return;
+      if (event.buttons) { cancel(); return; }
+      var menu = getMenu(), x = event.clientX, y = event.clientY;
+      var regions = [trigger, menu];
+      var bar = trigger.closest?.('.md-wt-toolbar, .preview-toolbar');
+      if (bar && includeChildren) {
+        regions.push.apply(regions, Array.from(bar.querySelectorAll('.md-wt-basic-menu:not([hidden]), details[open] .range-popover')).concat(overflowOwnedMenus(bar)));
+      }
+      if (regions.some(function (node) { return inside(node, x, y); })) { cancel(); return; }
+      if (timer === null) timer = setTimeout(function () { timer = null; if (isOpen()) close(); }, 300);
+    }
+    trigger.addEventListener('click', cancel);
+    onWorkspaceDOM('md-preview-pointer-enter', function () {
+      if (isOpen() && timer === null) timer = setTimeout(function () { timer = null; if (isOpen()) close(); }, 300);
+    });
+    onWorkspaceDOM('pointermove', check, true);
+    onWorkspaceDOM('pointerup', check, true);
+    onWorkspaceDOM('pointerout', function (event) {
+      if (event.pointerType !== 'mouse' || event.buttons || !isOpen()) return;
+      var doc = trigger.ownerDocument;
+      if (event.target !== doc && event.target?.ownerDocument !== doc) return;
+      // Entering the preview iframe stops pointermove events from reaching this document.
+      if (event.relatedTarget) { check(event); return; }
+      if (timer === null) timer = setTimeout(function () { timer = null; if (isOpen()) close(); }, 300);
+    }, true);
+  }
+  window.mdWatchToolbarMenuPointer = watchToolbarMenuPointer;
+
+  function buildAcademicGroup() {
+    var group = make('div', { class: 'md-wt-group md-wt-group--academic', role: 'group', 'aria-label': '学术' });
+    ACADEMIC_GROUPS.forEach(function (entry) {
+      var wrap = make('div', { class: 'md-wt-basic' });
+      var button = iconButton(entry.icon, entry.label, entry.label);
+      var menu = make('div', { class: 'md-wt-basic-menu', role: 'menu', 'aria-label': entry.label, tabindex: '-1' });
+      menu.hidden = true;
+      button.setAttribute('aria-haspopup', 'menu');
+      button.setAttribute('aria-expanded', 'false');
+      var row = make('div', { class: 'md-wt-menu-row' });
+      entry.items.forEach(function (item) {
+        var action = appendItem(row, item);
+        action.classList.add('md-wt-menu-item');
+        action.setAttribute('role', 'menuitem');
+        action.addEventListener('click', function () { close(false); });
+      });
+      menu.appendChild(row);
+      function close(restore) {
+        menu.hidden = true;
+        button.setAttribute('aria-expanded', 'false');
+        if (restore) button.focus();
+      }
+      button.addEventListener('click', function () {
+        if (!menu.hidden) { close(true); return; }
+        menu.hidden = false;
+        button.setAttribute('aria-expanded', 'true');
+        positionToolbarSubmenu(button, menu, false);
+        menu.focus({ preventScroll: true });
+      });
+      watchToolbarMenuPointer(button, function () { return menu; }, function () { return !menu.hidden; }, function () { close(false); });
+      menu.addEventListener('keydown', function (event) {
+        var buttons = Array.prototype.slice.call(row.querySelectorAll('button:not(:disabled)'));
+        var index = buttons.indexOf(menu.ownerDocument.activeElement);
+        if (event.key === 'Escape') { event.preventDefault(); close(true); }
+        else if (event.key === 'Tab') close(false);
+        else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+          event.preventDefault(); event.stopPropagation();
+          buttons[index < 0 ? (event.key === 'ArrowRight' ? 0 : buttons.length - 1) : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+        }
+      });
+      onWorkspaceDOM('pointerdown', function (event) {
+        if (!menu.hidden && !wrap.contains(event.target)) close(false);
+      }, true);
+      wrap.appendChild(button);
+      wrap.appendChild(menu);
+      group.appendChild(wrap);
+      commandButtons.push(button);
+    });
+    wireRovingTabindex(group);
+    return group;
+  }
+
   // ---------------- 基础格式：第一级单入口 + 第二级多行面板 ----------------
   // 把标题 / 强调 / 列表 / 行内元素收敛到一个「基础格式」按钮；点击展开浅色多行面板。
   // 面板用 fixed 定位（不会撑高工具条、不被面板 overflow:hidden 裁剪），
@@ -389,8 +544,9 @@
     basicButton.setAttribute('aria-haspopup', 'true');
     basicButton.setAttribute('aria-expanded', 'false');
     basicButton.setAttribute('aria-controls', 'md-wt-basic-menu');
-    basicMenu = make('div', { class: 'md-wt-basic-menu', role: 'menu', 'aria-label': '基础格式', id: 'md-wt-basic-menu' });
+    basicMenu = make('div', { class: 'md-wt-basic-menu', role: 'menu', 'aria-label': '基础格式', id: 'md-wt-basic-menu', tabindex: '-1' });
     basicMenu.hidden = true;
+    watchToolbarMenuPointer(basicButton, function () { return basicMenu; }, function () { return !basicMenu.hidden; }, function () { closeBasicMenu(false); });
     BASIC_GROUPS.forEach(function (entry) { basicMenu.appendChild(buildBasicMenuRow(entry)); });
     basicButton.addEventListener('click', function (event) {
       event.preventDefault();
@@ -414,8 +570,7 @@
     basicButton.setAttribute('aria-expanded', 'true');
     basicWrap.classList.add('is-open');
     positionBasicMenu();
-    var items = menuItems();
-    if (items.length) items[0].focus();
+    basicMenu.focus({ preventScroll: true });
   }
 
   function closeBasicMenu(restoreFocus) {
@@ -429,16 +584,7 @@
   function positionBasicMenu() {
     if (!basicMenu || basicMenu.hidden) return;
     if (!basicButton.getBoundingClientRect || !basicMenu.getBoundingClientRect) return;
-    var viewport = (basicButton && basicButton.ownerDocument.defaultView.innerWidth) || window.innerWidth || 1024;
-    var anchor = basicButton.getBoundingClientRect();
-    var rect = basicMenu.getBoundingClientRect();
-    var width = basicMenu.offsetWidth || (rect && rect.width) || 360;
-    var left = Math.max(8, Math.min(anchor.left, viewport - width - 8));
-    basicMenu.style.left = left + 'px';
-    var view = basicButton.ownerDocument.defaultView;
-    var top = anchor.bottom + 6;
-    if (top + rect.height > view.innerHeight - 8) top = Math.max(8, anchor.top - rect.height - 6);
-    basicMenu.style.top = top + 'px';
+    positionToolbarSubmenu(basicButton, basicMenu, false);
   }
 
   function onBasicMenuKeydown(event) {
@@ -454,6 +600,7 @@
     else if (event.key === 'Tab') { closeBasicMenu(false); return; }
     else return;
     event.preventDefault();
+    event.stopPropagation();
     if (next < 0) next = items.length - 1;
     if (next >= items.length) next = 0;
     items[next].focus();
@@ -491,22 +638,19 @@
 
     var files = make('div', { class: 'md-wt-group', role: 'group', 'aria-label': '打开与模板' });
     buildFileButtons(files);
-    var createButton = makeFileButton('从模板创建 Markdown', 'templateGrid', function () {
+    var createButton = makeFileButton('创建 Markdown', 'templateGrid', function () {
       import('./document-create.mjs').then(function (module) { return module.openCreateMenu(createButton); }).catch(function (error) { fileStatus(error.message, true); });
     });
     createButton.setAttribute('id', 'create-markdown');
     files.appendChild(createButton);
-    files.appendChild(makeFileButton('创建空文件', 'template', function () {
-      window.mdCreateBlank().catch(function (error) { fileStatus(error.message, true); });
-    }));
     toolbar.appendChild(files);
     toolbar.appendChild(buildGroup('撤销重做与查找替换', 'md-wt-group--history', HISTORY_ITEMS));
     var formatGroup = buildBasicFormatControl();
-    appendItem(formatGroup, { icon: 'codeblock', label: '代码块', action: 'codeblock', insert: 'codeblock' });
+    appendItem(formatGroup, { icon: 'codeblock', label: '插入代码块', action: 'codeblock', insert: 'codeblock' });
     appendItem(formatGroup, { icon: 'formula', label: '公式块', action: 'formula', insert: 'formula' });
     toolbar.appendChild(formatGroup);
     toolbar.appendChild(buildGroup('插入', 'md-wt-group--insert', INSERT_ITEMS, 'images'));
-    toolbar.appendChild(buildGroup('学术', 'md-wt-group--academic', ACADEMIC_ITEMS));
+    toolbar.appendChild(buildAcademicGroup());
 
     var heading = editorPanel.querySelector('.panel-heading');
     // insertBefore(node, null/undefined) 追加到末尾，避免依赖 after()。
@@ -666,6 +810,7 @@
   }
 
   function setupOverflow(bar, panel, editor) {
+    if (!bar || typeof bar.matches !== 'function') return;
     var more = make('button', { type: 'button', class: 'md-wt-overflow-trigger', 'aria-label': '更多工具', 'aria-expanded': 'false', 'aria-haspopup': 'true', title: '更多工具' });
     more.textContent = '⋯';
     var background = make('div', { class: 'md-wt-overflow-background', hidden: '' });
@@ -684,22 +829,48 @@
       return result;
     }
     function close(restore) {
+      overflowOwnedMenus(bar).forEach(function (menu) { menu.dispatchEvent(new Event('md-toolbar-dismiss')); });
       open = false; more.setAttribute('aria-expanded', 'false'); background.hidden = true;
+      overflow.forEach(function (node) {
+        node.querySelectorAll('.md-wt-basic-menu:not([hidden])').forEach(function (menu) { menu.hidden = true; menu.parentElement.querySelector('[aria-expanded]')?.setAttribute('aria-expanded', 'false'); });
+        node.querySelectorAll('details.range-pop[open]').forEach(function (details) { details.open = false; });
+      });
       overflow.forEach(function (node) { node.classList.remove('md-wt-overflow-open'); node.querySelectorAll('[data-overflow-tabindex]').forEach(function (el) { el.tabIndex = Number(el.dataset.overflowTabindex); delete el.dataset.overflowTabindex; }); if (node.hasAttribute('data-overflow-tabindex')) { node.tabIndex = Number(node.dataset.overflowTabindex); delete node.dataset.overflowTabindex; } });
       if (restore && !more.hidden) more.focus();
     }
     function position() {
       if (!open) return;
-      var view = bar.ownerDocument.defaultView, rect = more.getBoundingClientRect(), width = 44, height = 36, margin = 8;
-      var rows = Math.max(1, Math.floor((view.innerHeight - margin * 2 - 8) / height));
-      var boxHeight = Math.min(rows, overflow.length) * height + 8, boxWidth = Math.ceil(overflow.length / rows) * width + 8;
-      var left = Math.max(margin, Math.min(rect.right - boxWidth, view.innerWidth - boxWidth - margin));
+      var view = bar.ownerDocument.defaultView, rect = more.getBoundingClientRect(), margin = 4, gap = 4;
+      var viewport = view.visualViewport;
+      var viewLeft = viewport ? viewport.offsetLeft : 0, viewTop = viewport ? viewport.offsetTop : 0;
+      var viewRight = viewLeft + (viewport ? viewport.width : view.innerWidth);
+      var viewBottom = viewTop + (viewport ? viewport.height : view.innerHeight);
+      var panelRect = panel.getBoundingClientRect();
+      var leftBound = Math.max(viewLeft + margin, panelRect.left + margin);
+      var rightBound = Math.min(viewRight - margin, panelRect.right - margin);
+      if (rightBound <= leftBound) { leftBound = viewLeft + margin; rightBound = viewRight - margin; }
+      var buttonWidth = rect.width || 28, buttonHeight = rect.height || 28;
+      var padding = view.innerWidth <= 480 ? 6 : 8, inset = padding + 1;
+      var available = rightBound - leftBound;
+      inset = Math.max(0, Math.min(inset, (available - buttonWidth) / 2));
+      var columns = Math.max(1, Math.min(overflow.length, Math.floor((available - 2 * inset + gap) / (buttonWidth + gap))));
+      var rows = Math.ceil(overflow.length / columns);
+      var boxWidth = columns * buttonWidth + (columns - 1) * gap + 2 * inset;
+      var boxHeight = rows * buttonHeight + (rows - 1) * gap + 2 * inset;
+      var left = rect.left;
+      var alignRight = left + boxWidth > rightBound || left < leftBound;
+      if (alignRight) left = rect.right - boxWidth;
+      left = Math.max(leftBound, Math.min(left, rightBound - boxWidth));
+      background.setAttribute('data-menu-align', alignRight ? 'right' : 'left');
       var top = rect.bottom + 6;
-      if (top + boxHeight > view.innerHeight - margin) top = Math.max(margin, rect.top - boxHeight - 6);
+      if (top + boxHeight > viewBottom - margin) top = Math.max(viewTop + margin, rect.top - boxHeight - 6);
       Object.assign(background.style, { left: left + 'px', top: top + 'px', width: boxWidth + 'px', height: boxHeight + 'px' });
       overflow.forEach(function (node, i) {
-        node.style.setProperty('--md-overflow-left', (left + 8 + Math.floor(i / rows) * width) + 'px');
-        node.style.setProperty('--md-overflow-top', (top + 4 + (i % rows) * height) + 'px');
+        var row = Math.floor(i / columns), column = i % columns;
+        var rowCount = Math.min(columns, overflow.length - row * columns);
+        var rowOffset = alignRight ? (columns - rowCount) * (buttonWidth + gap) : 0;
+        node.style.setProperty('--md-overflow-left', (left + inset + rowOffset + column * (buttonWidth + gap)) + 'px');
+        node.style.setProperty('--md-overflow-top', (top + inset + row * (buttonHeight + gap)) + 'px');
       });
     }
     function update() {
@@ -710,13 +881,16 @@
         details.addEventListener('toggle', function () {
           var popup = details.querySelector('.range-popover');
           if (!popup || !details.open) return;
-          popup.style.top = '';
-          var rect = popup.getBoundingClientRect(), anchor = details.getBoundingClientRect(), view = details.ownerDocument.defaultView;
-          if (rect.bottom > view.innerHeight - 8) popup.style.top = Math.max(8 - anchor.top, -rect.height - 6) + 'px';
+          positionToolbarSubmenu(details, popup, true);
         });
       });
+      if (workspace.classList.contains('md-focus-mode')) {
+        if (open) close(false);
+        overflow.forEach(function (node) { node.classList.remove('md-wt-overflow-item', 'md-wt-overflow-open'); });
+        overflow = []; more.hidden = true; return;
+      }
       var items = controls(), visible = items.filter(function (node) { return !node.hidden && getComputedStyle(node).display !== 'none'; });
-      var columns = parseInt(panel.style.getPropertyValue('--panel-columns'), 10) || 1;
+      var columns = parseInt(panel.style.getPropertyValue?.('--panel-columns'), 10) || 1;
       var next = visible.length > columns ? visible.slice(Math.max(0, columns - 1)) : [];
       if (open && (next.length !== overflow.length || next.some(function (item, i) { return item !== overflow[i]; }))) close(false);
       items.forEach(function (node) { node.classList.remove('md-wt-overflow-item', 'md-wt-overflow-open'); });
@@ -725,12 +899,13 @@
       if (more.hidden !== !overflow.length) more.hidden = !overflow.length;
       position();
     }
+    watchToolbarMenuPointer(more, function () { return background; }, function () { return open; }, function () { close(false); }, true);
     more.addEventListener('click', function () {
       if (open) { close(true); return; }
       open = true; more.setAttribute('aria-expanded', 'true'); background.hidden = false;
       overflow.forEach(function (node) { node.classList.add('md-wt-overflow-open'); var targets = node.matches('button, a, summary') ? [node] : Array.from(node.querySelectorAll('button, a, summary')); targets.forEach(function (el) { if (el.tabIndex < 0 && !el.disabled) { el.dataset.overflowTabindex = String(el.tabIndex); el.tabIndex = 0; } }); }); position();
     });
-    function onPointer(event) { if (open && !bar.contains(event.target)) close(false); }
+    function onPointer(event) { if (open && !bar.contains(event.target) && !overflowOwnedMenus(bar).some(function (menu) { return menu.contains(event.target); })) close(false); }
     function onKey(event) {
       if (open && event.key === 'Escape' && !event.target.closest('details[open], .md-wt-basic-menu:not([hidden])')) { event.preventDefault(); close(true); }
     }
@@ -757,6 +932,7 @@
       var view = bar.ownerDocument.defaultView;
       view.requestAnimationFrame(function () { scheduled = false; updatePanelGrid(panel); update(); });
     }
+    document.addEventListener('md-focus-change', schedule);
     panel.addEventListener('md-panel-owner-change', function () {
       scheduled = false;
       updatePanelGrid(panel);
@@ -789,11 +965,12 @@
     actionCount = Math.max(1, actionCount);
     panel.style.setProperty('--panel-actions-start', String(-actionCount - 1));
     var actionsWidth = actionCount * button + Math.max(0, actionCount - 1) * gap;
-    var empty = Math.max(0, available - button - actionsWidth);
+    var leftWidth = button + (panel.querySelector('.md-focus-tools:not([hidden])') ? button + 4 : 0);
+    var empty = Math.max(0, available - leftWidth - actionsWidth);
     var zoomWidth = Math.min(Math.max(0, empty - gap * 2), empty * 0.3 + 62.334);
     panel.style.setProperty('--panel-zoom-display', zoomWidth >= 62.334 ? 'flex' : 'none');
     panel.style.setProperty('--panel-zoom-width', zoomWidth + 'px');
-    panel.style.setProperty('--panel-zoom-left', (inset + button + empty / 2) + 'px');
+    panel.style.setProperty('--panel-zoom-left', (inset + leftWidth + empty / 2) + 'px');
   }
 
   function updatePanelGrids() {
@@ -1203,8 +1380,10 @@
         if (saveButton._closeSaveMenu) { saveButton._closeSaveMenu(true); return; }
         var doc = saveButton.ownerDocument, menu = doc.createElement('div'), timer;
         function cancelClose() { clearTimeout(timer); }
-        function scheduleClose(event) { if (event.pointerType !== 'mouse') return; cancelClose(); timer = setTimeout(function () { if (!menu.contains(doc.activeElement)) closeMenu(false); }, 180); }
-        function closeMenu(restore) { cancelClose(); saveButton._closeSaveMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('keydown', escape, true); saveButton.removeEventListener('pointerleave', scheduleClose); saveButton.removeEventListener('pointerenter', cancelClose); if (restore) saveButton.focus(); }
+        function scheduleClose(event) { if (event.pointerType !== 'mouse') return; cancelClose(); timer = setTimeout(function () { closeMenu(false); }, 300); }
+        function previewLeave() { cancelClose(); timer = setTimeout(function () { closeMenu(false); }, 300); }
+        document.addEventListener('md-preview-pointer-enter', previewLeave);
+        function closeMenu(restore) { cancelClose(); document.removeEventListener('md-preview-pointer-enter', previewLeave); saveButton._closeSaveMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('keydown', escape, true); saveButton.removeEventListener('pointerleave', scheduleClose); saveButton.removeEventListener('pointerenter', cancelClose); if (restore) saveButton.focus(); }
         function outside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
         function escape(event) { if (event.key === 'Escape' && (menu.contains(event.target) || event.target === saveButton)) { event.preventDefault(); event.stopPropagation(); closeMenu(true); } }
         menu.className = 'md-drafts-menu md-action-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '保存 Markdown');
@@ -1221,7 +1400,7 @@
         menu.style.left = Math.max(left + 8, Math.min(rect.right - menu.offsetWidth, left + width - menu.offsetWidth - 8)) + 'px';
         menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
         doc.addEventListener('pointerdown', outside, true); doc.addEventListener('keydown', escape, true);
-        if (activation.detail === 0) menu.firstElementChild.focus();
+        if (activation.detail === 0) { menu.tabIndex = -1; menu.focus({ preventScroll: true }); }
       });
       editorActions.appendChild(saveButton);
       editorActions.appendChild(editorFullscreenBtn);
@@ -1270,6 +1449,70 @@
       panel.querySelector('[data-panel-fullscreen]').before(button);
       independentButtons.push(button);
     });
+  }
+
+  // 专注模式与单面板全屏相互独立；复用原工具条以保留全部操作和状态。
+  function buildFocusMode() {
+    var entries = [editorPanel, previewPanel].map(function (panel) {
+      var heading = panel.querySelector('.panel-heading'), actions = heading.querySelector('.panel-actions');
+      var bar = panel.querySelector('.md-wt-toolbar, .preview-toolbar');
+      var placeholder = document.createComment('toolbar position');
+      bar.before(placeholder);
+      var focus = make('button', { type: 'button', class: 'icon-button md-focus-toggle', 'aria-label': '进入专注模式', 'aria-pressed': 'false', title: '进入专注模式' });
+      var svg = document.createElementNS(SVG_NS, 'svg');
+      svg.setAttribute('class', 'btn-icon'); svg.setAttribute('viewBox', '0 0 20 20'); svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.4'); svg.setAttribute('stroke-linecap', 'round');
+      var path = document.createElementNS(SVG_NS, 'path'); path.setAttribute('d', 'M3.5 7V4h3M13.5 4h3v3M16.5 13v3h-3M6.5 16h-3v-3M8 10h4'); svg.appendChild(path); focus.appendChild(svg);
+      actions.insertBefore(focus, panel.querySelector('[data-panel-fullscreen]'));
+      var launcher = make('button', { type: 'button', class: 'icon-button md-focus-tools', 'aria-label': '工具栏', 'aria-expanded': 'false', 'aria-haspopup': 'true', title: '工具栏', hidden: '' });
+      launcher.appendChild(iconSvg('toolbarPanel')); heading.querySelector('h2').appendChild(launcher);
+      var popup = make('div', { class: 'md-focus-popup', hidden: '' }); panel.appendChild(popup);
+      function closeMenu() {
+        popup.hidden = true; launcher.setAttribute('aria-expanded', 'false');
+        bar.querySelectorAll('.md-wt-basic-menu:not([hidden])').forEach(function (menu) { menu.hidden = true; menu.parentElement.querySelector('[aria-expanded]')?.setAttribute('aria-expanded', 'false'); });
+        bar.querySelectorAll('details[open]').forEach(function (details) { details.open = false; });
+        bar.querySelectorAll('[aria-expanded="true"][aria-controls]').forEach(function (button) { var menu = button.ownerDocument.getElementById(button.getAttribute('aria-controls')); if (menu) menu.dispatchEvent(new Event('md-toolbar-dismiss')); });
+      }
+      function position() {
+        var r = launcher.getBoundingClientRect(), view = launcher.ownerDocument.defaultView;
+        popup.style.left = Math.max(4, Math.min(r.left, view.innerWidth - popup.offsetWidth - 4)) + 'px';
+        popup.style.top = Math.min(r.bottom + 4, view.innerHeight - 40) + 'px';
+        popup.style.maxHeight = Math.max(40, view.innerHeight - r.bottom - 8) + 'px';
+      }
+      launcher.addEventListener('click', function () { if (!popup.hidden) { closeMenu(); return; } popup.hidden = false; launcher.setAttribute('aria-expanded', 'true'); position(); });
+      focus.addEventListener('click', function () { setFocus(!workspace.classList.contains('md-focus-mode')); });
+      var leaveTimer;
+      function cancel() { clearTimeout(leaveTimer); }
+      function leave(event) { if (event.pointerType !== 'mouse' || event.buttons) return; cancel(); leaveTimer = setTimeout(closeMenu, 300); }
+      launcher.addEventListener('pointerenter', cancel); launcher.addEventListener('pointerleave', leave);
+      popup.addEventListener('pointerenter', cancel); popup.addEventListener('pointerleave', function (event) {
+        var target = event.relatedTarget;
+        if (target && (popup.contains(target) || launcher.contains(target) || owned(target))) return;
+        leave(event);
+      });
+      function owned(target) { return Array.from(bar.querySelectorAll('[aria-expanded="true"][aria-controls]')).some(function (button) { var menu = button.ownerDocument.getElementById(button.getAttribute('aria-controls')); return menu && !menu.hidden && menu.contains(target); }); }
+      onWorkspaceDOM('pointermove', function (event) { if (!popup.hidden && event.pointerType === 'mouse' && owned(event.target)) cancel(); }, true);
+      onWorkspaceDOM('md-preview-pointer-enter', function () { if (!popup.hidden) { cancel(); leaveTimer = setTimeout(closeMenu, 300); } });
+      onWorkspaceDOM('pointerdown', function (event) {
+        if (popup.hidden || popup.contains(event.target) || launcher.contains(event.target) || owned(event.target)) return;
+        closeMenu();
+      }, true);
+      onWorkspaceDOM('keydown', function (event) { if (!popup.hidden && event.key === 'Escape' && !event.target.closest('.md-wt-basic-menu:not([hidden]), details[open]')) { event.preventDefault(); closeMenu(); launcher.focus(); } });
+      return { bar: bar, placeholder: placeholder, focus: focus, launcher: launcher, popup: popup, close: closeMenu };
+    });
+    function setFocus(enabled) {
+      entries.forEach(function (entry) {
+        entry.close(); entry.launcher.hidden = !enabled;
+        entry.focus.setAttribute('aria-pressed', String(enabled));
+        entry.focus.title = enabled ? '退出专注模式' : '进入专注模式';
+        entry.focus.setAttribute('aria-label', entry.focus.title);
+        if (enabled) entry.popup.appendChild(entry.bar); else entry.placeholder.after(entry.bar);
+      });
+      workspace.classList.toggle('md-focus-mode', enabled);
+      document.body.classList.toggle('md-focus-mode', enabled);
+      document.dispatchEvent(new Event('md-focus-change'));
+      updatePanelGrids(); scheduleStackLayout();
+      requestAnimationFrame(function () { measureEditor(); updatePanelGrids(); });
+    }
   }
 
   // ---------------------------------------------------------------- 位置桥接
@@ -1497,8 +1740,7 @@
     if (y < top + 4) y = data.bottom + 8;
     menu.style.left = x + 'px';
     menu.style.top = Math.max(top + 4, Math.min(y, bottom - menu.offsetHeight - 4)) + 'px';
-    var first = menu.querySelector('button:not(:disabled)');
-    if (first) first.focus({ preventScroll: true }); else menu.focus({ preventScroll: true });
+    menu.focus({ preventScroll: true });
     menu.addEventListener('keydown', function (key) {
       if (key.key === 'Escape') { key.preventDefault(); key.stopPropagation(); closePreviewFormatMenu(); previewFrame.focus({ preventScroll: true }); return; }
       if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(key.key)) return;
@@ -1506,7 +1748,8 @@
       if (!items.length) return;
       key.preventDefault();
       var index = items.indexOf(document.activeElement);
-      items[(index + (['ArrowDown', 'ArrowRight'].includes(key.key) ? 1 : items.length - 1)) % items.length].focus({ preventScroll: true });
+      var forward = ['ArrowDown', 'ArrowRight'].includes(key.key);
+      items[index < 0 ? (forward ? 0 : items.length - 1) : (index + (forward ? 1 : items.length - 1)) % items.length].focus({ preventScroll: true });
     });
   }
   document.addEventListener('md-preview-format-menu', openPreviewFormatMenu);
@@ -1585,6 +1828,7 @@
   buildFullscreenButtons();
   buildPanelModeButtons();
   buildIndependentWindows();
+  buildFocusMode();
   buildZoomControls();
   restoreRatio();
   wireEvents();

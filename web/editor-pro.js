@@ -13,7 +13,8 @@ import { appFetch } from './runtime-request.mjs';
 // 重要：所有编辑动作只用可撤销的 replaceRange / replaceSelection，绝不调用 setValue
 //       （setValue 会重建编辑器状态、清空撤销历史）。
 
-import { installQuickActions } from './editor-quick-actions.mjs';
+import { installQuickActions, protectedRanges } from './editor-quick-actions.mjs';
+import { Lexer } from '../vendor/marked.esm.js';
 
 import {
   analyzeMarkdown,
@@ -321,8 +322,8 @@ function shiftHeadingLevels(sel, delta) {
   const value = editor.getValue();
   const analysis = analyzeAndCache(value);
   if (!analysis) return;
-  const startLine = H.offsetToLine(value, sel.from);
-  let endLine = H.offsetToLine(value, sel.to);
+  const startLine = sel.from === sel.to ? 1 : H.offsetToLine(value, sel.from);
+  let endLine = sel.from === sel.to ? H.offsetToLine(value, value.length) : H.offsetToLine(value, sel.to);
   if (sel.to > sel.from && sel.to === H.lineToOffset(value, endLine)) endLine--;
   const changes = [];
   for (const heading of analysis.headings) {
@@ -333,6 +334,31 @@ function shiftHeadingLevels(sel, delta) {
     const from = heading.offset + indent;
     changes.push({ from, to: from + heading.level, insert: '#'.repeat(level) });
   }
+  // The outline analyzer tracks ATX headings. Marked identifies Setext headings
+  // while masking metadata, fenced code and display math keeps their contents intact.
+  const chars = value.split('');
+  for (const [from, to] of protectedRanges(value)) {
+    for (let i = from; i < to; i++) if (chars[i] !== '\n' && chars[i] !== '\r') chars[i] = ' ';
+  }
+  let tokenOffset = 0;
+  for (const token of Lexer.lex(chars.join(''), { gfm: true })) {
+    const from = tokenOffset;
+    tokenOffset += token.raw.length;
+    if (token.type !== 'heading' || /^ {0,3}#/.test(token.raw)) continue;
+    const headingStart = H.offsetToLine(value, from);
+    const headingEnd = H.offsetToLine(value, from + token.raw.trimEnd().length);
+    if (headingEnd < startLine || headingStart > endLine) continue;
+    const level = Math.max(1, Math.min(6, token.depth + delta));
+    if (level === token.depth) continue;
+    const source = value.slice(from, tokenOffset);
+    const match = /^([\s\S]*?)\r?\n {0,3}(?:=+|-+)[ \t]*(\r?\n)?$/.exec(source);
+    if (!match) continue;
+    const text = level <= 2
+      ? match[1] + (source.includes('\r\n') ? '\r\n' : '\n') + (level === 1 ? '===' : '---')
+      : '#'.repeat(level) + ' ' + match[1].replace(/\r?\n/g, ' ');
+    changes.push({ from, to: tokenOffset, insert: text + (match[2] || '') });
+  }
+  changes.sort((a, b) => a.from - b.from);
   if (!changes.length) return;
   const mapPosition = position => {
     let offset = 0;

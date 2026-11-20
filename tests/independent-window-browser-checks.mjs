@@ -63,7 +63,7 @@ try {
   await evaluate('window.fixture=' + JSON.stringify(fixture) + ';mdEditor.setValue(fixture)');
   await ready();
   assert.equal(await evaluate('document.querySelectorAll("[data-panel-independent]").length'), 2);
-  assert.equal(await evaluate('[...document.querySelectorAll("[data-panel-independent]")].every(button=>button.nextElementSibling.matches("[data-panel-fullscreen]"))'), true);
+  assert.equal(await evaluate('[...document.querySelectorAll("[data-panel-independent]")].every(button=>button.nextElementSibling.matches(".md-focus-toggle") && button.nextElementSibling.nextElementSibling.matches("[data-panel-fullscreen]"))'), true);
 
   for (const width of [390, 600, 1440]) {
     await browser.send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
@@ -180,7 +180,7 @@ try {
   assert.equal(await evaluate('!!document.querySelector(".cm-search")', popup.sessionId), true);
   await send('Page.captureScreenshot', { format: 'png' }, popup.sessionId).then(result => writeFile('/private/tmp/md2pdf-independent-editor.png', Buffer.from(result.data, 'base64')));
 
-  await evaluate('document.querySelector("button[aria-label=\\"从模板创建 Markdown\\"]").click()', popup.sessionId);
+  await evaluate('document.querySelector("button[aria-label=\\"创建 Markdown\\"]").click()', popup.sessionId);
   await wait('document.querySelector("#md-create-menu [data-template-id=general]")', popup.sessionId);
   await evaluate('window.dialogChoice=mdConfirmTemplate();true');
   await wait('document.querySelector("dialog[open].template-confirm")', popup.sessionId);

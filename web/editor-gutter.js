@@ -33,7 +33,9 @@
       if (gutter) gutterResize.observe(gutter);
     }
     const openButton = panel.querySelector('.md-wt-toolbar [aria-label="打开 Markdown"]');
-    const anchor = openButton && openButton.getBoundingClientRect();
+    // 专注模式下打开按钮位于浮层，不能作为固定行号栏的对齐基准。
+    const anchorButton = openButton?.closest('.md-focus-popup') ? panel.querySelector('.md-panel-mode') : openButton;
+    const anchor = anchorButton && anchorButton.getBoundingClientRect();
     const footerRect = footer.getBoundingClientRect();
     // 两个按钮和整栏共享顶部打开按钮的中轴，显隐不改变对齐基准。
     if (anchor && anchor.width) buttonSlot = Math.max(28, (anchor.left + anchor.width / 2 - footerRect.left) * 2);

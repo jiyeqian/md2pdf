@@ -1,3 +1,4 @@
+import { formatOneDriveSize } from './onedrive-ui.mjs';
 import { openDraftStore, DRAFT_LIST_LIMIT, DraftConflict } from './draft-store.mjs';
 
 const signature = record => JSON.stringify([record.md, record.opts, record.templateId, record.previewType, record.filename]);
@@ -128,7 +129,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
   }
   async function remove(records, allVisible = false) {
     const current = records.find(record => record.id === active?.id);
-    const message = allVisible ? '当前列表中的全部草稿，确认删除？'
+    const message = allVisible ? '确认删除当前列表中全部本地草稿？'
       : current ? `当前正在编辑“${current.title}”，确认删除？` : `确认删除草稿“${records[0].title}”？`;
     if (!await confirmDelete(message)) return;
     await enqueue(async () => {
@@ -143,7 +144,17 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       (menu.querySelector('[data-draft-open]') || menu.querySelector('button'))?.focus();
     });
   }
+  let menuLeaveTimer;
+  function cancelMenuLeave() { clearTimeout(menuLeaveTimer); }
+  function scheduleMenuLeave(event) {
+    if ((event?.pointerType && event.pointerType !== 'mouse') || menu?.ownerDocument.querySelector('dialog[open]')) return;
+    cancelMenuLeave();
+    menuLeaveTimer = setTimeout(() => { if (!menu?.ownerDocument.querySelector('dialog[open]')) closeMenu(); }, 300);
+  }
   function closeMenu(focus = false) {
+    cancelMenuLeave();
+    trigger?.removeEventListener('pointerleave', scheduleMenuLeave);
+    trigger?.removeEventListener('pointerenter', cancelMenuLeave);
     if (menu) menu.hidden = true;
     trigger?.setAttribute('aria-expanded', 'false');
     if (focus) trigger?.focus();
@@ -165,17 +176,23 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
     const width = view?.width || win.innerWidth, height = view?.height || win.innerHeight;
     menu.style.maxHeight = Math.max(60, height - 16) + 'px';
     menu.style.fontSize = menuFontSize() + 'px';
-    menu.style.width = 'max-content';
-    menu.style.minWidth = Math.min(144, width - 16) + 'px';
-    menu.style.maxWidth = Math.min(276, width - 16) + 'px';
+    const canvas = owner.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (context) context.font = win.getComputedStyle(menu).font;
+    const titles = [...menu.querySelectorAll('.md-draft-title')];
+    const desired = titles.reduce((max, title) => Math.max(max, context ? context.measureText(title.textContent).width + 78 : 220), 220);
+    menu.style.width = Math.min(desired, 400, width - 16) + 'px';
+    menu.style.minWidth = Math.min(220, width - 16) + 'px';
+    menu.style.maxWidth = Math.min(400, width - 16) + 'px';
+    if (trigger.closest('.md-focus-popup') && window.mdPositionToolbarSubmenu) { window.mdPositionToolbarSubmenu(trigger, menu, false); return; }
     menu.style.left = Math.max(left + 8, Math.min(bounds.left, left + width - menu.offsetWidth - 8)) + 'px';
     menu.style.top = Math.max(top + 8, Math.min(bounds.bottom + 4, top + height - menu.offsetHeight - 8)) + 'px';
   }
   async function renderMenu() {
     const records = await store.list();
     const visible = records.slice(0, DRAFT_LIST_LIMIT);
-    menu.replaceChildren(button('从本地打开…', () => { closeMenu(); input.click(); }),
-      button('从 OneDrive 打开…', () => { const target = trigger?.closest('.preview-panel') ? 'preview' : 'editor'; closeMenu(); return window.mdOneDrive?.open(target); }));
+    menu.replaceChildren(button('从本地打开', () => { closeMenu(); input.click(); }),
+      button('从 OneDrive 打开', () => { const target = trigger?.closest('.preview-panel') ? 'preview' : 'editor'; closeMenu(); return window.mdOneDrive?.open(target); }));
     const heading = document.createElement('div');
     heading.className = 'md-drafts-heading';
     heading.textContent = `已保存本地草稿 · ${records.length}`;
@@ -201,7 +218,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       mark.setAttribute('aria-hidden', 'true');
       mark.textContent = record.id === active?.id ? '✓' : '';
       const time = document.createElement('small');
-      time.textContent = new Date(record.savedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      time.textContent = formatOneDriveSize(new TextEncoder().encode(record.md || '').length) + ' · ' + new Date(record.savedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
       open.append(mark, title, time);
       const del = button('×', () => remove([record]));
       del.className = 'md-draft-delete';
@@ -227,6 +244,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       menu.className = 'md-drafts-menu';
       menu.setAttribute('role', 'dialog');
       menu.setAttribute('aria-label', '打开 Markdown');
+      menu.tabIndex = -1;
       document.body.append(menu);
       menu.addEventListener('keydown', event => {
         if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeMenu(true); }
@@ -234,7 +252,7 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
           event.preventDefault();
           const buttons = [...menu.querySelectorAll('button:not(:disabled)')];
           const index = buttons.indexOf(menu.ownerDocument.activeElement);
-          buttons[(index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+          buttons[index < 0 ? (event.key === 'ArrowDown' ? 0 : buttons.length - 1) : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
         }
       });
       (window.mdWorkspaceHosts?.on || document.addEventListener.bind(document))('click', event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) closeMenu(); });
@@ -248,17 +266,20 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       }
       window.visualViewport?.addEventListener('resize', positionMenu);
       window.visualViewport?.addEventListener('scroll', positionMenu);
-      menu.addEventListener('pointerleave', event => {
-        if (event.pointerType === 'mouse' && !menu.ownerDocument.querySelector('dialog[open]')) closeMenu();
-      });
+      menu.addEventListener('pointerleave', scheduleMenuLeave);
+      menu.addEventListener('pointerenter', cancelMenuLeave);
+      menu.addEventListener('md-toolbar-dismiss', () => closeMenu());
+      (window.mdWorkspaceHosts?.on || document.addEventListener.bind(document))('md-preview-pointer-enter', () => { if (!menu.hidden) scheduleMenuLeave(); });
     }
     menu.hidden = false;
+    trigger.addEventListener('pointerleave', scheduleMenuLeave);
+    trigger.addEventListener('pointerenter', cancelMenuLeave);
     trigger.setAttribute('aria-controls', menu.id);
     trigger.setAttribute('aria-haspopup', 'dialog');
     trigger.setAttribute('aria-expanded', 'true');
     try { await enqueue(saveNow); } catch { /* 保留文件下载及草稿管理入口。 */ }
     await renderMenu();
-    menu.querySelector('button')?.focus();
+    menu.focus({ preventScroll: true });
   }
   async function reconcile() {
     await enqueue(async () => {

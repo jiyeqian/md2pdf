@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createApp } from '../src/server.mjs';
 import { Chrome, findChrome } from '../src/chrome.mjs';
 
-const app = createApp();
+const app = process.argv[2] ? null : createApp();
 const temp = await mkdtemp(path.join(os.tmpdir(), 'md2pdf-actions-'));
 const browser = new Chrome(findChrome(), temp);
 const evaluate = async expression => {
@@ -21,12 +21,30 @@ const wait = async expression => {
   throw new Error('Timeout: '+expression);
 };
 try {
-  await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
+  if (app) await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
   await browser.start();
   await browser.send('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:false});
-  await browser.send('Page.navigate',{url:`http://127.0.0.1:${app.server.address().port}`});
+  await browser.send('Page.navigate',{url:process.argv[2] || `http://127.0.0.1:${app.server.address().port}`});
   await wait('window.mdDrafts && window.mdEditor && document.querySelectorAll(".md-wt-overflow-trigger").length===2');
   await new Promise(resolve=>setTimeout(resolve,500));
+  const alignment = await evaluate(`(()=>{
+    const panel=document.createElement('div');panel.className='editor-panel';panel.style.cssText='position:fixed;left:20px;top:80px;width:240px;height:300px;z-index:500';
+    const bar=document.createElement('div');bar.className='md-wt-toolbar';
+    const first=document.createElement('div');first.className='md-wt-overflow-background';first.style.cssText='position:fixed;left:50px;top:100px;width:100px;height:30px';
+    const trigger=document.createElement('button');trigger.className='md-wt-overflow-open';trigger.style.cssText='position:fixed;left:60px;top:100px;width:28px;height:28px';
+    const menu=document.createElement('div');menu.className='md-wt-basic-menu';menu.style.cssText='position:fixed;width:max-content';
+    const row=document.createElement('div');row.className='md-wt-menu-row';for(let i=0;i<4;i++){const b=document.createElement('button');b.className='md-wt-menu-item';row.append(b)}const shortRow=document.createElement('div');shortRow.className='md-wt-menu-row';for(let i=0;i<3;i++){const b=document.createElement('button');b.className='md-wt-menu-item';shortRow.append(b)}menu.append(row,shortRow);bar.append(first,trigger,menu);panel.append(bar);document.body.append(panel);
+    const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};
+    window.mdPositionToolbarSubmenu(trigger,menu,false);const left={menu:rect(menu),first:rect(first),trigger:rect(trigger),panel:rect(panel),full:rect(row.firstChild),short:rect(shortRow.firstChild)};
+    first.style.left='150px';trigger.style.left='220px';window.mdPositionToolbarSubmenu(trigger,menu,false);const right={menu:rect(menu),first:rect(first),trigger:rect(trigger),panel:rect(panel),full:rect(row.lastChild),short:rect(shortRow.lastChild)};
+    panel.style.width='80px';first.style.left='25px';trigger.style.left='60px';window.mdPositionToolbarSubmenu(trigger,menu,false);const narrow={menu:rect(menu),first:rect(first),panel:rect(panel),rows:[...row.children].map(b=>b.getBoundingClientRect().top)};
+    panel.remove();return {left,right,narrow};
+  })()`);
+  assert.ok(Math.abs(alignment.left.menu.left-alignment.left.trigger.left)<1,JSON.stringify(alignment));
+  assert.ok(Math.abs(alignment.right.menu.right-alignment.right.trigger.right)<1,JSON.stringify(alignment));
+  assert.ok(Math.abs(alignment.left.full.left-alignment.left.short.left)<1,JSON.stringify(alignment));
+  assert.ok(Math.abs(alignment.right.full.right-alignment.right.short.right)<1,JSON.stringify(alignment));
+  assert.ok(alignment.narrow.menu.left>=alignment.narrow.panel.left && alignment.narrow.menu.right<=alignment.narrow.panel.right && new Set(alignment.narrow.rows).size>1,JSON.stringify(alignment));
   const state=await evaluate(`Array.from(document.querySelectorAll('.md-wt-overflow-trigger')).map(b=>({hidden:b.hidden, count:b.parentElement.querySelectorAll('.md-wt-overflow-item').length, height:b.parentElement.getBoundingClientRect().height}))`);
   console.log(JSON.stringify(state));
   assert.ok(state.every(s=>!s.hidden && s.count>0 && s.height<60));
@@ -38,6 +56,12 @@ try {
   const menu=await evaluate(`(()=>{let b=document.querySelector('.preview-toolbar .md-wt-overflow-trigger');let e=b.parentElement.querySelector('.md-wt-overflow-open');let r=e.getBoundingClientRect();return {open:b.getAttribute('aria-expanded'), visible:getComputedStyle(e).visibility, left:r.left,right:r.right,top:r.top,bottom:r.bottom}})()`);
   console.log(JSON.stringify(menu));
   assert.equal(menu.open,'true'); assert.equal(menu.visible,'visible'); assert.ok(menu.left>=0 && menu.right<=320 && menu.top>=0 && menu.bottom<=800);
+  const horizontal = await evaluate(`(()=>{const bar=document.querySelector('.preview-toolbar'),trigger=bar.querySelector('.md-wt-overflow-trigger').getBoundingClientRect(),background=bar.querySelector('.md-wt-overflow-background').getBoundingClientRect(),items=[...bar.querySelectorAll('.md-wt-overflow-open')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});return {triggerLeft:trigger.left,triggerRight:trigger.right,background:{left:background.left,right:background.right,top:background.top,bottom:background.bottom},items}})()`);
+  assert.ok(Math.min(Math.abs(horizontal.background.right-horizontal.triggerRight),Math.abs(horizontal.background.left-horizontal.triggerLeft))<1, JSON.stringify(horizontal));
+  assert.ok(Math.abs((horizontal.items[0].left-horizontal.background.left)-(horizontal.background.right-horizontal.items.at(-1).right))<1, JSON.stringify(horizontal));
+  assert.ok(Math.abs(horizontal.items[1].left-horizontal.items[0].right-4)<1, JSON.stringify(horizontal));
+  assert.ok(Math.abs((horizontal.items[0].top-horizontal.background.top)-(horizontal.background.bottom-horizontal.items[0].bottom))<1, JSON.stringify(horizontal));
+  assert.ok(horizontal.items.every((item,i)=>item.left>=horizontal.background.left && item.right<=horizontal.background.right && item.top>=horizontal.background.top && item.bottom<=horizontal.background.bottom && (!i || item.left>horizontal.items[i-1].left && item.top===horizontal.items[i-1].top)), JSON.stringify(horizontal));
   await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-open summary').click()`);
   assert.equal(await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-open details').open`),true);
   await wait(`(()=>{let r=document.querySelector('.preview-toolbar .md-wt-overflow-open .range-popover').getBoundingClientRect();return r.left>=0 && r.right<=320 && r.top>=0 && r.bottom<=800})()`);
@@ -47,12 +71,102 @@ try {
   assert.equal(await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'false');
   await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').click()`);
   assert.equal(await evaluate(`Array.from(document.querySelectorAll('.md-wt-toolbar .md-wt-overflow-open')).some(x=>Array.from(x.querySelectorAll('button')).some(b=>b.tabIndex===0)||x.matches('button[tabindex=\"0\"]'))`),true);
+  const editorRows = await evaluate(`Array.from(document.querySelectorAll('.md-wt-toolbar .md-wt-overflow-open')).map(n=>{const r=n.getBoundingClientRect();return {left:r.left,top:r.top}})`);
+  assert.ok(editorRows.every((r,i)=>!i || r.top===editorRows[i-1].top && r.left>editorRows[i-1].left), JSON.stringify(editorRows));
+  await browser.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+  await browser.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+  assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'false');
+  assert.equal(await evaluate(`document.activeElement===document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger')`),true);
+  // Moving between levels keeps them open; leaving the group closes both.
+  await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').click()`);
+  const reference = await evaluate(`(()=>{const b=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]');if(!b)return false;b.click();return true})()`);
+  assert.equal(reference,true,'reference group is available in the overflow');
+  const menuGeometry = await evaluate(`(()=>{const panel=document.querySelector('.editor-panel').getBoundingClientRect(),first=document.querySelector('.md-wt-toolbar .md-wt-overflow-background').getBoundingClientRect(),trigger=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]').getBoundingClientRect(),third=document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])').getBoundingClientRect();return {panel:{left:panel.left,right:panel.right},trigger:{left:trigger.left,right:trigger.right},first:{left:first.left,right:first.right,top:first.top,bottom:first.bottom},third:{left:third.left,right:third.right,top:third.top,bottom:third.bottom,width:third.width}}})()`);
+  const submenuBounds = { left: Math.max(4, menuGeometry.panel.left + 4), right: Math.min(316, menuGeometry.panel.right - 4) };
+  const leftFits = menuGeometry.trigger.left >= submenuBounds.left && menuGeometry.trigger.left + menuGeometry.third.width <= submenuBounds.right;
+  const alignedLeft = leftFits ? menuGeometry.trigger.left : Math.max(submenuBounds.left, Math.min(menuGeometry.trigger.right - menuGeometry.third.width, submenuBounds.right - menuGeometry.third.width));
+  assert.ok(Math.abs(menuGeometry.third.left - alignedLeft) < 1, JSON.stringify(menuGeometry));
+  const move = (x,y) => browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',x,y});
+  const siblingPoint = await evaluate(`(()=>{const trigger=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]'),sibling=[...document.querySelectorAll('.md-wt-toolbar .md-wt-overflow-open button')].find(button=>button!==trigger && !trigger.parentElement.contains(button)),r=sibling.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+  await move(siblingPoint.x,siblingPoint.y);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`!!document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])')`),false,'moving to a sibling closes the submenu even if it was never entered');
+  assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'true','the parent remains open over a sibling');
+  await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]').click()`);
+  await move((menuGeometry.first.left+menuGeometry.first.right)/2,(menuGeometry.first.top+menuGeometry.first.bottom)/2);
+  await move(menuGeometry.third.left+10,(menuGeometry.first.bottom+menuGeometry.third.top)/2);
+  await move(menuGeometry.third.left+10,menuGeometry.third.top+10);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'true');
+  assert.equal(await evaluate(`!!document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])')`),true);
+  await move(menuGeometry.first.left+5,menuGeometry.first.top+5);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`!!document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])')`),false,'leaving the third level closes it');
+  assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'true','returning to the second level keeps it open');
+  await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]').click()`);
+  await move(2,750);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'false');
+  assert.equal(await evaluate(`!!document.querySelector('.md-wt-toolbar .md-wt-basic-menu:not([hidden])')`),false);
+  // Touch movement must not dismiss a menu and keyboard dismissal still works.
+  await evaluate(`document.querySelector('#md-wt-basic-format').click();document.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerType:'touch',clientX:2,clientY:750}))`);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`document.querySelector('#md-wt-basic-menu').hidden`),false);
+  await move(3,749);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`document.querySelector('#md-wt-basic-menu').hidden`),true,'leaving the direct submenu closes it');
+  await evaluate(`document.querySelector('#md-wt-basic-format').click();document.querySelector('#md-wt-basic-menu').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
+  assert.equal(await evaluate(`document.querySelector('#md-wt-basic-menu').hidden`),true);
+  await evaluate(`document.querySelector('.preview-toolbar [data-option-trigger="theme"]').click()`);
+  await wait(`document.querySelector('.preview-toolbar [data-option-trigger="theme"]').parentElement.open`);
+  await move(2,750);
+  await new Promise(resolve=>setTimeout(resolve,400));
+  assert.equal(await evaluate(`document.querySelector('.preview-toolbar [data-option-trigger="theme"]').parentElement.open`),false);
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:120,height:800,deviceScaleFactor:1,mobile:false});
+  await new Promise(resolve=>setTimeout(resolve,300));
+  await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').click()`);
+  const narrowRows = await evaluate(`(()=>{const bar=document.querySelector('.md-wt-toolbar'),box=bar.querySelector('.md-wt-overflow-background').getBoundingClientRect(),items=[...bar.querySelectorAll('.md-wt-overflow-open')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});return {box:{left:box.left,right:box.right,top:box.top,bottom:box.bottom,align:bar.querySelector('.md-wt-overflow-background').dataset.menuAlign},items}})()`);
+  assert.ok(narrowRows.items.length>0 && narrowRows.box.left>=0 && narrowRows.box.right<=120 && narrowRows.items.every(r=>r.left>=narrowRows.box.left && r.right<=narrowRows.box.right && r.top>=narrowRows.box.top && r.bottom<=narrowRows.box.bottom), JSON.stringify(narrowRows));
+  assert.ok(new Set(narrowRows.items.map(r=>r.top)).size>1, JSON.stringify(narrowRows));
+  for (const top of new Set(narrowRows.items.map(r=>r.top))) {
+    const row = narrowRows.items.filter(r=>r.top===top);
+    const reference = narrowRows.items.filter(r=>r.top===narrowRows.items[0].top);
+    const edge = narrowRows.box.align==='right' ? 'right' : 'left';
+    const actual = edge==='right' ? row.at(-1).right : row[0].left;
+    const expected = edge==='right' ? reference.at(-1).right : reference[0].left;
+    assert.ok(Math.abs(actual-expected)<1, JSON.stringify(narrowRows));
+  }
+  const academic = await evaluate(`(()=>{const item=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入参考文献"]');if(!item)return false;item.click();const menu=item.parentElement.querySelector('.md-wt-basic-menu');return !menu.hidden && [...menu.querySelectorAll('button')].map(b=>b.getAttribute('aria-label')).join(',')==='参考文献,BibTeX参考文献,DOI参考文献'})()`);
+  assert.equal(academic,true,'overflowed bibliography submenu remains usable');
+  const actualSubmenu = await evaluate(`(()=>{const panel=document.querySelector('.editor-panel').getBoundingClientRect(),menu=document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])'),box=menu.getBoundingClientRect(),items=[...menu.querySelectorAll('button')].map(b=>b.getBoundingClientRect());return {panel:{left:panel.left,right:panel.right},box:{left:box.left,right:box.right},rows:items.map(r=>r.top)}})()`);
+  assert.ok(actualSubmenu.box.left>=actualSubmenu.panel.left && actualSubmenu.box.right<=actualSubmenu.panel.right && actualSubmenu.box.left>=0 && actualSubmenu.box.right<=120,JSON.stringify(actualSubmenu));
+  assert.ok(new Set(actualSubmenu.rows).size>1,'submenu icons wrap when the panel is too narrow');
+
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:false});
+  await new Promise(resolve=>setTimeout(resolve,300));
   await evaluate(`document.querySelector('.preview-toolbar').dataset.documentType='gb'`);
   await new Promise(resolve=>setTimeout(resolve,300));
   assert.equal(await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-trigger').hidden`),true);
   await browser.send('Emulation.setDeviceMetricsOverride',{width:1800,height:900,deviceScaleFactor:1,mobile:false});
   await new Promise(resolve=>setTimeout(resolve,300));
   assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').hidden`),true);
+  await evaluate(`document.querySelector('.preview-toolbar').dataset.documentType='general'`);
+  // Every preview popover stays open over its contents and closes when the pointer enters the preview iframe.
+  for (const name of ['type','theme','toc','numbering','fontSize','margin','lineHeight']) {
+    const triggerPoint=await evaluate(`(()=>{const r=document.querySelector('[data-control="'+${JSON.stringify(name)}+'"] summary').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+    await move(triggerPoint.x,triggerPoint.y);
+    await browser.send('Input.dispatchMouseEvent',{type:'mousePressed',x:triggerPoint.x,y:triggerPoint.y,button:'left',clickCount:1});
+    await browser.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:triggerPoint.x,y:triggerPoint.y,button:'left',clickCount:1});
+    await wait(`document.querySelector('[data-control="'+${JSON.stringify(name)}+'"] details').open`);
+    await new Promise(resolve=>setTimeout(resolve,100));
+    const geometry=await evaluate(`(()=>{const p=document.querySelector('[data-control="'+${JSON.stringify(name)}+'"] .range-popover').getBoundingClientRect(),f=document.querySelector('#preview').getBoundingClientRect();return {inside:{x:p.left+p.width/2,y:p.top+p.height/2},iframe:{x:f.left+f.width/2,y:f.top+Math.min(f.height-10,350)}}})()`);
+    await move(geometry.inside.x,geometry.inside.y);
+    await new Promise(resolve=>setTimeout(resolve,350));
+    assert.equal(await evaluate(`document.querySelector('[data-control="'+${JSON.stringify(name)}+'"] details').open`),true,name+' remains open over its menu');
+    await move(geometry.iframe.x,geometry.iframe.y);
+    await new Promise(resolve=>setTimeout(resolve,500));
+    assert.equal(await evaluate(`document.querySelector('[data-control="'+${JSON.stringify(name)}+'"] details').open`),false,name+' closes when the pointer enters preview');
+  }
   const beforeDrag = await evaluate(`document.querySelector('.editor-panel').getBoundingClientRect().width`);
   await evaluate(`(()=>{const d=document.querySelector('.md-wt-divider'),r=d.getBoundingClientRect();for(const [type,x] of [['pointerdown',r.left],['pointermove',r.left-180],['pointerup',r.left-180]])d.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:7,pointerType:'touch',clientX:x,clientY:r.top+20}));})()`);
   await new Promise(resolve=>setTimeout(resolve,300));
@@ -66,5 +180,12 @@ try {
   await browser.send('Emulation.setDeviceMetricsOverride',{width:700,height:800,deviceScaleFactor:1,mobile:false});
   await new Promise(resolve=>setTimeout(resolve,300));
   assert.ok(await evaluate(`document.querySelector('.md-wt-toolbar').getBoundingClientRect().height<60 && document.querySelector('.preview-toolbar').getBoundingClientRect().height<60`));
+  await evaluate(`document.querySelector('#md-wt-basic-format').click()`);
+  await new Promise(resolve=>setTimeout(resolve,200));
+  const basicRows = await evaluate(`(()=>{const menu=document.querySelector('#md-wt-basic-menu');return {align:menu.dataset.menuAlign,rows:[...menu.querySelectorAll('.md-wt-menu-row')].map(row=>{const buttons=[...row.querySelectorAll('button')],first=buttons[0].getBoundingClientRect(),last=buttons.at(-1).getBoundingClientRect();return {left:first.left,right:last.right,count:buttons.length}})}})()`);
+  const basicEdge = basicRows.align === 'right' ? 'right' : 'left';
+  assert.ok(basicRows.rows.some(row=>row.count<Math.max(...basicRows.rows.map(item=>item.count))),JSON.stringify(basicRows));
+  assert.ok(basicRows.rows.every(row=>Math.abs(row[basicEdge]-basicRows.rows[0][basicEdge])<1),JSON.stringify(basicRows));
+  if (process.env.MD2PDF_MENU_SCREENSHOT) await browser.send('Page.captureScreenshot',{format:'png'}).then(result=>writeFile(process.env.MD2PDF_MENU_SCREENSHOT,Buffer.from(result.data,'base64')));
   console.log('overflow browser check passed');
-} finally { await browser.stop(); await app.close(); await rm(temp,{recursive:true,force:true}); }
+} finally { await browser.stop(); if (app) await app.close(); await rm(temp,{recursive:true,force:true}); }

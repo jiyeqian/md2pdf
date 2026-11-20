@@ -155,7 +155,8 @@ function highlightCode(html, hljs) {
         : hljs.highlightAuto(text).value;
     } catch { return m; }
     const cls = 'hljs' + (lang ? ' language-' + lang : '');
-    return '<pre><code class="' + cls + '">' + out + '</code></pre>';
+    const tree = lang === 'text' && /[│├└┌┐┬┴┼─]/.test(text);
+    return '<pre' + (tree ? ' class="md-tree-code"' : '') + '><code class="' + cls + '">' + out + '</code></pre>';
   });
 }
 

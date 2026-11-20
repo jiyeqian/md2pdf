@@ -41,7 +41,7 @@ try {
   }
   assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant .md-pro-section-head h3'),e=>e.textContent)`),['引用、章节与作者单位检查','文档类型']);
   assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant details'),e=>e.open)`),[false,false]);
-  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant .md-sidebar-header [role=tab]'),e=>[e.getAttribute('aria-label'),e.getAttribute('aria-selected')])`),[['文档大纲','true'],['专业助手','false']]);
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('#editor-assistant .md-sidebar-header [role=tab]'),e=>[e.getAttribute('aria-label'),e.getAttribute('aria-selected')])`),[['文档大纲','true'],['专业助手','false'],['云文件','false']]);
   const sidebarWidth = await evaluate(`document.querySelector('#editor-assistant').getBoundingClientRect().width`);
   await evaluate(`document.querySelector('#editor-assistant-tab-assistant').click()`);
   assert.equal(await evaluate(`document.querySelector('#editor-assistant-view-outline').hidden`),true);
@@ -94,6 +94,13 @@ try {
   assert.equal(await evaluate('mdEditor.getValue()'),headingSource,'batch heading shift undoes in one step');
   await evaluate(`mdEditor.setSelection(0,mdEditor.getValue().length);document.querySelector('#md-wt-basic-format').click();document.querySelector('#md-wt-basic-menu [aria-label="标题升级"]').click()`);
   assert.equal(await evaluate('mdEditor.getValue()'),'# First\nbody\n# Second {#id}\n##### Limit\n```md\n## Code\n```');
+  await evaluate(`mdEditor.setValue(${JSON.stringify(headingSource)});mdEditor.setSelection(8,8);document.querySelector('#md-wt-basic-format').click();document.querySelector('#md-wt-basic-menu [aria-label="标题降级"]').click()`);
+  assert.equal(await evaluate('mdEditor.getValue()'),headingExpected,'empty selection shifts all headings');
+  await evaluate(`mdEditor.runCommand('undo')`);
+  assert.equal(await evaluate('mdEditor.getValue()'),headingSource,'full-document shift undoes in one step');
+  await evaluate(`mdEditor.setSelection(17,19);document.querySelector('#md-wt-basic-format').click();document.querySelector('#md-wt-basic-menu [aria-label="标题降级"]').click()`);
+  assert.equal(await evaluate('mdEditor.getValue()'),'# First\nbody\n### Second {#id}\n###### Limit\n```md\n## Code\n```','selection shifts only covered heading');
+  assert.match(await evaluate(`document.querySelector('#md-wt-basic-menu [aria-label="标题降级"]').title`),/无选区时调整全文/);
   await evaluate(`document.querySelector('.md-wt-toolbar [aria-label="查找与替换"]').click()`);
   await wait('document.querySelector(".cm-search input[type=checkbox]")');
   const feedback = await evaluate(`Array.from(document.querySelectorAll('.cm-search input,.cm-search button,.topbar-actions a, .md-wt-toolbar button, .preview-toolbar summary')).filter(e=>!e.disabled).map(e=>{e.focus();const style=getComputedStyle(e);return {label:e.getAttribute('aria-label')||e.name||e.textContent,outline:style.outlineStyle,shadow:style.boxShadow}})`);
