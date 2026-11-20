@@ -55,7 +55,7 @@
   animation: md-wt-menu-in .12s ease-out;
 }
 .md-wt-basic-menu[hidden] { display: none; }
-.md-wt-menu-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.md-wt-menu-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; }
 .md-wt-menu-row + .md-wt-menu-row { margin-top: 4px; padding-top: 4px; border-top: 1px solid #f0f3f7; }
 .md-wt-basic-menu .md-wt-menu-item { width: 30px; height: 30px; flex: 0 0 auto; }
 @keyframes md-wt-menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
@@ -411,5 +411,5 @@
 .workspace.md-editor-workspace .md-wt-overflow-item.md-wt-overflow-open { visibility: visible; pointer-events: auto; }
 
 .md-preview-format-menu { position: fixed; flex-direction: column; }
-.md-preview-format-row { display: flex; gap: 2px; }
+.md-preview-format-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; }
 .md-preview-format-menu button:disabled { opacity: .4; cursor: default; }

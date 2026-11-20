@@ -82,9 +82,9 @@
 
 
 /* Compact actions follow the source selection without consuming editor columns. */
-.md-quick-actions { position: absolute; z-index: 1000; display: flex; gap: 2px; padding: 3px; background: var(--bg, #fff); border: 1px solid #d7dce2; border-radius: 6px; box-shadow: 0 2px 8px #0002; }
+.md-quick-actions { position: absolute; z-index: 1000; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 8px; max-width: calc(100vw - 8px); background: var(--bg, #fff); border: 1px solid #d7dce2; border-radius: 6px; box-shadow: 0 2px 8px #0002; }
 .md-quick-actions[hidden] { display: none; }
-.md-quick-actions button { width: 28px; height: 28px; display: grid; place-items: center; padding: 4px; border: 0; border-radius: 3px; background: transparent; color: inherit; cursor: pointer; }
+.md-quick-actions button { width: 30px; height: 30px; display: grid; place-items: center; padding: 4px; border: 0; border-radius: 3px; background: transparent; color: inherit; cursor: pointer; }
 .md-quick-actions svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .md-quick-actions button:hover, .md-quick-actions button.is-active { background: #e8edf3; }
 .md-quick-actions button:focus-visible { outline: 2px solid #557ba6; }
@@ -99,3 +99,5 @@
 .md-pro-outline-disclosure{width:18px;flex:0 0 18px;padding:3px 0;border:0;background:transparent;color:inherit;font:inherit;font-size:16px;cursor:pointer}
 .md-pro-outline-children{margin-left:12px}
 .md-pro-outline-children[hidden]{display:none}
+
+@media (max-width: 480px) { .md-quick-actions { padding: 6px; } .md-quick-actions button { width: 28px; height: 28px; } }

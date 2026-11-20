@@ -368,7 +368,7 @@
     return group;
   }
 
-  // Submenus use the first menu as their anchor and stay within their panel.
+  // Each submenu aligns to its own trigger and stays within its panel.
   function positionToolbarSubmenu(trigger, menu, relative) {
     var view = trigger.ownerDocument.defaultView;
     var viewport = view.visualViewport;
@@ -388,8 +388,8 @@
     var first = overflow ? overflow.getBoundingClientRect() : anchor;
     var rect = menu.getBoundingClientRect();
     var width = rect.width || menu.offsetWidth || 0;
-    var left = first.left;
-    if (left < leftBound || left + width > rightBound) left = first.right - width;
+    var left = anchor.left;
+    if (left < leftBound || left + width > rightBound) left = anchor.right - width;
     left = Math.max(leftBound, Math.min(left, rightBound - width));
     menu.style.left = (relative ? left - anchor.left : left) + 'px';
     menu.style.right = 'auto';
@@ -812,18 +812,35 @@
     }
     function position() {
       if (!open) return;
-      var view = bar.ownerDocument.defaultView, rect = more.getBoundingClientRect(), width = 32, height = 32, margin = 4;
-      // Fill from left to right; only narrow viewports need additional rows.
-      var columns = Math.max(1, Math.min(overflow.length, Math.floor((view.innerWidth - margin * 2 - 8) / width)));
+      var view = bar.ownerDocument.defaultView, rect = more.getBoundingClientRect(), margin = 4, gap = 4;
+      var viewport = view.visualViewport;
+      var viewLeft = viewport ? viewport.offsetLeft : 0, viewTop = viewport ? viewport.offsetTop : 0;
+      var viewRight = viewLeft + (viewport ? viewport.width : view.innerWidth);
+      var viewBottom = viewTop + (viewport ? viewport.height : view.innerHeight);
+      var panelRect = panel.getBoundingClientRect();
+      var leftBound = Math.max(viewLeft + margin, panelRect.left + margin);
+      var rightBound = Math.min(viewRight - margin, panelRect.right - margin);
+      if (rightBound <= leftBound) { leftBound = viewLeft + margin; rightBound = viewRight - margin; }
+      var buttonWidth = rect.width || 28, buttonHeight = rect.height || 28;
+      var padding = view.innerWidth <= 480 ? 6 : 8, inset = padding + 1;
+      var available = rightBound - leftBound;
+      inset = Math.max(0, Math.min(inset, (available - buttonWidth) / 2));
+      var columns = Math.max(1, Math.min(overflow.length, Math.floor((available - 2 * inset + gap) / (buttonWidth + gap))));
       var rows = Math.ceil(overflow.length / columns);
-      var boxWidth = columns * width + 8, boxHeight = rows * height + 8;
-      var left = Math.max(margin, Math.min(rect.right - boxWidth, view.innerWidth - boxWidth - margin));
+      var boxWidth = columns * buttonWidth + (columns - 1) * gap + 2 * inset;
+      var boxHeight = rows * buttonHeight + (rows - 1) * gap + 2 * inset;
+      var left = rect.left;
+      if (left + boxWidth > rightBound || left < leftBound) left = rect.right - boxWidth;
+      left = Math.max(leftBound, Math.min(left, rightBound - boxWidth));
       var top = rect.bottom + 6;
-      if (top + boxHeight > view.innerHeight - margin) top = Math.max(margin, rect.top - boxHeight - 6);
+      if (top + boxHeight > viewBottom - margin) top = Math.max(viewTop + margin, rect.top - boxHeight - 6);
       Object.assign(background.style, { left: left + 'px', top: top + 'px', width: boxWidth + 'px', height: boxHeight + 'px' });
       overflow.forEach(function (node, i) {
-        node.style.setProperty('--md-overflow-left', (left + 4 + (i % columns) * width) + 'px');
-        node.style.setProperty('--md-overflow-top', (top + 4 + Math.floor(i / columns) * height) + 'px');
+        var row = Math.floor(i / columns), column = i % columns;
+        var rowCount = Math.min(columns, overflow.length - row * columns);
+        var rowOffset = (columns - rowCount) * (buttonWidth + gap) / 2;
+        node.style.setProperty('--md-overflow-left', (left + inset + rowOffset + column * (buttonWidth + gap)) + 'px');
+        node.style.setProperty('--md-overflow-top', (top + inset + row * (buttonHeight + gap)) + 'px');
       });
     }
     function update() {

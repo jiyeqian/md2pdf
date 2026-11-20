@@ -31,17 +31,17 @@ try {
     const panel=document.createElement('div');panel.className='editor-panel';panel.style.cssText='position:fixed;left:20px;top:80px;width:240px;height:300px;z-index:500';
     const bar=document.createElement('div');bar.className='md-wt-toolbar';
     const first=document.createElement('div');first.className='md-wt-overflow-background';first.style.cssText='position:fixed;left:50px;top:100px;width:100px;height:30px';
-    const trigger=document.createElement('button');trigger.className='md-wt-overflow-open';trigger.style.cssText='position:fixed;left:120px;top:100px;width:28px;height:28px';
+    const trigger=document.createElement('button');trigger.className='md-wt-overflow-open';trigger.style.cssText='position:fixed;left:60px;top:100px;width:28px;height:28px';
     const menu=document.createElement('div');menu.className='md-wt-basic-menu';menu.style.cssText='position:fixed;width:max-content';
     const row=document.createElement('div');row.className='md-wt-menu-row';for(let i=0;i<4;i++){const b=document.createElement('button');b.className='md-wt-menu-item';row.append(b)}menu.append(row);bar.append(first,trigger,menu);panel.append(bar);document.body.append(panel);
     const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};
-    window.mdPositionToolbarSubmenu(trigger,menu,false);const left={menu:rect(menu),first:rect(first),panel:rect(panel)};
-    first.style.left='150px';trigger.style.left='220px';window.mdPositionToolbarSubmenu(trigger,menu,false);const right={menu:rect(menu),first:rect(first),panel:rect(panel)};
+    window.mdPositionToolbarSubmenu(trigger,menu,false);const left={menu:rect(menu),first:rect(first),trigger:rect(trigger),panel:rect(panel)};
+    first.style.left='150px';trigger.style.left='220px';window.mdPositionToolbarSubmenu(trigger,menu,false);const right={menu:rect(menu),first:rect(first),trigger:rect(trigger),panel:rect(panel)};
     panel.style.width='80px';first.style.left='25px';trigger.style.left='60px';window.mdPositionToolbarSubmenu(trigger,menu,false);const narrow={menu:rect(menu),first:rect(first),panel:rect(panel),rows:[...row.children].map(b=>b.getBoundingClientRect().top)};
     panel.remove();return {left,right,narrow};
   })()`);
-  assert.ok(Math.abs(alignment.left.menu.left-alignment.left.first.left)<1,JSON.stringify(alignment));
-  assert.ok(Math.abs(alignment.right.menu.right-alignment.right.first.right)<1,JSON.stringify(alignment));
+  assert.ok(Math.abs(alignment.left.menu.left-alignment.left.trigger.left)<1,JSON.stringify(alignment));
+  assert.ok(Math.abs(alignment.right.menu.right-alignment.right.trigger.right)<1,JSON.stringify(alignment));
   assert.ok(alignment.narrow.menu.left>=alignment.narrow.panel.left && alignment.narrow.menu.right<=alignment.narrow.panel.right && new Set(alignment.narrow.rows).size>1,JSON.stringify(alignment));
   const state=await evaluate(`Array.from(document.querySelectorAll('.md-wt-overflow-trigger')).map(b=>({hidden:b.hidden, count:b.parentElement.querySelectorAll('.md-wt-overflow-item').length, height:b.parentElement.getBoundingClientRect().height}))`);
   console.log(JSON.stringify(state));
@@ -54,8 +54,11 @@ try {
   const menu=await evaluate(`(()=>{let b=document.querySelector('.preview-toolbar .md-wt-overflow-trigger');let e=b.parentElement.querySelector('.md-wt-overflow-open');let r=e.getBoundingClientRect();return {open:b.getAttribute('aria-expanded'), visible:getComputedStyle(e).visibility, left:r.left,right:r.right,top:r.top,bottom:r.bottom}})()`);
   console.log(JSON.stringify(menu));
   assert.equal(menu.open,'true'); assert.equal(menu.visible,'visible'); assert.ok(menu.left>=0 && menu.right<=320 && menu.top>=0 && menu.bottom<=800);
-  const horizontal = await evaluate(`(()=>{const bar=document.querySelector('.preview-toolbar'),trigger=bar.querySelector('.md-wt-overflow-trigger').getBoundingClientRect(),background=bar.querySelector('.md-wt-overflow-background').getBoundingClientRect(),items=[...bar.querySelectorAll('.md-wt-overflow-open')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});return {triggerRight:trigger.right,background:{left:background.left,right:background.right,top:background.top,bottom:background.bottom},items}})()`);
-  assert.ok(Math.abs(horizontal.background.right-horizontal.triggerRight)<1, JSON.stringify(horizontal));
+  const horizontal = await evaluate(`(()=>{const bar=document.querySelector('.preview-toolbar'),trigger=bar.querySelector('.md-wt-overflow-trigger').getBoundingClientRect(),background=bar.querySelector('.md-wt-overflow-background').getBoundingClientRect(),items=[...bar.querySelectorAll('.md-wt-overflow-open')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});return {triggerLeft:trigger.left,triggerRight:trigger.right,background:{left:background.left,right:background.right,top:background.top,bottom:background.bottom},items}})()`);
+  assert.ok(Math.min(Math.abs(horizontal.background.right-horizontal.triggerRight),Math.abs(horizontal.background.left-horizontal.triggerLeft))<1, JSON.stringify(horizontal));
+  assert.ok(Math.abs((horizontal.items[0].left-horizontal.background.left)-(horizontal.background.right-horizontal.items.at(-1).right))<1, JSON.stringify(horizontal));
+  assert.ok(Math.abs(horizontal.items[1].left-horizontal.items[0].right-4)<1, JSON.stringify(horizontal));
+  assert.ok(Math.abs((horizontal.items[0].top-horizontal.background.top)-(horizontal.background.bottom-horizontal.items[0].bottom))<1, JSON.stringify(horizontal));
   assert.ok(horizontal.items.every((item,i)=>item.left>=horizontal.background.left && item.right<=horizontal.background.right && item.top>=horizontal.background.top && item.bottom<=horizontal.background.bottom && (!i || item.left>horizontal.items[i-1].left && item.top===horizontal.items[i-1].top)), JSON.stringify(horizontal));
   await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-open summary').click()`);
   assert.equal(await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-open details').open`),true);
@@ -76,7 +79,11 @@ try {
   await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').click()`);
   const reference = await evaluate(`(()=>{const b=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]');if(!b)return false;b.click();return true})()`);
   assert.equal(reference,true,'reference group is available in the overflow');
-  const menuGeometry = await evaluate(`(()=>{const first=document.querySelector('.md-wt-toolbar .md-wt-overflow-background').getBoundingClientRect(),third=document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])').getBoundingClientRect();return {first:{left:first.left,right:first.right,top:first.top,bottom:first.bottom},third:{left:third.left,right:third.right,top:third.top,bottom:third.bottom}}})()`);
+  const menuGeometry = await evaluate(`(()=>{const panel=document.querySelector('.editor-panel').getBoundingClientRect(),first=document.querySelector('.md-wt-toolbar .md-wt-overflow-background').getBoundingClientRect(),trigger=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入引用"]').getBoundingClientRect(),third=document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])').getBoundingClientRect();return {panel:{left:panel.left,right:panel.right},trigger:{left:trigger.left,right:trigger.right},first:{left:first.left,right:first.right,top:first.top,bottom:first.bottom},third:{left:third.left,right:third.right,top:third.top,bottom:third.bottom,width:third.width}}})()`);
+  const submenuBounds = { left: Math.max(4, menuGeometry.panel.left + 4), right: Math.min(316, menuGeometry.panel.right - 4) };
+  const leftFits = menuGeometry.trigger.left >= submenuBounds.left && menuGeometry.trigger.left + menuGeometry.third.width <= submenuBounds.right;
+  const alignedLeft = leftFits ? menuGeometry.trigger.left : Math.max(submenuBounds.left, Math.min(menuGeometry.trigger.right - menuGeometry.third.width, submenuBounds.right - menuGeometry.third.width));
+  assert.ok(Math.abs(menuGeometry.third.left - alignedLeft) < 1, JSON.stringify(menuGeometry));
   const move = (x,y) => browser.send('Input.dispatchMouseEvent',{type:'mouseMoved',x,y});
   await move((menuGeometry.first.left+menuGeometry.first.right)/2,(menuGeometry.first.top+menuGeometry.first.bottom)/2);
   await move(menuGeometry.third.left+10,(menuGeometry.first.bottom+menuGeometry.third.top)/2);
@@ -113,6 +120,10 @@ try {
   const narrowRows = await evaluate(`(()=>{const bar=document.querySelector('.md-wt-toolbar'),box=bar.querySelector('.md-wt-overflow-background').getBoundingClientRect(),items=[...bar.querySelectorAll('.md-wt-overflow-open')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});return {box:{left:box.left,right:box.right,top:box.top,bottom:box.bottom},items}})()`);
   assert.ok(narrowRows.items.length>0 && narrowRows.box.left>=0 && narrowRows.box.right<=120 && narrowRows.items.every(r=>r.left>=narrowRows.box.left && r.right<=narrowRows.box.right && r.top>=narrowRows.box.top && r.bottom<=narrowRows.box.bottom), JSON.stringify(narrowRows));
   assert.ok(new Set(narrowRows.items.map(r=>r.top)).size>1, JSON.stringify(narrowRows));
+  for (const top of new Set(narrowRows.items.map(r=>r.top))) {
+    const row = narrowRows.items.filter(r=>r.top===top);
+    assert.ok(Math.abs((row[0].left + row.at(-1).right - narrowRows.box.left - narrowRows.box.right)/2)<1, JSON.stringify(narrowRows));
+  }
   const academic = await evaluate(`(()=>{const item=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入参考文献"]');if(!item)return false;item.click();const menu=item.parentElement.querySelector('.md-wt-basic-menu');return !menu.hidden && [...menu.querySelectorAll('button')].map(b=>b.getAttribute('aria-label')).join(',')==='参考文献,BibTeX参考文献,DOI参考文献'})()`);
   assert.equal(academic,true,'overflowed bibliography submenu remains usable');
   const actualSubmenu = await evaluate(`(()=>{const panel=document.querySelector('.editor-panel').getBoundingClientRect(),menu=document.querySelector('.md-wt-toolbar .md-wt-overflow-open .md-wt-basic-menu:not([hidden])'),box=menu.getBoundingClientRect(),items=[...menu.querySelectorAll('button')].map(b=>b.getBoundingClientRect());return {panel:{left:panel.left,right:panel.right},box:{left:box.left,right:box.right},rows:items.map(r=>r.top)}})()`);
