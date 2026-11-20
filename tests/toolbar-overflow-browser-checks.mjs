@@ -38,6 +38,9 @@ try {
   const menu=await evaluate(`(()=>{let b=document.querySelector('.preview-toolbar .md-wt-overflow-trigger');let e=b.parentElement.querySelector('.md-wt-overflow-open');let r=e.getBoundingClientRect();return {open:b.getAttribute('aria-expanded'), visible:getComputedStyle(e).visibility, left:r.left,right:r.right,top:r.top,bottom:r.bottom}})()`);
   console.log(JSON.stringify(menu));
   assert.equal(menu.open,'true'); assert.equal(menu.visible,'visible'); assert.ok(menu.left>=0 && menu.right<=320 && menu.top>=0 && menu.bottom<=800);
+  const horizontal = await evaluate(`(()=>{const bar=document.querySelector('.preview-toolbar'),trigger=bar.querySelector('.md-wt-overflow-trigger').getBoundingClientRect(),background=bar.querySelector('.md-wt-overflow-background').getBoundingClientRect(),items=[...bar.querySelectorAll('.md-wt-overflow-open')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});return {triggerRight:trigger.right,background:{left:background.left,right:background.right,top:background.top,bottom:background.bottom},items}})()`);
+  assert.ok(Math.abs(horizontal.background.right-horizontal.triggerRight)<1, JSON.stringify(horizontal));
+  assert.ok(horizontal.items.every((item,i)=>item.left>=horizontal.background.left && item.right<=horizontal.background.right && item.top>=horizontal.background.top && item.bottom<=horizontal.background.bottom && (!i || item.left>horizontal.items[i-1].left && item.top===horizontal.items[i-1].top)), JSON.stringify(horizontal));
   await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-open summary').click()`);
   assert.equal(await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-open details').open`),true);
   await wait(`(()=>{let r=document.querySelector('.preview-toolbar .md-wt-overflow-open .range-popover').getBoundingClientRect();return r.left>=0 && r.right<=320 && r.top>=0 && r.bottom<=800})()`);
@@ -47,6 +50,23 @@ try {
   assert.equal(await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'false');
   await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').click()`);
   assert.equal(await evaluate(`Array.from(document.querySelectorAll('.md-wt-toolbar .md-wt-overflow-open')).some(x=>Array.from(x.querySelectorAll('button')).some(b=>b.tabIndex===0)||x.matches('button[tabindex=\"0\"]'))`),true);
+  const editorRows = await evaluate(`Array.from(document.querySelectorAll('.md-wt-toolbar .md-wt-overflow-open')).map(n=>{const r=n.getBoundingClientRect();return {left:r.left,top:r.top}})`);
+  assert.ok(editorRows.every((r,i)=>!i || r.top===editorRows[i-1].top && r.left>editorRows[i-1].left), JSON.stringify(editorRows));
+  await browser.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+  await browser.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+  assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').getAttribute('aria-expanded')`),'false');
+  assert.equal(await evaluate(`document.activeElement===document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger')`),true);
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:120,height:800,deviceScaleFactor:1,mobile:false});
+  await new Promise(resolve=>setTimeout(resolve,300));
+  await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').click()`);
+  const narrowRows = await evaluate(`(()=>{const bar=document.querySelector('.md-wt-toolbar'),box=bar.querySelector('.md-wt-overflow-background').getBoundingClientRect(),items=[...bar.querySelectorAll('.md-wt-overflow-open')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});return {box:{left:box.left,right:box.right,top:box.top,bottom:box.bottom},items}})()`);
+  assert.ok(narrowRows.items.length>0 && narrowRows.box.left>=0 && narrowRows.box.right<=120 && narrowRows.items.every(r=>r.left>=narrowRows.box.left && r.right<=narrowRows.box.right && r.top>=narrowRows.box.top && r.bottom<=narrowRows.box.bottom), JSON.stringify(narrowRows));
+  assert.ok(new Set(narrowRows.items.map(r=>r.top)).size>1, JSON.stringify(narrowRows));
+  const academic = await evaluate(`(()=>{const item=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入参考文献"]');if(!item)return false;item.click();const menu=item.parentElement.querySelector('.md-wt-basic-menu');return !menu.hidden && [...menu.querySelectorAll('button')].map(b=>b.getAttribute('aria-label')).join(',')==='参考文献,BibTeX参考文献,DOI参考文献'})()`);
+  assert.equal(academic,true,'overflowed bibliography submenu remains usable');
+
+  await browser.send('Emulation.setDeviceMetricsOverride',{width:320,height:800,deviceScaleFactor:1,mobile:false});
+  await new Promise(resolve=>setTimeout(resolve,300));
   await evaluate(`document.querySelector('.preview-toolbar').dataset.documentType='gb'`);
   await new Promise(resolve=>setTimeout(resolve,300));
   assert.equal(await evaluate(`document.querySelector('.preview-toolbar .md-wt-overflow-trigger').hidden`),true);

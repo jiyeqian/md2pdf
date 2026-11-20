@@ -138,9 +138,9 @@
     link: [{ d: 'M8.4 11.6a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-1 1' }, { d: 'M11.6 8.4a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l1-1' }],
     quote: [{ d: 'M6.2 7.4h2.6v2.6a2.6 2.6 0 0 1-2.6 2.6' }, { d: 'M11.6 7.4h2.6v2.6a2.6 2.6 0 0 1-2.6 2.6' }],
     code: [{ d: 'M8.4 6.2 5 10l3.4 3.8' }, { d: 'M11.6 6.2 15 10l-3.4 3.8' }],
-    codeblock: [{ rect: [4.2, 5.4, 11.6, 9.2], rx: 1.6 }, { d: 'M8.4 8.6 7 10l1.4 1.4' }, { d: 'M11.6 8.6 13 10l-1.4 1.4' }],
+    codeblock: [{ rect: [2.5, 3.5, 15, 13], rx: 1.6 }, { d: 'M7 8 5.5 10 7 12M13 8l1.5 2-1.5 2M11 7l-2 6' }],
     table: [{ rect: [4.2, 5.4, 11.6, 9.2], rx: 1.6 }, { d: 'M4.2 9.5h11.6' }, { d: 'M9.7 5.4v9.2' }],
-    figure: [{ d: 'M4.4 15.6V9.2' }, { d: 'M8.8 15.6V5.4' }, { d: 'M13.2 15.6v-4' }, { d: 'M3.4 16.6h13.2' }],
+    figure: [{ rect: [2.5, 3, 5, 4], rx: 1 }, { rect: [12.5, 3, 5, 4], rx: 1 }, { rect: [7.5, 13, 5, 4], rx: 1 }, { d: 'M7.5 5h5M5 7v3h5v3M15 7v3h-5' }],
     footnote: [{ d: 'M4.4 7.8h8' }, { d: 'M4.4 10.9h8' }, { d: 'M4.4 14h5' }, { d: 'M13.8 5.4 15.6 4.4v5.4' }],
 
     formula: [{ d: 'M5 2h10M5 18h10M6 5h8l-4.5 5 4.5 5H6' }],
@@ -296,8 +296,8 @@
     { label: '缩进', items: [
       { icon: 'indentLess', label: '左缩进', command: 'indentLess' },
       { icon: 'indentMore', label: '右缩进', command: 'indentMore' },
-      { icon: 'headingUp', label: '标题升级', insert: 'heading-up' },
-      { icon: 'headingDown', label: '标题降级', insert: 'heading-down' }
+      { icon: 'headingUp', label: '标题升级', hint: '标题升级（无选区时调整全文）', insert: 'heading-up' },
+      { icon: 'headingDown', label: '标题降级', hint: '标题降级（无选区时调整全文）', insert: 'heading-down' }
     ] },
     { label: '行内元素', items: [
       { icon: 'link', label: '链接', action: 'link', insert: 'link' },
@@ -309,22 +309,26 @@
   // 复杂插入保留在第一级：代码块 / 表格 / 图片（图片模块挂载）/ 图表 / 脚注 / 文献 / 公式块。
   var INSERT_ITEMS = [
     { icon: 'table', label: '表格', insert: 'table' },
-    { icon: 'figure', label: '图表', insert: 'figure' }
+    { icon: 'figure', label: '插入 Mermaid 图表', insert: 'figure' }
   ];
-  var ACADEMIC_ITEMS = [
-    { icon: 'footnote', label: '参考文献', insert: 'footnote' },
-    { icon: 'bibliography', label: 'BibTeX参考文献', insert: 'bibliography' },
-    { icon: 'doi', label: 'DOI参考文献' },
-    { icon: 'ref', label: '图表引用', insert: 'ref' },
-    { icon: 'eqref', label: '公式引用', insert: 'eqref' },
-    { icon: 'noteref', label: '文献引用', insert: 'noteref' }
+  var ACADEMIC_GROUPS = [
+    { label: '插入参考文献', icon: 'footnote', items: [
+      { icon: 'footnote', label: '参考文献', insert: 'footnote' },
+      { icon: 'bibliography', label: 'BibTeX参考文献', insert: 'bibliography' },
+      { icon: 'doi', label: 'DOI参考文献' }
+    ] },
+    { label: '插入引用', icon: 'noteref', items: [
+      { icon: 'ref', label: '图表引用', insert: 'ref' },
+      { icon: 'eqref', label: '公式引用', insert: 'eqref' },
+      { icon: 'noteref', label: '文献引用', insert: 'noteref' }
+    ] }
   ];
   // 图片按钮挂载点：图片模块只把按钮挂到这里（不改导入管线）；找不到时回落到工具条。
   var IMAGE_MOUNT_ATTR = 'data-md-wt-mount';
 
   // 顶部提示统一为「功能（快捷键）」或「功能」：不再保留各条目的冗长说明文案。
   function itemTitle(item) {
-    return actionTitle(item.label, item.action);
+    return item.hint || actionTitle(item.label, item.action);
   }
 
   function appendItem(group, item) {
@@ -357,6 +361,60 @@
       if (mount && item.insert === 'table') {
         group.appendChild(make('span', { class: 'md-wt-mount', 'data-md-wt-mount': mount }));
       }
+    });
+    wireRovingTabindex(group);
+    return group;
+  }
+
+  function buildAcademicGroup() {
+    var group = make('div', { class: 'md-wt-group md-wt-group--academic', role: 'group', 'aria-label': '学术' });
+    ACADEMIC_GROUPS.forEach(function (entry) {
+      var wrap = make('div', { class: 'md-wt-basic' });
+      var button = iconButton(entry.icon, entry.label, entry.label);
+      var menu = make('div', { class: 'md-wt-basic-menu', role: 'menu', 'aria-label': entry.label });
+      menu.hidden = true;
+      button.setAttribute('aria-haspopup', 'menu');
+      button.setAttribute('aria-expanded', 'false');
+      var row = make('div', { class: 'md-wt-menu-row' });
+      entry.items.forEach(function (item) {
+        var action = appendItem(row, item);
+        action.classList.add('md-wt-menu-item');
+        action.setAttribute('role', 'menuitem');
+        action.addEventListener('click', function () { close(false); });
+      });
+      menu.appendChild(row);
+      function close(restore) {
+        menu.hidden = true;
+        button.setAttribute('aria-expanded', 'false');
+        if (restore) button.focus();
+      }
+      button.addEventListener('click', function () {
+        if (!menu.hidden) { close(true); return; }
+        menu.hidden = false;
+        button.setAttribute('aria-expanded', 'true');
+        var rect = button.getBoundingClientRect(), view = button.ownerDocument.defaultView;
+        var width = menu.offsetWidth, height = menu.offsetHeight;
+        menu.style.left = Math.max(8, Math.min(rect.left, view.innerWidth - width - 8)) + 'px';
+        menu.style.top = (rect.bottom + 6 + height <= view.innerHeight - 8 ? rect.bottom + 6 : Math.max(8, rect.top - height - 6)) + 'px';
+        row.querySelector('button')?.focus();
+      });
+      menu.addEventListener('keydown', function (event) {
+        var buttons = Array.prototype.slice.call(row.querySelectorAll('button:not(:disabled)'));
+        var index = buttons.indexOf(menu.ownerDocument.activeElement);
+        if (event.key === 'Escape') { event.preventDefault(); close(true); }
+        else if (event.key === 'Tab') close(false);
+        else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+          event.preventDefault();
+          buttons[(index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+        }
+      });
+      onWorkspaceDOM('pointerdown', function (event) {
+        if (!menu.hidden && !wrap.contains(event.target)) close(false);
+      }, true);
+      wrap.appendChild(button);
+      wrap.appendChild(menu);
+      group.appendChild(wrap);
+      commandButtons.push(button);
     });
     wireRovingTabindex(group);
     return group;
@@ -491,22 +549,19 @@
 
     var files = make('div', { class: 'md-wt-group', role: 'group', 'aria-label': '打开与模板' });
     buildFileButtons(files);
-    var createButton = makeFileButton('从模板创建 Markdown', 'templateGrid', function () {
+    var createButton = makeFileButton('创建 Markdown', 'templateGrid', function () {
       import('./document-create.mjs').then(function (module) { return module.openCreateMenu(createButton); }).catch(function (error) { fileStatus(error.message, true); });
     });
     createButton.setAttribute('id', 'create-markdown');
     files.appendChild(createButton);
-    files.appendChild(makeFileButton('创建空文件', 'template', function () {
-      window.mdCreateBlank().catch(function (error) { fileStatus(error.message, true); });
-    }));
     toolbar.appendChild(files);
     toolbar.appendChild(buildGroup('撤销重做与查找替换', 'md-wt-group--history', HISTORY_ITEMS));
     var formatGroup = buildBasicFormatControl();
-    appendItem(formatGroup, { icon: 'codeblock', label: '代码块', action: 'codeblock', insert: 'codeblock' });
+    appendItem(formatGroup, { icon: 'codeblock', label: '插入代码块', action: 'codeblock', insert: 'codeblock' });
     appendItem(formatGroup, { icon: 'formula', label: '公式块', action: 'formula', insert: 'formula' });
     toolbar.appendChild(formatGroup);
     toolbar.appendChild(buildGroup('插入', 'md-wt-group--insert', INSERT_ITEMS, 'images'));
-    toolbar.appendChild(buildGroup('学术', 'md-wt-group--academic', ACADEMIC_ITEMS));
+    toolbar.appendChild(buildAcademicGroup());
 
     var heading = editorPanel.querySelector('.panel-heading');
     // insertBefore(node, null/undefined) 追加到末尾，避免依赖 after()。
@@ -666,6 +721,7 @@
   }
 
   function setupOverflow(bar, panel, editor) {
+    if (!bar || typeof bar.matches !== 'function') return;
     var more = make('button', { type: 'button', class: 'md-wt-overflow-trigger', 'aria-label': '更多工具', 'aria-expanded': 'false', 'aria-haspopup': 'true', title: '更多工具' });
     more.textContent = '⋯';
     var background = make('div', { class: 'md-wt-overflow-background', hidden: '' });
@@ -690,16 +746,18 @@
     }
     function position() {
       if (!open) return;
-      var view = bar.ownerDocument.defaultView, rect = more.getBoundingClientRect(), width = 44, height = 36, margin = 8;
-      var rows = Math.max(1, Math.floor((view.innerHeight - margin * 2 - 8) / height));
-      var boxHeight = Math.min(rows, overflow.length) * height + 8, boxWidth = Math.ceil(overflow.length / rows) * width + 8;
+      var view = bar.ownerDocument.defaultView, rect = more.getBoundingClientRect(), width = 32, height = 32, margin = 4;
+      // Fill from left to right; only narrow viewports need additional rows.
+      var columns = Math.max(1, Math.min(overflow.length, Math.floor((view.innerWidth - margin * 2 - 8) / width)));
+      var rows = Math.ceil(overflow.length / columns);
+      var boxWidth = columns * width + 8, boxHeight = rows * height + 8;
       var left = Math.max(margin, Math.min(rect.right - boxWidth, view.innerWidth - boxWidth - margin));
       var top = rect.bottom + 6;
       if (top + boxHeight > view.innerHeight - margin) top = Math.max(margin, rect.top - boxHeight - 6);
       Object.assign(background.style, { left: left + 'px', top: top + 'px', width: boxWidth + 'px', height: boxHeight + 'px' });
       overflow.forEach(function (node, i) {
-        node.style.setProperty('--md-overflow-left', (left + 8 + Math.floor(i / rows) * width) + 'px');
-        node.style.setProperty('--md-overflow-top', (top + 4 + (i % rows) * height) + 'px');
+        node.style.setProperty('--md-overflow-left', (left + 4 + (i % columns) * width) + 'px');
+        node.style.setProperty('--md-overflow-top', (top + 4 + Math.floor(i / columns) * height) + 'px');
       });
     }
     function update() {
@@ -716,7 +774,7 @@
         });
       });
       var items = controls(), visible = items.filter(function (node) { return !node.hidden && getComputedStyle(node).display !== 'none'; });
-      var columns = parseInt(panel.style.getPropertyValue('--panel-columns'), 10) || 1;
+      var columns = parseInt(panel.style.getPropertyValue?.('--panel-columns'), 10) || 1;
       var next = visible.length > columns ? visible.slice(Math.max(0, columns - 1)) : [];
       if (open && (next.length !== overflow.length || next.some(function (item, i) { return item !== overflow[i]; }))) close(false);
       items.forEach(function (node) { node.classList.remove('md-wt-overflow-item', 'md-wt-overflow-open'); });

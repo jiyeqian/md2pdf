@@ -88,9 +88,9 @@ test('下载按钮移入预览 panel-heading，保留 id/disabled/aria-label 与
   assert.ok(heading, '未找到预览面板');
   const block = heading[0];
   assert.match(block, /<button id="download"[^>]*disabled/);
-  assert.match(block, /aria-label="下载 PDF"/);
+  assert.match(block, /aria-label="打印或下载 PDF"/);
   assert.match(block, /class="icon-button panel-download"/, '下载应为与全屏一致的描边图标按钮');
-  assert.match(block, /<span class="btn-label sr-only">下载 PDF<\/span>/);
+  assert.match(block, /<span class="btn-label sr-only">打印或下载 PDF<\/span>/);
   assert.match(block, /<svg class="btn-icon"[^>]*viewBox="0 0 24 24"[^>]*stroke="currentColor"/, '应内联 Tabler file-type-pdf 图标（currentColor，24 视图）');
   assert.match(block, /M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4/, '应保留 file-type-pdf 路径数据');
   // 下载必须在预览 surface 之前（位于标题栏内）
@@ -332,7 +332,7 @@ function fakeEnvironment() {
     },
     addEventListener(type, fn) { (docListeners[type] || (docListeners[type] = [])).push(fn); },
     removeEventListener() {},
-    dispatch(type, event) { (docListeners[type] || []).forEach(fn => fn(event || { type })); },
+    dispatch(type, event) { event = event || { type }; event.target ||= { closest: () => null }; (docListeners[type] || []).forEach(fn => fn(event)); },
     dispatchEvent() {},
   };
   const winListeners = {};
@@ -466,7 +466,7 @@ test('行为：工具栏生成分组 SVG 图标按钮；同步定位是图标开
   assert.ok(!env.editorActions.children.includes(templateLink));
   assert.equal(templateLink.tagName, 'BUTTON', '创建入口应打开菜单');
   assert.equal(templateLink.getAttribute('type'), 'button');
-  assert.equal(templateLink.getAttribute('aria-label'), '从模板创建 Markdown');
+  assert.equal(templateLink.getAttribute('aria-label'), '创建 Markdown');
   assert.ok(templateLink.getAttribute('title'), '锚点需有 title');
   assert.ok((templateLink.children || []).some(c => c.tagName === 'SVG'), '锚点应含文档+图标');
 
@@ -519,10 +519,10 @@ test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执�
   assert.match(itemFor('行内代码').getAttribute('title'), /^行内代码（.+E）$/, '行内代码应有真实绑定');
   assert.match(itemFor('行内公式').getAttribute('title'), /^行内公式（.+X）$/, '行内公式应有真实绑定');
   assert.match(itemFor('引用块').getAttribute('title'), /^引用块（.+\.）$/, '引用块应有真实绑定');
-  assert.match(topButton('代码块').getAttribute('title'), /代码块（.+E）/);
+  assert.match(topButton('插入代码块').getAttribute('title'), /插入代码块（.+E）/);
   assert.match(topButton('公式块').getAttribute('title'), /公式块（.+M）/);
   // 无绑定项标题必须与功能名完全一致（不得残留冗长说明）。
-  for (const label of ['参考文献', 'BibTeX参考文献', 'DOI参考文献', '表格', '图表引用', '公式引用', '图表']) {
+  for (const label of ['参考文献', 'BibTeX参考文献', 'DOI参考文献', '表格', '图表引用', '公式引用', '插入 Mermaid 图表']) {
     assert.equal(topButton(label).getAttribute('title'), label, label + ' 的 title 应为简洁功能名');
   }
 
@@ -546,7 +546,7 @@ test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执�
 
   // 复杂插入仍在第一级且可插入（表格 / 代码块 / 公式块）。
   topButton('表格').dispatch('click', {});
-  topButton('代码块').dispatch('click', {});
+  topButton('插入代码块').dispatch('click', {});
   topButton('公式块').dispatch('click', {});
   assert.deepEqual(inserted.slice(-3), ['table', 'codeblock', 'formula']);
 
@@ -682,7 +682,7 @@ test('从模板创建入口：位于 Markdown 标题栏全屏按钮之前（锚�
   assert.ok(!/>浏览示例库<\/a>/.test(indexHtml), '旧的示例入口文案应移除');
   assert.ok(!/>从模板创建<\/a>/.test(indexHtml), 'index 底部不再内联从模板创建');
   // editor-workspace.js 注入锚点：保持 id / href / aria-label，使用文档+图标。
-  assert.ok(wsJs.includes("makeFileButton('从模板创建 Markdown'"));
+  assert.ok(wsJs.includes("makeFileButton('创建 Markdown'"));
   assert.ok(wsJs.includes("import('./document-create.mjs')"));
   assert.ok(wsJs.includes("'create-markdown'"));
   assert.match(wsJs, /template: \[/, '需要线性文档+图标');
@@ -911,7 +911,7 @@ test('标题栏保留下载与全屏，打开与模板位于工具条最前', ()
   assert.deepEqual(labels, ['下载 Markdown', 'Markdown 全屏写作']);
   const toolbar = env.editorPanel.children.find(n => n.getAttribute && n.getAttribute('role') === 'toolbar');
   const first = toolbar.children[0].children.filter(n => ['BUTTON', 'A'].includes(n.tagName));
-  assert.deepEqual(first.map(n => n.getAttribute('aria-label')), ['打开 Markdown', '从模板创建 Markdown', '创建空文件']);
+  assert.deepEqual(first.map(n => n.getAttribute('aria-label')), ['打开 Markdown', '创建 Markdown']);
 });
 
 
@@ -921,7 +921,8 @@ test('privacy 下载保存与标题栏 Markdown 下载使用同一个动作', ()
   const download = env.editorActions.children.find(node => node.getAttribute('aria-label') === '下载 Markdown');
   assert.ok(download);
   assert.equal(env.privacySave.listeners.click.length, 1);
-  assert.equal(env.privacySave.listeners.click[0], download.listeners.click[0]);
+  assert.match(wsJs, /保存到本地', IS_MAC \? '⌘S' : 'Ctrl\+S', saveMarkdown/);
+  assert.match(wsJs, /privacySave\.addEventListener\('click', saveMarkdown\)/);
 });
 
  test('预览排版工具条：位于预览标题之后，排版项按图标逐个换行', () => {

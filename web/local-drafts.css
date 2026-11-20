@@ -19,11 +19,11 @@
 .md-drafts-heading { padding: 5px 6px 3px; border-top: 1px solid #e5e9ef; margin-top: 4px; color: #667789; font-size: .92em; }
 .md-drafts-menu p { padding: 0 6px; color: #667789; }
 .md-draft-row { display: flex; align-items: flex-start; padding: 0 6px; }
-.md-draft-row > button:first-child { display: grid; grid-template-columns: 12px minmax(0, 1fr); column-gap: 4px; flex: 0 1 auto; width: auto; max-width: calc(100% - 24px); min-width: 0; padding: 3px 0; }
+.md-draft-row > button:first-child { display: grid; grid-template-columns: 12px minmax(0, 1fr); column-gap: 4px; flex: 1 1 auto; width: 0; min-width: 0; padding: 3px 0; }
 .md-draft-mark { grid-column: 1; grid-row: 1; line-height: 1.5; text-align: center; }
 .md-draft-title { grid-column: 2; grid-row: 1; display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .md-draft-row small { grid-column: 2; display: block; color: #667789; font-size: .85em; }
-.md-draft-row .md-draft-delete { display: flex; align-items: center; justify-content: center; flex: 0 0 20px; width: 20px; height: 24px; min-height: 24px; margin-left: 4px; padding: 0; text-align: center; line-height: 1; color: #9e3434; }
+.md-draft-row .md-draft-delete { display: flex; align-items: center; justify-content: center; flex: 0 0 20px; width: 20px; height: 24px; min-height: 24px; margin-left: auto; padding: 0; text-align: center; line-height: 1; color: #9e3434; }
 .md-drafts-menu .md-drafts-clear { border-top: 1px solid #e5e9ef; margin-top: 4px; color: #9e3434; }
 .md-drafts-menu button:disabled { opacity: .5; cursor: default; }
 #draft-save-status { min-width: 0; padding: 0; overflow: hidden; text-overflow: ellipsis; color: #617386; font: 11px/16px system-ui, sans-serif; text-align: right; white-space: nowrap; }

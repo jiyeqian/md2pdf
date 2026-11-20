@@ -1,7 +1,7 @@
 import { appFetch } from './runtime-request.mjs';
 let menu, trigger, catalogPromise;
 document.addEventListener('md-panel-host-change', () => close());
-const names = { general: '通用文档', paper: '学术论文', gb: '国家标准', skill: '技能文档' };
+const names = { general: '通用文档', paper: '学术论文', gb: '国家标准' };
 function close(focus = false) {
   if (menu) menu.hidden = true;
   trigger?.setAttribute('aria-expanded', 'false');
@@ -30,13 +30,29 @@ export async function openCreateMenu(anchor) {
     menu.id = 'md-create-menu';
     menu.className = 'md-drafts-menu';
     menu.setAttribute('role', 'dialog');
-    menu.setAttribute('aria-label', '从模板创建 Markdown');
+    menu.setAttribute('aria-label', '创建 Markdown');
+    const blank = document.createElement('button');
+    blank.type = 'button';
+    blank.textContent = '创建空文件';
+    blank.setAttribute('aria-label', '创建空文件');
+    blank.addEventListener('click', async () => {
+      try { await window.mdCreateBlank(); close(); window.mdEditor?.focus(); }
+      catch (error) {
+        const status = window.mdWorkspaceHosts?.query('#status') || document.querySelector('#status');
+        if (status) { status.textContent = error.message || '创建失败，请重试。'; status.dataset.error = 'true'; }
+      }
+    });
+    menu.append(blank);
+    const heading = document.createElement('div');
+    heading.className = 'md-drafts-heading';
+    heading.textContent = '从模板创建';
+    menu.append(heading);
     const template = document.createElement('a');
     template.id = 'browse-examples';
     template.href = window.__MD2PDF_STATIC_BASE__ || '/';
     template.dataset.viewLink = 'templates';
     template.className = 'md-drafts-browse';
-    template.textContent = '从模板库选择…';
+    template.textContent = '更多模板';
     template.addEventListener('click', event => {
       close();
       if (menu.ownerDocument !== window.document) {
@@ -81,7 +97,7 @@ export async function openCreateMenu(anchor) {
         return (await response.json()).examples;
       }).catch(error => { catalogPromise = null; throw error; });
       const catalog = await catalogPromise;
-      for (const id of ['general', 'paper', 'gb', 'skill']) {
+      for (const id of ['general', 'paper', 'gb']) {
         const meta = catalog.find(entry => entry.id === id);
         if (!meta || menu.querySelector('[data-template-id="' + id + '"]')) continue;
         const item = document.createElement('button');
@@ -103,7 +119,7 @@ export async function openCreateMenu(anchor) {
     } catch (error) {
       const status = window.mdWorkspaceHosts?.query('#status') || document.querySelector('#status');
       if (status) { status.textContent = error.message; status.dataset.error = 'true'; }
-    } finally { browse.textContent = '从模板库选择…'; }
+    } finally { browse.textContent = '更多模板'; }
   }
   position();
   if (!menu.hidden) (menu.querySelector('button') || browse).focus();
