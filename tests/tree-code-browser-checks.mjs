@@ -48,12 +48,14 @@ try {
   await wait('document.querySelectorAll(".cm-line.md-tree-line").length >= 5');
   const editor = await evaluate(`(()=>{const line=document.querySelector('.cm-line.md-tree-line'), ordinary=[...document.querySelectorAll('.cm-line')].find(n=>n.textContent==='ordinary code');return {tree:getComputedStyle(line).lineHeight, treeSize:getComputedStyle(line).fontSize, treeFont:getComputedStyle(line).fontFamily, ordinary:getComputedStyle(ordinary).lineHeight, text:mdEditor.getValue()}})()`);
   assert.equal(editor.text, md);
-  assert.ok(parseFloat(editor.tree) / parseFloat(editor.treeSize) <= 1.01, JSON.stringify(editor));
+  assert.ok(parseFloat(editor.tree) / parseFloat(editor.treeSize) <= 1.21, JSON.stringify(editor));
+  assert.ok(parseFloat(editor.tree) / parseFloat(editor.treeSize) >= 1.19, JSON.stringify(editor));
   assert.ok(parseFloat(editor.ordinary) > parseFloat(editor.tree), JSON.stringify(editor));
   const session = await frame();
   await wait('document.querySelector(".pagedjs_pages pre.md-tree-code code")', session);
   const preview = await evaluate(`(()=>{const code=document.querySelector('.pagedjs_pages pre.md-tree-code code'),pre=code.parentElement, ordinary=[...document.querySelectorAll('.pagedjs_pages pre')].find(n=>n.textContent.includes('ordinary code'));return {line:getComputedStyle(pre).lineHeight,font:getComputedStyle(code).fontFamily,size:getComputedStyle(pre).fontSize,ordinary:getComputedStyle(ordinary).lineHeight,text:code.textContent}})()`, session);
-  assert.ok(parseFloat(preview.line) / parseFloat(preview.size) <= 1.01, JSON.stringify(preview));
+  assert.ok(parseFloat(preview.line) / parseFloat(preview.size) <= 1.21, JSON.stringify(preview));
+  assert.ok(parseFloat(preview.line) / parseFloat(preview.size) >= 1.19, JSON.stringify(preview));
   assert.ok(preview.text.includes('│   ├── component 组件'), JSON.stringify(preview));
   await browser.send('Page.captureScreenshot',{format:'png'}).then(result=>writeFile('/private/tmp/md2pdf-tree-browser.png',Buffer.from(result.data,'base64')));
   console.log('Tree browser checks passed', JSON.stringify({editor, preview}));
