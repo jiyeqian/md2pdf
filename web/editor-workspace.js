@@ -222,7 +222,7 @@
   }
 
   function iconButton(name, label, title) {
-    var button = make('button', { type: 'button', class: 'md-wt-button', title: title, 'aria-label': label });
+    var button = make('button', { type: 'button', class: 'md-wt-button', title: title && title.replace(/^插入\s*/, ''), 'aria-label': label });
     button.appendChild(iconSvg(name));
     return button;
   }
@@ -330,7 +330,7 @@
 
   // 顶部提示统一为「功能（快捷键）」或「功能」：不再保留各条目的冗长说明文案。
   function itemTitle(item) {
-    return item.hint || actionTitle(item.label, item.action);
+    return (item.hint || actionTitle(item.label, item.action)).replace(/^插入\s*/, '');
   }
 
   function appendItem(group, item) {

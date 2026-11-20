@@ -519,11 +519,14 @@ test('行为：基础格式面板的命令插入、快捷键与焦点（vm 执�
   assert.match(itemFor('行内代码').getAttribute('title'), /^行内代码（.+E）$/, '行内代码应有真实绑定');
   assert.match(itemFor('行内公式').getAttribute('title'), /^行内公式（.+X）$/, '行内公式应有真实绑定');
   assert.match(itemFor('引用块').getAttribute('title'), /^引用块（.+\.）$/, '引用块应有真实绑定');
-  assert.match(topButton('插入代码块').getAttribute('title'), /插入代码块（.+E）/);
+  assert.match(topButton('插入代码块').getAttribute('title'), /代码块（.+E）/);
   assert.match(topButton('公式块').getAttribute('title'), /公式块（.+M）/);
+  assert.equal(itemFor('插入分页符').getAttribute('title'), '分页符');
+  assert.equal(topButton('插入参考文献').getAttribute('title'), '参考文献');
+  assert.equal(topButton('插入引用').getAttribute('title'), '引用');
   // 无绑定项标题必须与功能名完全一致（不得残留冗长说明）。
   for (const label of ['参考文献', 'BibTeX参考文献', 'DOI参考文献', '表格', '图表引用', '公式引用', '插入 Mermaid 图表']) {
-    assert.equal(topButton(label).getAttribute('title'), label, label + ' 的 title 应为简洁功能名');
+    assert.equal(topButton(label).getAttribute('title'), label.replace(/^插入\s*/, ''), label + ' 的 title 应为简洁功能名');
   }
 
   basicButton.dispatch('click', { preventDefault() {} });
