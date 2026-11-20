@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createApp } from '../src/server.mjs';
@@ -33,15 +33,17 @@ try {
     const first=document.createElement('div');first.className='md-wt-overflow-background';first.style.cssText='position:fixed;left:50px;top:100px;width:100px;height:30px';
     const trigger=document.createElement('button');trigger.className='md-wt-overflow-open';trigger.style.cssText='position:fixed;left:60px;top:100px;width:28px;height:28px';
     const menu=document.createElement('div');menu.className='md-wt-basic-menu';menu.style.cssText='position:fixed;width:max-content';
-    const row=document.createElement('div');row.className='md-wt-menu-row';for(let i=0;i<4;i++){const b=document.createElement('button');b.className='md-wt-menu-item';row.append(b)}menu.append(row);bar.append(first,trigger,menu);panel.append(bar);document.body.append(panel);
+    const row=document.createElement('div');row.className='md-wt-menu-row';for(let i=0;i<4;i++){const b=document.createElement('button');b.className='md-wt-menu-item';row.append(b)}const shortRow=document.createElement('div');shortRow.className='md-wt-menu-row';for(let i=0;i<3;i++){const b=document.createElement('button');b.className='md-wt-menu-item';shortRow.append(b)}menu.append(row,shortRow);bar.append(first,trigger,menu);panel.append(bar);document.body.append(panel);
     const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};
-    window.mdPositionToolbarSubmenu(trigger,menu,false);const left={menu:rect(menu),first:rect(first),trigger:rect(trigger),panel:rect(panel)};
-    first.style.left='150px';trigger.style.left='220px';window.mdPositionToolbarSubmenu(trigger,menu,false);const right={menu:rect(menu),first:rect(first),trigger:rect(trigger),panel:rect(panel)};
+    window.mdPositionToolbarSubmenu(trigger,menu,false);const left={menu:rect(menu),first:rect(first),trigger:rect(trigger),panel:rect(panel),full:rect(row.firstChild),short:rect(shortRow.firstChild)};
+    first.style.left='150px';trigger.style.left='220px';window.mdPositionToolbarSubmenu(trigger,menu,false);const right={menu:rect(menu),first:rect(first),trigger:rect(trigger),panel:rect(panel),full:rect(row.lastChild),short:rect(shortRow.lastChild)};
     panel.style.width='80px';first.style.left='25px';trigger.style.left='60px';window.mdPositionToolbarSubmenu(trigger,menu,false);const narrow={menu:rect(menu),first:rect(first),panel:rect(panel),rows:[...row.children].map(b=>b.getBoundingClientRect().top)};
     panel.remove();return {left,right,narrow};
   })()`);
   assert.ok(Math.abs(alignment.left.menu.left-alignment.left.trigger.left)<1,JSON.stringify(alignment));
   assert.ok(Math.abs(alignment.right.menu.right-alignment.right.trigger.right)<1,JSON.stringify(alignment));
+  assert.ok(Math.abs(alignment.left.full.left-alignment.left.short.left)<1,JSON.stringify(alignment));
+  assert.ok(Math.abs(alignment.right.full.right-alignment.right.short.right)<1,JSON.stringify(alignment));
   assert.ok(alignment.narrow.menu.left>=alignment.narrow.panel.left && alignment.narrow.menu.right<=alignment.narrow.panel.right && new Set(alignment.narrow.rows).size>1,JSON.stringify(alignment));
   const state=await evaluate(`Array.from(document.querySelectorAll('.md-wt-overflow-trigger')).map(b=>({hidden:b.hidden, count:b.parentElement.querySelectorAll('.md-wt-overflow-item').length, height:b.parentElement.getBoundingClientRect().height}))`);
   console.log(JSON.stringify(state));
@@ -117,12 +119,16 @@ try {
   await browser.send('Emulation.setDeviceMetricsOverride',{width:120,height:800,deviceScaleFactor:1,mobile:false});
   await new Promise(resolve=>setTimeout(resolve,300));
   await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').click()`);
-  const narrowRows = await evaluate(`(()=>{const bar=document.querySelector('.md-wt-toolbar'),box=bar.querySelector('.md-wt-overflow-background').getBoundingClientRect(),items=[...bar.querySelectorAll('.md-wt-overflow-open')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});return {box:{left:box.left,right:box.right,top:box.top,bottom:box.bottom},items}})()`);
+  const narrowRows = await evaluate(`(()=>{const bar=document.querySelector('.md-wt-toolbar'),box=bar.querySelector('.md-wt-overflow-background').getBoundingClientRect(),items=[...bar.querySelectorAll('.md-wt-overflow-open')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});return {box:{left:box.left,right:box.right,top:box.top,bottom:box.bottom,align:bar.querySelector('.md-wt-overflow-background').dataset.menuAlign},items}})()`);
   assert.ok(narrowRows.items.length>0 && narrowRows.box.left>=0 && narrowRows.box.right<=120 && narrowRows.items.every(r=>r.left>=narrowRows.box.left && r.right<=narrowRows.box.right && r.top>=narrowRows.box.top && r.bottom<=narrowRows.box.bottom), JSON.stringify(narrowRows));
   assert.ok(new Set(narrowRows.items.map(r=>r.top)).size>1, JSON.stringify(narrowRows));
   for (const top of new Set(narrowRows.items.map(r=>r.top))) {
     const row = narrowRows.items.filter(r=>r.top===top);
-    assert.ok(Math.abs((row[0].left + row.at(-1).right - narrowRows.box.left - narrowRows.box.right)/2)<1, JSON.stringify(narrowRows));
+    const reference = narrowRows.items.filter(r=>r.top===narrowRows.items[0].top);
+    const edge = narrowRows.box.align==='right' ? 'right' : 'left';
+    const actual = edge==='right' ? row.at(-1).right : row[0].left;
+    const expected = edge==='right' ? reference.at(-1).right : reference[0].left;
+    assert.ok(Math.abs(actual-expected)<1, JSON.stringify(narrowRows));
   }
   const academic = await evaluate(`(()=>{const item=document.querySelector('.md-wt-toolbar .md-wt-overflow-open [aria-label="插入参考文献"]');if(!item)return false;item.click();const menu=item.parentElement.querySelector('.md-wt-basic-menu');return !menu.hidden && [...menu.querySelectorAll('button')].map(b=>b.getAttribute('aria-label')).join(',')==='参考文献,BibTeX参考文献,DOI参考文献'})()`);
   assert.equal(academic,true,'overflowed bibliography submenu remains usable');
@@ -151,5 +157,12 @@ try {
   await browser.send('Emulation.setDeviceMetricsOverride',{width:700,height:800,deviceScaleFactor:1,mobile:false});
   await new Promise(resolve=>setTimeout(resolve,300));
   assert.ok(await evaluate(`document.querySelector('.md-wt-toolbar').getBoundingClientRect().height<60 && document.querySelector('.preview-toolbar').getBoundingClientRect().height<60`));
+  await evaluate(`document.querySelector('#md-wt-basic-format').click()`);
+  await new Promise(resolve=>setTimeout(resolve,200));
+  const basicRows = await evaluate(`(()=>{const menu=document.querySelector('#md-wt-basic-menu');return {align:menu.dataset.menuAlign,rows:[...menu.querySelectorAll('.md-wt-menu-row')].map(row=>{const buttons=[...row.querySelectorAll('button')],first=buttons[0].getBoundingClientRect(),last=buttons.at(-1).getBoundingClientRect();return {left:first.left,right:last.right,count:buttons.length}})}})()`);
+  const basicEdge = basicRows.align === 'right' ? 'right' : 'left';
+  assert.ok(basicRows.rows.some(row=>row.count<Math.max(...basicRows.rows.map(item=>item.count))),JSON.stringify(basicRows));
+  assert.ok(basicRows.rows.every(row=>Math.abs(row[basicEdge]-basicRows.rows[0][basicEdge])<1),JSON.stringify(basicRows));
+  if (process.env.MD2PDF_MENU_SCREENSHOT) await browser.send('Page.captureScreenshot',{format:'png'}).then(result=>writeFile(process.env.MD2PDF_MENU_SCREENSHOT,Buffer.from(result.data,'base64')));
   console.log('overflow browser check passed');
 } finally { await browser.stop(); if (app) await app.close(); await rm(temp,{recursive:true,force:true}); }

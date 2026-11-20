@@ -389,8 +389,10 @@
     var rect = menu.getBoundingClientRect();
     var width = rect.width || menu.offsetWidth || 0;
     var left = anchor.left;
-    if (left < leftBound || left + width > rightBound) left = anchor.right - width;
+    var alignRight = left < leftBound || left + width > rightBound;
+    if (alignRight) left = anchor.right - width;
     left = Math.max(leftBound, Math.min(left, rightBound - width));
+    menu.setAttribute('data-menu-align', alignRight ? 'right' : 'left');
     menu.style.left = (relative ? left - anchor.left : left) + 'px';
     menu.style.right = 'auto';
     var top = first.bottom + 6;
@@ -830,15 +832,17 @@
       var boxWidth = columns * buttonWidth + (columns - 1) * gap + 2 * inset;
       var boxHeight = rows * buttonHeight + (rows - 1) * gap + 2 * inset;
       var left = rect.left;
-      if (left + boxWidth > rightBound || left < leftBound) left = rect.right - boxWidth;
+      var alignRight = left + boxWidth > rightBound || left < leftBound;
+      if (alignRight) left = rect.right - boxWidth;
       left = Math.max(leftBound, Math.min(left, rightBound - boxWidth));
+      background.setAttribute('data-menu-align', alignRight ? 'right' : 'left');
       var top = rect.bottom + 6;
       if (top + boxHeight > viewBottom - margin) top = Math.max(viewTop + margin, rect.top - boxHeight - 6);
       Object.assign(background.style, { left: left + 'px', top: top + 'px', width: boxWidth + 'px', height: boxHeight + 'px' });
       overflow.forEach(function (node, i) {
         var row = Math.floor(i / columns), column = i % columns;
         var rowCount = Math.min(columns, overflow.length - row * columns);
-        var rowOffset = (columns - rowCount) * (buttonWidth + gap) / 2;
+        var rowOffset = alignRight ? (columns - rowCount) * (buttonWidth + gap) : 0;
         node.style.setProperty('--md-overflow-left', (left + inset + rowOffset + column * (buttonWidth + gap)) + 'px');
         node.style.setProperty('--md-overflow-top', (top + inset + row * (buttonHeight + gap)) + 'px');
       });

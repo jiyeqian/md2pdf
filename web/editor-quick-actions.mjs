@@ -150,6 +150,8 @@ export function installQuickActions(editor) {
     let coords;
     try { coords=editor.coordsAtPos(sel.from); } catch { coords=null; }
     menu.style.visibility='hidden';
+    // A hidden menu at its old position must not expand a resized viewport.
+    menu.style.left='0px'; menu.style.top='0px';
     if(!coords)return;
     const viewport=win.visualViewport;
     let left=viewport?viewport.offsetLeft:0,top=viewport?viewport.offsetTop:0;
