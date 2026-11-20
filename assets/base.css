@@ -214,6 +214,9 @@ pre code {
   color: inherit; font-size: .85em; line-height: 1.7;
 }
 
+.md-tree-code { font-size: .85em; line-height: 1; }
+.md-tree-code code { font-size: 1em; line-height: inherit; font-family: Menlo, Consolas, monospace; }
+
 /* ---------- 代码高亮（highlight.js，浅色底） ---------- */
 .hljs-comment, .hljs-quote { color: #6a737d; font-style: italic; }
 .hljs-keyword, .hljs-selector-tag, .hljs-doctag, .hljs-formula { color: #d73a49; }

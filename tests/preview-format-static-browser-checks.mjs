@@ -26,11 +26,12 @@ const server = createServer(async (request, response) => {
 });
 try {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const testFile = process.argv[2] === 'tree' ? './tree-code-browser-checks.mjs' : './preview-format-browser-checks.mjs';
   const result = await new Promise((accept, reject) => {
-    const child = spawn(process.execPath, [fileURLToPath(new URL('./preview-format-browser-checks.mjs', import.meta.url)), 'http://127.0.0.1:' + server.address().port + prefix], { stdio: 'inherit' });
+    const child = spawn(process.execPath, [fileURLToPath(new URL(testFile, import.meta.url)), 'http://127.0.0.1:' + server.address().port + prefix], { stdio: 'inherit' });
     child.once('error', reject); child.once('exit', accept);
   });
-  assert.equal(result, 0, 'static nested-path preview formatting');
+  assert.equal(result, 0, 'static nested-path browser check');
   assert.deepEqual(outside, [], 'resources remain under the deployment prefix');
-  console.log('PASS: nested static deployment supports preview formatting');
+  console.log('PASS: nested static deployment browser check');
 } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
