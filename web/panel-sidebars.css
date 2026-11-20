@@ -96,3 +96,34 @@
 .md-cloud-breadcrumb > .md-cloud-crumb:last-child { overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere; }
 
 .md-cloud-popup:has(button:hover) button:focus-visible:not(:hover) { background:transparent; }
+
+/* 云文件工具、状态、列表与账户保持稳定的层次。 */
+.md-sidebar-content:has(.md-cloud-panel:not(.is-disconnected)) { overflow: hidden; display: flex; }
+.md-sidebar-view:has(> .md-cloud-panel:not(.is-disconnected)):not([hidden]) { display:flex; flex:1; min-height:0; }
+.md-cloud-panel:not(.is-disconnected) { display:flex; flex-direction:column; min-width:0; min-height:0; flex:1; }
+.md-cloud-panel:not(.is-disconnected) > .md-cloud-panel-actions:first-child { padding-bottom:7px; border-bottom:1px solid #e3e9f0; }
+.md-cloud-panel-status { flex:none; min-height:0; max-height:0; opacity:0; overflow:hidden; transition:max-height .18s ease, opacity .18s ease; }
+.md-cloud-panel-status[data-visible="true"] { max-height:64px; opacity:1; overflow:auto; }
+@media (prefers-reduced-motion: reduce) { .md-cloud-panel-status { transition:none; } }
+.md-cloud-panel-status .md-sidebar-empty,.md-cloud-panel-status .md-cloud-panel-error { margin:2px 6px; }
+.md-cloud-panel:not(.is-disconnected) > .md-cloud-panel-list { flex:1 1 auto; min-height:0; overflow:auto; align-content:start; }
+.md-cloud-panel-account { flex:none; margin:4px 0 0; padding:7px 6px 0; border-top:1px solid #e3e9f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.md-cloud-panel-account { display:flex; min-width:0; }
+.md-cloud-account-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.md-cloud-panel-status { display:flex; align-items:flex-start; gap:4px; }
+.md-cloud-panel-status .md-cloud-panel-error,.md-cloud-panel-status .md-sidebar-empty { min-width:0; overflow-wrap:anywhere; }
+.md-cloud-panel-status .md-cloud-panel-button { flex:none; padding:1px 5px; }
+
+.md-cloud-panel-account { justify-content:center; }
+.md-cloud-account-prefix { flex:none; white-space:pre; }
+
+.md-cloud-panel-status { flex:none; min-height:0; max-height:none; height:0; opacity:0; overflow:hidden; transition:none; gap:0; align-items:center; border-radius:4px; background:#eef3f8; }
+.md-cloud-panel-status[data-visible="true"] { height:28px; max-height:none; opacity:1; overflow:hidden; }
+.md-cloud-panel-status[data-error="true"] { background:#fcf0f0; }
+.md-cloud-panel-status .md-sidebar-empty,.md-cloud-panel-status .md-cloud-panel-error { display:block; margin:0; padding:0 6px; min-width:0; width:100%; line-height:28px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.md-cloud-panel.is-disconnected .md-cloud-panel-error,.md-cloud-panel.is-disconnected .md-sidebar-empty { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.md-cloud-panel.is-disconnected .md-cloud-panel-error,.md-cloud-panel.is-disconnected .md-sidebar-empty { height:28px; line-height:28px; margin:0 0 6px; padding:0 6px; border-radius:4px; background:#eef3f8; }
+.md-cloud-panel.is-disconnected .md-cloud-panel-error { background:#fcf0f0; }
+.md-cloud-breadcrumb { padding-left:6px; }

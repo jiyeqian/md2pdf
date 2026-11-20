@@ -62,3 +62,11 @@
 /* Match the preview menu's checkmark column, so the visible labels align. */
 #md-create-menu > button, #md-create-menu > a, #md-create-menu > .md-drafts-heading { padding-left: calc(var(--panel-button, 28px) / 2 + 5.5px); }
 #md-create-menu button[data-template-id] { padding-left: calc(var(--panel-button, 28px) / 2 + 17.5px); }
+
+.editor-footer { position:relative; }
+.editor-footer .md-cloud-notice { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); max-width:38%; max-height:100%; padding:0; align-items:center; background:transparent; }
+.editor-footer .md-cloud-notice[data-error="true"] { background:transparent; }
+.editor-footer .md-cloud-notice-body { overflow:hidden; }
+.editor-footer .md-cloud-status { border:0; padding:0; background:transparent; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+.editor-footer .md-cloud-notice[data-error="true"] .md-cloud-status { color:#a53434; }
+.editor-footer .md-cloud-error { display:none; }
