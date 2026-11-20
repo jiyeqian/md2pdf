@@ -401,6 +401,10 @@
   }
   window.mdPositionToolbarSubmenu = positionToolbarSubmenu;
 
+  function overflowOwnedMenus(bar) {
+    return Array.from(bar.querySelectorAll('[aria-expanded="true"][aria-controls]')).filter(function (trigger) { return trigger.closest('.md-wt-overflow-open'); }).map(function (trigger) { return trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')); }).filter(function (menu) { return menu && !menu.hidden; });
+  }
+
   // A short delay lets the pointer cross the gap between a trigger and its menu.
   function watchToolbarMenuPointer(trigger, getMenu, isOpen, close, includeChildren) {
     var timer = null, enteredMenu = false;
@@ -421,7 +425,7 @@
       var regions = [trigger, menu];
       var bar = trigger.closest?.('.md-wt-toolbar, .preview-toolbar');
       if (bar && includeChildren) {
-        regions.push.apply(regions, Array.from(bar.querySelectorAll('.md-wt-basic-menu:not([hidden]), details[open] .range-popover')));
+        regions.push.apply(regions, Array.from(bar.querySelectorAll('.md-wt-basic-menu:not([hidden]), details[open] .range-popover')).concat(overflowOwnedMenus(bar)));
       } else if (bar && !enteredMenu && trigger.closest?.('.md-wt-overflow-open')) {
         regions.push(bar.querySelector('.md-wt-overflow-background:not([hidden])'));
       }
@@ -429,12 +433,17 @@
       if (timer === null) timer = setTimeout(function () { timer = null; enteredMenu = false; if (isOpen()) close(); }, 300);
     }
     trigger.addEventListener('click', function () { cancel(); enteredMenu = false; });
+    onWorkspaceDOM('md-preview-pointer-enter', function () {
+      if (isOpen() && timer === null) timer = setTimeout(function () { timer = null; enteredMenu = false; if (isOpen()) close(); }, 300);
+    });
     onWorkspaceDOM('pointermove', check, true);
     onWorkspaceDOM('pointerup', check, true);
     onWorkspaceDOM('pointerout', function (event) {
-      if (event.pointerType !== 'mouse' || event.relatedTarget || event.buttons || !isOpen()) return;
+      if (event.pointerType !== 'mouse' || event.buttons || !isOpen()) return;
       var doc = trigger.ownerDocument;
       if (event.target !== doc && event.target?.ownerDocument !== doc) return;
+      // Entering the preview iframe stops pointermove events from reaching this document.
+      if (event.relatedTarget) { check(event); return; }
       if (timer === null) timer = setTimeout(function () { timer = null; enteredMenu = false; if (isOpen()) close(); }, 300);
     }, true);
   }
@@ -804,6 +813,7 @@
       return result;
     }
     function close(restore) {
+      overflowOwnedMenus(bar).forEach(function (menu) { menu.dispatchEvent(new Event('md-toolbar-dismiss')); });
       open = false; more.setAttribute('aria-expanded', 'false'); background.hidden = true;
       overflow.forEach(function (node) {
         node.querySelectorAll('.md-wt-basic-menu:not([hidden])').forEach(function (menu) { menu.hidden = true; menu.parentElement.querySelector('[aria-expanded]')?.setAttribute('aria-expanded', 'false'); });
@@ -874,7 +884,7 @@
       open = true; more.setAttribute('aria-expanded', 'true'); background.hidden = false;
       overflow.forEach(function (node) { node.classList.add('md-wt-overflow-open'); var targets = node.matches('button, a, summary') ? [node] : Array.from(node.querySelectorAll('button, a, summary')); targets.forEach(function (el) { if (el.tabIndex < 0 && !el.disabled) { el.dataset.overflowTabindex = String(el.tabIndex); el.tabIndex = 0; } }); }); position();
     });
-    function onPointer(event) { if (open && !bar.contains(event.target)) close(false); }
+    function onPointer(event) { if (open && !bar.contains(event.target) && !overflowOwnedMenus(bar).some(function (menu) { return menu.contains(event.target); })) close(false); }
     function onKey(event) {
       if (open && event.key === 'Escape' && !event.target.closest('details[open], .md-wt-basic-menu:not([hidden])')) { event.preventDefault(); close(true); }
     }
@@ -1347,8 +1357,10 @@
         if (saveButton._closeSaveMenu) { saveButton._closeSaveMenu(true); return; }
         var doc = saveButton.ownerDocument, menu = doc.createElement('div'), timer;
         function cancelClose() { clearTimeout(timer); }
-        function scheduleClose(event) { if (event.pointerType !== 'mouse') return; cancelClose(); timer = setTimeout(function () { if (!menu.contains(doc.activeElement)) closeMenu(false); }, 180); }
-        function closeMenu(restore) { cancelClose(); saveButton._closeSaveMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('keydown', escape, true); saveButton.removeEventListener('pointerleave', scheduleClose); saveButton.removeEventListener('pointerenter', cancelClose); if (restore) saveButton.focus(); }
+        function scheduleClose(event) { if (event.pointerType !== 'mouse') return; cancelClose(); timer = setTimeout(function () { closeMenu(false); }, 300); }
+        function previewLeave() { cancelClose(); timer = setTimeout(function () { closeMenu(false); }, 300); }
+        document.addEventListener('md-preview-pointer-enter', previewLeave);
+        function closeMenu(restore) { cancelClose(); document.removeEventListener('md-preview-pointer-enter', previewLeave); saveButton._closeSaveMenu = null; menu.remove(); doc.removeEventListener('pointerdown', outside, true); doc.removeEventListener('keydown', escape, true); saveButton.removeEventListener('pointerleave', scheduleClose); saveButton.removeEventListener('pointerenter', cancelClose); if (restore) saveButton.focus(); }
         function outside(event) { if (!menu.contains(event.target) && event.target !== saveButton) closeMenu(false); }
         function escape(event) { if (event.key === 'Escape' && (menu.contains(event.target) || event.target === saveButton)) { event.preventDefault(); event.stopPropagation(); closeMenu(true); } }
         menu.className = 'md-drafts-menu md-action-menu'; menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', '保存 Markdown');

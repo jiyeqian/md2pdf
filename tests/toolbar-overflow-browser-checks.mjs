@@ -144,6 +144,23 @@ try {
   await browser.send('Emulation.setDeviceMetricsOverride',{width:1800,height:900,deviceScaleFactor:1,mobile:false});
   await new Promise(resolve=>setTimeout(resolve,300));
   assert.equal(await evaluate(`document.querySelector('.md-wt-toolbar .md-wt-overflow-trigger').hidden`),true);
+  await evaluate(`document.querySelector('.preview-toolbar').dataset.documentType='general'`);
+  // Every preview popover stays open over its contents and closes when the pointer enters the preview iframe.
+  for (const name of ['type','theme','toc','numbering','fontSize','margin','lineHeight']) {
+    const triggerPoint=await evaluate(`(()=>{const r=document.querySelector('[data-control="'+${JSON.stringify(name)}+'"] summary').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);
+    await move(triggerPoint.x,triggerPoint.y);
+    await browser.send('Input.dispatchMouseEvent',{type:'mousePressed',x:triggerPoint.x,y:triggerPoint.y,button:'left',clickCount:1});
+    await browser.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:triggerPoint.x,y:triggerPoint.y,button:'left',clickCount:1});
+    await wait(`document.querySelector('[data-control="'+${JSON.stringify(name)}+'"] details').open`);
+    await new Promise(resolve=>setTimeout(resolve,100));
+    const geometry=await evaluate(`(()=>{const p=document.querySelector('[data-control="'+${JSON.stringify(name)}+'"] .range-popover').getBoundingClientRect(),f=document.querySelector('#preview').getBoundingClientRect();return {inside:{x:p.left+p.width/2,y:p.top+p.height/2},iframe:{x:f.left+f.width/2,y:f.top+Math.min(f.height-10,350)}}})()`);
+    await move(geometry.inside.x,geometry.inside.y);
+    await new Promise(resolve=>setTimeout(resolve,350));
+    assert.equal(await evaluate(`document.querySelector('[data-control="'+${JSON.stringify(name)}+'"] details').open`),true,name+' remains open over its menu');
+    await move(geometry.iframe.x,geometry.iframe.y);
+    await new Promise(resolve=>setTimeout(resolve,500));
+    assert.equal(await evaluate(`document.querySelector('[data-control="'+${JSON.stringify(name)}+'"] details').open`),false,name+' closes when the pointer enters preview');
+  }
   const beforeDrag = await evaluate(`document.querySelector('.editor-panel').getBoundingClientRect().width`);
   await evaluate(`(()=>{const d=document.querySelector('.md-wt-divider'),r=d.getBoundingClientRect();for(const [type,x] of [['pointerdown',r.left],['pointermove',r.left-180],['pointerup',r.left-180]])d.dispatchEvent(new PointerEvent(type,{bubbles:true,pointerId:7,pointerType:'touch',clientX:x,clientY:r.top+20}));})()`);
   await new Promise(resolve=>setTimeout(resolve,300));

@@ -139,6 +139,7 @@ try {
   await evaluate(`document.querySelector('#md-drafts-menu').dispatchEvent(new PointerEvent('pointerleave',{pointerType:'touch'}))`);
   assert.equal(await evaluate(`document.querySelector('#md-drafts-menu').hidden`),false);
   await evaluate(`document.querySelector('#md-drafts-menu').dispatchEvent(new PointerEvent('pointerleave',{pointerType:'mouse'}))`);
+  await new Promise(resolve => setTimeout(resolve, 350));
   assert.equal(await evaluate(`document.querySelector('#md-drafts-menu').hidden`),true);
   await openMenu();
   await evaluate(`document.querySelector('button[aria-label="打开 Markdown"]').click(); await mdDrafts.flush()`);

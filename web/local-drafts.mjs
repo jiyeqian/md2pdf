@@ -144,7 +144,17 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       (menu.querySelector('[data-draft-open]') || menu.querySelector('button'))?.focus();
     });
   }
+  let menuLeaveTimer;
+  function cancelMenuLeave() { clearTimeout(menuLeaveTimer); }
+  function scheduleMenuLeave(event) {
+    if ((event?.pointerType && event.pointerType !== 'mouse') || menu?.ownerDocument.querySelector('dialog[open]')) return;
+    cancelMenuLeave();
+    menuLeaveTimer = setTimeout(() => { if (!menu?.ownerDocument.querySelector('dialog[open]')) closeMenu(); }, 300);
+  }
   function closeMenu(focus = false) {
+    cancelMenuLeave();
+    trigger?.removeEventListener('pointerleave', scheduleMenuLeave);
+    trigger?.removeEventListener('pointerenter', cancelMenuLeave);
     if (menu) menu.hidden = true;
     trigger?.setAttribute('aria-expanded', 'false');
     if (focus) trigger?.focus();
@@ -255,11 +265,14 @@ export async function initializeLocalDrafts({ capture, apply, mirror, legacy, re
       }
       window.visualViewport?.addEventListener('resize', positionMenu);
       window.visualViewport?.addEventListener('scroll', positionMenu);
-      menu.addEventListener('pointerleave', event => {
-        if (event.pointerType === 'mouse' && !menu.ownerDocument.querySelector('dialog[open]')) closeMenu();
-      });
+      menu.addEventListener('pointerleave', scheduleMenuLeave);
+      menu.addEventListener('pointerenter', cancelMenuLeave);
+      menu.addEventListener('md-toolbar-dismiss', () => closeMenu());
+      (window.mdWorkspaceHosts?.on || document.addEventListener.bind(document))('md-preview-pointer-enter', () => { if (!menu.hidden) scheduleMenuLeave(); });
     }
     menu.hidden = false;
+    trigger.addEventListener('pointerleave', scheduleMenuLeave);
+    trigger.addEventListener('pointerenter', cancelMenuLeave);
     trigger.setAttribute('aria-controls', menu.id);
     trigger.setAttribute('aria-haspopup', 'dialog');
     trigger.setAttribute('aria-expanded', 'true');

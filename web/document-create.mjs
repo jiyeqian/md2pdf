@@ -1,8 +1,13 @@
 import { appFetch } from './runtime-request.mjs';
-let menu, trigger, catalogPromise;
+let menu, trigger, catalogPromise, leaveTimer;
+function cancelLeave() { clearTimeout(leaveTimer); }
+function scheduleLeave(event) { if (event?.pointerType && event.pointerType !== 'mouse') return; cancelLeave(); leaveTimer = setTimeout(() => close(), 300); }
 document.addEventListener('md-panel-host-change', () => close());
 const names = { general: '通用文档', paper: '学术论文', gb: '国家标准' };
 function close(focus = false) {
+  cancelLeave();
+  trigger?.removeEventListener('pointerleave', scheduleLeave);
+  trigger?.removeEventListener('pointerenter', cancelLeave);
   if (menu) menu.hidden = true;
   trigger?.setAttribute('aria-expanded', 'false');
   if (focus) trigger?.focus();
@@ -66,7 +71,10 @@ export async function openCreateMenu(anchor) {
     const on = (type, handler, options) => window.mdWorkspaceHosts ? window.mdWorkspaceHosts.on(type, handler, options) : document.addEventListener(type, handler, options);
     on('click', event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) close(); });
     on('focusin', event => { if (!menu.contains(event.target) && !trigger.contains(event.target)) close(); });
-    menu.addEventListener('pointerleave', event => { if (event.pointerType === 'mouse') close(); });
+    menu.addEventListener('pointerleave', scheduleLeave);
+    menu.addEventListener('pointerenter', cancelLeave);
+    menu.addEventListener('md-toolbar-dismiss', () => close());
+    on('md-preview-pointer-enter', () => { if (!menu.hidden) scheduleLeave(); });
     menu.addEventListener('keydown', event => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(true); }
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -85,6 +93,8 @@ export async function openCreateMenu(anchor) {
   const drafts = document.querySelector('#md-drafts-menu');
   if (drafts) drafts.hidden = true;
   menu.hidden = false;
+  trigger.addEventListener('pointerleave', scheduleLeave);
+  trigger.addEventListener('pointerenter', cancelLeave);
   trigger.setAttribute('aria-controls', menu.id);
   trigger.setAttribute('aria-haspopup', 'dialog');
   trigger.setAttribute('aria-expanded', 'true');
