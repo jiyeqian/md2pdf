@@ -117,7 +117,7 @@
   // 默认开启的同步定位是一个带 aria-pressed 的图标开关按钮。
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var ICONS = {
-    toolbarPanel: [{ rect: [3, 3, 14, 14], rx: 2 }, { d: 'M8 3v14M10.5 6h3.5M10.5 10h3.5M10.5 14h3.5M5.3 6h.4M5.3 10h.4M5.3 14h.4' }],
+    toolbarPanel: [{ d: 'M4 5h12M4 10h12M4 15h12' }, { d: 'M7 3.5v3M13 8.5v3M8.5 13.5v3' }],
     pageBreak: [{ d: 'M4 2h12v5H4zM4 13h12v5H4zM2 10h3m3 0h2m3 0h2m3 0h1' }],
     taskList: [{ d: 'M8 5h10M8 11h10M8 17h10M2 5l1.5 1.5L6 3M2 11h3v3H2zM2 17h3v3H2z' }],
     headingUp: [{ d: 'M2 4v12M9 4v12M2 10h7M13 8l3-4 3 4M16 4v12' }],
