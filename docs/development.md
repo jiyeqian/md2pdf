@@ -18,6 +18,10 @@ npm run check:consistency
 
 WebApp 与跨运行环境的人工验收要求见[交接与一致性说明](cross-runtime-handoff.md)和[验收记录](web-app-acceptance.md)。
 
+## 分支与合并
+
+以 `main` 为集成基线，在功能分支中开发并推送到 CNB；所有改动通过 CNB 合并请求进入 `main`。合并前检查改动、流水线和验收结果，并由项目负责人确认。合并后同步本地 `main` 并核对提交。发布版本另行确认。
+
 ## 版本与发布
 
 `package.json` 是唯一版本来源，CLI 与服务端、静态 WebApp 共用该版本。发布 tag 使用 `v版本号` 格式；三种发布产物应来自同一提交。项目的 CNB 流水线负责构建和 npm 发布，凭据配置及运行维护说明不属于终端用户使用指南。
