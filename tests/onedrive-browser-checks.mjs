@@ -167,12 +167,12 @@ try {
     await wait(`document.querySelector('.md-cloud-panel-error')?.textContent.includes('eTag')`);
     assert.equal(await evaluate('mdEditor.getValue()'),'# 本地原稿');
     assert.equal(await evaluate('mdDrafts.current()'),local);
-    await evaluate(`document.querySelector('.md-cloud-notice')?.remove(); document.querySelector('.editor-panel .md-focus-toggle').click(); document.querySelector('.editor-panel .md-focus-tools').click()`);
+    await evaluate(`document.querySelector('.editor-panel .md-focus-toggle').click(); document.querySelector('.editor-panel .md-focus-tools').click()`);
     const popupWidth = await evaluate(`document.querySelector('.editor-panel .md-focus-popup').getBoundingClientRect().width`);
     await evaluate(`mockGraph.mode='ok'; [...document.querySelectorAll('.md-cloud-panel-file')].find(x=>x.querySelector('.md-cloud-panel-name')?.textContent==='cloud.md').click()`);
     await wait(`mdEditor.getValue()==='# 云端原稿'`);
-    await wait(`document.querySelector('.md-cloud-status')?.textContent.includes('已打开')`);
-    assert.equal(await evaluate(`document.querySelector('.md-cloud-notice').parentElement.matches('.editor-footer')`),true,'cloud notice stays in the editor footer');
+    await wait(`document.querySelector('.md-cloud-panel-status')?.textContent.includes('已打开')`);
+    assert.equal(await evaluate(`!!document.querySelector('.editor-footer .md-cloud-notice')`),false,'cloud notices stay out of the footer');
     const focusedWidth = await evaluate(`document.querySelector('.editor-panel .md-focus-popup').getBoundingClientRect().width`);
     assert.ok(Math.abs(focusedWidth-popupWidth)<1,JSON.stringify({popupWidth,focusedWidth}));
     await evaluate(`document.querySelector('.md-image-status').textContent='图片处理失败：'+ '错误'.repeat(300)`);
@@ -204,8 +204,8 @@ try {
     await evaluate(`document.querySelector('[aria-label="cloud.md 更多操作"]').click()`); assert.equal(await evaluate(`mockGraph.calls.filter(x=>x.method==='DELETE'&&x.url.endsWith('/items/cloud')).length`),0);
     await evaluate('mockGraph.holdSave=false; window.releaseSave()');
     await wait(`mockGraph.calls.some(x=>x.url.endsWith('/items/cloud/content')&&x.method==='PUT')`);
-    await wait(`document.querySelector('.md-cloud-status')?.textContent.includes('已保存')`);
-    await wait(`document.querySelector('.md-cloud-notice').hidden`);
+    await wait(`document.querySelector('.md-cloud-panel-status')?.textContent.includes('已保存')`);
+    await wait(`document.querySelector('.md-cloud-panel-status')?.dataset.visible==='false'`);
     await evaluate(`mockGraph.mode='late'; document.querySelector('.md-cloud-icon-button[aria-label="保存到 OneDrive"]').click()`);
     await wait(`document.querySelector('dialog[aria-label="OneDrive 保存冲突"]')`);
     assert.equal(await evaluate(`mockGraph.calls.filter(x=>x.url.endsWith('/items/cloud/content')).at(-1).headers['If-Match']`),'old');
@@ -215,7 +215,7 @@ try {
     await wait(`!document.querySelector('dialog[aria-label="保存到 OneDrive"]')`);
     await evaluate(`mockGraph.mode='ok';mdDrafts.openFile('# 云端原稿','local.md')`);
     for (const mode of ['conflict','conflictoverwrite','offline','ok']) {
-      await evaluate(`mockGraph.mode=${JSON.stringify(mode)}; document.querySelector('button[aria-label="下载 Markdown"]').click()`);
+      await evaluate(`mockGraph.mode=${JSON.stringify(mode)}; if (${JSON.stringify(mode)} === 'offline') window.mdEditorSidebar.close(); document.querySelector('button[aria-label="下载 Markdown"]').click()`);
       await wait(`document.querySelector('[aria-label="保存 Markdown"]')`);
       await evaluate(`[...document.querySelectorAll('[aria-label="保存 Markdown"] button')].find(x=>x.textContent.includes('保存到 OneDrive')).click()`);
       await wait(`document.querySelector('dialog[aria-label="保存到 OneDrive"]')`);
@@ -227,8 +227,9 @@ try {
         await wait(`document.querySelector('dialog[aria-label="OneDrive 保存冲突"]')`); assert.ok(await evaluate(`document.querySelector('dialog[aria-label="OneDrive 保存冲突"]').textContent.includes('new.md')`));
         await evaluate(`[...document.querySelectorAll('dialog[aria-label="OneDrive 保存冲突"] button')].find(x=>x.textContent===${JSON.stringify(mode === 'conflict' ? '改名' : '覆盖')}).click()`);
         if (mode === 'conflict') { await wait(`document.querySelector('dialog[aria-label="保存到 OneDrive"]')`); assert.equal(await evaluate(`document.querySelector('dialog[aria-label="保存到 OneDrive"] input').value`),'new.md'); await evaluate(`[...document.querySelectorAll('dialog[aria-label="保存到 OneDrive"] button')].find(x=>x.textContent==='取消').click()`); await wait(`!document.querySelector('dialog[aria-label="保存到 OneDrive"]')`); }
-        else { await wait(`mockGraph.calls.some(x=>x.url.endsWith('/items/same/content')&&x.method==='PUT')`); await wait(`document.querySelector('.md-cloud-status')?.textContent.includes('已保存')`); assert.equal(await evaluate(`mockGraph.calls.find(x=>x.url.endsWith('/items/same/content')).headers['If-Match']`),'old'); await evaluate(`mdDrafts.openFile('# 云端原稿','local.md')`); }
-      } else await wait(mode === 'offline' ? `document.querySelector('.md-cloud-error')?.textContent.includes('网络')` : `document.querySelector('.md-cloud-status')?.textContent.includes('已保存')`);
+        else { await wait(`mockGraph.calls.some(x=>x.url.endsWith('/items/same/content')&&x.method==='PUT')`); await wait(`document.querySelector('.md-cloud-panel-status')?.textContent.includes('已保存')`); assert.equal(await evaluate(`mockGraph.calls.find(x=>x.url.endsWith('/items/same/content')).headers['If-Match']`),'old'); await evaluate(`mdDrafts.openFile('# 云端原稿','local.md')`); }
+      } else await wait(mode === 'offline' ? `document.querySelector('.md-cloud-panel-error')?.title.includes('网络')` : `document.querySelector('.md-cloud-panel-status')?.textContent.includes('已保存')`);
+      if (mode === 'offline') assert.equal(await evaluate(`window.mdEditorSidebar.isOpen() && window.mdEditorSidebar.selectedView === 'cloud'`), true, 'save error opens cloud sidebar');
       await wait(`!document.querySelector('dialog[aria-label="OneDrive 保存冲突"]')`);
       assert.equal(await evaluate('mdEditor.getValue()'),'# 云端原稿');
     }
@@ -301,7 +302,7 @@ try {
     await evaluate(`[...document.querySelectorAll('.md-cloud-crumb')].find(x=>x.textContent==='md2pdf').click()`); await wait(`document.querySelector('[data-cloud-id="sub"]')`);
     await evaluate(`mockGraph.folderDeleteSuccess=true;document.querySelector('[aria-label="目录 更多操作"]').click(); [...document.querySelectorAll('.md-cloud-popup button')].find(x=>x.textContent==='移到回收站').click()`);
     await wait(`mockGraph.calls.filter(x=>x.url.endsWith('/items/sub')&&x.method==='DELETE').length===2`);
-    await wait(`document.querySelector('.md-cloud-notice').hidden`);
+    await wait(`document.querySelector('.md-cloud-panel-status')?.dataset.visible==='false'`);
     assert.equal(await evaluate('mdDrafts.current()'),nestedDraft);assert.equal(await evaluate('mdEditor.getValue()'),'# 云端原稿');
     await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'s',ctrlKey:true,altKey:true,bubbles:true,cancelable:true}))`);
     await wait(`document.querySelector('dialog[aria-label="保存到 OneDrive"]')`);

@@ -20,7 +20,7 @@ try{
   await wait(`[...document.querySelectorAll('.md-cloud-panel-button')].some(x=>x.textContent==='连接 OneDrive'&&!x.disabled)`);
   await evaluate(`[...document.querySelectorAll('.md-cloud-panel-button')].find(x=>x.textContent==='连接 OneDrive').click()`);
   await wait(`document.querySelector('.md-cloud-panel-file')`); assert.deepEqual(await geometry(),before);
-  await evaluate(`document.querySelector('.md-cloud-panel-file').click()`);await wait(`document.querySelector('.md-cloud-status')?.textContent.includes('已打开')`);
+  await evaluate(`document.querySelector('.md-cloud-panel-file').click()`);await wait(`document.querySelector('.md-cloud-panel-status')?.textContent.includes('已打开')`);
   await wait(`cloudMotions.some(x=>x[0]==='0px'&&x[1]==='28px') && cloudMotions.some(x=>x[0]==='28px'&&x[1]==='0px')`);
   await wait(`document.querySelector('.md-cloud-panel-status').dataset.visible==='false'`);
   await evaluate(`testMode='long';window.mdOneDrive.open()`);await wait(`document.querySelector('.md-cloud-panel-file')`);const opened=await geometry();

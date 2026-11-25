@@ -38,37 +38,13 @@ function conciseCloudMessage(text) {
 }
 
 export function initializeOneDrive() {
-  let graph, auth, binding = null, busy = false, generation = 0, noticeTimer;
+  let graph, auth, binding = null, busy = false, generation = 0;
   const current = () => window.mdDrafts?.current();
   const status = (message, error = false) => {
-    clearTimeout(noticeTimer);
-    const panel = window.mdWorkspaceHosts?.query('.editor-panel') || document.querySelector('.editor-panel');
-    if (!panel) return;
-    let notice = panel.querySelector('.md-cloud-notice');
-    if (!notice) {
-      const doc = panel.ownerDocument;
-      notice = doc.createElement('div'); notice.className = 'md-cloud-notice';
-      const body = doc.createElement('div'); body.className = 'md-cloud-notice-body';
-      const node = doc.createElement('button'); node.type = 'button'; node.className = 'md-cloud-status'; node.setAttribute('role', 'status'); node.addEventListener('click', () => { if (notice.dataset.error === 'true') { listError = detail.textContent; showCloud(); renderCloud(); notice.hidden = true; } });
-      const detail = doc.createElement('div'); detail.className = 'md-cloud-error'; detail.setAttribute('role', 'alert'); detail.hidden = true;
-      body.append(node, detail); notice.append(body);
-    }
-    const footer = panel.querySelector('.editor-footer');
-    if (footer && notice.parentElement !== footer) footer.append(notice);
-    const node = notice.querySelector('.md-cloud-status'), detail = notice.querySelector('.md-cloud-error');
-    node.textContent = error ? 'OneDrive · 操作失败' : message;
-    node.title = message;
-    detail.textContent = error ? message + ' 本地草稿仍保留。' : '';
-    if (error && message === ONEDRIVE_UNCONFIGURED) {
-      const link = panel.ownerDocument.createElement('a'); link.className = 'md-notice-link';
-      link.href = new URL('onedrive-setup.html', import.meta.url).href;
-      link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '配置说明';
-      detail.replaceChildren('OneDrive 尚未配置，请参照「', link, '」完成设置。本地草稿仍保留。');
-    }
-    detail.hidden = !error;
-    notice.dataset.error = String(error);
-    notice.hidden = !message;
-    if (message && !error && /已保存|已打开/.test(message)) noticeTimer = setTimeout(() => { notice.hidden = true; }, 4000);
+    if (error) showCloud();
+    if (error) { listError = message; info = ''; }
+    else info = message;
+    renderCloud();
   };
   const cloudSidebars = new Map();
   let sidebar, cloudPane, wantOpen = false, preparing, connectionPromise, initializing = false, connecting = false;
@@ -106,7 +82,7 @@ export function initializeOneDrive() {
       const button = doc.createElement('button'); button.type = 'button'; button.className = 'md-cloud-panel-button';
       button.textContent = text; button.disabled = disabled; button.addEventListener('click', action); parent.append(button); return button;
     };
-    const message = (text, error = false) => {
+    const message = (text, error = false, parent = cloudPane) => {
       if (!text) return;
       const p = doc.createElement('p'); p.className = error ? 'md-cloud-panel-error' : 'md-sidebar-empty';
       p.setAttribute('role', error ? 'alert' : 'status'); p.textContent = error ? conciseCloudMessage(text) : text; p.title = text;
@@ -115,10 +91,15 @@ export function initializeOneDrive() {
         link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '配置说明';
         p.replaceChildren('OneDrive 尚未配置，请参照「', link, '」完成设置。');
       }
-      cloudPane.append(p);
+      parent.append(p);
     };
     if (!auth?.connected()) {
-      cloudPane.classList.add('is-disconnected'); message(listError, true); message(info);
+      cloudPane.classList.add('is-disconnected');
+      const statusRow = previousStatus || doc.createElement('div'); statusRow.className = 'md-cloud-panel-status';
+      statusRow.dataset.visible = String(!!(listError || info)); statusRow.dataset.error = String(!!listError);
+      statusRow.replaceChildren(); cloudPane.append(statusRow);
+      message(listError, true, statusRow); message(info, false, statusRow);
+      expireInfo();
       if (listError && !auth) addButton('重试', () => { listError = ''; void prepare(); }, initializing);
       else addButton(initializing ? '正在准备…' : connecting ? '正在连接…' : '连接 OneDrive', connectFromClick, initializing || connecting || !auth);
       return;
@@ -342,6 +323,7 @@ export function initializeOneDrive() {
   }
   async function perform(action) {
     if (busy || mutationBusy) { status('OneDrive 操作进行中'); return; }
+    if (auth?.connected()) listError = '';
     busy = true; renderCloud();
     try { await action(); } catch (error) { status(errorMessage(error), true); }
     finally { busy = false; renderCloud(); }
@@ -421,8 +403,8 @@ export function initializeOneDrive() {
       binding = { id: result.id, eTag: result.eTag, name: result.name || name, rootId: existing && result.id === existing.id ? existing.rootId : targetRootId, ancestors: existing && result.id === existing.id ? existing.ancestors : targetAncestors, draftId, savedText: text };
       attachImages(binding, client);
       if (existing?.id === binding.id && existing.rootId === binding.rootId) binding.images = existing.images;
-      status(window.mdEditor.getValue() === text ? 'OneDrive · 已保存' : 'OneDrive · 有未保存更改');
-      if (sidebar?.isOpen() && sidebar.selectedView === 'cloud') void refresh();
+      if (sidebar?.isOpen() && sidebar.selectedView === 'cloud') await refresh();
+      if (current() === draftId && generation === operation) status(window.mdEditor.getValue() === text ? 'OneDrive · 已保存' : 'OneDrive · 有未保存更改');
     });
   }
   function syncCloudState() {
